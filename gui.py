@@ -2,6 +2,7 @@
 
 import sys
 import numpy as n
+from PIL import Image
 
 #plotting backends
 from matplotlib.backends import qt_compat
@@ -19,7 +20,8 @@ else:
 #           IMAGE VIEWER CLASSES AND FUNCTIONS
 # -----------------------------------------------------------------------------
 
-missing_image = n.zeros(shape = (2048,2048), dtype = n.uint8)
+filename = 'C:\Users\Laurent\Dropbox\Powder\VO2\NicVO2\subs.tif'
+test_image = n.array( Image.open(filename) )
 
 class ImageViewer(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
@@ -50,9 +52,10 @@ class TIFFImageViewer(ImageViewer):
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
+        missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
         self.axes.imshow(missing_image)
     
-    def displayImage(self, image):
+    def displayImage(self, image = test_image):
         """
         Parameters
         ----------
@@ -109,6 +112,8 @@ class UEDpowder(QtGui.QMainWindow):
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
         self.imageLocatorBtn.clicked.connect(self.imageLocator)
         
+        #
+        
         #Set up ImageViewer
         self.image_viewer = TIFFImageViewer()
         
@@ -138,7 +143,8 @@ class UEDpowder(QtGui.QMainWindow):
         
     def imageLocator(self):
         """ Opens a file dialog to locate the appropriate dataset"""
-        self.image_filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File', 'C:\\')
+        file_dialog = QtGui.QFileDialog()
+        self.image_filename = file_dialog.getOpenFileName(self, 'Open File', 'C:\\')
         self.loadImage(self.image_filename)
         
     def handleBtn(self):
@@ -154,6 +160,12 @@ class UEDpowder(QtGui.QMainWindow):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+    
+    def fileQuit(self):
+        self.close()
+
+    def closeEvent(self, ce):
+        self.fileQuit()
 
 #Run
 app = QtGui.QApplication(sys.argv)
