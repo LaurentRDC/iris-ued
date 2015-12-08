@@ -15,6 +15,12 @@ if use_pyside:
 else:
     from PyQt4 import QtGui, QtCore
 
+# -----------------------------------------------------------------------------
+#           IMAGE VIEWER CLASSES AND FUNCTIONS
+# -----------------------------------------------------------------------------
+
+missing_image = n.zeros(shape = (2048,2048), dtype = n.uint8)
+
 class ImageViewer(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
 
@@ -50,6 +56,11 @@ class TIFFImageViewer(ImageViewer):
             TIFF file imported into a ndarray using PIL.Image.open()
         """
         self.axes.imshow(image)
+        self.axes.set_title('Raw TIFF image from the instrument')
+
+# -----------------------------------------------------------------------------
+#           MAIN WINDOW CLASS
+# -----------------------------------------------------------------------------
     
 class UEDpowder(QtGui.QMainWindow):
     """
@@ -91,20 +102,15 @@ class UEDpowder(QtGui.QMainWindow):
         self.statusBar()
         
         #Set-up dialog buttons
-        self.datasetLocatorBtn = QtGui.QPushButton('Locate data', self)
-        self.datasetLocatorBtn.clicked.connect(self.datasetLocator)
+        self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
+        self.imageLocatorBtn.clicked.connect(self.datasetLocator)
         
-        self.saveLocatorBtn = QtGui.QPushButton('Set export location and filename', self)
-        self.saveLocatorBtn.clicked.connect(self.saveLocator)
-        
-        self.exportBtn = QtGui.QPushButton('Compute radial average', self)
-        self.exportBtn.clicked.connect(self.handleRadialAverageBtn)
+        #Set up ImageViewer
         
         #Set up vertical layout
         self.vert_box = QtGui.QVBoxLayout()
-        self.vert_box.addWidget(self.datasetLocatorBtn)
-        self.vert_box.addWidget(self.saveLocatorBtn)
-        self.vert_box.addWidget(self.exportBtn)
+        self.vert_box.addWidget(self.imageLocatorBtn)
+        self.vert_box.addWidget()
         
         self.central_widget = QtGui.QWidget()
         self.central_widget.setLayout(self.vert_box)
@@ -125,13 +131,9 @@ class UEDpowder(QtGui.QMainWindow):
         from PIL import Image
         self.image = n.array( Image.open(self.image_filename) )
         
-    def datasetLocator(self):
+    def imageLocator(self):
         """ Opens a file dialog to locate the appropriate dataset"""
-        self.datasetLocation = QtGui.QFileDialog.getExistingDirectory(self, 'Open Directory', 'C:\\')
-        
-    def saveLocator(self):
-        """ Opens a file dialog to save the exported HDF5 file """
-        self.saved_file_location = QtGui.QFileDialog.getSaveFileName(self, 'Save file', 'C:\\')
+        self.image_filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File', 'C:\\')
         
     def handleBtn(self):
         """ Confirms and executes the HDF5 export"""
