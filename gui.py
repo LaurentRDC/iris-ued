@@ -31,7 +31,7 @@ class ImageViewer(FigureCanvas):
         # We want the axes cleared every time plot() is called
         self.axes.hold(False)
 
-        self.compute_initial_figure()
+        self.initialFigure()
 
         #
         FigureCanvas.__init__(self, fig)
@@ -48,7 +48,11 @@ class ImageViewer(FigureCanvas):
 class TIFFImageViewer(ImageViewer):
     """ For plotting the raw TIFF images """
 
-    def compute_initial_figure(self, image):
+    def initialFigure(self):
+        """ Plots a placeholder image until an image file is selected """
+        self.axes.imshow(missing_image)
+    
+    def displayImage(self, image):
         """
         Parameters
         ----------
@@ -103,14 +107,15 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Set-up dialog buttons
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
-        self.imageLocatorBtn.clicked.connect(self.datasetLocator)
+        self.imageLocatorBtn.clicked.connect(self.imageLocator)
         
         #Set up ImageViewer
+        self.image_viewer = TIFFImageViewer()
         
         #Set up vertical layout
         self.vert_box = QtGui.QVBoxLayout()
         self.vert_box.addWidget(self.imageLocatorBtn)
-        self.vert_box.addWidget()
+        self.vert_box.addWidget(self.image_viewer)
         
         self.central_widget = QtGui.QWidget()
         self.central_widget.setLayout(self.vert_box)
@@ -118,7 +123,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Window settings
         self.setGeometry(300, 300, 350, 300)
-        self.setWindowTitle('pyImgLoader')
+        self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()
         self.show()
     
@@ -134,6 +139,8 @@ class UEDpowder(QtGui.QMainWindow):
     def imageLocator(self):
         """ Opens a file dialog to locate the appropriate dataset"""
         self.image_filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File', 'C:\\')
+        self.loadImage(self.image_filename)
+        self.vert_box.
         
     def handleBtn(self):
         """ Confirms and executes the HDF5 export"""
