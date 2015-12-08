@@ -144,15 +144,12 @@ class UEDpowder(QtGui.QMainWindow):
     def imageLocator(self):
         """ Opens a file dialog to locate the appropriate dataset"""
         file_dialog = QtGui.QFileDialog()
+        
+        #Connect signals
+        file_dialog.fileSelected.connect(self.)
         self.image_filename = file_dialog.getOpenFileName(self, 'Open File', 'C:\\')
         self.loadImage(self.image_filename)
         
-    def handleBtn(self):
-        """ Confirms and executes the HDF5 export"""
-        try:
-            pass
-        except():
-            print 'You must select a save location first'
             
     def centerWindow(self):
         """ Centers the window """
