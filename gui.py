@@ -140,7 +140,6 @@ class UEDpowder(QtGui.QMainWindow):
         """ Opens a file dialog to locate the appropriate dataset"""
         self.image_filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File', 'C:\\')
         self.loadImage(self.image_filename)
-        self.vert_box.
         
     def handleBtn(self):
         """ Confirms and executes the HDF5 export"""
