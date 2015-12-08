@@ -44,7 +44,7 @@ class ImageViewer(FigureCanvas):
                                    QtGui.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
-    def initialFigure(self):
+    def compute_initial_figure(self):
         pass
     
 class TIFFImageViewer(ImageViewer):
@@ -55,17 +55,15 @@ class TIFFImageViewer(ImageViewer):
         missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
         self.axes.imshow(missing_image)
     
-    def displayImage(self, filename):
+    def displayImage(self, image = test_image):
         """
         Parameters
         ----------
         image - ndarray, shape (N,N)
             TIFF file imported into a ndarray using PIL.Image.open()
         """
-        image = n.array(Image.open(filename), 'r')
         self.axes.imshow(image)
         self.axes.set_title('Raw TIFF image from the instrument')
-    
 
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -75,12 +73,18 @@ class UEDpowder(QtGui.QMainWindow):
     """
     Attributes
     ----------
-
+    dataset_location - string
+    
+    saved_file_location - string
+    
+    image - MATLAB file    
     """
     def __init__(self):
         
         #Attributes
         self._image_filename = None
+        self.saved_file_location = None
+        self.image = None
         
         #Methods
         super(UEDpowder, self).__init__()     #inherit from the constructor of QMainWindow        
@@ -108,13 +112,10 @@ class UEDpowder(QtGui.QMainWindow):
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
         self.imageLocatorBtn.clicked.connect(self.imageLocator)
         
+        #
+        
         #Set up ImageViewer
-        #At first, we want to display the raw image
         self.image_viewer = TIFFImageViewer()
-        self.file_dialog = QtGui.QFileDialog()
-        
-        self.file_dialog.fileSelected.connect(self.image_viewer.displayImage(self.image_filename))
-        
         
         #Set up vertical layout
         self.vert_box = QtGui.QVBoxLayout()
@@ -130,9 +131,25 @@ class UEDpowder(QtGui.QMainWindow):
         self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()
         self.show()
+    
+    def loadImage(self):
+        """ This method loads the .mat file in the UI. """
+        #Check that a filename has been given
+        assert not self.image_filename == None
+        
+        #Load image
+        from PIL import Image
+        self.image = n.array( Image.open(self.image_filename) )
         
     def imageLocator(self):
-        """ File dialog """
+        """ Opens a file dialog to locate the appropriate dataset"""
+        file_dialog = QtGui.QFileDialog()
+        
+        #Connect signals
+        file_dialog.fileSelected.connect(self.)
+        self.image_filename = file_dialog.getOpenFileName(self, 'Open File', 'C:\\')
+        self.loadImage(self.image_filename)
+        
             
     def centerWindow(self):
         """ Centers the window """
@@ -148,7 +165,6 @@ class UEDpowder(QtGui.QMainWindow):
         self.fileQuit()
 
 #Run
-
 app = QtGui.QApplication(sys.argv)
 analysisWindow = UEDpowder()
 analysisWindow.show()
