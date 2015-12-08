@@ -15,6 +15,8 @@ if use_pyside:
     from PySide import QtGui, QtCore
 else:
     from PyQt4 import QtGui, QtCore
+    
+app = QtGui.QApplication(sys.argv)
 
 # -----------------------------------------------------------------------------
 #           IMAGE VIEWER CLASSES AND FUNCTIONS
@@ -56,16 +58,22 @@ class TIFFImageViewer(ImageViewer):
         self.axes.imshow(missing_image)
     
     def displayImage(self, filename):
-        """
-        Parameters
-        ----------
-        image - ndarray, shape (N,N)
-            TIFF file imported into a ndarray using PIL.Image.open()
-        """
-        image = n.array(Image.open(filename), 'r')
-        self.axes.imshow(image)
-        self.axes.set_title('Raw TIFF image from the instrument')
+        """  """
+        if filename is None:
+            self.initialFigure()
+        else:
+            image = n.array(Image.open(filename), 'r')
+            self.axes.imshow(image)
+            self.axes.set_title('Raw TIFF image from the instrument')
     
+class RadialPatternImageViewer(ImageViewer):
+    """ For displaying radially-averaged diffraction pattern. """
+    
+    def initialFigure(self):
+        pass
+    
+    def displayImage(self):
+        pass
 
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -112,8 +120,7 @@ class UEDpowder(QtGui.QMainWindow):
         #At first, we want to display the raw image
         self.image_viewer = TIFFImageViewer()
         self.file_dialog = QtGui.QFileDialog()
-        self.file_dialog.fileSelected.connect(self.image_viewer.displayImage(self.image_filename))
-        
+        app.connect(self.file_dialog, QtCore.SIGNAL('fileSelected(QString)'), self.image_viewer.displayImage(self.image_filename))
         
         #Set up vertical layout
         self.vert_box = QtGui.QVBoxLayout()
@@ -132,6 +139,7 @@ class UEDpowder(QtGui.QMainWindow):
         
     def imageLocator(self):
         """ File dialog """
+        self.image_filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
             
     def centerWindow(self):
         """ Centers the window """
@@ -146,9 +154,7 @@ class UEDpowder(QtGui.QMainWindow):
     def closeEvent(self, ce):
         self.fileQuit()
 
-#Run
 
-app = QtGui.QApplication(sys.argv)
 analysisWindow = UEDpowder()
 analysisWindow.show()
 sys.exit(app.exec_())
