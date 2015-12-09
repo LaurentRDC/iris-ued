@@ -176,6 +176,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.acceptBtn = QtGui.QPushButton('Accept', self)
         self.rejectBtn = QtGui.QPushButton('Reject', self)
         self.executeBtn = QtGui.QPushButton('Execute', self)
+        self.turboBtn = QtGui.QPushButton('Turbo Mode', self)
         
         #Set-up file dialog dialog buttons
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
@@ -204,6 +205,7 @@ class UEDpowder(QtGui.QMainWindow):
         state_controls.addWidget(self.acceptBtn)
         state_controls.addWidget(self.rejectBtn)
         state_controls.addWidget(self.executeBtn)
+        state_controls.addWidget(self.turboBtn)
         
         #Import and view data
         dataset_interaction_controls = QtGui.QVBoxLayout()

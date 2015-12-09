@@ -19,16 +19,17 @@ def radialAverage(image, center = [0,0]):
     
     Returns
     -------
-    [s, pattern] : list of ndarrays, shapes (M,)
+    [radius, pattern] : list of ndarrays, shapes (M,)
     """
     
     #Preliminaries
-    x = n.asarray(range(image.shape[0]))
-    y = n.asarray(range(image.shape[1]))
+    xc, yc = center     #Center coordinates
+    x = n.linspace(0, image.shape[0], image.shape[0])
+    y = n.linspace(image.shape[1], 0, image.shape[1])
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(x,y)
-    R = n.sqrt( (X - center[0])**2 + (Y - center[1])**2 )
+    R = n.sqrt( (X - xc)**2 + (Y - yc)**2 )
     
     #Flatten arrays
     intensity = image.flatten()
@@ -36,9 +37,9 @@ def radialAverage(image, center = [0,0]):
     
     #Sort by increasing radius
     intensity = intensity[n.argsort(radius)]
-    radius = n.sort(radius)
+    radius = n.around(n.sort(radius), decimals = 2)
     
     #Average intensity values for equal radii
     
     
-    return
+    return radius, intensity
