@@ -37,7 +37,8 @@ class ImageViewer(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         
         #Non-plotting attributes
-        self.last_click = [0,0]
+        self.parent = parent
+        self.last_click_position = [0,0]
         
         #plot setup
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -57,16 +58,18 @@ class ImageViewer(FigureCanvas):
         FigureCanvas.updateGeometry(self)
         
         #connect clicking events
-        self.mpl_connect('button_press_event', self.clickPosition)
+        self.mpl_connect('button_press_event', self.click)
     
-    def clickPosition(self, event):
+    def click(self, event):
         """
         Saves the position of the last click on the canvas
         """
         if event.xdata == None or event.ydata == None:
             self.last_click_position = [0,0]
         else:
-            self.last_click = [event.xdata, event.ydata]
+            self.last_click_position = [event.xdata, event.ydata]
+            print self.last_click_position
+        
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
@@ -126,6 +129,7 @@ class UEDpowder(QtGui.QMainWindow):
         #Attributes
         self.image_filename = None
         self.image_center = list()
+        self.state = 'initial'
         
         #Methods
         super(UEDpowder, self).__init__()     #inherit from the constructor of QMainWindow        
@@ -147,7 +151,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
 
         #Set up ImageViewer
-        self.image_viewer = ImageViewer()
+        self.image_viewer = ImageViewer(parent = self)
         self.file_dialog = QtGui.QFileDialog()
         
         # ---------------------------------------------------------------------
