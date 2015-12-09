@@ -22,6 +22,14 @@ else:
 # -----------------------------------------------------------------------------
 #           IMAGE VIEWER CLASSES AND FUNCTIONS
 # -----------------------------------------------------------------------------
+    
+def generateCircle(xc, yc, radius):
+    """
+    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
+    """
+    xvals = xc+ radius*n.cos(n.linspace(0,2*n.pi,100))
+    yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
+    return [xvals,yvals]
 
 class ImageViewer(FigureCanvas):
     """
@@ -30,8 +38,9 @@ class ImageViewer(FigureCanvas):
     
     Non-plotting Attributes
     -----------------------
-    last_click : list, shape (2,)
+    last_click_position : list, shape (2,)
         [x,y] coordinates of the last click. Clicking outside the data of the ImageViewer set last_click = [0,0]
+    
     """
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
@@ -39,6 +48,9 @@ class ImageViewer(FigureCanvas):
         #Non-plotting attributes
         self.parent = parent
         self.last_click_position = [0,0]
+        self.guess_center = None
+        self.guess_radius = None
+        
         
         #plot setup
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -71,10 +83,11 @@ class ImageViewer(FigureCanvas):
             print self.last_click_position
         
         if self.parent.state == 'data loaded':
-            self.parent.guess_center = self.last_click_position
+            self.parent.guess_center = n.asarray(self.last_click_position)
             self.parent.state = 'center guessed'
         elif self.parent.state == 'center guessed':
-            self.parent.guess_radius = self.last_click_position
+            ring_position = n.asarray(self.last_click_position)
+            self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
             self.parent.state = 'radius guessed'
         
 
@@ -102,7 +115,7 @@ class ImageViewer(FigureCanvas):
             self.axes.imshow(image)
             self.axes.set_title('Raw TIFF image')
             self.draw()
-            self.parent.state = 'loaded'
+            self.parent.state = 'data loaded'
     
     def displayRadialPattern(self, *args):
         """
@@ -235,6 +248,7 @@ class UEDpowder(QtGui.QMainWindow):
         if self.state == 'radius guessed':
             xg, yg = self.guess_center
             rg = self.guess_radius
+            print xg, yg, rg
             center = fc.fCenter(xg,yg,rg,self.image)
             print center
             
