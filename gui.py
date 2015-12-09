@@ -109,13 +109,12 @@ class ImageViewer(FigureCanvas):
         """
         if image is None:
             self.initialFigure()
-            self.parent.state = 'initial'
         else:
             self.axes.imshow(self.parent.image)
-            self.axes.set_title('Raw TIFF image')
             if circle != None:
                 xvals, yvals = circle
                 self.axes.scatter(xvals, yvals)
+            self.axes.set_title('Raw TIFF image')
             self.draw()
     
     def displayRadialPattern(self, *args):
@@ -250,8 +249,8 @@ class UEDpowder(QtGui.QMainWindow):
             xg, yg = self.guess_center
             rg = self.guess_radius
             center = fc.fCenter(xg,yg,rg,self.image)
-            print 'Center found: ' + center[0:2]
             circle = generateCircle(center[0], center[1], center[2])
+            self.state = 'center found'
             self.image_viewer.displayImage(self.image, circle)
             
     def centerWindow(self):
