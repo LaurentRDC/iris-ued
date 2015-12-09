@@ -31,6 +31,10 @@ class ImageViewer(FigureCanvas):
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         
+        #Non-plotting attributes
+        self.last_click = [0,0]
+        
+        #plot setup
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
         # We want the axes cleared every time plot() is called
@@ -46,12 +50,21 @@ class ImageViewer(FigureCanvas):
                                    QtGui.QSizePolicy.Expanding,
                                    QtGui.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
+        
+        #connect events
+        self.mpl_connect('button_press_event', self.clickPosition)
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
         missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
         self.axes.imshow(missing_image)
-        self.draw()
+    
+    def clickPosition(self, event):
+        """
+        Saves the position of the last click on the canvas
+        """
+        self.last_click = [event.x, event.y]
+        print event.xdata, event.ydata
     
     def displayImage(self, filename, *args):
         """ 
