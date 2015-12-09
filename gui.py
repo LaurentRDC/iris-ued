@@ -227,17 +227,19 @@ class UEDpowder(QtGui.QMainWindow):
         self.show()
         
     def imageLocator(self):
-        """ File dialog """
+        """ File dialog that selects the TIFF image file to be processed. """
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
         self.loadImage(filename)
         self.image_viewer.displayImage(self.image, None)     #display raw image
         
     def acceptState(self):
+        """ Master accept function that validates a state and proceeds to the next one. """
         if self.state == 'center found':
             print 'Ready for radial averaging'            
             self.state = 'radial averaged'
     
     def rejectState(self):
+        """ Master reject function that invalidates a state and reverts to an appropriate state. """
         if self.state == 'center found':
             #Go back to the data loaded state and forget the guessed for the center and radius
             self.state = 'data loaded'
@@ -245,8 +247,7 @@ class UEDpowder(QtGui.QMainWindow):
             self.image_viewer.displayImage(self.image)
     
     def executeStateOperation(self):
-        """
-        """
+        """ Placeholder function to confirm that computation may proceed in certain cases """
         if self.state == 'radius guessed':
             #Compute center
             xg, yg = self.guess_center
@@ -267,7 +268,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.move(qr.topLeft())
         
     def loadImage(self, filename):
-        """ Loads an image and sets the state. """
+        """ Loads an image and sets the first state. """
         self.image = n.array(Image.open(filename))
         self.state = 'data loaded'
         
