@@ -4,6 +4,9 @@ import sys
 import numpy as n
 from PIL import Image
 
+#Core functions
+import findCenter as fc
+
 #plotting backends
 from matplotlib.backends import qt_compat
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -19,9 +22,6 @@ else:
 # -----------------------------------------------------------------------------
 #           IMAGE VIEWER CLASSES AND FUNCTIONS
 # -----------------------------------------------------------------------------
-
-filename = 'C:\Users\Laurent\Dropbox\Powder\VO2\NicVO2\subs.tif'
-test_image = n.array( Image.open(filename) )
 
 class ImageViewer(FigureCanvas):
     """
@@ -125,6 +125,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Attributes
         self.image_filename = None
+        self.image_center = list()
         
         #Methods
         super(UEDpowder, self).__init__()     #inherit from the constructor of QMainWindow        
