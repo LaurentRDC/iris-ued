@@ -53,18 +53,20 @@ class ImageViewer(FigureCanvas):
         
         #connect events
         self.mpl_connect('button_press_event', self.clickPosition)
-
-    def initialFigure(self):
-        """ Plots a placeholder image until an image file is selected """
-        missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
-        self.axes.imshow(missing_image)
     
     def clickPosition(self, event):
         """
         Saves the position of the last click on the canvas
         """
-        self.last_click = [event.x, event.y]
-        print event.xdata, event.ydata
+        if event.xdata == None or event.ydata == None:
+            self.last_click_position = [0,0]
+        else:
+            self.last_click = [event.xdata, event.ydata]
+
+    def initialFigure(self):
+        """ Plots a placeholder image until an image file is selected """
+        missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
+        self.axes.imshow(missing_image)
     
     def displayImage(self, filename, *args):
         """ 
