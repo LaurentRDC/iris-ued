@@ -27,6 +27,11 @@ class ImageViewer(FigureCanvas):
     """
     Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.).
     This object displays any plot we want: TIFF image, radial-averaged pattern, etc.
+    
+    Non-plotting Attributes
+    -----------------------
+    last_click : list, shape (2,)
+        [x,y] coordinates of the last click. Clicking outside the data of the ImageViewer set last_click = [0,0]
     """
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
@@ -51,7 +56,7 @@ class ImageViewer(FigureCanvas):
                                    QtGui.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
         
-        #connect events
+        #connect clicking events
         self.mpl_connect('button_press_event', self.clickPosition)
     
     def clickPosition(self, event):
@@ -87,7 +92,26 @@ class ImageViewer(FigureCanvas):
             self.draw()
     
     def displayRadialPattern(self, *args):
-        pass
+        """
+        Plots one or more diffraction patterns.
+        
+        Parameters
+        ----------
+        *args : lists of the form [s, pattern, name]
+        """
+        import matplotlib.pyplot as plt
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.set_title('Diffraction pattern')
+        ax.set_xlabel('s = |G|/4pi')
+        ax.set_ylabel('Normalized intensity')
+        
+        for l in args:
+            s, pattern, name = l        
+            ax.plot(s, pattern, '.', label = name)
+        
+        ax.legend( loc = 'upper right', numpoints = 1)
             
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -163,7 +187,9 @@ class UEDpowder(QtGui.QMainWindow):
     def closeEvent(self, ce):
         self.fileQuit()
 
-app = QtGui.QApplication(sys.argv)
-analysisWindow = UEDpowder()
-analysisWindow.show()
-sys.exit(app.exec_())
+#Run
+if __name__ == '__main__':
+    app = QtGui.QApplication(sys.argv)
+    analysisWindow = UEDpowder()
+    analysisWindow.show()
+    sys.exit(app.exec_())
