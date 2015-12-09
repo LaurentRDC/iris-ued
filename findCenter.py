@@ -10,12 +10,6 @@ findCenter
 import numpy as n
 import scipy.optimize as opt
 
-#plotting
-import matplotlib.pyplot as plt
-
-# For importing TIFF images
-from PIL import Image
-
 def fCenter(xg, yg, rg, im):
     """
     Finds the center of a diffraction pattern based on an initial guess of the center.
@@ -65,8 +59,5 @@ def circ(xg,yg,rg,im):
     # find coords on circle and sum intensity
     xvals, yvals = n.where(((n.around(n.sqrt((xMat-xg)**2+(yMat-yg)**2))-n.around(rg)) < .1) & (yMat > 550))
     ftemp = n.sum(im[xvals, yvals])
-    print xg
-    print yg
-    print ftemp
     
     return 1/ftemp
