@@ -140,6 +140,8 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Set-up file dialog dialog buttons
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
+        self.acceptBtn = QtGui.QPushButton('Accept', self)
+        self.rejectBtn = QtGui.QPushButton('Reject', self)
 
         #Set up ImageViewer
         self.image_viewer = ImageViewer()
@@ -151,16 +153,32 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Connect the image locator button to the file dialog
         self.imageLocatorBtn.clicked.connect(self.imageLocator)
+        self.acceptBtn.clicked.connect(self.acceptState)
+        self.rejectBtn.clicked.connect(self.rejectState)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
         # ---------------------------------------------------------------------
-        self.vert_box = QtGui.QVBoxLayout()
-        self.vert_box.addWidget(self.imageLocatorBtn)
-        self.vert_box.addWidget(self.image_viewer)
         
+        #Accept - reject buttons combo
+        state_controls = QtGui.QHBoxLayout()
+        state_controls.addStretch(1)
+        state_controls.addWidget(self.acceptBtn)
+        state_controls.addWidget(self.rejectBtn)
+        
+        #Import and view data
+        dataset_interaction_controls = QtGui.QVBoxLayout()
+        dataset_interaction_controls.addWidget(self.imageLocatorBtn)
+        dataset_interaction_controls.addWidget(self.image_viewer)
+        
+        #Master layout
+        grid = QtGui.QGridLayout()
+        grid.addLayout(dataset_interaction_controls, 0, 0)
+        grid.addLayout(state_controls, 1, 0)
+        
+        #Don't know what that does        
         self.central_widget = QtGui.QWidget()
-        self.central_widget.setLayout(self.vert_box)
+        self.central_widget.setLayout(grid)
         self.setCentralWidget(self.central_widget)
         
         #Window settings
@@ -173,6 +191,12 @@ class UEDpowder(QtGui.QMainWindow):
         """ File dialog """
         self.image_filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
         self.image_viewer.displayImage(self.image_filename)     #display raw image
+        
+    def acceptState(self):
+        pass
+    
+    def rejectState(self):
+        pass
             
     def centerWindow(self):
         """ Centers the window """
