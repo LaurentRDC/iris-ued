@@ -138,10 +138,12 @@ class UEDpowder(QtGui.QMainWindow):
         
         self.statusBar()    #Top status bar
         
-        #Set-up file dialog dialog buttons
-        self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
+        #Set up state buttons
         self.acceptBtn = QtGui.QPushButton('Accept', self)
         self.rejectBtn = QtGui.QPushButton('Reject', self)
+        
+        #Set-up file dialog dialog buttons
+        self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
 
         #Set up ImageViewer
         self.image_viewer = ImageViewer()
