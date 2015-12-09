@@ -96,7 +96,7 @@ class ImageViewer(FigureCanvas):
         missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
         self.axes.imshow(missing_image)
     
-    def displayImage(self, filename, *args):
+    def displayImage(self, image, circle = None):
         """ 
         This method displays a raw TIFF image from the instrument. Optional arguments can be used to overlay a circle.
         
@@ -104,18 +104,19 @@ class ImageViewer(FigureCanvas):
         ----------
         filename : string
             Filename of the image to be displayed.
-        *args :
+        cicle : list, optional, shape (2,)
+            List of 2 ndarrays that decribe scatter points of a circle
         """
-        if filename is None:
+        if image is None:
             self.initialFigure()
             self.parent.state = 'initial'
         else:
-            image = n.array(Image.open(filename))
-            self.parent.image = image
-            self.axes.imshow(image)
+            self.axes.imshow(self.parent.image)
             self.axes.set_title('Raw TIFF image')
+            if circle != None:
+                xvals, yvals = circle
+                self.axes.scatter(xvals, yvals)
             self.draw()
-            self.parent.state = 'data loaded'
     
     def displayRadialPattern(self, *args):
         """
@@ -134,7 +135,7 @@ class ImageViewer(FigureCanvas):
         ax.set_ylabel('Normalized intensity')
         
         for l in args:
-            s, pattern, name = l        
+            s, pattern, name = l       
             ax.plot(s, pattern, '.', label = name)
         
         ax.legend( loc = 'upper right', numpoints = 1)
@@ -150,7 +151,6 @@ class UEDpowder(QtGui.QMainWindow):
     def __init__(self):
         
         #Attributes
-        self.image_filename = None
         self.image_center = list()
         self.image = None
         self._state = 'initial'
@@ -233,8 +233,9 @@ class UEDpowder(QtGui.QMainWindow):
         
     def imageLocator(self):
         """ File dialog """
-        self.image_filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
-        self.image_viewer.displayImage(self.image_filename)     #display raw image
+        filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
+        self.loadImage(filename)
+        self.image_viewer.displayImage(self.image)     #display raw image
         
     def acceptState(self):
         pass
@@ -248,9 +249,10 @@ class UEDpowder(QtGui.QMainWindow):
         if self.state == 'radius guessed':
             xg, yg = self.guess_center
             rg = self.guess_radius
-            print xg, yg, rg
             center = fc.fCenter(xg,yg,rg,self.image)
-            print center
+            print 'Center found: ' + center[0:2]
+            circle = generateCircle(center[0], center[1], center[2])
+            self.image_viewer.displayImage(self.image, circle)
             
     def centerWindow(self):
         """ Centers the window """
@@ -258,7 +260,12 @@ class UEDpowder(QtGui.QMainWindow):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
-    
+        
+    def loadImage(self, filename):
+        """ Loads an image and sets the state. """
+        self.image = n.array(Image.open(filename))
+        self.state = 'data loaded'
+        
     def fileQuit(self):
         self.close()
 
