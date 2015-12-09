@@ -70,6 +70,13 @@ class ImageViewer(FigureCanvas):
             self.last_click_position = [event.xdata, event.ydata]
             print self.last_click_position
         
+        if self.parent.state == 'data loaded':
+            self.parent.guess_center = self.last_click_position
+            self.parent.state = 'center guessed'
+        elif self.parent.state == 'center guessed':
+            self.parent.guess_radius = self.last_click_position
+            self.parent.state = 'radius guessed'
+        
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
@@ -88,11 +95,14 @@ class ImageViewer(FigureCanvas):
         """
         if filename is None:
             self.initialFigure()
+            self.parent.state = 'initial'
         else:
             image = n.array(Image.open(filename))
+            self.parent.image = image
             self.axes.imshow(image)
             self.axes.set_title('Raw TIFF image')
             self.draw()
+            self.parent.state = 'loaded'
     
     def displayRadialPattern(self, *args):
         """
@@ -129,11 +139,22 @@ class UEDpowder(QtGui.QMainWindow):
         #Attributes
         self.image_filename = None
         self.image_center = list()
-        self.state = 'initial'
+        self.image = None
+        self._state = 'initial'
         
         #Methods
         super(UEDpowder, self).__init__()     #inherit from the constructor of QMainWindow        
         self.initUI()
+    
+    @property
+    def state(self):
+        return self._state
+    
+    @state.setter
+    def state(self, value):
+        print 'Old state: ' + self._state
+        self._state = value
+        print 'New state: ' + self._state
         
     def initUI(self):
         
@@ -146,6 +167,7 @@ class UEDpowder(QtGui.QMainWindow):
         #Set up state buttons
         self.acceptBtn = QtGui.QPushButton('Accept', self)
         self.rejectBtn = QtGui.QPushButton('Reject', self)
+        self.executeBtn = QtGui.QPushButton('Execute', self)
         
         #Set-up file dialog dialog buttons
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
@@ -162,6 +184,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.imageLocatorBtn.clicked.connect(self.imageLocator)
         self.acceptBtn.clicked.connect(self.acceptState)
         self.rejectBtn.clicked.connect(self.rejectState)
+        self.executeBtn.clicked.connect(self.executeStateOperation)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -172,6 +195,7 @@ class UEDpowder(QtGui.QMainWindow):
         state_controls.addStretch(1)
         state_controls.addWidget(self.acceptBtn)
         state_controls.addWidget(self.rejectBtn)
+        state_controls.addWidget(self.executeBtn)
         
         #Import and view data
         dataset_interaction_controls = QtGui.QVBoxLayout()
@@ -204,6 +228,15 @@ class UEDpowder(QtGui.QMainWindow):
     
     def rejectState(self):
         pass
+    
+    def executeStateOperation(self):
+        """
+        """
+        if self.state == 'radius guessed':
+            xg, yg = self.guess_center
+            rg = self.guess_radius
+            center = fc.fCenter(xg,yg,rg,self.image)
+            print center
             
     def centerWindow(self):
         """ Centers the window """
