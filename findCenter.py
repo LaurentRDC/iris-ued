@@ -73,25 +73,25 @@ def circ(xg,yg,rg,im):
 
 
 #Manual guesses
-xg = 560
-yg = 540
-rg = n.sqrt((468-xg)**2 + (543-yg)**2)
-
-#import image
-filename = 'C:\Users\SiwickWS1\Dropbox\Powder\VO2\NicVO2\NicVO2_2.tif'#temp glob var
-im = n.array(Image.open(filename))#temp glob var
-
-#Plot image
-fig = plt.figure(1)
-fig.clf()
-ax = fig.add_subplot(111)
-ax.imshow(im)
-
-#Find center of the image
-x = fCenter(xg, yg, rg, im)
-
-#Create a circle to overlay on the image and plot
-xval = x[0]+ x[2]*n.cos(n.linspace(0,2*n.pi,100))
-yval = x[1]+ x[2]*n.sin(n.linspace(0,2*n.pi,100))
-ax.scatter(xval,yval)
-fig.show()
+#xg = 560
+#yg = 540
+#rg = n.sqrt((468-xg)**2 + (543-yg)**2)
+#
+##import image
+##filename = 'C:\Users\SiwickWS1\Dropbox\Powder\VO2\NicVO2\NicVO2_2.tif'#temp glob var
+##im = n.array(Image.open(filename))#temp glob var
+#
+##Plot image
+#fig = plt.figure(1)
+#fig.clf()
+#ax = fig.add_subplot(111)
+#ax.imshow(im)
+#
+##Find center of the image
+#x = fCenter(xg, yg, rg, im)
+#
+##Create a circle to overlay on the image and plot
+#xval = x[0]+ x[2]*n.cos(n.linspace(0,2*n.pi,100))
+#yval = x[1]+ x[2]*n.sin(n.linspace(0,2*n.pi,100))
+#ax.scatter(xval,yval)
+#fig.show()
