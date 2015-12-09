@@ -34,5 +34,11 @@ def radialAverage(image, center = [0,0]):
     intensity = image.flatten()
     radius = R.flatten()
     
-    return
     #Sort by increasing radius
+    intensity = intensity[n.argsort(radius)]
+    radius = n.sort(radius)
+    
+    #Average intensity values for equal radii
+    
+    
+    return
