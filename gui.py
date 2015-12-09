@@ -51,12 +51,10 @@ class ImageViewer(FigureCanvas):
         self.guess_center = None
         self.guess_radius = None
         
-        
         #plot setup
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
-        # We want the axes cleared every time plot() is called
-        self.axes.hold(False)
+        self.axes.hold(True)
 
         self.initialFigure()
 
@@ -80,7 +78,6 @@ class ImageViewer(FigureCanvas):
             self.last_click_position = [0,0]
         else:
             self.last_click_position = [event.xdata, event.ydata]
-            print self.last_click_position
         
         if self.parent.state == 'data loaded':
             self.parent.guess_center = n.asarray(self.last_click_position)
@@ -89,7 +86,6 @@ class ImageViewer(FigureCanvas):
             ring_position = n.asarray(self.last_click_position)
             self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
             self.parent.state = 'radius guessed'
-        
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
@@ -111,7 +107,7 @@ class ImageViewer(FigureCanvas):
             self.initialFigure()
         else:
             self.axes.imshow(self.parent.image)
-            if circle != None:
+            if circle != None:  #Overlay circle if provided
                 xvals, yvals = circle
                 self.axes.scatter(xvals, yvals)
             self.axes.set_title('Raw TIFF image')
@@ -234,21 +230,31 @@ class UEDpowder(QtGui.QMainWindow):
         """ File dialog """
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
         self.loadImage(filename)
-        self.image_viewer.displayImage(self.image)     #display raw image
+        self.image_viewer.displayImage(self.image, None)     #display raw image
         
     def acceptState(self):
-        pass
+        if self.state == 'center found':
+            print 'Ready for radial averaging'            
+            self.state = 'radial averaged'
     
     def rejectState(self):
-        pass
+        if self.state == 'center found':
+            #Go back to the data loaded state and forget the guessed for the center and radius
+            self.state = 'data loaded'
+            self.image_viewer.guess_center, self.image_viewer.guess_radius = None, None
+            self.image_viewer.displayImage(self.image)
     
     def executeStateOperation(self):
         """
         """
         if self.state == 'radius guessed':
+            #Compute center
             xg, yg = self.guess_center
             rg = self.guess_radius
             center = fc.fCenter(xg,yg,rg,self.image)
+            
+            #Save center and plot to confirm
+            self.image_center = center[0:2]
             circle = generateCircle(center[0], center[1], center[2])
             self.state = 'center found'
             self.image_viewer.displayImage(self.image, circle)
