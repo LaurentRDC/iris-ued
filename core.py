@@ -10,6 +10,16 @@ import scipy.optimize as opt
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
 
+def _findCenterOpenCV(im):
+    """
+    Determines the center of the diffraction pattern using the Hough Transform from Open CV
+    """
+    import cv2
+    
+    circles = cv2.HoughCircles(im, cv2.CV_HOUGH_GRADIENT,1,20,param1=50,param2=30,minRadius=40,maxRadius=150)
+
+    return circles
+
 def fCenter(xg, yg, rg, im, scalefactor = 10):
     """
     Finds the center of a diffraction pattern based on an initial guess of the center.

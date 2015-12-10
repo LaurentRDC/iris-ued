@@ -86,15 +86,18 @@ class ImageViewer(FigureCanvas):
             self.parent.guess_center = n.asarray(self.last_click_position)
             self.parent.state = 'center guessed'
             self.parent.update()
+            
         elif self.parent.state == 'center guessed':
             ring_position = n.asarray(self.last_click_position)
             self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
             self.parent.state = 'radius guessed'
             self.parent.update()
+            
         elif self.parent.state == 'radial averaged':
             if len(self.parent.background_guesses) < 9:
                 self.parent.background_guesses.append(self.last_click_position)
                 print 'Background guess #' + str(len(self.parent.background_guesses))
+                self.parent.update()
             elif len(self.parent.background_guesses) == 9:
                 self.parent.background_guesses.append(self.last_click_position)
                 self.parent.state = 'background guessed'
