@@ -117,7 +117,7 @@ def biexp(x, a, b, c, d, e):
     """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x)+e """
     return a*n.exp(-b*x) + c*n.exp(-d*x) + e
 
-def inelasticBGSubstract(xdata, ydata, guess, offset = None, points = list()):
+def inelasticBGSubstract(xdata, ydata, points = list()):
     """
     Returns the radial diffraction pattern with the inelastic scattering background removed.
     

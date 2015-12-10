@@ -91,6 +91,12 @@ class ImageViewer(FigureCanvas):
             self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
             self.parent.state = 'radius guessed'
             self.parent.update()
+        elif self.parent.state == 'radial averaged':
+            if len(self.parent.background_guesses) < 10:
+                self.parent.background_guesses.append(self.last_click_position)
+            elif len(self.parent.background_guesses) == 10:
+                self.parent.state = 'background guessed'
+                self.parent.update()
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
@@ -132,12 +138,14 @@ class ImageViewer(FigureCanvas):
         *args : lists of the form [s, pattern, name]
         """
         self.axes.cla()       
-        
+
         for l in args:
             s, pattern, name = l       
             self.axes.plot(s, pattern, '.', label = name)
         
         #Plot parameters
+        self.axes.set_xlim(args[0][0].min(), args[0][0].max())  #Set xlim and ylim on the first pattern args[0].
+        self.axes.set_ylim(args[0][1].min(), args[0][1].max())
         self.axes.set_aspect('auto')
         self.axes.set_title('Diffraction pattern')
         self.axes.set_xlabel('radius (px)')
@@ -163,14 +171,16 @@ class UEDpowder(QtGui.QMainWindow):
         list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity. 'name' is a string used to make the plot legend.
     state : string
         Value describing in what state the software is. Possible values are:
-            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found']
+            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'background guessed']
     """
     def __init__(self):
         
         #Attributes
         self.image_center = list()
         self.image = None
-        self.raw_radial_average = list()        
+        self.raw_radial_average = list()    #Before inelastic background substraction
+        self.radial_average = list()        #After inelastic background substraction
+        self.background_guesses = list()
         self._state = 'initial'
         
         #Methods
@@ -296,6 +306,7 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'data loaded'
             self.image_viewer.guess_center, self.image_viewer.guess_radius = None, None
             self.image_viewer.displayImage(self.image)
+            
     def update(self):
         """ Updates all messages. """
         self.initial_message.setText('test Accept')
@@ -313,6 +324,12 @@ class UEDpowder(QtGui.QMainWindow):
             circle = generateCircle(center[0], center[1], center[2])
             self.state = 'center found'
             self.image_viewer.displayImage(self.image, circle)
+        
+        if self.state == 'background guessed':
+            #Create guess data
+            self.radial_average = fc.inelasticBGSubstract(self.raw_radial_average[0], self.raw_radial_average[1], self.background_guesses)
+            self.state = 'background substracted'
+            self.image_viewer.displayRadialPattern(self.raw_radial_average, self.radial_average)
             
     def centerWindow(self):
         """ Centers the window """
