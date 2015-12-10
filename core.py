@@ -10,7 +10,7 @@ import scipy.optimize as opt
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
 
-def fCenter(xg, yg, rg, im, scalefactor = 10):
+def fCenter(xg, yg, rg, im, scalefactor = 100):
     """
     Finds the center of a diffraction pattern based on an initial guess of the center.
     
@@ -34,10 +34,13 @@ def fCenter(xg, yg, rg, im, scalefactor = 10):
     #find maximum intensity
     xgscaled, ygscaled, rgscaled = n.array([xg,yg,rg])/scalefactor
     c1 = lambda x: circ(x[0],x[1],x[2],im)
-    xcenter, ycenter, rcenter = opt.minimize(c1,[xgscaled,ygscaled,rgscaled]).x
+    xcenter, ycenter, rcenter = n.array(\
+        opt.minimize(c1,[xgscaled,ygscaled,rgscaled],\
+        method = 'Nelder-Mead').x)*scalefactor
+    rcenter = rg    
     return xcenter, ycenter, rcenter
 
-def circ(xg, yg, rg, im):
+def circ(xg, yg, rg, im, scalefactor = 100):
 
     """
     Sums the intensity over a circle of given radius and center position
@@ -58,13 +61,13 @@ def circ(xg, yg, rg, im):
      #image size
     s = im.shape[0]
     xgscaled, ygscaled, rgscaled = n.array([xg,yg,rg])*scalefactor
-    
+    print xgscaled, ygscaled, rgscaled
     xMat, yMat = n.meshgrid(n.linspace(1, s, s),n.linspace(1, s, s))
     # find coords on circle and sum intensity
     
     residual = (xMat-xgscaled)**2+(yMat-ygscaled)**2-rgscaled**2
-    xvals, yvals = n.where(((residual < .1) & (yMat > 550)))
-    ftemp = n.sum(im[xvals, yvals])
+    xvals, yvals = n.where(((residual < 10) & (yMat > 550)))
+    ftemp = n.mean(im[xvals, yvals])
     
     return 1/ftemp
 
