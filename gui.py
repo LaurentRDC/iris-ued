@@ -92,7 +92,9 @@ class ImageViewer(FigureCanvas):
             self.parent.state = 'radius guessed'
             self.parent.update()
         elif self.parent.state == 'radial averaged':
-            if len(self.parent.background_guesses) < 10:
+            if len(self.parent.background_guesses) < 9:
+                self.parent.background_guesses.append(self.last_click_position)
+                print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.parent.background_guesses.append(self.last_click_position)
             elif len(self.parent.background_guesses) == 10:
                 self.parent.state = 'background guessed'
