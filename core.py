@@ -3,8 +3,6 @@
 import numpy as n
 import scipy.optimize as opt
 
-#const scale factor
-
 
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
@@ -75,7 +73,7 @@ def circ(xg, yg, rg, im, scalefactor = 20):
 #               RADIAL AVERAGING
 # -----------------------------------------------------------------------------
 
-def radialAverage(image, center = [0,0]):
+def radialAverage(image, center = [512,512]):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -98,7 +96,7 @@ def radialAverage(image, center = [0,0]):
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(x,y)
-    R = n.around(n.sqrt( (X - xc)**2 + (Y - yc)**2 ))
+    R = n.around(n.sqrt( (X - xc)**2 + (Y - yc)**2 ), decimals = 0)
     
     #Flatten arrays
     intensity = image.flatten()
@@ -114,20 +112,16 @@ def radialAverage(image, center = [0,0]):
     bincount =  n.zeros_like(unique_radii)
     
     #loop over image
-    for xindex in xrange(0,image.shape[0]):
-        for yindex in xrange(0,image.shape[1]):
-            r = R[xindex,yindex]
-            #bin
-            ind = n.where(unique_radii==r)
-            #increment
-            radial_average[ind] += image[xindex,yindex]
-            bincount[ind] += 1
-            
-    for rindex in xrange(0,radial_average.shape[0]):
-        #normalize
-        radial_average = radial_average/bincount.astype(n.float)
+    for (i,j), value in n.ndenumerate(image):
+        r = R[i,j]
+        #bin
+        ind = n.where(unique_radii==r)[0][0]
+        #increment
+        radial_average[ind] += value
+        bincount[ind] += 1
         
-    return [unique_radii, radial_average]
+    #Return normalized radial average
+    return [unique_radii, n.divide(radial_average,bincount)]
 
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
