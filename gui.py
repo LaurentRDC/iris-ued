@@ -131,16 +131,19 @@ class ImageViewer(FigureCanvas):
         ----------
         *args : lists of the form [s, pattern, name]
         """
-        self.axes.cla()        
-        self.axes.set_title('Diffraction pattern')
-        self.axes.set_xlabel('s = |G|/4pi')
-        self.axes.set_ylabel('Normalized intensity')
+        self.axes.cla()       
         
         for l in args:
             s, pattern, name = l       
             self.axes.plot(s, pattern, '.', label = name)
         
+        #Plot parameters
+        self.axes.set_aspect('auto')
+        self.axes.set_title('Diffraction pattern')
+        self.axes.set_xlabel('radius (px)')
+        self.axes.set_ylabel('Intensity')
         self.axes.legend( loc = 'upper right', numpoints = 1)
+        self.draw()
             
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -156,8 +159,8 @@ class UEDpowder(QtGui.QMainWindow):
         [x,y]-coordinates of the image center
     image : ndarray, shape (N,N)
         ndarray corresponding to the data TIFF file
-    radial_average = [r,i] : list, shape (2,)
-        list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity.
+    radial_average = [r,i, name] : list, shape (3,)
+        list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity. 'name' is a string used to make the plot legend.
     state : string
         Value describing in what state the software is. Possible values are:
             state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found']
@@ -167,7 +170,7 @@ class UEDpowder(QtGui.QMainWindow):
         #Attributes
         self.image_center = list()
         self.image = None
-        self.radial_average = list()        
+        self.raw_radial_average = list()        
         self._state = 'initial'
         
         #Methods
@@ -281,7 +284,9 @@ class UEDpowder(QtGui.QMainWindow):
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
         if self.state == 'center found':
-            print 'Ready for radial averaging'            
+            self.raw_radial_average = list(fc.radialAverage(self.image, self.image_center))
+            self.raw_radial_average.append('Raw radial average')
+            self.image_viewer.displayRadialPattern(self.raw_radial_average)
             self.state = 'radial averaged'
     
     def rejectState(self):
