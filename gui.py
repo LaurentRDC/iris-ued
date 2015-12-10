@@ -10,6 +10,7 @@ import core as fc
 #plotting backends
 from matplotlib.backends import qt_compat
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.backends.backend_qt4agg as qt4agg
 from matplotlib.figure import Figure
 use_pyside = qt_compat.QT_API == qt_compat.QT_API_PYSIDE
 
@@ -66,6 +67,8 @@ class ImageViewer(FigureCanvas):
                                    QtGui.QSizePolicy.Expanding,
                                    QtGui.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
+        
+        #Set toolbar
         
         #connect clicking events
         self.mpl_connect('button_press_event', self.click)
