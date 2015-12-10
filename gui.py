@@ -175,6 +175,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.acceptBtn = QtGui.QPushButton('Accept', self)
         self.rejectBtn = QtGui.QPushButton('Reject', self)
         self.turboBtn = QtGui.QPushButton('Turbo Mode', self)
+        self.turboBtn.setCheckable(True)
         
         #For initial state box
         initial_box = QtGui.QVBoxLayout()
