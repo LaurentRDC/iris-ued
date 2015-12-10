@@ -10,7 +10,7 @@ import scipy.optimize as opt
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
 
-def fCenter(xg, yg, rg, im, scalefactor = 100):
+def fCenter(xg, yg, rg, im, scalefactor = 20):
     """
     Finds the center of a diffraction pattern based on an initial guess of the center.
     
@@ -40,7 +40,7 @@ def fCenter(xg, yg, rg, im, scalefactor = 100):
     rcenter = rg    
     return xcenter, ycenter, rcenter
 
-def circ(xg, yg, rg, im, scalefactor = 100):
+def circ(xg, yg, rg, im, scalefactor = 20):
 
     """
     Sums the intensity over a circle of given radius and center position
