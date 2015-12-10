@@ -186,8 +186,14 @@ class UEDpowder(QtGui.QMainWindow):
         #For image center select box
         center_box = QtGui.QVBoxLayout()
         center_box.addWidget(QtGui.QLabel('Step 2: Click on the center'))
-        self.executeBtn = QtGui.QPushButton('Execute', self)
-        center_box.addWidget(self.executeBtn)
+        self.executeCenterBtn = QtGui.QPushButton('Execute', self)
+        center_box.addWidget(self.executeCenterBtn)
+        
+        #For the inelastic scattering correction
+        inelastic_box = QtGui.QVBoxLayout()
+        inelastic_box.addWidget(QtGui.QLabel('Step 3: placeholder label'))
+        self.executeInelasticBtn = QtGui.QPushButton('Execute', self)
+        inelastic_box.addWidget(self.executeInelasticBtn)
 
         #Set up ImageViewer
         self.image_viewer = ImageViewer(parent = self)
@@ -201,7 +207,8 @@ class UEDpowder(QtGui.QMainWindow):
         self.imageLocatorBtn.clicked.connect(self.imageLocator)
         self.acceptBtn.clicked.connect(self.acceptState)
         self.rejectBtn.clicked.connect(self.rejectState)
-        self.executeBtn.clicked.connect(self.executeStateOperation)
+        self.executeCenterBtn.clicked.connect(self.executeStateOperation)
+        self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -218,7 +225,9 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes = QtGui.QVBoxLayout()
         state_boxes.addLayout(initial_box)
         state_boxes.addLayout(center_box)
+        state_boxes.addLayout(inelastic_box)
         
+        #Image viewer pane
         right_pane = QtGui.QVBoxLayout()
         right_pane.addWidget(self.image_viewer)
         right_pane.addLayout(state_controls)
