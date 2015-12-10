@@ -5,8 +5,7 @@ import numpy as n
 from PIL import Image
 
 #Core functions
-import findCenter as fc
-import radialAverage as ra
+import core as fc
 
 #plotting backends
 from matplotlib.backends import qt_compat
