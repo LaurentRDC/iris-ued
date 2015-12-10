@@ -37,7 +37,13 @@ def fCenter(xg, yg, rg, im, scalefactor = 10):
     xcenter, ycenter, rcenter = opt.minimize(c1,[xgscaled,ygscaled,rgscaled]).x
     return xcenter, ycenter, rcenter
 
+<<<<<<< HEAD
 def circ(xg,yg,rg,im, scalefactor = 10):
+=======
+    return opt.minimize(c,[xg,yg,rg]).x
+
+def circ(xg, yg, rg, im):
+>>>>>>> origin/master
     """
     Sums the intensity over a circle of given radius and center position
     on an image.
@@ -102,7 +108,7 @@ def radialAverage(image, center = [0,0]):
     
     #Sort by increasing radius
     intensity = intensity[n.argsort(radius)]
-    radius = n.around(n.sort(radius), decimals = 1)
+    radius = n.around(n.sort(radius), decimals = 0)
     
     #Average intensity values for equal radii
     unique_radii, inverse = n.unique(radius, return_inverse = True)
@@ -115,7 +121,7 @@ def radialAverage(image, center = [0,0]):
         else:
             radial_average[index] = n.mean(relevant_intensity)          #Average intensity
     
-    return unique_radii, radial_average
+    return [unique_radii, radial_average]
 
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
@@ -125,7 +131,7 @@ def biexp(x, a, b, c, d, e):
     """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x)+e """
     return a*n.exp(-b*x) + c*n.exp(-d*x) + e
 
-def inelasticBGSubstract(xdata, ydata, guess, offset = None, points = list()):
+def inelasticBGSubstract(xdata, ydata, points = list()):
     """
     Returns the radial diffraction pattern with the inelastic scattering background removed.
     
