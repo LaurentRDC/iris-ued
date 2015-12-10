@@ -37,13 +37,8 @@ def fCenter(xg, yg, rg, im, scalefactor = 10):
     xcenter, ycenter, rcenter = opt.minimize(c1,[xgscaled,ygscaled,rgscaled]).x
     return xcenter, ycenter, rcenter
 
-<<<<<<< HEAD
-def circ(xg,yg,rg,im, scalefactor = 10):
-=======
-    return opt.minimize(c,[xg,yg,rg]).x
-
 def circ(xg, yg, rg, im):
->>>>>>> origin/master
+
     """
     Sums the intensity over a circle of given radius and center position
     on an image.
