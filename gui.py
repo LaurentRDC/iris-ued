@@ -202,6 +202,7 @@ class UEDpowder(QtGui.QMainWindow):
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
+        self.updateMessage()
     
     def updateButtonAvailability(self):
         """
@@ -251,6 +252,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Set up message boxes
         self.initial_message = QtGui.QLabel('Step 1: select TIFF image.')
+        self.center_message = QtGui.QLabel('')
         
         #For initial state box
         initial_box = QtGui.QVBoxLayout()
@@ -260,7 +262,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         #For image center select box
         center_box = QtGui.QVBoxLayout()
-        center_box.addWidget(QtGui.QLabel('Step 2: Click on the center'))
+        center_box.addWidget(self.center_message)
         self.executeCenterBtn = QtGui.QPushButton('Execute', self)
         center_box.addWidget(self.executeCenterBtn)
         
@@ -345,9 +347,29 @@ class UEDpowder(QtGui.QMainWindow):
             self.image_viewer.guess_center, self.image_viewer.guess_radius = None, None
             self.image_viewer.displayImage(self.image)
             
-    def update(self):
+    def updateMessage(self):
         """ Updates all messages. """
-        self.initial_message.setText('test Accept')
+        if self.state == 'initial':
+            pass
+        elif self.state == 'data loaded':
+            self.initial_message.setText('')
+            self.center_message.setText('Step 2: Click on the center.')
+        elif self.state == 'center guessed':
+            self.center_message.setText(\
+                'Step 3: Click on the radius.\nCenter: '\
+                + str(n.around(self.image_viewer.last_click_position)))
+        elif self.state == 'radius guessed':
+            self.center_message.setText(\
+                'Step 4: Click on the radius.\nRadius: '\
+                + str(n.around(self.image_viewer.last_click_position)))
+        elif self.state == 'center found':
+            self.center_message.setText(\
+                'Step 5: Accept/Reject')
+        elif self.state == 'radial averaged':
+            pass
+        elif self.state == 'background guessed':
+            pass
+
     
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases """

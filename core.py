@@ -111,14 +111,22 @@ def radialAverage(image, center = [0,0]):
     #Average intensity values for equal radii
     unique_radii, inverse = n.unique(radius, return_inverse = True)
     radial_average = n.zeros_like(unique_radii)
+    bincount =  n.zeros_like(unique_radii)
     
-    for index, value in enumerate(unique_radii):
-        relevant_intensity = intensity[n.where(inverse == value)]   #Find intensity that correspond to the radius 'value'
-        if relevant_intensity.size == 0:
-            radial_average[index] = 0
-        else:
-            radial_average[index] = n.mean(relevant_intensity)          #Average intensity
-    
+    #loop over image
+    for xindex in xrange(0,image.shape[0]):
+        for yindex in xrange(0,image.shape[1]):
+            r = n.around(n.sqrt((xindex - xc)**2+(yindex-yc)**2))
+            #bin
+            ind = n.where(unique_radii==r)
+            #increment
+            radial_average[ind] += image[xindex,yindex]
+            bincount[ind] += 1
+            
+    for rindex in xrange(0,radial_average.shape[0]):
+        #normalize
+        radial_average = radial_average/bincount
+        
     return [unique_radii, radial_average]
 
 # -----------------------------------------------------------------------------
