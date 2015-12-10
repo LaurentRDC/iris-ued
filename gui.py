@@ -201,6 +201,39 @@ class UEDpowder(QtGui.QMainWindow):
         print 'Old state: ' + self._state
         self._state = value
         print 'New state: ' + self._state
+        self.updateButtonAvailability()     #Update which buttons are valid
+    
+    def updateButtonAvailability(self):
+        """
+        """
+        #Create list of buttons to be disabled and enables
+        availableButtons = list()
+        unavailableButtons = list()
+        
+        if self.state == 'initial':
+            availableButtons = [self.imageLocatorBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+        elif self.state == 'data loaded':
+            availableButtons = [self.imageLocatorBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+        elif self.state == 'radius guessed':
+            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn]
+            unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+        elif self.state == 'center found':
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn]
+        elif self.state == 'radial averaged':
+            availableButtons = [self.imageLocatorBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn]  
+        elif self.state == 'background guessed':
+            availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn]
+        
+        #Act!
+        for btn in availableButtons:
+            btn.setEnabled(True)
+        for btn in unavailableButtons:
+            btn.setEnabled(False)
         
     def initUI(self):
         
