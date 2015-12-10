@@ -10,7 +10,6 @@ import scipy.optimize as opt
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
 
-<<<<<<< HEAD
 def _findCenterOpenCV(im):
     """
     Determines the center of the diffraction pattern using the Hough Transform from Open CV
@@ -23,7 +22,6 @@ def _findCenterOpenCV(im):
 
 
 def fCenter(xg, yg, rg, im, scalefactor = 20):
-
     """
     Finds the center of a diffraction pattern based on an initial guess of the center.
     
