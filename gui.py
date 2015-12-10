@@ -113,6 +113,9 @@ class ImageViewer(FigureCanvas):
             if circle != None:  #Overlay circle if provided
                 xvals, yvals = circle
                 self.axes.scatter(xvals, yvals)
+                #Restrict view to the plotted circle (to better evaluate the fit)
+                self.axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
+                self.axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
             self.axes.set_title('Raw TIFF image')
             self.draw()
     
