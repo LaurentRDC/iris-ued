@@ -98,7 +98,7 @@ def radialAverage(image, center = [0,0]):
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(x,y)
-    R = n.sqrt( (X - xc)**2 + (Y - yc)**2 )
+    R = n.around(n.sqrt( (X - xc)**2 + (Y - yc)**2 ))
     
     #Flatten arrays
     intensity = image.flatten()
@@ -116,7 +116,7 @@ def radialAverage(image, center = [0,0]):
     #loop over image
     for xindex in xrange(0,image.shape[0]):
         for yindex in xrange(0,image.shape[1]):
-            r = n.around(n.sqrt((xindex - xc)**2+(yindex-yc)**2))
+            r = R[xindex,yindex]
             #bin
             ind = n.where(unique_radii==r)
             #increment
@@ -125,7 +125,7 @@ def radialAverage(image, center = [0,0]):
             
     for rindex in xrange(0,radial_average.shape[0]):
         #normalize
-        radial_average = radial_average/bincount
+        radial_average = radial_average/bincount.astype(n.float)
         
     return [unique_radii, radial_average]
 
