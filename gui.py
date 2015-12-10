@@ -6,6 +6,7 @@ from PIL import Image
 
 #Core functions
 import findCenter as fc
+import radialAverage as ra
 
 #plotting backends
 from matplotlib.backends import qt_compat
@@ -141,12 +142,25 @@ class ImageViewer(FigureCanvas):
 class UEDpowder(QtGui.QMainWindow):
     """
     Main application window
+    
+    Attributes
+    ----------
+    image_center : list, shape (2,)
+        [x,y]-coordinates of the image center
+    image : ndarray, shape (N,N)
+        ndarray corresponding to the data TIFF file
+    radial_average = [r,i] : list, shape (2,)
+        list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity.
+    state : string
+        Value describing in what state the software is. Possible values are:
+            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found']
     """
     def __init__(self):
         
         #Attributes
         self.image_center = list()
         self.image = None
+        self.radial_average = list()        
         self._state = 'initial'
         
         #Methods
