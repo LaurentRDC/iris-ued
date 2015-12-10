@@ -90,6 +90,7 @@ class ImageViewer(FigureCanvas):
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
         missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
+        self.axes.cla()     #Clear axes
         self.axes.imshow(missing_image)
     
     def displayImage(self, image, circle = None):
@@ -106,6 +107,7 @@ class ImageViewer(FigureCanvas):
         if image is None:
             self.initialFigure()
         else:
+            self.axes.cla()     #Clear axes
             self.axes.imshow(self.parent.image)
             if circle != None:  #Overlay circle if provided
                 xvals, yvals = circle
@@ -121,19 +123,16 @@ class ImageViewer(FigureCanvas):
         ----------
         *args : lists of the form [s, pattern, name]
         """
-        import matplotlib.pyplot as plt
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.set_title('Diffraction pattern')
-        ax.set_xlabel('s = |G|/4pi')
-        ax.set_ylabel('Normalized intensity')
+        self.axes.cla()        
+        self.axes.set_title('Diffraction pattern')
+        self.axes.set_xlabel('s = |G|/4pi')
+        self.axes.set_ylabel('Normalized intensity')
         
         for l in args:
             s, pattern, name = l       
-            ax.plot(s, pattern, '.', label = name)
+            self.axes.plot(s, pattern, '.', label = name)
         
-        ax.legend( loc = 'upper right', numpoints = 1)
+        self.axes.legend( loc = 'upper right', numpoints = 1)
             
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -175,11 +174,19 @@ class UEDpowder(QtGui.QMainWindow):
         #Set up state buttons
         self.acceptBtn = QtGui.QPushButton('Accept', self)
         self.rejectBtn = QtGui.QPushButton('Reject', self)
-        self.executeBtn = QtGui.QPushButton('Execute', self)
         self.turboBtn = QtGui.QPushButton('Turbo Mode', self)
         
-        #Set-up file dialog dialog buttons
+        #For initial state box
+        initial_box = QtGui.QVBoxLayout()
+        initial_box.addWidget(QtGui.QLabel('Step 1: select TIFF image.'))
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
+        initial_box.addWidget(self.imageLocatorBtn)
+        
+        #For image center select box
+        center_box = QtGui.QVBoxLayout()
+        center_box.addWidget(QtGui.QLabel('Step 2: Click on the center'))
+        self.executeBtn = QtGui.QPushButton('Execute', self)
+        center_box.addWidget(self.executeBtn)
 
         #Set up ImageViewer
         self.image_viewer = ImageViewer(parent = self)
@@ -204,18 +211,21 @@ class UEDpowder(QtGui.QMainWindow):
         state_controls.addStretch(1)
         state_controls.addWidget(self.acceptBtn)
         state_controls.addWidget(self.rejectBtn)
-        state_controls.addWidget(self.executeBtn)
         state_controls.addWidget(self.turboBtn)
         
-        #Import and view data
-        dataset_interaction_controls = QtGui.QVBoxLayout()
-        dataset_interaction_controls.addWidget(self.imageLocatorBtn)
-        dataset_interaction_controls.addWidget(self.image_viewer)
+        # State boxes ---------------------------------------------------------
+        state_boxes = QtGui.QVBoxLayout()
+        state_boxes.addLayout(initial_box)
+        state_boxes.addLayout(center_box)
         
-        #Master layout
-        grid = QtGui.QGridLayout()
-        grid.addLayout(dataset_interaction_controls, 0, 0)
-        grid.addLayout(state_controls, 1, 0)
+        right_pane = QtGui.QVBoxLayout()
+        right_pane.addWidget(self.image_viewer)
+        right_pane.addLayout(state_controls)
+        
+        #Master Layout
+        grid = QtGui.QHBoxLayout()
+        grid.addLayout(state_boxes)
+        grid.addLayout(right_pane)
         
         #Don't know what that does        
         self.central_widget = QtGui.QWidget()
@@ -284,5 +294,5 @@ class UEDpowder(QtGui.QMainWindow):
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     analysisWindow = UEDpowder()
-    analysisWindow.show()
+    analysisWindow.showMaximized()
     sys.exit(app.exec_())
