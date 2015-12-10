@@ -37,7 +37,7 @@ def radialAverage(image, center = [0,0]):
     
     #Sort by increasing radius
     intensity = intensity[n.argsort(radius)]
-    radius = n.around(n.sort(radius), decimals = 2)
+    radius = n.around(n.sort(radius), decimals = 1)
     
     #Average intensity values for equal radii
     unique_radii, inverse = n.unique(radius, return_inverse = True)
@@ -45,6 +45,9 @@ def radialAverage(image, center = [0,0]):
     
     for index, value in enumerate(unique_radii):
         relevant_intensity = intensity[n.where(inverse == value)]   #Find intensity that correspond to the radius 'value'
-        radial_average[index] = n.mean(relevant_intensity)          #Average intensity
+        if relevant_intensity.size == 0:
+            radial_average[index] = 0
+        else:
+            radial_average[index] = n.mean(relevant_intensity)          #Average intensity
     
     return unique_radii, radial_average
