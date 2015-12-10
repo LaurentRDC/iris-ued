@@ -112,3 +112,34 @@ def radialAverage(image, center = [0,0]):
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
+
+def biexp(x, a, b, c, d, e):
+    """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x)+e """
+    return a*n.exp(-b*x) + c*n.exp(-d*x) + e
+
+def inelasticBGSubstract(xdata, ydata, guess, offset = None, points = list()):
+    """
+    Returns the radial diffraction pattern with the inelastic scattering background removed.
+    
+    Parameters
+    ----------
+    xdata, ydata : ndarrays, shape (N,)
+    
+    
+    """
+    
+    #Create guess
+    guesses = ydata.max()/2, 1/50, ydata.max()/2, 1/150, ydata.min()
+    
+    #Create x and y arrays for the points
+    points = n.array(points)
+    x, y = points[:,0], points[:,1]
+    
+    #Fit with guesses
+    optimal_parameters, parameters_covariance = opt.curve_fit(biexp, x, y, p0 = guesses)
+    
+    #Create inelastic background function
+    a,b,c,d,e = optimal_parameters
+    background_ordinate = biexp(xdata, a, b, c, d, e)
+
+    return [xdata, ydata - background_ordinate, 'Radial diffraction pattern']
