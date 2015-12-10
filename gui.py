@@ -284,7 +284,7 @@ class UEDpowder(QtGui.QMainWindow):
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
         if self.state == 'center found':
-            self.raw_radial_average = list(fc.radialAverage(self.image, self.image_center))
+            self.raw_radial_average = fc.radialAverage(self.image, self.image_center)
             self.raw_radial_average.append('Raw radial average')
             self.image_viewer.displayRadialPattern(self.raw_radial_average)
             self.state = 'radial averaged'

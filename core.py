@@ -107,7 +107,7 @@ def radialAverage(image, center = [0,0]):
         else:
             radial_average[index] = n.mean(relevant_intensity)          #Average intensity
     
-    return unique_radii, radial_average
+    return [unique_radii, radial_average]
 
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
