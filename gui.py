@@ -100,6 +100,7 @@ class ImageViewer(FigureCanvas):
                 self.parent.update()
             elif len(self.parent.background_guesses) == 9:
                 self.parent.background_guesses.append(self.last_click_position)
+                print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.parent.state = 'background guessed'
                 self.parent.update()
 
@@ -229,6 +230,9 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'background guessed':
             availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn]
             unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn]
+        elif self.state == 'background substracted':
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
+            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn]
         
         #Act!
         for btn in availableButtons:
@@ -333,11 +337,14 @@ class UEDpowder(QtGui.QMainWindow):
         
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
+        
         if self.state == 'center found':
             self.raw_radial_average = fc.radialAverage(self.image, self.image_center)
             self.raw_radial_average.append('Raw radial average')
             self.image_viewer.displayRadialPattern(self.raw_radial_average)
             self.state = 'radial averaged'
+        elif self.state == 'background substracted':
+            pass
     
     def rejectState(self):
         """ Master reject function that invalidates a state and reverts to an appropriate state. """
@@ -346,6 +353,11 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'data loaded'
             self.image_viewer.guess_center, self.image_viewer.guess_radius = None, None
             self.image_viewer.displayImage(self.image)
+        if self.state == 'background substracted':
+            #Go back to choosing the guesses for the background
+            self.image_viewer.displayRadialPattern(self.raw_radial_average)
+            self.background_guesses = list() #Clear guesses
+            self.state = 'radial averaged'
             
     def updateMessage(self):
         """ Updates all messages. """

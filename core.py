@@ -59,7 +59,6 @@ def circ(xg, yg, rg, im, scalefactor = 20):
      #image size
     s = im.shape[0]
     xgscaled, ygscaled, rgscaled = n.array([xg,yg,rg])*scalefactor
-    print xgscaled, ygscaled, rgscaled
     xMat, yMat = n.meshgrid(n.linspace(1, s, s),n.linspace(1, s, s))
     # find coords on circle and sum intensity
     
