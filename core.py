@@ -32,7 +32,7 @@ def fCenter(xg, yg, rg, im):
 
     return opt.minimize(c,[xg,yg,rg]).x
 
-def circ(xg,yg,rg,im):
+def circ(xg, yg, rg, im):
     """
     Sums the intensity over a circle of given radius and center position
     on an image.
@@ -94,7 +94,7 @@ def radialAverage(image, center = [0,0]):
     
     #Sort by increasing radius
     intensity = intensity[n.argsort(radius)]
-    radius = n.around(n.sort(radius), decimals = 1)
+    radius = n.around(n.sort(radius), decimals = 0)
     
     #Average intensity values for equal radii
     unique_radii, inverse = n.unique(radius, return_inverse = True)
