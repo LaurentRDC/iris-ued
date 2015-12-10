@@ -38,7 +38,7 @@ class ImageViewer(FigureCanvas):
     This object displays any plot we want: TIFF image, radial-averaged pattern, etc.
     
     Non-plotting Attributes
-    -----------------------
+    ----------------------- 
     last_click_position : list, shape (2,)
         [x,y] coordinates of the last click. Clicking outside the data of the ImageViewer set last_click = [0,0]
     
@@ -85,10 +85,12 @@ class ImageViewer(FigureCanvas):
         if self.parent.state == 'data loaded':
             self.parent.guess_center = n.asarray(self.last_click_position)
             self.parent.state = 'center guessed'
+            self.parent.update()
         elif self.parent.state == 'center guessed':
             ring_position = n.asarray(self.last_click_position)
             self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
             self.parent.state = 'radius guessed'
+            self.parent.update()
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
@@ -196,9 +198,12 @@ class UEDpowder(QtGui.QMainWindow):
         self.turboBtn = QtGui.QPushButton('Turbo Mode', self)
         self.turboBtn.setCheckable(True)
         
+        #Set up message boxes
+        self.initial_message = QtGui.QLabel('Step 1: select TIFF image.')
+        
         #For initial state box
         initial_box = QtGui.QVBoxLayout()
-        initial_box.addWidget(QtGui.QLabel('Step 1: select TIFF image.'))
+        initial_box.addWidget(self.initial_message)
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
         initial_box.addWidget(self.imageLocatorBtn)
         
@@ -286,6 +291,9 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'data loaded'
             self.image_viewer.guess_center, self.image_viewer.guess_radius = None, None
             self.image_viewer.displayImage(self.image)
+    def update(self):
+        """ Updates all messages. """
+        self.initial_message.setText('test Accept')
     
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases """
