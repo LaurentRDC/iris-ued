@@ -3,11 +3,14 @@
 import numpy as n
 import scipy.optimize as opt
 
+#const scale factor
+
+
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
 
-def fCenter(xg, yg, rg, im):
+def fCenter(xg, yg, rg, im, scalefactor = 10):
     """
     Finds the center of a diffraction pattern based on an initial guess of the center.
     
@@ -26,13 +29,15 @@ def fCenter(xg, yg, rg, im):
     --------
     Scipy.optimize.fmin - Minimize a function using the downhill simplex algorithm
     """
+    
 
     #find maximum intensity
-    c = lambda x: circ(x[0],x[1],x[2],im)
+    xgscaled, ygscaled, rgscaled = n.array([xg,yg,rg])/scalefactor
+    c1 = lambda x: circ(x[0],x[1],x[2],im)
+    xcenter, ycenter, rcenter = opt.minimize(c1,[xgscaled,ygscaled,rgscaled]).x
+    return xcenter, ycenter, rcenter
 
-    return opt.minimize(c,[xg,yg,rg]).x
-
-def circ(xg,yg,rg,im):
+def circ(xg,yg,rg,im, scalefactor = 10):
     """
     Sums the intensity over a circle of given radius and center position
     on an image.
@@ -51,10 +56,13 @@ def circ(xg,yg,rg,im):
     """
      #image size
     s = im.shape[0]
+    xgscaled, ygscaled, rgscaled = n.array([xg,yg,rg])*scalefactor
     
     xMat, yMat = n.meshgrid(n.linspace(1, s, s),n.linspace(1, s, s))
     # find coords on circle and sum intensity
-    xvals, yvals = n.where(((n.around(n.sqrt((xMat-xg)**2+(yMat-yg)**2))-n.around(rg)) < .1) & (yMat > 550))
+    
+    residual = (xMat-xgscaled)**2+(yMat-ygscaled)**2-rgscaled**2
+    xvals, yvals = n.where(((residual < .1) & (yMat > 550)))
     ftemp = n.sum(im[xvals, yvals])
     
     return 1/ftemp

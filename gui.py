@@ -326,6 +326,7 @@ class UEDpowder(QtGui.QMainWindow):
 
     def closeEvent(self, ce):
         self.fileQuit()
+        
 
 #Run
 if __name__ == '__main__':
