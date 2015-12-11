@@ -169,12 +169,13 @@ def prototypeIBS(xdata, ydata, points = list(), chunk_size = 20):
     #Fit a pseudo-Voigt + constant for each xchunk and save constant
     constants = list()
     for xchunk, ychunk in zip(xchunks, ychunks):
-        opt_parameters = opt.curve_fit(pseudoVoigt, xchunk, ychunk)[0]        
+        parameter_guesses = [ychunk.max()-ychunk.min(), (xchunk.max()-xchunk.min())/2, 1, 1, ychunk.min()]
+        opt_parameters = opt.curve_fit(pseudoVoigt, xchunk, ychunk, p0 = parameter_guesses)[0]        
         constants.append(opt_parameters[-1])    # constant is the last parameter in the definition of pseudoVoigt
     
-    #Extend constants to outside xchunks
-    return
-    
+    #Extend constants to x-values outside xchunks
+    constant_background = n.zeros_like(xdata)
+    return constants
     
 def inelasticBGSubstract(xdata, ydata, points = list()):
     """
