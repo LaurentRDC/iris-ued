@@ -146,7 +146,7 @@ def radialAverage(image, center = [512,512]):
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
-def prototypeIBS(xdata, ydata, points = list(), chunk_size = 20):
+def inelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 20):
     """ 
     Following Vance's inelastic background substraction method. We assume that the data has been corrected for diffuse scattering by substrate 
     (e.g. silicon nitride substrate for VO2 samples)
@@ -154,6 +154,12 @@ def prototypeIBS(xdata, ydata, points = list(), chunk_size = 20):
     In order to determine the shape of the background, we use a list of points selected by the user as 'diffraction feature'. These diffraction features are fit with 
     a pseudo-Voigt + constant. Concatenating this constant for multiple diffraction features, we can get a 'stair-steps' description of the background. We then smooth this
     data to get a nice background.
+    
+    Parameters
+    ----------
+    xdata, ydata : ndarrays, shape (N,)
+    
+    points : list of array-like
     """
     
     #Determine data chunks based on user-input points
@@ -179,31 +185,7 @@ def prototypeIBS(xdata, ydata, points = list(), chunk_size = 20):
     x_background = n.asarray(xchunks).flatten()
     print x_background
     background = n.interp(xdata, x_background, constant_background)
-    return background
     
-def inelasticBGSubstract(xdata, ydata, points = list()):
-    """
-    Returns the radial diffraction pattern with the inelastic scattering background removed.
+    #TODO: smooth background data
     
-    Parameters
-    ----------
-    xdata, ydata : ndarrays, shape (N,)
-    
-    points : list of array-like
-    """
-    
-    #Create guess
-    guesses = ydata.max()/2, 1/50, ydata.max()/2, 1/150, ydata.min()
-    
-    #Create x and y arrays for the points
-    points = n.array(points)
-    x, y = points[:,0], points[:,1]
-    
-    #Fit with guesses
-    optimal_parameters, parameters_covariance = opt.curve_fit(biexp, x, y, p0 = guesses)
-    
-    #Create inelastic background function
-    a,b,c,d,e = optimal_parameters
-    background_ordinate = biexp(xdata, a, b, c, d, e)
-
-    return [xdata, ydata - background_ordinate, 'Radial diffraction pattern']
+    return [xdata, background]
