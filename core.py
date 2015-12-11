@@ -161,7 +161,7 @@ def radialAverage(image, center = [512,512], beamblock = list()):
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
-def inelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 20):
+def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5):
     """ 
     Following Vance's inelastic background substraction method. We assume that the data has been corrected for diffuse scattering by substrate 
     (e.g. silicon nitride substrate for VO2 samples)
