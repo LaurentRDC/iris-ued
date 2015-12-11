@@ -267,21 +267,21 @@ class UEDpowder(QtGui.QMainWindow):
         initial_box = QtGui.QVBoxLayout()
         initial_box.addWidget(self.initial_message)
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
-        self.imageLocatorBtn.setIcon(QtGui.QIcon('\images\folder.png'))
+        self.imageLocatorBtn.setIcon(QtGui.QIcon('images\folder.png'))
         initial_box.addWidget(self.imageLocatorBtn)
         
         #For image center select box
         center_box = QtGui.QVBoxLayout()
         center_box.addWidget(self.center_message)
         self.executeCenterBtn = QtGui.QPushButton('Find center', self)
-        self.executeCenterBtn.setIcon(QtGui.QIcon('\images\flask.png'))
+        self.executeCenterBtn.setIcon(QtGui.QIcon('images\flask.png'))
         center_box.addWidget(self.executeCenterBtn)
         
         #For the inelastic scattering correction
         inelastic_box = QtGui.QVBoxLayout()
         inelastic_box.addWidget(QtGui.QLabel('Step 3: Remove scattering background label'))
         self.executeInelasticBtn = QtGui.QPushButton('Execute', self)
-        self.executeInelasticBtn.setIcon(QtGui.QIcon('\images\flask.png'))
+        self.executeInelasticBtn.setIcon(QtGui.QIcon('images\flask.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
 
         #Set up ImageViewer
