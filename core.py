@@ -93,7 +93,7 @@ def circ(xg, yg, rg, im, scalefactor = 20):
 #               RADIAL AVERAGING
 # -----------------------------------------------------------------------------
 
-def radialAverage(image, center = [512,512]):
+def radialAverage(image, center = [512,512], beamblock = list()):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -103,7 +103,8 @@ def radialAverage(image, center = [512,512]):
     
     center : array-like, shape (2,)
         [x,y] coordinates of the center (in pixels)
-    
+    beamblock_rectangle : list, shape (2,)
+        Two corners of the rectangle, in the form [ [x0,y0], [x1,y1] ]  
     Returns
     -------
     [radius, pattern] : list of ndarrays, shapes (M,)
@@ -124,24 +125,38 @@ def radialAverage(image, center = [512,512]):
     
     #Sort by increasing radius
     intensity = intensity[n.argsort(radius)]
-    radius = n.around(n.sort(radius), decimals = 0)
+    radius = n.around(radius, decimals = 0)
     
     #Average intensity values for equal radii
-    unique_radii, inverse = n.unique(radius, return_inverse = True)
-    radial_average = n.zeros_like(unique_radii)
-    bincount =  n.zeros_like(unique_radii)
+    unique_radii = n.unique(radius)
+    accumulation = n.zeros_like(unique_radii)
+    bincount =  n.ones_like(unique_radii)
+    
+#    #Beam block conditions
+#    x0,y0 = beamblock[0]
+#    x1,y1 = beamblock[1]
+#    xlow, xhigh = n.array([x0,x1]).min(), n.array([x0,x1]).max()
+#    ylow, yhigh = n.array([y0,y1]).min(), n.array([y0,y1]).max()
     
     #loop over image
     for (i,j), value in n.ndenumerate(image):
+#        #Check beamblock conditions
+#        if xlow < i < xhigh and ylow < j < yhigh:
+#            continue #If in the beamblock range, continue
+        
+        #Ignore top half image
+        if i < center[0]:
+            continue
+
         r = R[i,j]
         #bin
-        ind = n.where(unique_radii==r)[0][0]
+        ind = n.where(unique_radii==r)
         #increment
-        radial_average[ind] += value
+        accumulation[ind] += value
         bincount[ind] += 1
         
     #Return normalized radial average
-    return [unique_radii, n.divide(radial_average,bincount)]
+    return [unique_radii, n.divide(accumulation,bincount)]
 
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
