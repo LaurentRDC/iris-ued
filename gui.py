@@ -184,6 +184,7 @@ class UEDpowder(QtGui.QMainWindow):
         #Attributes
         self.image_center = list()
         self.image = None
+        self.backgroundImage = None
         self.raw_radial_average = list()    #Before inelastic background substraction
         self.radial_average = list()        #After inelastic background substraction
         self.background_guesses = list()
@@ -266,7 +267,7 @@ class UEDpowder(QtGui.QMainWindow):
         #For initial state box
         initial_box = QtGui.QVBoxLayout()
         initial_box.addWidget(self.initial_message)
-        self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
+        self.imageLocatorBtn = QtGui.QPushButton('Locate diffraction image', self)
         self.imageLocatorBtn.setIcon(QtGui.QIcon('images\locator.png'))
         initial_box.addWidget(self.imageLocatorBtn)
         
@@ -280,9 +281,13 @@ class UEDpowder(QtGui.QMainWindow):
         #For the inelastic scattering correction
         inelastic_box = QtGui.QVBoxLayout()
         inelastic_box.addWidget(QtGui.QLabel('Step 3: Remove scattering background label'))
+        self.backgroundImageLocatorBtn = QtGui.QPushButton('Locate background image', self) 
+        self.backgroundImageLocatorBtn.setIcon(QtGui.QIcon('images\locator.png'))
         self.executeInelasticBtn = QtGui.QPushButton('Execute', self)
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
+        inelastic_box.addWidget(self.backgroundImageLocatorBtn)        
         inelastic_box.addWidget(self.executeInelasticBtn)
+        
 
         #Set up ImageViewer
         self.image_viewer = ImageViewer(parent = self)
@@ -297,6 +302,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.acceptBtn.clicked.connect(self.acceptState)
         self.rejectBtn.clicked.connect(self.rejectState)
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
+        self.backgroundImageLocatorBtn.connect(self.backgroundImageLocator)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         
         # ---------------------------------------------------------------------
@@ -342,6 +348,10 @@ class UEDpowder(QtGui.QMainWindow):
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
         self.loadImage(filename)
         self.image_viewer.displayImage(self.image, None)     #display raw image
+    def backgroundImageLocator(self):
+        """ File dialog that selects the TIFF image file to be processed. """
+        filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
+        self.loadImage(filename,'background')
         
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
@@ -418,10 +428,13 @@ class UEDpowder(QtGui.QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
         
-    def loadImage(self, filename):
+    def loadImage(self, filename, string = 'diffraction'):
         """ Loads an image and sets the first state. """
-        self.image = n.array(Image.open(filename))
-        self.state = 'data loaded'
+        if string == 'diffraction':
+            self.image = n.array(Image.open(filename))
+            self.state = 'data loaded'
+        elif string == 'background':
+            self.backgroundImage = n.array(Image.open(filename))
         
     def fileQuit(self):
         self.close()
