@@ -26,6 +26,15 @@ def pseudoVoigt(x, height, xc, width_g, width_l, constant = 0):
     return height*(0.5*Gaussian(x, xc, width_g) + 0.5*Lorentzian(x, xc, width_l)) + constant
 
 # -----------------------------------------------------------------------------
+#           I/O FUNCTIONS
+# -----------------------------------------------------------------------------
+
+def diffractionFileList(folder_path = 'C:\\' ):
+    """
+    returns a list of filenames corresponding to diffraction pictures
+    """
+    import os
+# -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
 
@@ -204,3 +213,21 @@ def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5)
     #TODO: smooth background data
     
     return [xdata, background]
+    
+def inelasticBGSubstract(xdata, ydata, points = list()):
+
+    #Create guess 
+    guesses = ydata.max()/2, 1/50, ydata.max()/2, 1/150, ydata.min() 
+    
+    #Create x and y arrays for the points 
+    points = n.array(points) 
+    x, y = points[:,0], points[:,1] 
+    
+    #Fit with guesses 
+    optimal_parameters, parameters_covariance = opt.curve_fit(biexp, x, y, p0 = guesses) 
+    
+    #Create inelastic background function 
+    a,b,c,d,e = optimal_parameters 
+    background_ordinate = biexp(xdata, a, b, c, d, e) 
+    
+    return [xdata, background_ordinate, 'Inelastic scattering background'] 
