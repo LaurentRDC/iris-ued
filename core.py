@@ -158,28 +158,28 @@ def prototypeIBS(xdata, ydata, points = list(), chunk_size = 20):
     
     #Determine data chunks based on user-input points
     xfeatures = n.asarray(points)[:,0]      #Only consider x-position of the diffraction feature
-    xchunks, ychunks,chunk_indices = list(), list(), list()
+    xchunks, ychunks= list(), list()
     for feature in xfeatures:
         #Find where in xdata is the feature
         ind = n.argmin(n.abs(xdata - feature))
         chunk_ind = n.arange(ind - chunk_size, ind + chunk_size + 1)    #Add 1 to stop parameter because chunk = [start, stop)
         xchunks.append(xdata[chunk_ind])
         ychunks.append(ydata[chunk_ind])
-        chunk_indices.append(chunk_ind)
     
     #Fit a pseudo-Voigt + constant for each xchunk and save constant
     constants = list()
     for xchunk, ychunk in zip(xchunks, ychunks):
         parameter_guesses = [ychunk.max()-ychunk.min(), (xchunk.max()-xchunk.min())/2, 1, 1, ychunk.min()]
         opt_parameters = opt.curve_fit(pseudoVoigt, xchunk, ychunk, p0 = parameter_guesses)[0]        
-        constants.append(opt_parameters[-1])    # constant is the last parameter in the definition of pseudoVoigt
+        constants.append(opt_parameters[-1]*n.ones_like(xchunk))    # constant is the last parameter in the definition of pseudoVoigt
     
     #Extend constants to x-values outside xchunks
-    constant_background = n.zeros_like(xdata) #preallocation
-    for constant, indices in zip(constants,chunk_indices):
-        constant_background[indices] = constant
-    
-    return constant_background
+    constant_background = n.asarray(constants).flatten()
+    print constant_background
+    x_background = n.asarray(xchunks).flatten()
+    print x_background
+    background = n.interp(xdata, x_background, constant_background)
+    return background
     
 def inelasticBGSubstract(xdata, ydata, points = list()):
     """
@@ -189,7 +189,7 @@ def inelasticBGSubstract(xdata, ydata, points = list()):
     ----------
     xdata, ydata : ndarrays, shape (N,)
     
-    
+    points : list of array-like
     """
     
     #Create guess
