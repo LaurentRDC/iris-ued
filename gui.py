@@ -281,11 +281,8 @@ class UEDpowder(QtGui.QMainWindow):
         #For the inelastic scattering correction
         inelastic_box = QtGui.QVBoxLayout()
         inelastic_box.addWidget(QtGui.QLabel('Step 3: Remove scattering background label'))
-        self.backgroundImageLocatorBtn = QtGui.QPushButton('Locate background image', self) 
-        self.backgroundImageLocatorBtn.setIcon(QtGui.QIcon('images\locator.png'))
         self.executeInelasticBtn = QtGui.QPushButton('Execute', self)
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
-        inelastic_box.addWidget(self.backgroundImageLocatorBtn)        
         inelastic_box.addWidget(self.executeInelasticBtn)
         
 
@@ -302,7 +299,6 @@ class UEDpowder(QtGui.QMainWindow):
         self.acceptBtn.clicked.connect(self.acceptState)
         self.rejectBtn.clicked.connect(self.rejectState)
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
-        self.backgroundImageLocatorBtn.connect(self.backgroundImageLocator)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         
         # ---------------------------------------------------------------------
@@ -350,6 +346,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.image_viewer.displayImage(self.image, None)     #display raw image
     def backgroundImageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
+        #TODO: Find substrate image
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
         self.loadImage(filename,'background')
         
