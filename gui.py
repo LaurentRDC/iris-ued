@@ -256,7 +256,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.rejectBtn.setIcon(QtGui.QIcon('images\cancel.png'))
         
         self.turboBtn = QtGui.QPushButton('Turbo Mode', self)
-        self.turboBtn.setIcon(QtGui.QIcon('images\turbo.png'))
+        self.turboBtn.setIcon(QtGui.QIcon('images\close.png'))
         self.turboBtn.setCheckable(True)
         
         #Set up message boxes
@@ -267,21 +267,21 @@ class UEDpowder(QtGui.QMainWindow):
         initial_box = QtGui.QVBoxLayout()
         initial_box.addWidget(self.initial_message)
         self.imageLocatorBtn = QtGui.QPushButton('Locate image', self)
-        self.imageLocatorBtn.setIcon(QtGui.QIcon('images\folder.png'))
+        self.imageLocatorBtn.setIcon(QtGui.QIcon('images\locator.png'))
         initial_box.addWidget(self.imageLocatorBtn)
         
         #For image center select box
         center_box = QtGui.QVBoxLayout()
         center_box.addWidget(self.center_message)
         self.executeCenterBtn = QtGui.QPushButton('Find center', self)
-        self.executeCenterBtn.setIcon(QtGui.QIcon('images\flask.png'))
+        self.executeCenterBtn.setIcon(QtGui.QIcon('images\science.png'))
         center_box.addWidget(self.executeCenterBtn)
         
         #For the inelastic scattering correction
         inelastic_box = QtGui.QVBoxLayout()
         inelastic_box.addWidget(QtGui.QLabel('Step 3: Remove scattering background label'))
         self.executeInelasticBtn = QtGui.QPushButton('Execute', self)
-        self.executeInelasticBtn.setIcon(QtGui.QIcon('images\flask.png'))
+        self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
 
         #Set up ImageViewer
@@ -316,22 +316,22 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes.addLayout(center_box)
         state_boxes.addLayout(inelastic_box)
         
-        #Image viewer pane
+        #Image viewer pane ----------------------------------------------------
         right_pane = QtGui.QVBoxLayout()
         right_pane.addWidget(self.image_viewer)
         right_pane.addLayout(state_controls)
         
-        #Master Layout
+        #Master Layout --------------------------------------------------------
         grid = QtGui.QHBoxLayout()
         grid.addLayout(state_boxes)
         grid.addLayout(right_pane)
         
-        #Don't know what that does        
+        #Set master layout  ---------------------------------------------------
         self.central_widget = QtGui.QWidget()
         self.central_widget.setLayout(grid)
         self.setCentralWidget(self.central_widget)
         
-        #Window settings
+        #Window settings ------------------------------------------------------
         self.setGeometry(600, 600, 350, 300)
         self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()

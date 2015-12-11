@@ -113,7 +113,7 @@ def radialAverage(image, center = [512,512], beamblock = list()):
     #Preliminaries
     xc, yc = center     #Center coordinates
     x = n.linspace(0, image.shape[0], image.shape[0])
-    y = n.linspace(image.shape[1], 0, image.shape[1])
+    y = n.linspace(0, image.shape[1], image.shape[1])
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(x,y)
