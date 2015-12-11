@@ -19,7 +19,7 @@ if use_pyside:
     from PySide import QtGui, QtCore
 else:
     from PyQt4 import QtGui, QtCore
-    
+
 # -----------------------------------------------------------------------------
 #           IMAGE VIEWER CLASSES AND FUNCTIONS
 # -----------------------------------------------------------------------------
@@ -96,7 +96,7 @@ class ImageViewer(FigureCanvas):
                 self.parent.background_guesses.append(self.last_click_position)
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 
-            elif len(self.parent.background_guesses) == 5:
+            elif len(self.parent.background_guesses) >= 5:
                 self.parent.background_guesses.append(self.last_click_position)
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.parent.state = 'background guessed'

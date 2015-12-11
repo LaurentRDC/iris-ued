@@ -33,7 +33,7 @@ def diffractionFileList(folder_path = 'C:\\' ):
     """
     returns a list of filenames corresponding to diffraction pictures
     """
-    import os
+    return
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
@@ -102,7 +102,7 @@ def circ(xg, yg, rg, im, scalefactor = 20):
 #               RADIAL AVERAGING
 # -----------------------------------------------------------------------------
 
-def radialAverage(image, center = [512,512], beamblock = list()):
+def radialAverage(image, center = [562,549], beamblock = list()):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -197,22 +197,27 @@ def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5)
         ychunks.append(ydata[chunk_ind])
     
     #Fit a pseudo-Voigt + constant for each xchunk and save constant
+    voigt_parameters = list()
     constants = list()
     for xchunk, ychunk in zip(xchunks, ychunks):
-        parameter_guesses = [ychunk.max()-ychunk.min(), (xchunk.max()-xchunk.min())/2, 1, 1, ychunk.min()]
-        opt_parameters = opt.curve_fit(pseudoVoigt, xchunk, ychunk, p0 = parameter_guesses)[0]        
-        constants.append(opt_parameters[-1]*n.ones_like(xchunk))    # constant is the last parameter in the definition of pseudoVoigt
+        temp_ychunk = ychunk - ychunk.min()         #Trick to get a better fit: remove most of the offset
+        parameter_guesses = [temp_ychunk.max(), (xchunk.max()-xchunk.min())/2 + xchunk.min(), 0.1, 0.1, 0]
+        opt_parameters = opt.curve_fit(pseudoVoigt, xchunk, ychunk, p0 = parameter_guesses)[0]
+        voigt_parameters.append(opt_parameters)
+        constants.append(opt_parameters[-1]*n.ones_like(xchunk) + ychunk.min())    # constant is the last parameter in the definition of pseudoVoigt
     
     #Extend constants to x-values outside xchunks
     constant_background = n.asarray(constants).flatten()
-    print constant_background
     x_background = n.asarray(xchunks).flatten()
-    print x_background
     background = n.interp(xdata, x_background, constant_background)
     
-    #TODO: smooth background data
+    #Create diagnostics Voigt profiles
+    profiles = list()
+    for params in voigt_parameters:
+        profiles.append( pseudoVoigt(xdata, params[0], params[1], params[2], params[3], params[4]) )
     
-    return [xdata, background]
+    #TODO: smooth background data
+    return background, profiles
     
 def inelasticBGSubstract(xdata, ydata, points = list()):
 
