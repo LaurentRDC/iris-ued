@@ -250,6 +250,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Set up state buttons
         self.acceptBtn = QtGui.QPushButton('Accept', self)
+        self.acceptBtn.setIcon('images/checkmark.png')
         self.rejectBtn = QtGui.QPushButton('Reject', self)
         self.turboBtn = QtGui.QPushButton('Turbo Mode', self)
         self.turboBtn.setCheckable(True)
@@ -267,12 +268,12 @@ class UEDpowder(QtGui.QMainWindow):
         #For image center select box
         center_box = QtGui.QVBoxLayout()
         center_box.addWidget(self.center_message)
-        self.executeCenterBtn = QtGui.QPushButton('Execute', self)
+        self.executeCenterBtn = QtGui.QPushButton('Find center', self)
         center_box.addWidget(self.executeCenterBtn)
         
         #For the inelastic scattering correction
         inelastic_box = QtGui.QVBoxLayout()
-        inelastic_box.addWidget(QtGui.QLabel('Step 3: placeholder label'))
+        inelastic_box.addWidget(QtGui.QLabel('Step 3: Remove scattering background label'))
         self.executeInelasticBtn = QtGui.QPushButton('Execute', self)
         inelastic_box.addWidget(self.executeInelasticBtn)
 
