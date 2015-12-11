@@ -3,6 +3,27 @@
 import numpy as n
 import scipy.optimize as opt
 
+# -----------------------------------------------------------------------------
+#           HELPER FUNCTIONS
+# -----------------------------------------------------------------------------
+
+def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0):
+    """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x) + e"""
+    return a*n.exp(-b*x) + c*n.exp(-d*x) + e
+
+def Gaussian(x, xc = 0, width_g = 0.1):
+    """ Returns a Gaussian with maximal height of 1 (not area of 1)."""
+    exponent = (-(x-xc)**2)/((2*width_g)**2)
+    return n.exp(exponent)
+
+def Lorentzian(x, xc = 0, width_l = 0.1):
+    """ Returns a lorentzian with maximal height of 1 (not area of 1)."""
+    core = ((width_l/2)**2)/( (x-xc)**2 + (width_l/2)**2 )
+    return core
+    
+def pseudoVoigt(x, height, xc, width_g, width_l, constant = 0):
+    """ Returns a pseudo Voigt profile centered at xc with weighting factor 1/2. """
+    return height*(0.5*Gaussian(x, xc, width_g) + 0.5*Lorentzian(x, xc, width_l)) + constant
 
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
@@ -125,11 +146,36 @@ def radialAverage(image, center = [512,512]):
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
-
-def biexp(x, a, b, c, d, e):
-    """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x)+e """
-    return a*n.exp(-b*x) + c*n.exp(-d*x) + e
-
+def prototypeIBS(xdata, ydata, points = list(), chunk_size = 20):
+    """ 
+    Following Vance's inelastic background substraction method. We assume that the data has been corrected for diffuse scattering by substrate 
+    (e.g. silicon nitride substrate for VO2 samples)
+    
+    In order to determine the shape of the background, we use a list of points selected by the user as 'diffraction feature'. These diffraction features are fit with 
+    a pseudo-Voigt + constant. Concatenating this constant for multiple diffraction features, we can get a 'stair-steps' description of the background. We then smooth this
+    data to get a nice background.
+    """
+    
+    #Determine data chunks based on user-input points
+    xfeatures = n.asarray(points)[:,0]      #Only consider x-position of the diffraction feature
+    xchunks, ychunks = list(), list()
+    for feature in xfeatures:
+        #Find where in xdata is the feature
+        ind = n.argmin(n.abs(xdata - feature))
+        chunk_ind = n.arange(ind - chunk_size, ind + chunk_size + 1)    #Add 1 to stop parameter because chunk = [start, stop)
+        xchunks.append(xdata[chunk_ind])
+        ychunks.append(ydata[chunk_ind])
+    
+    #Fit a pseudo-Voigt + constant for each xchunk and save constant
+    constants = list()
+    for xchunk, ychunk in zip(xchunks, ychunks):
+        opt_parameters = opt.curve_fit(pseudoVoigt, xchunk, ychunk)[0]        
+        constants.append(opt_parameters[-1])    # constant is the last parameter in the definition of pseudoVoigt
+    
+    #Extend constants to outside xchunks
+    return
+    
+    
 def inelasticBGSubstract(xdata, ydata, points = list()):
     """
     Returns the radial diffraction pattern with the inelastic scattering background removed.
