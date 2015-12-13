@@ -33,6 +33,22 @@ def generateCircle(xc, yc, radius):
     yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
     return [xvals,yvals]
 
+class workThread(QtCore.QThread):
+    """
+    Object taking care of computations
+    """
+    def __init__(self, function, *args, **kwargs):
+        QtCore.QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+    
+    def __del__(self):
+        self.wait()
+    
+    def compute(self):
+        return self.function(*self.args, **self.kwargs)
+
 class ImageViewer(FigureCanvas):
     """
     Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.).
