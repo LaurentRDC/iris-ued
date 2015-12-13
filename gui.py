@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import os.path
 import numpy as n
 from PIL import Image
 
@@ -125,7 +126,7 @@ class ImageViewer(FigureCanvas):
             self.initialFigure()
         else:
             self.axes.cla()     #Clear axes
-            self.axes.imshow(self.parent.image)
+            self.axes.imshow(image)
             if circle != None:  #Overlay circle if provided
                 xvals, yvals = circle
                 self.axes.scatter(xvals, yvals)
@@ -184,7 +185,7 @@ class UEDpowder(QtGui.QMainWindow):
         #Attributes
         self.image_center = list()
         self.image = None
-        self.backgroundImage = None
+        self.substrate_image = None
         self.raw_radial_average = list()    #Before inelastic background substraction
         self.radial_average = list()        #After inelastic background substraction
         self.background_guesses = list()
@@ -343,12 +344,7 @@ class UEDpowder(QtGui.QMainWindow):
         """ File dialog that selects the TIFF image file to be processed. """
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
         self.loadImage(filename)
-        self.image_viewer.displayImage(self.image, None)     #display raw image
-    def backgroundImageLocator(self):
-        """ File dialog that selects the TIFF image file to be processed. """
-        #TODO: Find substrate image
-        filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
-        self.loadImage(filename,'background')
+        self.image_viewer.displayImage(self.image)     #display raw image
         
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
@@ -396,7 +392,6 @@ class UEDpowder(QtGui.QMainWindow):
             pass
         elif self.state == 'background guessed':
             pass
-
     
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases """
@@ -425,13 +420,14 @@ class UEDpowder(QtGui.QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
         
-    def loadImage(self, filename, string = 'diffraction'):
-        """ Loads an image and sets the first state. """
-        if string == 'diffraction':
-            self.image = n.array(Image.open(filename))
-            self.state = 'data loaded'
-        elif string == 'background':
-            self.backgroundImage = n.array(Image.open(filename))
+    def loadImage(self, filename):
+        """ Loads an image (and the associated background image) and sets the first state. """
+        #Load image
+        self.image = n.array(Image.open(filename))        
+        #Load substrate image
+        substrate_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'subs.tif'))
+        self.substrate_image = n.array(Image.open(substrate_filename))
+        self.state = 'data loaded'
         
     def fileQuit(self):
         self.close()
@@ -439,7 +435,6 @@ class UEDpowder(QtGui.QMainWindow):
     def closeEvent(self, ce):
         self.fileQuit()
         
-
 #Run
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
