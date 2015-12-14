@@ -102,71 +102,66 @@ def circ(xg, yg, rg, im, scalefactor = 20):
 #               RADIAL AVERAGING
 # -----------------------------------------------------------------------------
 
-def radialAverage(image, center = [562,549], beamblock = list()):
+def radialAverage(images = list(), names = list(), center = [562,549]):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
     Parameters
     ----------
-    image : ndarray, shape(N,N)
-    
+    image : list of ndarrays, shape(N,N)
+        List of images that have the same shape and share the same center.
     center : array-like, shape (2,)
         [x,y] coordinates of the center (in pixels)
     beamblock_rectangle : list, shape (2,)
         Two corners of the rectangle, in the form [ [x0,y0], [x1,y1] ]  
     Returns
     -------
-    [radius, pattern] : list of ndarrays, shapes (M,)
+    [[radius1, pattern1, name1], [radius2, pattern2, name2], ... ], : list of ndarrays, shapes (M,), and an ID string
     """
-    
+    #Get shape
+    im_shape = images[0].shape
     #Preliminaries
     xc, yc = center     #Center coordinates
-    x = n.linspace(0, image.shape[0], image.shape[0])
-    y = n.linspace(0, image.shape[1], image.shape[1])
+    x = n.linspace(0, im_shape[0], im_shape[0])
+    y = n.linspace(0, im_shape[1], im_shape[1])
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(x,y)
     R = n.around(n.sqrt( (X - xc)**2 + (Y - yc)**2 ), decimals = 0)
     
-    #Flatten arrays
-    intensity = image.flatten()
-    radius = R.flatten()
-    
-    #Sort by increasing radius
-    intensity = intensity[n.argsort(radius)]
-    radius = n.around(radius, decimals = 0)
-    
-    #Average intensity values for equal radii
-    unique_radii = n.unique(radius)
-    accumulation = n.zeros_like(unique_radii)
-    bincount =  n.ones_like(unique_radii)
-    
-#    #Beam block conditions
-#    x0,y0 = beamblock[0]
-#    x1,y1 = beamblock[1]
-#    xlow, xhigh = n.array([x0,x1]).min(), n.array([x0,x1]).max()
-#    ylow, yhigh = n.array([y0,y1]).min(), n.array([y0,y1]).max()
-    
-    #loop over image
-    for (i,j), value in n.ndenumerate(image):
-#        #Check beamblock conditions
-#        if xlow < i < xhigh and ylow < j < yhigh:
-#            continue #If in the beamblock range, continue
+    results = list()
+    for image, name in zip(images, names):
+        #Flatten arrays
+        intensity = image.flatten()
+        radius = R.flatten()
         
-        #Ignore top half image (where the beamblock is)
-        if i < center[0]:
-            continue
-
-        r = R[i,j]
-        #bin
-        ind = n.where(unique_radii==r)
-        #increment
-        accumulation[ind] += value
-        bincount[ind] += 1
+        #Sort by increasing radius
+        intensity = intensity[n.argsort(radius)]
+        radius = n.around(radius, decimals = 0)
         
-    #Return normalized radial average
-    return [unique_radii, n.divide(accumulation,bincount)]
+        #Average intensity values for equal radii
+        unique_radii = n.unique(radius)
+        accumulation = n.zeros_like(unique_radii)
+        bincount =  n.ones_like(unique_radii)
+        
+        #loop over image
+        for (i,j), value in n.ndenumerate(image):
+          
+            #Ignore top half image (where the beamblock is)
+            if i < center[0]:
+                continue
+    
+            r = R[i,j]
+            #bin
+            ind = n.where(unique_radii==r)
+            #increment
+            accumulation[ind] += value
+            bincount[ind] += 1
+        
+        #Return normalized radial average
+        results.append([unique_radii, n.divide(accumulation,bincount), name + 'radial average'])
 
+    return results
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
