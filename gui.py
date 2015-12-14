@@ -510,9 +510,9 @@ class UEDpowder(QtGui.QMainWindow):
         self.state = 'data loaded'
         
     def startLoading(self):
-        self.instructions.setText('loading...')
+        self.instructions.append('\n loading...')
     def endLoading(self):
-        self.instructions.setText('loading...done')
+        self.instructions.append('\n loading...done')
     
     def fileQuit(self):
         self.close()
