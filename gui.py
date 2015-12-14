@@ -437,7 +437,8 @@ class UEDpowder(QtGui.QMainWindow):
 
             self.work_thread.start()                                                                    #Compute stuff
         elif self.state == 'background substracted':
-            background_params =  
+            #background_params =  
+            pass
     
     def rejectState(self):
         """ Master reject function that invalidates a state and reverts to an appropriate state. """
