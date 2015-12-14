@@ -33,7 +33,7 @@ def generateCircle(xc, yc, radius):
     yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
     return [xvals,yvals]
 
-class workThread(QtCore.QThread):
+class WorkThread(QtCore.QThread):
     """
     Object taking care of computations
     """
@@ -123,9 +123,6 @@ class ImageViewer(FigureCanvas):
                 self.parent.background_guesses.append(self.last_click_position)
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.parent.state = 'background guessed'
-                
-        #Update message box
-        self.parent.update()
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
@@ -212,6 +209,7 @@ class UEDpowder(QtGui.QMainWindow):
     def __init__(self):
         
         #Attributes
+        self.work_thread = None
         self.image_center = list()
         self.image = None
         self.substrate_image = None
@@ -223,7 +221,17 @@ class UEDpowder(QtGui.QMainWindow):
         #Methods
         super(UEDpowder, self).__init__()     #inherit from the constructor of QMainWindow        
         self.initUI()
+        
+    # -------------------------------------------------------------------------
+    #           SETTER METHODS FOR THREADING
+    # -------------------------------------------------------------------------
+    def setRawRadialAverage(self, value):
+        self.raw_radial_average = value
     
+    def setImageCenter(self, value):
+        self.image_center = value
+    # -------------------------------------------------------------------------
+        
     @property
     def state(self):
         return self._state
@@ -234,41 +242,6 @@ class UEDpowder(QtGui.QMainWindow):
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
-    
-    def updateButtonAvailability(self):
-        """
-        """
-        #Create list of buttons to be disabled and enables
-        availableButtons = list()
-        unavailableButtons = list()
-        
-        if self.state == 'initial':
-            availableButtons = [self.imageLocatorBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
-        elif self.state == 'data loaded':
-            availableButtons = [self.imageLocatorBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
-        elif self.state == 'radius guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
-        elif self.state == 'center found':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn]
-        elif self.state == 'radial averaged':
-            availableButtons = [self.imageLocatorBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn]  
-        elif self.state == 'background guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn]
-        elif self.state == 'background substracted':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn]
-        
-        #Act!
-        for btn in availableButtons:
-            btn.setEnabled(True)
-        for btn in unavailableButtons:
-            btn.setEnabled(False)
         
     def initUI(self):
         
@@ -372,6 +345,41 @@ class UEDpowder(QtGui.QMainWindow):
         self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()
         self.show()
+
+    def updateButtonAvailability(self):
+        """
+        """
+        #Create list of buttons to be disabled and enables
+        availableButtons = list()
+        unavailableButtons = list()
+        
+        if self.state == 'initial':
+            availableButtons = [self.imageLocatorBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+        elif self.state == 'data loaded':
+            availableButtons = [self.imageLocatorBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+        elif self.state == 'radius guessed':
+            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn]
+            unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+        elif self.state == 'center found':
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn]
+        elif self.state == 'radial averaged':
+            availableButtons = [self.imageLocatorBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn]  
+        elif self.state == 'background guessed':
+            availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn]
+        elif self.state == 'background substracted':
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
+            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn]
+        
+        #Act!
+        for btn in availableButtons:
+            btn.setEnabled(True)
+        for btn in unavailableButtons:
+            btn.setEnabled(False)
         
     def imageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
@@ -383,8 +391,11 @@ class UEDpowder(QtGui.QMainWindow):
         """ Master accept function that validates a state and proceeds to the next one. """
         
         if self.state == 'center found':
-            self.raw_radial_average = fc.radialAverage(self.image, self.image_center)
-            self.raw_radial_average.append('Raw radial average')
+            
+            #Threading way
+            self.work_thread = WorkThread(fc.radialAverage, self.image, self.image_center)
+            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage)
+            self.work_thread.start()
             self.image_viewer.displayRadialPattern(self.raw_radial_average)
             self.state = 'radial averaged'
         elif self.state == 'background substracted':
