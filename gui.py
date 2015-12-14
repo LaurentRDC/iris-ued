@@ -302,6 +302,11 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
         
+        #For instructions and printing
+        instruction_box = QtGui.QVBoxLayout()
+        instruction_box.addWidget(QtGui.QLabel('Instructions:'))
+        self.instructions = QtGui.QListWidget()
+        instruction_box.addWidget(self.instructions)
 
         #Set up ImageViewer
         self.image_viewer = ImageViewer(parent = self)
@@ -334,6 +339,7 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes.addLayout(initial_box)
         state_boxes.addLayout(center_box)
         state_boxes.addLayout(inelastic_box)
+        state_boxes.addLayout(instruction_box)
         
         #Image viewer pane ----------------------------------------------------
         right_pane = QtGui.QVBoxLayout()
