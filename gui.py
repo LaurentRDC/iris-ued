@@ -220,6 +220,8 @@ class UEDpowder(QtGui.QMainWindow):
     state : string
         Value describing in what state the software is. Possible values are:
             state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'background guessed', 'background substracted']
+    raw_radial_averages : list of lists
+        List of the form [[radii1, pattern1, name1], [radii2, pattern2, name2], ... ], : list of ndarrays, shapes (M,), and an ID string
     """
     def __init__(self):
         
@@ -493,8 +495,12 @@ class UEDpowder(QtGui.QMainWindow):
         background_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'bg.tif'))
         #Load images
         background = n.array(Image.open(background_filename))
-        self.image = n.array(Image.open(filename)) - background       
+        self.image = n.array(Image.open(filename)) - background
         self.substrate_image = n.array(Image.open(substrate_filename)) - background
+        
+        #Process data
+        self.image[self.image < 0] = 0
+        self.substrate_image[self.substrate_image < 0] = 0
     
         self.state = 'data loaded'
         
