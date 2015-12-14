@@ -410,8 +410,8 @@ class UEDpowder(QtGui.QMainWindow):
         
         if self.state == 'center found':
 
-            self.work_thread = WorkThread(fc.radialAverage, self.image, self.image_center)              #Create thread with a specific function and arguments
-            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
+            self.work_thread = WorkThread(fc.radialAverage, [self.image, self.substrate_image], ['Raw', 'Subtrate'], self.image_center)              #Create thread with a specific function and arguments
+            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverages) #Connect the outcome with a setter method
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.startLoading)
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.endLoading)
 
