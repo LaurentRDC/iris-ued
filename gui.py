@@ -32,6 +32,7 @@ def generateCircle(xc, yc, radius):
     xvals = xc+ radius*n.cos(n.linspace(0,2*n.pi,100))
     yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
     return [xvals,yvals]
+    
 
 class WorkThread(QtCore.QThread):
     """
@@ -129,6 +130,7 @@ class ImageViewer(FigureCanvas):
         missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
         self.axes.cla()     #Clear axes
         self.axes.imshow(missing_image)
+
  
     def displayImage(self, image, circle = None, center = None, colour = 'red'):
         """ 
@@ -185,6 +187,10 @@ class ImageViewer(FigureCanvas):
         self.axes.set_ylabel('Intensity')
         self.axes.legend( loc = 'upper right', numpoints = 1)
         self.draw()
+    def startLoading(self):
+        self.parent.startLoading()
+    def endLoading(self):
+        self.parent.endLoading()
             
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -451,6 +457,11 @@ class UEDpowder(QtGui.QMainWindow):
         self.substrate_image = n.array(Image.open(substrate_filename))
         self.state = 'data loaded'
         
+    def startLoading(self):
+        self.instructions.setText('loading...')
+    def endLoading(self):
+        self.instructions.setText('loading...done')
+    
     def fileQuit(self):
         self.close()
 
