@@ -124,6 +124,8 @@ class ImageViewer(FigureCanvas):
                 
             elif len(self.parent.background_guesses) >= 5:
                 self.parent.background_guesses.append(self.last_click_position)
+                self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
+                self.draw()
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.parent.state = 'background guessed'
 
@@ -235,6 +237,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.raw_radial_averages = list()    #Before inelastic background substraction
         self.radial_average = list()        #After inelastic background substraction
         self.background_guesses = list()
+        self.inelastic_background = list()
         self._state = 'initial'
         
         #Methods
@@ -440,8 +443,8 @@ class UEDpowder(QtGui.QMainWindow):
 
             self.work_thread.start()                                                                    #Compute stuff
         elif self.state == 'background substracted':
-            #background_params =  
             pass
+
     
     def rejectState(self):
         """ Master reject function that invalidates a state and reverts to an appropriate state. """
@@ -474,7 +477,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         elif self.state == 'background guessed':
             #Create guess data
-            self.radial_average = fc.inelasticBGSubstract(self.raw_radial_average[0], self.raw_radial_average[1], self.background_guesses)
+            self.radial_average = fc.inelasticBGSubstract(self.raw_radial_averages[1][0], self.raw_radial_averages[1][1], self.background_guesses)
             self.state = 'background substracted'
     
     def save(self):
