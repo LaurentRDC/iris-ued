@@ -50,8 +50,10 @@ class WorkThread(QtCore.QThread):
     
     def run(self):
         """ Compute and emit a 'done' signal."""
+        self.emit(QtCore.SIGNAL('Display Loading'), 'Loading...')
         self.result = self.function(*self.args, **self.kwargs)
         self.emit(QtCore.SIGNAL('Computation done'), self.result)
+        self.emit(QtCore.SIGNAL('Remove Loading'), 'Loading...Done')
 
 class ImageViewer(FigureCanvas):
     """
@@ -187,6 +189,7 @@ class ImageViewer(FigureCanvas):
         self.axes.set_ylabel('Intensity')
         self.axes.legend( loc = 'upper right', numpoints = 1)
         self.draw()
+        
     def startLoading(self):
         self.parent.startLoading()
     def endLoading(self):
@@ -299,7 +302,7 @@ class UEDpowder(QtGui.QMainWindow):
         #For instructions and printing
         instruction_box = QtGui.QVBoxLayout()
         instruction_box.addWidget(QtGui.QLabel('Instructions:'))
-        self.instructions = QtGui.QListWidget()
+        self.instructions = QtGui.QTextEdit()
         instruction_box.addWidget(self.instructions)
 
         #Set up ImageViewer
@@ -402,6 +405,8 @@ class UEDpowder(QtGui.QMainWindow):
         if self.state == 'center found':
             self.work_thread = WorkThread(fc.radialAverage, self.image, self.image_center)              #Create thread with a specific function and arguments
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
+            self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.startLoading)
+            self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.endLoading)
             self.work_thread.start()                                                                    #Compute stuff
         elif self.state == 'background substracted':
             pass
