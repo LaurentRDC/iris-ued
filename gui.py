@@ -194,7 +194,7 @@ class UEDpowder(QtGui.QMainWindow):
         list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity. 'name' is a string used to make the plot legend.
     state : string
         Value describing in what state the software is. Possible values are:
-            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'background guessed']
+            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'background guessed', 'background substracted']
     """
     def __init__(self):
         
@@ -221,7 +221,6 @@ class UEDpowder(QtGui.QMainWindow):
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
-        self.updateMessage()
     
     def updateButtonAvailability(self):
         """
@@ -290,14 +289,14 @@ class UEDpowder(QtGui.QMainWindow):
         
         #For image center select box
         center_box = QtGui.QVBoxLayout()
-        center_box.addWidget(self.center_message)
+        center_box.addWidget(QtGui.QLabel('Step 2: find the center of the image'))
         self.executeCenterBtn = QtGui.QPushButton('Find center', self)
         self.executeCenterBtn.setIcon(QtGui.QIcon('images\science.png'))
         center_box.addWidget(self.executeCenterBtn)
         
         #For the inelastic scattering correction
         inelastic_box = QtGui.QVBoxLayout()
-        inelastic_box.addWidget(QtGui.QLabel('Step 3: Remove scattering background label'))
+        inelastic_box.addWidget(QtGui.QLabel('Step 3: Remove inelastic scattering background and substrate effects'))
         self.executeInelasticBtn = QtGui.QPushButton('Execute', self)
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
@@ -329,7 +328,6 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Accept - reject buttons combo
         state_controls = QtGui.QHBoxLayout()
-        state_controls.addStretch(1)
         state_controls.addWidget(self.acceptBtn)
         state_controls.addWidget(self.rejectBtn)
         state_controls.addWidget(self.turboBtn)
@@ -340,11 +338,11 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes.addLayout(center_box)
         state_boxes.addLayout(inelastic_box)
         state_boxes.addLayout(instruction_box)
+        state_boxes.addLayout(state_controls)
         
         #Image viewer pane ----------------------------------------------------
         right_pane = QtGui.QVBoxLayout()
         right_pane.addWidget(self.image_viewer)
-        right_pane.addLayout(state_controls)
         
         #Master Layout --------------------------------------------------------
         grid = QtGui.QHBoxLayout()
@@ -391,30 +389,7 @@ class UEDpowder(QtGui.QMainWindow):
             self.image_viewer.displayRadialPattern(self.raw_radial_average)
             self.background_guesses = list() #Clear guesses
             self.state = 'radial averaged'
-            
-    def updateMessage(self):
-        """ Updates all messages. """
-        if self.state == 'initial':
-            pass
-        elif self.state == 'data loaded':
-            self.initial_message.setText('')
-            self.center_message.setText('Step 2: Click on the center.')
-        elif self.state == 'center guessed':
-            self.center_message.setText(\
-                'Step 3: Click on the radius.\nCenter: '\
-                + str(n.around(self.image_viewer.last_click_position)))
-        elif self.state == 'radius guessed':
-            self.center_message.setText(\
-                'Step 4: Click on the radius.\nRadius: '\
-                + str(n.around(self.image_viewer.last_click_position)))
-        elif self.state == 'center found':
-            self.center_message.setText(\
-                'Step 5: Accept/Reject')
-        elif self.state == 'radial averaged':
-            pass
-        elif self.state == 'background guessed':
-            pass
-    
+
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases """
         if self.state == 'radius guessed':
