@@ -101,11 +101,12 @@ class ImageViewer(FigureCanvas):
         
         if self.parent.state == 'data loaded':
             self.parent.guess_center = n.asarray(self.last_click_position)
+            self.displayImage(self.parent.image, guess = self.parent.guess_center)
             self.parent.state = 'center guessed'
             
         elif self.parent.state == 'center guessed':
             ring_position = n.asarray(self.last_click_position)
-            self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
+            self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)           
             self.parent.state = 'radius guessed'
             
         elif self.parent.state == 'radial averaged':
@@ -126,8 +127,8 @@ class ImageViewer(FigureCanvas):
         missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
         self.axes.cla()     #Clear axes
         self.axes.imshow(missing_image)
-    
-    def displayImage(self, image, circle = None):
+ 
+    def displayImage(self, image, circle = None, guess = None):
         """ 
         This method displays a raw TIFF image from the instrument. Optional arguments can be used to overlay a circle.
         
@@ -137,18 +138,25 @@ class ImageViewer(FigureCanvas):
             Filename of the image to be displayed.
         cicle : list, optional, shape (2,)
             List of 2 ndarrays that decribe scatter points of a circle
+        guess : list, optional,
+            x and y coordinates of center guess
         """
         if image is None:
             self.initialFigure()
         else:
             self.axes.cla()     #Clear axes
             self.axes.imshow(image)
+            if guess != None:
+                self.axes.scatter(guess[0],guess[1])
+                self.axes.set_xlim(0, image.shape[0])
+                self.axes.set_ylim(image.shape[1],0)
             if circle != None:  #Overlay circle if provided
                 xvals, yvals = circle
                 self.axes.scatter(xvals, yvals)
                 #Restrict view to the plotted circle (to better evaluate the fit)
                 self.axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
                 self.axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
+            
             self.axes.set_title('Raw TIFF image')
             self.draw()
     
@@ -392,6 +400,8 @@ class UEDpowder(QtGui.QMainWindow):
 
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases """
+        if self.state == 'center guessed':        
+           pass
         if self.state == 'radius guessed':
             #Compute center
             xg, yg = self.guess_center
