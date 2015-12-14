@@ -497,9 +497,9 @@ class UEDpowder(QtGui.QMainWindow):
         substrate_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'subs.tif'))
         background_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'bg.tif'))
         #Load images
-        background = n.array(Image.open(background_filename))
-        self.image = n.array(Image.open(filename)) - background
-        self.substrate_image = n.array(Image.open(substrate_filename)) - background
+        background = n.array(Image.open(background_filename), dtype = n.float)
+        self.image = n.array(Image.open(filename), dtype = n.float) - background
+        self.substrate_image = n.array(Image.open(substrate_filename), dtype = n.float) - background
         
         #Process data
         self.image[self.image < 0] = 0
