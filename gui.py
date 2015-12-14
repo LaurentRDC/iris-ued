@@ -35,8 +35,7 @@ def generateCircle(xc, yc, radius):
 
 class workThread(QtCore.QThread):
     """
-    Object taking care of computations. Since Python functions are also variables, we can pass any function (and args) to
-    this object.
+    Object taking care of computations
     """
     def __init__(self, function, *args, **kwargs):
         QtCore.QThread.__init__(self)
@@ -47,7 +46,7 @@ class workThread(QtCore.QThread):
     def __del__(self):
         self.wait()
     
-    def run(self):
+    def compute(self):
         return self.function(*self.args, **self.kwargs)
 
 class ImageViewer(FigureCanvas):
@@ -303,9 +302,6 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
         
-        #Instruction box
-        self.instructions = QtGui.QListWidget(self)
-        self.instructions.setGeometry( 200, 200, 100, 100)
 
         #Set up ImageViewer
         self.image_viewer = ImageViewer(parent = self)
@@ -326,19 +322,12 @@ class UEDpowder(QtGui.QMainWindow):
         #       LAYOUT
         # ---------------------------------------------------------------------
         
-        #Accept - reject buttons combo and instructions
-        state_controls = QtGui.QVBoxLayout()
-        
-        state_buttons = QtGui.QHBoxLayout()
-        state_buttons.addStretch(1)
-        state_buttons.addWidget(self.acceptBtn)
-        state_buttons.addWidget(self.rejectBtn)
-        state_buttons.addWidget(self.turboBtn)
-        
-        instructions = QtGui.QHBoxLayout()
-        instructions.addWidget(self.instructions)
-        state_controls.addLayout(instructions)
-        state_controls.addLayout(state_buttons)
+        #Accept - reject buttons combo
+        state_controls = QtGui.QHBoxLayout()
+        state_controls.addStretch(1)
+        state_controls.addWidget(self.acceptBtn)
+        state_controls.addWidget(self.rejectBtn)
+        state_controls.addWidget(self.turboBtn)
         
         # State boxes ---------------------------------------------------------
         state_boxes = QtGui.QVBoxLayout()
@@ -347,14 +336,14 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes.addLayout(inelastic_box)
         
         #Image viewer pane ----------------------------------------------------
-        viewer_pane = QtGui.QVBoxLayout()
-        viewer_pane.addWidget(self.image_viewer)
+        right_pane = QtGui.QVBoxLayout()
+        right_pane.addWidget(self.image_viewer)
+        right_pane.addLayout(state_controls)
         
         #Master Layout --------------------------------------------------------
         grid = QtGui.QHBoxLayout()
         grid.addLayout(state_boxes)
-        grid.addLayout(viewer_pane)
-        grid.addLayout(state_controls)
+        grid.addLayout(right_pane)
         
         #Set master layout  ---------------------------------------------------
         self.central_widget = QtGui.QWidget()
