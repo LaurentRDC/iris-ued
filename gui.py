@@ -50,10 +50,10 @@ class WorkThread(QtCore.QThread):
     
     def run(self):
         """ Compute and emit a 'done' signal."""
-        self.emit(QtCore.SIGNAL('Display Loading'), 'Loading...')
+        self.emit(QtCore.SIGNAL('Display Loading'), 'Computing...')
         self.result = self.function(*self.args, **self.kwargs)
         self.emit(QtCore.SIGNAL('Computation done'), self.result)
-        self.emit(QtCore.SIGNAL('Remove Loading'), 'Loading...Done')
+        self.emit(QtCore.SIGNAL('Remove Loading'), 'Computation done.')
 
 class ImageViewer(FigureCanvas):
     """
@@ -235,11 +235,12 @@ class UEDpowder(QtGui.QMainWindow):
         self.raw_radial_averages = list()    #Before inelastic background substraction
         self.radial_average = list()        #After inelastic background substraction
         self.background_guesses = list()
-        self._state = 'initial'
+        self._state = None
         
-        #Methods
+        #Initialize
         super(UEDpowder, self).__init__()     #inherit from the constructor of QMainWindow        
         self.initUI()
+        self.state = 'initial'
         
     # -------------------------------------------------------------------------
     #           SETTER METHODS FOR THREADING
@@ -267,6 +268,7 @@ class UEDpowder(QtGui.QMainWindow):
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
+        self.updateInstructions()
         
     def initUI(self):
         
@@ -382,6 +384,30 @@ class UEDpowder(QtGui.QMainWindow):
         self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()
         self.show()
+    
+    def updateInstructions(self, message = None):
+        """ Handles the instructions text, either a specific message or a preset message depending on the state """
+        
+        if message != None:
+            assert isinstance(message, str)
+            self.instructions.append('\n ' + message)
+        else:           #Handle state changes
+            if self.state == 'initial':
+                self.instructions.append('\n Click the "Locate diffraction image" button to import a diffraction image.')
+            elif self.state == 'data loaded':
+                self.instructions.append('\n Click on the image to guess a diffraction pattern center.')
+            elif self.state == 'center guessed':
+                self.instructions.append('\n Click on a diffraction ring to guess a diffraction pattern radius.')
+            elif self.state == 'radius guessed':
+                self.instructions.append('\n Click on the "Find center" button to fit a circle to the diffraction ring you selected.')
+            elif self.state == 'center found':
+                self.instructions.append('\n Click the "Accept" button to radially average the data, or click "Reject" to guess for a center again.')
+            elif self.state == 'radial averaged':
+                pass
+            elif self.state == 'background guessed':
+                pass
+            elif self.state == 'background substracted':
+                pass
 
     def updateButtonAvailability(self):
         """
@@ -440,8 +466,8 @@ class UEDpowder(QtGui.QMainWindow):
 
             self.work_thread = WorkThread(fc.radialAverage, [self.image, self.substrate_image], ['Raw', 'Subtrate'], self.image_center)              #Create thread with a specific function and arguments
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverages) #Connect the outcome with a setter method
-            self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.startLoading)
-            self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.endLoading)
+            self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
+            self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
 
             self.work_thread.start()                                                                    #Compute stuff
         elif self.state == 'background substracted':
@@ -472,8 +498,8 @@ class UEDpowder(QtGui.QMainWindow):
             
             self.work_thread = WorkThread(fc.fCenter, xg, yg, rg, self.image)
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setImageCenter)            
-            self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.startLoading)
-            self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.endLoading)
+            self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
+            self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
             self.work_thread.start()
         
         elif self.state == 'background guessed':
@@ -511,6 +537,7 @@ class UEDpowder(QtGui.QMainWindow):
         
     def startLoading(self):
         self.instructions.append('\n loading...')
+        
     def endLoading(self):
         self.instructions.append('\n loading...done')
     
