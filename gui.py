@@ -149,7 +149,7 @@ class ImageViewer(FigureCanvas):
             self.initialFigure()
         else:
             self.axes.cla()     #Clear axes
-            self.axes.imshow(image)
+            self.axes.imshow(image, vmin = image.min(), vmax = image.max())
             if center != None:
                 self.axes.scatter(center[0],center[1], color = colour)
                 self.axes.set_xlim(0, image.shape[0])
@@ -472,11 +472,13 @@ class UEDpowder(QtGui.QMainWindow):
         
     def loadImage(self, filename):
         """ Loads an image (and the associated background image) and sets the first state. """
-        #Load image
-        self.image = n.array(Image.open(filename))        
-        #Load substrate image
         substrate_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'subs.tif'))
-        self.substrate_image = n.array(Image.open(substrate_filename))
+        background_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'bg.tif'))
+        #Load images
+        background = n.array(Image.open(background_filename))
+        self.image = n.array(Image.open(filename)) - background       
+        self.substrate_image = n.array(Image.open(substrate_filename)) - background
+    
         self.state = 'data loaded'
         
     def startLoading(self):
