@@ -264,7 +264,6 @@ class UEDpowder(QtGui.QMainWindow):
     
     @state.setter
     def state(self, value):
-        print 'Old state: ' + self._state
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
@@ -325,6 +324,8 @@ class UEDpowder(QtGui.QMainWindow):
         instruction_box = QtGui.QVBoxLayout()
         instruction_box.addWidget(QtGui.QLabel('Instructions:'))
         self.instructions = QtGui.QTextEdit()
+        self.instructions.setOverwriteMode(False)
+        self.instructions.setReadOnly(True)
         instruction_box.addWidget(self.instructions)
 
         #Set up ImageViewer
