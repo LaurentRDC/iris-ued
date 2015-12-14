@@ -280,9 +280,17 @@ class UEDpowder(QtGui.QMainWindow):
         self.turboBtn.setIcon(QtGui.QIcon('images\close.png'))
         self.turboBtn.setCheckable(True)
         
+        self.saveBtn = QtGui.QPushButton('Save', self)
+        self.saveBtn.setIcon(QtGui.QIcon('images\save.png'))
+        
         #Set up message boxes
         self.initial_message = QtGui.QLabel('Step 1: select TIFF image.')
         self.center_message = QtGui.QLabel('')
+        
+        #Save-load box
+        save_load_box = QtGui.QVBoxLayout()
+        save_load_box.addWidget(QtGui.QLabel('Save state:'))
+        save_load_box.addWidget(self.saveBtn)
         
         #For initial state box
         initial_box = QtGui.QVBoxLayout()
@@ -325,6 +333,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.rejectBtn.clicked.connect(self.rejectState)
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
+        self.saveBtn.clicked.connect(self.save)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -334,6 +343,7 @@ class UEDpowder(QtGui.QMainWindow):
         state_controls = QtGui.QHBoxLayout()
         state_controls.addWidget(self.acceptBtn)
         state_controls.addWidget(self.rejectBtn)
+        state_controls.addWidget(self.saveBtn)
         state_controls.addWidget(self.turboBtn)
         
         # State boxes ---------------------------------------------------------
@@ -373,27 +383,27 @@ class UEDpowder(QtGui.QMainWindow):
         
         if self.state == 'initial':
             availableButtons = [self.imageLocatorBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
         elif self.state == 'data loaded':
             availableButtons = [self.imageLocatorBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
         elif self.state == 'center guessed':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.rejectBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.rejectBtn, self.saveBtn]
         elif self.state == 'radius guessed':
             availableButtons = [self.imageLocatorBtn, self.executeCenterBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+            unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
         elif self.state == 'center found':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn]
         elif self.state == 'radial averaged':
-            availableButtons = [self.imageLocatorBtn]
+            availableButtons = [self.imageLocatorBtn, self.saveBtn]
             unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn]  
         elif self.state == 'background guessed':
             availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.saveBtn]
         elif self.state == 'background substracted':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
             unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn]
         
         #Act!
@@ -445,7 +455,7 @@ class UEDpowder(QtGui.QMainWindow):
         """ Placeholder function to confirm that computation may proceed in certain cases """
         if self.state == 'center guessed':        
            pass
-        if self.state == 'radius guessed':
+        elif self.state == 'radius guessed':
             #Compute center
             xg, yg = self.guess_center
             rg = self.guess_radius
@@ -457,11 +467,16 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'center found'
             self.image_viewer.displayImage(self.image, circle, self.image_center, colour = 'green')
         
-        if self.state == 'background guessed':
+        elif self.state == 'background guessed':
             #Create guess data
             self.radial_average = fc.inelasticBGSubstract(self.raw_radial_average[0], self.raw_radial_average[1], self.background_guesses)
             self.state = 'background substracted'
             self.image_viewer.displayRadialPattern(self.raw_radial_averages, self.radial_average)
+    
+    def save(self):
+        """ Determines what to do when the save button is clicked """
+        if self.state == 'radial averaged':
+            pass
             
     def centerWindow(self):
         """ Centers the window """
