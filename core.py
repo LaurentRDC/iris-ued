@@ -153,7 +153,7 @@ def radialAverage(image, center = [562,549], beamblock = list()):
 #        if xlow < i < xhigh and ylow < j < yhigh:
 #            continue #If in the beamblock range, continue
         
-        #Ignore top half image
+        #Ignore top half image (where the beamblock is)
         if i < center[0]:
             continue
 
