@@ -164,7 +164,7 @@ class ImageViewer(FigureCanvas):
             self.axes.set_title('Raw TIFF image')
             self.draw()
     
-    def displayRadialPattern(self, *args):
+    def displayRadialPattern(self, data):
         """
         Plots one or more diffraction patterns.
         
@@ -174,19 +174,20 @@ class ImageViewer(FigureCanvas):
         """
         self.axes.cla()       
 
-        for l in args:
-            s, pattern, name = l       
+        for item in data:
+            s, pattern, name = item   
             self.axes.plot(s, pattern, '.', label = name)
         
         #Plot parameters
-        self.axes.set_xlim(args[0][0].min(), args[0][0].max())  #Set xlim and ylim on the first pattern args[0].
-        self.axes.set_ylim(args[0][1].min(), args[0][1].max())
+        self.axes.set_xlim(data[0][0].min(), data[0][0].max())  #Set xlim and ylim on the first pattern args[0].
+        self.axes.set_ylim(data[0][1].min(), data[0][1].max())
         self.axes.set_aspect('auto')
         self.axes.set_title('Diffraction pattern')
         self.axes.set_xlabel('radius (px)')
         self.axes.set_ylabel('Intensity')
         self.axes.legend( loc = 'upper right', numpoints = 1)
         self.draw()
+        
     def startLoading(self):
         self.parent.startLoading()
     def endLoading(self):
@@ -219,7 +220,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.image_center = list()
         self.image = None
         self.substrate_image = None
-        self.raw_radial_average = list()    #Before inelastic background substraction
+        self.raw_radial_averages = list()    #Before inelastic background substraction
         self.radial_average = list()        #After inelastic background substraction
         self.background_guesses = list()
         self._state = 'initial'
@@ -231,10 +232,10 @@ class UEDpowder(QtGui.QMainWindow):
     # -------------------------------------------------------------------------
     #           SETTER METHODS FOR THREADING
     # -------------------------------------------------------------------------
-    def setRawRadialAverage(self, value):
-        self.raw_radial_average = value
-        self.raw_radial_average.append('Raw radial average')
-        self.image_viewer.displayRadialPattern(self.raw_radial_average)
+    def setRawRadialAverages(self, value):
+        """ Handles the radial averages for both the diffraction pattern adn the substrate from a thread. """
+        self.raw_radial_averages = value
+        self.image_viewer.displayRadialPattern(self.raw_radial_averages)
         self.state = 'radial averaged'
     
     def setImageCenter(self, value):
@@ -400,8 +401,8 @@ class UEDpowder(QtGui.QMainWindow):
         """ Master accept function that validates a state and proceeds to the next one. """
         
         if self.state == 'center found':
-            self.work_thread = WorkThread(fc.radialAverage, self.image, self.image_center)              #Create thread with a specific function and arguments
-            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
+            self.work_thread = WorkThread(fc.radialAverage, [self.image, self.substrate_image], ['Raw', 'Substrate'], self.image_center)              #Create thread with a specific function and arguments
+            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverages) #Connect the outcome with a setter method
             self.work_thread.start()                                                                    #Compute stuff
         elif self.state == 'background substracted':
             pass
