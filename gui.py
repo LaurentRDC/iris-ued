@@ -42,12 +42,15 @@ class workThread(QtCore.QThread):
         self.function = function
         self.args = args
         self.kwargs = kwargs
+        self.result = None
     
     def __del__(self):
         self.wait()
     
-    def compute(self):
-        return self.function(*self.args, **self.kwargs)
+    def run(self):
+        """ Compute and emit a 'done' signal."""
+        self.result = self.function(*self.args, **self.kwargs)
+        self.emit(QtCore.SIGNAL('Computation done'), self.result)
 
 class ImageViewer(FigureCanvas):
     """
