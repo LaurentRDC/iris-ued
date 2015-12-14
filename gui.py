@@ -118,11 +118,14 @@ class ImageViewer(FigureCanvas):
         elif self.parent.state == 'radial averaged':
             if len(self.parent.background_guesses) < 5:
                 self.parent.background_guesses.append(self.last_click_position)
+                self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
+                self.draw()
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 
             elif len(self.parent.background_guesses) >= 5:
                 self.parent.background_guesses.append(self.last_click_position)
                 print 'Background guess #' + str(len(self.parent.background_guesses))
+                self.draw()
                 self.parent.state = 'background guessed'
 
     def initialFigure(self):
@@ -461,7 +464,7 @@ class UEDpowder(QtGui.QMainWindow):
             #Create guess data
             self.radial_average = fc.inelasticBGSubstract(self.raw_radial_average[0], self.raw_radial_average[1], self.background_guesses)
             self.state = 'background substracted'
-            self.image_viewer.displayRadialPattern(self.raw_radial_averages, self.radial_average)
+            self.image_viewer.displayRadialPattern(self.raw_radial_average[1], self.radial_average)
             
     def centerWindow(self):
         """ Centers the window """
