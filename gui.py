@@ -124,8 +124,6 @@ class ImageViewer(FigureCanvas):
                 
             elif len(self.parent.background_guesses) >= 5:
                 self.parent.background_guesses.append(self.last_click_position)
-                self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-                self.draw()
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.parent.state = 'background guessed'
 
@@ -237,7 +235,6 @@ class UEDpowder(QtGui.QMainWindow):
         self.raw_radial_averages = list()    #Before inelastic background substraction
         self.radial_average = list()        #After inelastic background substraction
         self.background_guesses = list()
-        self.inelastic_background = list()
         self._state = 'initial'
         
         #Methods
@@ -254,7 +251,11 @@ class UEDpowder(QtGui.QMainWindow):
         self.state = 'radial averaged'
     
     def setImageCenter(self, value):
-        self.image_center = value
+        self.image_center = value[0:2]
+        circle = generateCircle(value[0], value[1], value[2])
+        self.state = 'center found'
+        self.image_viewer.displayImage(self.image, circle, self.image_center, colour = 'green')
+
     # -------------------------------------------------------------------------
         
     @property
@@ -443,8 +444,8 @@ class UEDpowder(QtGui.QMainWindow):
 
             self.work_thread.start()                                                                    #Compute stuff
         elif self.state == 'background substracted':
+            #background_params =  
             pass
-
     
     def rejectState(self):
         """ Master reject function that invalidates a state and reverts to an appropriate state. """
@@ -467,22 +468,22 @@ class UEDpowder(QtGui.QMainWindow):
             #Compute center
             xg, yg = self.guess_center
             rg = self.guess_radius
-            center = fc.fCenter(xg,yg,rg,self.image)
             
-            #Save center and plot to confirm
-            self.image_center = center[0:2]
-            circle = generateCircle(center[0], center[1], center[2])
-            self.state = 'center found'
-            self.image_viewer.displayImage(self.image, circle, self.image_center, colour = 'green')
+            self.work_thread = WorkThread(fc.fCenter, xg, yg, rg, self.image)
+            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setImageCenter)            
+            self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.startLoading)
+            self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.endLoading)
+            self.work_thread.start()
         
         elif self.state == 'background guessed':
             #Create guess data
-            self.radial_average = fc.inelasticBGSubstract(self.raw_radial_averages[1][0], self.raw_radial_averages[1][1], self.background_guesses)
+            self.radial_average = fc.inelasticBGSubstract(self.raw_radial_average[0], self.raw_radial_average[1], self.background_guesses)
             self.state = 'background substracted'
     
     def save(self):
         """ Determines what to do when the save button is clicked """
-        if self.state == 'radial averaged':
+        from scipy.io import savemat
+        if self.state == 'radial averaged': 
             pass
 
     def centerWindow(self):
