@@ -72,8 +72,6 @@ class ImageViewer(FigureCanvas):
         #Non-plotting attributes
         self.parent = parent
         self.last_click_position = [0,0]
-        self.guess_center = None
-        self.guess_radius = None
         
         #plot setup
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -227,6 +225,8 @@ class UEDpowder(QtGui.QMainWindow):
         self.work_thread = None
         self.image_center = list()
         self.image = None
+        self.guess_center = None
+        self.guess_radius = None
         self.substrate_image = None
         self.raw_radial_averages = list()    #Before inelastic background substraction
         self.radial_average = list()        #After inelastic background substraction
@@ -377,6 +377,9 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'data loaded':
             availableButtons = [self.imageLocatorBtn]
             unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
+        elif self.state == 'center guessed':
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.rejectBtn]
         elif self.state == 'radius guessed':
             availableButtons = [self.imageLocatorBtn, self.executeCenterBtn]
             unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn]
@@ -408,7 +411,13 @@ class UEDpowder(QtGui.QMainWindow):
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
         
-        if self.state == 'center found':
+        if self.state == 'center guessed':
+            #To speedup debugging, accept the guessed center as the true center and move on
+            self.image_center = self.guess_center
+            self.state = 'center found'
+            self.acceptState()
+            
+        elif self.state == 'center found':
 
             self.work_thread = WorkThread(fc.radialAverage, [self.image, self.substrate_image], ['Raw', 'Subtrate'], self.image_center)              #Create thread with a specific function and arguments
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverages) #Connect the outcome with a setter method
@@ -452,7 +461,7 @@ class UEDpowder(QtGui.QMainWindow):
             #Create guess data
             self.radial_average = fc.inelasticBGSubstract(self.raw_radial_average[0], self.raw_radial_average[1], self.background_guesses)
             self.state = 'background substracted'
-            self.image_viewer.displayRadialPattern(self.raw_radial_average, self.radial_average)
+            self.image_viewer.displayRadialPattern(self.raw_radial_averages, self.radial_average)
             
     def centerWindow(self):
         """ Centers the window """

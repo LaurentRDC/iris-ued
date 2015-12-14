@@ -159,7 +159,7 @@ def radialAverage(images = list(), names = list(), center = [562,549]):
             bincount[ind] += 1
         
         #Return normalized radial average
-        results.append([unique_radii, n.divide(accumulation,bincount), name + 'radial average'])
+        results.append([unique_radii, n.divide(accumulation,bincount), name + ' radial average'])
 
     return results
 # -----------------------------------------------------------------------------
