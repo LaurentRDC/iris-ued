@@ -227,6 +227,9 @@ class UEDpowder(QtGui.QMainWindow):
     # -------------------------------------------------------------------------
     def setRawRadialAverage(self, value):
         self.raw_radial_average = value
+        self.raw_radial_average.append('Raw radial average')
+        self.image_viewer.displayRadialPattern(self.raw_radial_average)
+        self.state = 'radial averaged'
     
     def setImageCenter(self, value):
         self.image_center = value
@@ -391,13 +394,9 @@ class UEDpowder(QtGui.QMainWindow):
         """ Master accept function that validates a state and proceeds to the next one. """
         
         if self.state == 'center found':
-            
-            #Threading way
-            self.work_thread = WorkThread(fc.radialAverage, self.image, self.image_center)
-            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage)
-            self.work_thread.start()
-            self.image_viewer.displayRadialPattern(self.raw_radial_average)
-            self.state = 'radial averaged'
+            self.work_thread = WorkThread(fc.radialAverage, self.image, self.image_center)              #Create thread with a specific function and arguments
+            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
+            self.work_thread.start()                                                                    #Compute stuff
         elif self.state == 'background substracted':
             pass
     
