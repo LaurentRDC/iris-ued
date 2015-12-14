@@ -178,9 +178,15 @@ class ImageViewer(FigureCanvas):
             s, pattern, name = item   
             self.axes.plot(s, pattern, '.', label = name)
         
+        #Determine scaling
+        xmax = max([item[0].max() for item in data])
+        xmin = min([item[0].min() for item in data])
+        ymax = max([item[1].max() for item in data])
+        ymin = min([item[1].min() for item in data])
+        
         #Plot parameters
-        self.axes.set_xlim(data[0][0].min(), data[0][0].max())  #Set xlim and ylim on the first pattern args[0].
-        self.axes.set_ylim(data[0][1].min(), data[0][1].max())
+        self.axes.set_xlim(xmin, xmax)  #Set xlim and ylim on the first pattern args[0].
+        self.axes.set_ylim(ymin, ymax)
         self.axes.set_aspect('auto')
         self.axes.set_title('Diffraction pattern')
         self.axes.set_xlabel('radius (px)')
