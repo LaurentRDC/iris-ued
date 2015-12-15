@@ -115,7 +115,7 @@ class ImageViewer(FigureCanvas):
             self.displayImage(self.parent.image, circle = circle_guess ,center = self.parent.guess_center)
             self.parent.state = 'radius guessed'
             
-        elif self.parent.state == 'radial averaged':
+        elif self.parent.state == 'radial averaged' or self.parent.state == 'background guessed':
             if len(self.parent.background_guesses) < 5:
                 self.parent.background_guesses.append(self.last_click_position)
                 self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
@@ -134,7 +134,6 @@ class ImageViewer(FigureCanvas):
         missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
         self.axes.cla()     #Clear axes
         self.axes.imshow(missing_image)
-
  
     def displayImage(self, image, circle = None, center = None, colour = 'red'):
         """ 
