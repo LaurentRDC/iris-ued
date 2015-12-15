@@ -50,10 +50,10 @@ class WorkThread(QtCore.QThread):
     
     def run(self):
         """ Compute and emit a 'done' signal."""
-        self.emit(QtCore.SIGNAL('Display Loading'), 'Computing...')
+        self.emit(QtCore.SIGNAL('Display Loading'), '\n Computing...')
         self.result = self.function(*self.args, **self.kwargs)
+        self.emit(QtCore.SIGNAL('Remove Loading'), '\n Done.')
         self.emit(QtCore.SIGNAL('Computation done'), self.result)
-        self.emit(QtCore.SIGNAL('Remove Loading'), 'Computation done.')
 
 class ImageViewer(FigureCanvas):
     """
@@ -256,7 +256,6 @@ class UEDpowder(QtGui.QMainWindow):
         circle = generateCircle(value[0], value[1], value[2])
         self.state = 'center found'
         self.image_viewer.displayImage(self.image, circle, self.image_center, colour = 'green')
-
     # -------------------------------------------------------------------------
         
     @property
@@ -390,7 +389,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         if message != None:
             assert isinstance(message, str)
-            self.instructions.append('\n ' + message)
+            self.instructions.append(message)
         else:           #Handle state changes
             if self.state == 'initial':
                 self.instructions.append('\n Click the "Locate diffraction image" button to import a diffraction image.')
