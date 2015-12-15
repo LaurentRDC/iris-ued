@@ -116,13 +116,13 @@ class ImageViewer(FigureCanvas):
             self.parent.state = 'radius guessed'
             
         elif self.parent.state == 'radial averaged' or self.parent.state == 'background guessed':
-            if len(self.parent.background_guesses) < 5:
+            if len(self.parent.background_guesses) < 9:
                 self.parent.background_guesses.append(self.last_click_position)
                 self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
                 self.draw()
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 
-            elif len(self.parent.background_guesses) >= 5:
+            elif len(self.parent.background_guesses) >= 9:
                 self.parent.background_guesses.append(self.last_click_position)
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
@@ -504,7 +504,8 @@ class UEDpowder(QtGui.QMainWindow):
         
         elif self.state == 'background guessed':
             #Create guess data
-            self.radial_average = fc.inelasticBGSubstract(self.raw_radial_average[0], self.raw_radial_average[1], self.background_guesses)
+            self.radial_average = fc.inelasticBGSubstract(self.raw_radial_averages, self.background_guesses)
+            self.image_viewer.displayRadialPattern(self.radial_average)
             self.state = 'background substracted'
     
     def save(self):

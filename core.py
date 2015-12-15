@@ -162,6 +162,10 @@ def radialAverage(images = list(), names = list(), center = [562,549]):
         results.append([unique_radii, n.divide(accumulation,bincount), name + ' radial average'])
 
     return results
+
+def removeBeamblockInfluence():
+    pass
+
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
@@ -214,20 +218,29 @@ def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5)
     #TODO: smooth background data
     return background, profiles
     
-def inelasticBGSubstract(xdata, ydata, points = list()):
-
-    #Create guess 
-    guesses = ydata.max()/2, 1/50, ydata.max()/2, 1/150, ydata.min() 
+def inelasticBGSubstract(patterns, points = list()):
+    """
     
-    #Create x and y arrays for the points 
+    """
+    #Create x arrays for the points 
     points = n.array(points) 
-    x, y = points[:,0], points[:,1] 
+    x = points[:,0]
     
-    #Fit with guesses 
-    optimal_parameters, parameters_covariance = opt.curve_fit(biexp, x, y, p0 = guesses) 
-    
-    #Create inelastic background function 
-    a,b,c,d,e = optimal_parameters 
-    background_ordinate = biexp(xdata, a, b, c, d, e) 
-    
-    return [xdata, background_ordinate, 'Inelastic scattering background'] 
+    biexponentials = list()
+    for pattern in patterns:
+        xdata, ydata, name = pattern
+        
+        #Create guess 
+        guesses = ydata.max()/2, 1/50, ydata.max()/2, 1/150, ydata.min() 
+        
+        #Interpolate the values of the patterns at the x points
+        y = n.interp(x, xdata, ydata)
+        
+        #Fit with guesses 
+        optimal_parameters, parameters_covariance = opt.curve_fit(biexp, x, y, p0 = guesses, maxfev = 10000) 
+        
+        #Create inelastic background function 
+        #a,b,c,d,e = optimal_parameters 
+        biexponentials.append([xdata, biexp(xdata, *optimal_parameters), 'Biexp ' + name]) 
+        
+    return biexponentials
