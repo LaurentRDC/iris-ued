@@ -244,13 +244,13 @@ def inelasticBGSubstract(patterns, points = list()):
         xdata, ydata, name = pattern
         
         #Create guess 
-        guesses = ydata.max()/2, 1/50, ydata.max()/2, 1/150, ydata.min() 
+        guesses = ydata.max(), 1/50, ydata.max()/2, 1/150, ydata.min() 
         
         #Interpolate the values of the patterns at the x points
         y = n.interp(x, xdata, ydata)
         
         #Fit with guesses 
-        optimal_parameters, parameters_covariance = opt.curve_fit(biexp, x, y, p0 = guesses, maxfev = 10000) 
+        optimal_parameters, parameters_covariance = opt.curve_fit(biexp, x, y, p0 = guesses, maxfev = 20000) 
         
         #Create inelastic background function 
         #a,b,c,d,e = optimal_parameters 
