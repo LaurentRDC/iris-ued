@@ -163,9 +163,22 @@ def radialAverage(images = list(), names = list(), center = [562,549]):
 
     return results
 
-def removeBeamblockInfluence():
-    pass
+def cutoff(patterns = list(), cutoff = [0,0]):
+    """ Cuts off the radial patterns. """
+    
+    first_pattern = patterns[0]
+    xdata, ydata, name = first_pattern
+    
+    #Find index of cutoff[0]
+    cutoff_index = n.argmin(n.abs(xdata - cutoff[0]))
+    
+    #cut
+    cut_patterns = list() 
+    for pattern in patterns:
+        xdata, ydata, name = pattern
+        cut_patterns.append( [xdata[cutoff_index::], ydata[cutoff_index::], name] )
 
+    return cut_patterns
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
@@ -226,7 +239,7 @@ def inelasticBGSubstract(patterns, points = list()):
     points = n.array(points) 
     x = points[:,0]
     
-    biexponentials = list()
+    biexponentials = patterns
     for pattern in patterns:
         xdata, ydata, name = pattern
         

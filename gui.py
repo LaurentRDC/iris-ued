@@ -114,8 +114,14 @@ class ImageViewer(FigureCanvas):
             circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
             self.displayImage(self.parent.image, circle = circle_guess ,center = self.parent.guess_center)
             self.parent.state = 'radius guessed'
+        
+        elif self.parent.state == 'radial averaged' or self.parent.state == 'cutoff set':
+            self.parent.cutoff = self.last_click_position
+            self.axes.axvline(self.parent.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
+            self.draw()
+            self.parent.state = 'cutoff set'
             
-        elif self.parent.state == 'radial averaged' or self.parent.state == 'background guessed':
+        elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
             if len(self.parent.background_guesses) < 9:
                 self.parent.background_guesses.append(self.last_click_position)
                 self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
@@ -220,7 +226,7 @@ class UEDpowder(QtGui.QMainWindow):
         list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity. 'name' is a string used to make the plot legend.
     state : string
         Value describing in what state the software is. Possible values are:
-            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'background guessed', 'background substracted']
+            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'radial cutoff', 'background guessed', 'background substracted']
     raw_radial_averages : list of lists
         List of the form [[radii1, pattern1, name1], [radii2, pattern2, name2], ... ], : list of ndarrays, shapes (M,), and an ID string
     """
@@ -232,6 +238,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.image = None
         self.guess_center = None
         self.guess_radius = None
+        self.cutoff = list()
         self.substrate_image = None
         self.raw_radial_averages = list()    #Before inelastic background substraction
         self.radial_average = list()        #After inelastic background substraction
@@ -265,6 +272,7 @@ class UEDpowder(QtGui.QMainWindow):
     
     @state.setter
     def state(self, value):
+        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff', 'background guessed', 'background substracted']
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
@@ -315,10 +323,17 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeCenterBtn.setIcon(QtGui.QIcon('images\science.png'))
         center_box.addWidget(self.executeCenterBtn)
         
+        #For beamblock radial cutoff box
+        beamblock_box = QtGui.QVBoxLayout()
+        beamblock_box.addWidget(QtGui.QLabel('Step 3: Select a radial cutoff for the beamblock'))
+        self.executeRadialCutoffBtn = QtGui.QPushButton('Cutoff radial patterns', self)
+        self.executeRadialCutoffBtn.setIcon(QtGui.QIcon('images\science.png'))
+        beamblock_box.addWidget(self.executeRadialCutoffBtn)
+        
         #For the inelastic scattering correction
         inelastic_box = QtGui.QVBoxLayout()
-        inelastic_box.addWidget(QtGui.QLabel('Step 3: Remove inelastic scattering background and substrate effects'))
-        self.executeInelasticBtn = QtGui.QPushButton('Execute', self)
+        inelastic_box.addWidget(QtGui.QLabel('Step 4: Remove inelastic scattering background and substrate effects'))
+        self.executeInelasticBtn = QtGui.QPushButton('Fit', self)
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
         
@@ -343,6 +358,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.acceptBtn.clicked.connect(self.acceptState)
         self.rejectBtn.clicked.connect(self.rejectState)
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
+        self.executeRadialCutoffBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         self.saveBtn.clicked.connect(self.save)
         
@@ -361,6 +377,7 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes = QtGui.QVBoxLayout()
         state_boxes.addLayout(initial_box)
         state_boxes.addLayout(center_box)
+        state_boxes.addLayout(beamblock_box)
         state_boxes.addLayout(inelastic_box)
         state_boxes.addLayout(instruction_box)
         state_boxes.addLayout(state_controls)
@@ -403,7 +420,11 @@ class UEDpowder(QtGui.QMainWindow):
             elif self.state == 'center found':
                 self.instructions.append('\n Click the "Accept" button to radially average the data, or click "Reject" to guess for a center again.')
             elif self.state == 'radial averaged':
-                pass
+                self.instructions.append('\n Click on the pattern to cutoff the area affected by the beam block.')
+            elif self.state == 'cutoff set':
+                self.instructions.append('\n Click on the "Cutoff radial patterns" button if you are satisfied with the cutoff or click again on the image viewer to set a new cutoff.')
+            elif self.state == 'radial cutoff':
+                self.instructions.append('\n Click on the image viewer to select sampling points to fit a background to.')
             elif self.state == 'background guessed':
                 pass
             elif self.state == 'background substracted':
@@ -418,28 +439,34 @@ class UEDpowder(QtGui.QMainWindow):
         
         if self.state == 'initial':
             availableButtons = [self.imageLocatorBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'data loaded':
             availableButtons = [self.imageLocatorBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'center guessed':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.rejectBtn, self.saveBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'radius guessed':
             availableButtons = [self.imageLocatorBtn, self.executeCenterBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
+            unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'center found':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn]
+            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'radial averaged':
+            availableButtons = [self.imageLocatorBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn, self.executeRadialCutoffBtn]
+        elif self.state == 'cutoff set':
+            availableButtons = [self.imageLocatorBtn, self.executeRadialCutoffBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn]
+        elif self.state == 'radial cutoff':
             availableButtons = [self.imageLocatorBtn, self.saveBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn]  
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'background guessed':
             availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.saveBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'background substracted':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn]
+            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn, self.executeRadialCutoffBtn]
         
         #Act!
         for btn in availableButtons:
@@ -501,7 +528,10 @@ class UEDpowder(QtGui.QMainWindow):
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
             self.work_thread.start()
-        
+        elif self.state == 'cutoff set':
+            self.raw_radial_averages = fc.cutoff(self.raw_radial_averages, self.cutoff)
+            self.image_viewer.displayRadialPattern(self.raw_radial_averages)
+            self.state = 'radial cutoff'
         elif self.state == 'background guessed':
             #Create guess data
             self.radial_average = fc.inelasticBGSubstract(self.raw_radial_averages, self.background_guesses)
