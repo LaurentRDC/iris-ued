@@ -312,21 +312,24 @@ class UEDpowder(QtGui.QMainWindow):
         save_load_box.addWidget(self.saveBtn)
         
         #For initial state box
-        initial_box = QtGui.QVBoxLayout()
+        initial_box = QtGui.QHBoxLayout()
         initial_box.addWidget(self.initial_message)
-        self.imageLocatorBtn = QtGui.QPushButton('Locate diffraction image', self)
-        self.imageLocatorBtn.setIcon(QtGui.QIcon('images\locator.png'))
+        self.imageLocatorBtn = QtGui.QPushButton('Open diffraction image', self)
+        self.imageLocatorBtn.setIcon(QtGui.QIcon('images\diffraction.png'))
         initial_box.addWidget(self.imageLocatorBtn)
+        self.directoryLocatorBtn = QtGui.QPushButton('Open data directory', self)
+        self.directoryLocatorBtn.setIcon(QtGui.QIcon('images\locator.png'))
+        initial_box.addWidget(self.directoryLocatorBtn)
         
         #For image center select box
-        center_box = QtGui.QVBoxLayout()
+        center_box = QtGui.QHBoxLayout()
         center_box.addWidget(QtGui.QLabel('Step 2: Find the center of the image'))
         self.executeCenterBtn = QtGui.QPushButton('Find center', self)
         self.executeCenterBtn.setIcon(QtGui.QIcon('images\science.png'))
         center_box.addWidget(self.executeCenterBtn)
         
         #For beamblock radial cutoff box
-        beamblock_box = QtGui.QVBoxLayout()
+        beamblock_box = QtGui.QHBoxLayout()
         beamblock_box.addWidget(QtGui.QLabel('Step 3: Select a radial cutoff for the beamblock'))
         self.executeRadialCutoffBtn = QtGui.QPushButton('Cutoff radial patterns', self)
         self.executeRadialCutoffBtn.setIcon(QtGui.QIcon('images\science.png'))
@@ -340,7 +343,7 @@ class UEDpowder(QtGui.QMainWindow):
         substrate_inelastic_box.addWidget(self.executeSubstrateInelasticBtn)
         
         #For the inelastic scattering correction
-        inelastic_box = QtGui.QVBoxLayout()
+        inelastic_box = QtGui.QHBoxLayout()
         inelastic_box.addWidget(QtGui.QLabel('Step 5: Remove inelastic scattering background from data.'))
         self.executeInelasticBtn = QtGui.QPushButton('Fit', self)
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
