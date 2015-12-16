@@ -300,6 +300,9 @@ class UEDpowder(QtGui.QMainWindow):
         self.saveBtn = QtGui.QPushButton('Save', self)
         self.saveBtn.setIcon(QtGui.QIcon('images\save.png'))
         
+        self.loadBtn = QtGui.QPushButton('Load', self)
+        self.loadBtn.setIcon(QtGui.QIcon('images\locator.png'))
+        
         #Set up message boxes
         self.initial_message = QtGui.QLabel('Step 1: select TIFF image.')
         self.center_message = QtGui.QLabel('')
@@ -361,6 +364,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeRadialCutoffBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         self.saveBtn.clicked.connect(self.save)
+        self.loadBtn.clicked.connect(self.load)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -371,6 +375,7 @@ class UEDpowder(QtGui.QMainWindow):
         state_controls.addWidget(self.acceptBtn)
         state_controls.addWidget(self.rejectBtn)
         state_controls.addWidget(self.saveBtn)
+        state_controls.addWidget(self.loadBtn)
         state_controls.addWidget(self.turboBtn)
         
         # State boxes ---------------------------------------------------------
@@ -438,34 +443,34 @@ class UEDpowder(QtGui.QMainWindow):
         unavailableButtons = list()
         
         if self.state == 'initial':
-            availableButtons = [self.imageLocatorBtn]
+            availableButtons = [self.imageLocatorBtn, self.loadBtn]
             unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'data loaded':
-            availableButtons = [self.imageLocatorBtn]
+            availableButtons = [self.imageLocatorBtn, self.loadBtn]
             unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'center guessed':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn]
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.loadBtn]
             unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'radius guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn]
+            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn, self.loadBtn]
             unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'center found':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn]
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.loadBtn]
             unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'radial averaged':
-            availableButtons = [self.imageLocatorBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn, self.executeRadialCutoffBtn]
+            availableButtons = [self.imageLocatorBtn,  self.saveBtn, self.loadBtn]
+            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'cutoff set':
-            availableButtons = [self.imageLocatorBtn, self.executeRadialCutoffBtn]
+            availableButtons = [self.imageLocatorBtn, self.executeRadialCutoffBtn, self.loadBtn]
             unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn]
         elif self.state == 'radial cutoff':
-            availableButtons = [self.imageLocatorBtn, self.saveBtn]
+            availableButtons = [self.imageLocatorBtn, self.saveBtn, self.loadBtn]
             unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'background guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn]
+            availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn, self.loadBtn]
             unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'background substracted':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.loadBtn]
             unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn, self.executeRadialCutoffBtn]
         
         #Act!
@@ -541,8 +546,27 @@ class UEDpowder(QtGui.QMainWindow):
     def save(self):
         """ Determines what to do when the save button is clicked """
         from scipy.io import savemat
-        if self.state == 'radial averaged': 
-            pass
+        if self.state == 'radial averaged':
+            filename = self.file_dialog.getSaveFileName(self, 'Save radial averages', 'C:\\')
+    
+            mdict = {'rav_x':self.raw_radial_averages[0][0], 'rav_y': self.raw_radial_averages[0][1],
+                     'rav_subs_x':self.raw_radial_averages[1][0], 'rav_subs_y': self.raw_radial_averages[1][1]}
+            savemat(filename, mdict)
+
+            
+    def load(self, filename = None):
+        """ Determines what to do when the load button is clicked """
+        from scipy.io import loadmat
+        
+        filename = self.file_dialog.getOpenFileName(self, 'Load radial averages', 'C:\\')
+        
+        mdict = dict()
+        mdict = loadmat(filename)
+        rav = [ mdict['rav_x'][0], mdict['rav_y'][0], 'Raw' ]
+        rav_subs = [ mdict['rav_subs_x'][0], mdict['rav_subs_y'][0], 'Subs' ]
+        self.raw_radial_averages = [rav, rav_subs]
+        self.image_viewer.displayRadialPattern(self.raw_radial_averages)
+        self.state = 'radial averaged'
 
     def centerWindow(self):
         """ Centers the window """
