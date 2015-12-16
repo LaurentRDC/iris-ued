@@ -238,7 +238,7 @@ def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5)
     #TODO: smooth background data
     return background, profiles
     
-def inelasticBG(patterns, points = list(), fit = 'biexp'):
+def inelasticBG(pattern, points = list(), fit = 'biexp'):
     """
     Inelastic scattering background substraction.
     
@@ -251,35 +251,34 @@ def inelasticBG(patterns, points = list(), fit = 'biexp'):
     fit : string
         Function to use as fit. Allowed values are 'biexp' and 'bilor'
     """
+    #Preliminaries
+    function = bilor if fit == 'bilor' else biexp
+    
+    #unpack data
+    xdata, ydata, name = pattern
+    xdata = xdata.astype(n.float)
+    ydata = ydata.astype(n.float)
+    
     #Create x arrays for the points 
     points = n.array(points, dtype = n.float) 
     x = points[:,0]
-        
-    fits = list()
-    function = bilor if fit == 'bilor' else biexp
-    for pattern in patterns:
-        xdata, ydata, name = pattern
-        xdata = xdata.astype(n.float)
-        ydata = ydata.astype(n.float)
-        
-        #Process ydata to remove any zeros
-        
-        #Create guess 
-        guesses = {'biexp': (ydata.max()/2, 1/50.0, ydata.max()/2, 1/150.0, ydata.min(), xdata.min()), 'bilor':  (xdata.min(), ydata.max()/1.5, ydata.max()/2.0, 50.0, 150.0, ydata.min())}
-        
-        #Interpolate the values of the patterns at the x points
-        y = n.interp(x, xdata, ydata)
-        
-        #Fit with guesses 
-        try:
-            optimal_parameters, parameters_covariance = opt.curve_fit(function, x, y, p0 = guesses[fit]) 
-        except(RuntimeError):
-            print 'Runtime error'
-            optimal_parameters = guesses[fit]
-
-        #Create inelastic background function 
-        a,b,c,d,e,f = optimal_parameters
-        new_fit = function(xdata, a, b, c, d, e, f) 
-        fits.append([xdata, new_fit, 'IBG ' + name])
     
-    return fits
+    #Create guess 
+    guesses = {'biexp': (ydata.max()/2, 1/50.0, ydata.max()/2, 1/150.0, ydata.min(), xdata.min()), 'bilor':  (xdata.min(), ydata.max()/1.5, ydata.max()/2.0, 50.0, 150.0, ydata.min())}
+    
+    #Interpolate the values of the patterns at the x points
+    y = n.interp(x, xdata, ydata)
+    
+    #Fit with guesses if optimization does not converge
+    try:
+        optimal_parameters, parameters_covariance = opt.curve_fit(function, x, y, p0 = guesses[fit]) 
+    except(RuntimeError):
+        print 'Runtime error'
+        optimal_parameters = guesses[fit]
+
+    #Create inelastic background function 
+    a,b,c,d,e,f = optimal_parameters
+    new_fit = function(xdata, a, b, c, d, e, f) 
+    fit = [xdata, new_fit, 'IBG ' + name]
+    
+    return fit

@@ -226,7 +226,7 @@ class UEDpowder(QtGui.QMainWindow):
         list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity. 'name' is a string used to make the plot legend.
     state : string
         Value describing in what state the software is. Possible values are:
-            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'radial cutoff', 'background guessed', 'background determined', 'background substracted']
+            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'radial cutoff', 'substrate background guessed', 'substrate background determined', 'background guessed', 'background determined']
     raw_radial_averages : list of lists
         List of the form [[radii1, pattern1, name1], [radii2, pattern2, name2], ... ], : list of ndarrays, shapes (M,), and an ID string
     """
@@ -272,7 +272,7 @@ class UEDpowder(QtGui.QMainWindow):
     
     @state.setter
     def state(self, value):
-        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff', 'background guessed','background determined', 'background substracted']
+        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff','substrate background guessed','substrate background determined', 'background guessed','background determined', 'background substracted']
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
@@ -305,7 +305,6 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Set up message boxes
         self.initial_message = QtGui.QLabel('Step 1: Select TIFF image.')
-        self.center_message = QtGui.QLabel('')
         
         #Save-load box
         save_load_box = QtGui.QVBoxLayout()
@@ -334,8 +333,15 @@ class UEDpowder(QtGui.QMainWindow):
         beamblock_box.addWidget(self.executeRadialCutoffBtn)
         
         #For the inelastic scattering correction
+        substrate_inelastic_box = QtGui.QVBoxLayout()
+        substrate_inelastic_box.addWidget(QtGui.QLabel('Step 4: Remove inelastic scattering background from substrate.'))
+        self.executeSubstrateInelasticBtn = QtGui.QPushButton('Fit', self)
+        self.executeSubstrateInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
+        substrate_inelastic_box.addWidget(self.executeSubstrateInelasticBtn)
+        
+        #For the inelastic scattering correction
         inelastic_box = QtGui.QVBoxLayout()
-        inelastic_box.addWidget(QtGui.QLabel('Step 4: Remove inelastic scattering background and substrate effects'))
+        inelastic_box.addWidget(QtGui.QLabel('Step 5: Remove inelastic scattering background from data.'))
         self.executeInelasticBtn = QtGui.QPushButton('Fit', self)
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
@@ -362,6 +368,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.rejectBtn.clicked.connect(self.rejectState)
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
         self.executeRadialCutoffBtn.clicked.connect(self.executeStateOperation)
+        self.executeSubstrateInelasticBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         self.saveBtn.clicked.connect(self.save)
         self.loadBtn.clicked.connect(self.load)
@@ -523,28 +530,34 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'radial cutoff'
 
     def executeStateOperation(self):
-        """ Placeholder function to confirm that computation may proceed in certain cases """
+        """ Placeholder function to confirm that computation may proceed in certain cases. """
         if self.state == 'center guessed':        
            pass
         elif self.state == 'radius guessed':
             #Compute center
             xg, yg = self.guess_center
-            rg = self.guess_radius
-            
-            self.work_thread = WorkThread(fc.fCenter, xg, yg, rg, self.image)
+            self.work_thread = WorkThread(fc.fCenter, xg, yg, self.guess_radius, self.image)
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setImageCenter)            
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
             self.work_thread.start()
         elif self.state == 'cutoff set':
+            #Cutoff radial patterns
             self.raw_radial_averages = fc.cutoff(self.raw_radial_averages, self.cutoff)
             self.image_viewer.displayRadialPattern(self.raw_radial_averages)
             self.state = 'radial cutoff'
+        elif self.state == 'substrate background guessed':
+            #Create guess data
+            fit = fc.inelasticBG(self.raw_radial_averages[1], self.background_guesses)
+            self.image_viewer.displayRadialPattern(self.raw_radial_averages[0] + fit)
+            self.background_guesses = list()
+            self.state = 'substrate background determined'
+        
         elif self.state == 'background guessed':
             #Create guess data
-            fits = fc.inelasticBG(self.raw_radial_averages, self.background_guesses)
-            self.image_viewer.displayRadialPattern(self.raw_radial_averages + fits)
-            self.state = 'background determined'
+            fits = fc.inelasticBG(self.raw_radial_averages[0], self.background_guesses)
+            self.image_viewer.displayRadialPattern(self.raw_radial_averages[0] + fit)
+            self.state = 'substrate background determined'
     
     def save(self):
         """ Determines what to do when the save button is clicked """
