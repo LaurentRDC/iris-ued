@@ -288,7 +288,7 @@ class UEDpowder(QtGui.QMainWindow):
     
     @state.setter
     def state(self, value):
-        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff','substrate background guessed','substrate background determined', 'background guessed','background determined', 'background substracted']
+        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff','substrate background guessed','substrate background determined', 'background guessed','background determined', 'inelastic background substracted']
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
@@ -507,6 +507,9 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'background determined':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.loadBtn]
             unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn, self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn]
+        elif self.state == 'inelastic background substracted':
+            availableButtons = [self.imageLocatorBtn, self.loadBtn]
+            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn, self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
         #Act!
         for btn in availableButtons:
             btn.setEnabled(True)
@@ -539,6 +542,14 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'substrate background determined':
             self.image_viewer.displayRadialPattern([self.raw_radial_averages[0]])
             self.background_guesses = list()
+        
+        elif self.state == 'background determined':
+            #Subtract backgrounds
+            self.radial_averages = list(self.raw_radial_averages)   #Copy list
+            self.radial_averages[1][1] -= self.substrate_background_fit[1]  #Substract inelastic background from substrate data
+            self.radial_averages[0][1] -= self.background_fit[1]            #Substract inelastic background from data
+            self.image_viewer.displayRadialPattern(self.radial_averages)
+            self.state = 'inelastic background substracted'
             
             
     def rejectState(self):
