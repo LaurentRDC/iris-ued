@@ -238,7 +238,7 @@ def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5)
     #TODO: smooth background data
     return background, profiles
     
-def inelasticBGSubstract(patterns, points = list(), fit = 'biexp'):
+def inelasticBG(patterns, points = list(), fit = 'biexp'):
     """
     Inelastic scattering background substraction.
     
@@ -255,7 +255,7 @@ def inelasticBGSubstract(patterns, points = list(), fit = 'biexp'):
     points = n.array(points, dtype = n.float) 
     x = points[:,0]
         
-    background_substracted = list()
+    fits = list()
     function = bilor if fit == 'bilor' else biexp
     for pattern in patterns:
         xdata, ydata, name = pattern
@@ -280,7 +280,6 @@ def inelasticBGSubstract(patterns, points = list(), fit = 'biexp'):
         #Create inelastic background function 
         a,b,c,d,e,f = optimal_parameters
         new_fit = function(xdata, a, b, c, d, e, f) 
-        substracted = ydata - new_fit
-        background_substracted.append([xdata, substracted, 'BGS ' + name])
+        fits.append([xdata, new_fit, 'IBG ' + name])
     
-    return background_substracted
+    return fits

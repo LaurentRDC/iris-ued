@@ -226,7 +226,7 @@ class UEDpowder(QtGui.QMainWindow):
         list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity. 'name' is a string used to make the plot legend.
     state : string
         Value describing in what state the software is. Possible values are:
-            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'radial cutoff', 'background guessed', 'background substracted']
+            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'radial cutoff', 'background guessed', 'background determined', 'background substracted']
     raw_radial_averages : list of lists
         List of the form [[radii1, pattern1, name1], [radii2, pattern2, name2], ... ], : list of ndarrays, shapes (M,), and an ID string
     """
@@ -272,7 +272,7 @@ class UEDpowder(QtGui.QMainWindow):
     
     @state.setter
     def state(self, value):
-        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff', 'background guessed', 'background substracted']
+        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff', 'background guessed','background determined', 'background substracted']
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
@@ -304,7 +304,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.loadBtn.setIcon(QtGui.QIcon('images\locator.png'))
         
         #Set up message boxes
-        self.initial_message = QtGui.QLabel('Step 1: select TIFF image.')
+        self.initial_message = QtGui.QLabel('Step 1: Select TIFF image.')
         self.center_message = QtGui.QLabel('')
         
         #Save-load box
@@ -321,7 +321,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         #For image center select box
         center_box = QtGui.QVBoxLayout()
-        center_box.addWidget(QtGui.QLabel('Step 2: find the center of the image'))
+        center_box.addWidget(QtGui.QLabel('Step 2: Find the center of the image'))
         self.executeCenterBtn = QtGui.QPushButton('Find center', self)
         self.executeCenterBtn.setIcon(QtGui.QIcon('images\science.png'))
         center_box.addWidget(self.executeCenterBtn)
@@ -431,6 +431,8 @@ class UEDpowder(QtGui.QMainWindow):
             elif self.state == 'radial cutoff':
                 self.instructions.append('\n Click on the image viewer to select sampling points to fit a background to.')
             elif self.state == 'background guessed':
+                self.instructions.append('\n Click on the "Fit" button to fit the inelastic background.')
+            elif self.state == 'background determined':
                 pass
             elif self.state == 'background substracted':
                 pass
@@ -469,10 +471,11 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'background guessed':
             availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn, self.loadBtn]
             unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.saveBtn, self.executeRadialCutoffBtn]
-        elif self.state == 'background substracted':
+        elif self.state == 'background determined':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.loadBtn]
             unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn, self.executeRadialCutoffBtn]
-        
+        elif self.state == 'background substracted':
+            pass
         #Act!
         for btn in availableButtons:
             btn.setEnabled(True)
@@ -513,11 +516,11 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'data loaded'
             self.image_viewer.guess_center, self.image_viewer.guess_radius = None, None
             self.image_viewer.displayImage(self.image)
-        if self.state == 'background substracted':
+        if self.state == 'background determined':
             #Go back to choosing the guesses for the background
-            self.image_viewer.displayRadialPattern(self.raw_radial_average)
+            self.image_viewer.displayRadialPattern(self.raw_radial_averages)
             self.background_guesses = list() #Clear guesses
-            self.state = 'radial averaged'
+            self.state = 'radial cutoff'
 
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases """
@@ -539,9 +542,9 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'radial cutoff'
         elif self.state == 'background guessed':
             #Create guess data
-            self.radial_average = fc.inelasticBGSubstract(self.raw_radial_averages, self.background_guesses)
-            self.image_viewer.displayRadialPattern(self.radial_average)
-            self.state = 'background substracted'
+            fits = fc.inelasticBG(self.raw_radial_averages, self.background_guesses)
+            self.image_viewer.displayRadialPattern(self.raw_radial_averages + fits)
+            self.state = 'background determined'
     
     def save(self):
         """ Determines what to do when the save button is clicked """
@@ -552,7 +555,7 @@ class UEDpowder(QtGui.QMainWindow):
             mdict = {'rav_x':self.raw_radial_averages[0][0], 'rav_y': self.raw_radial_averages[0][1],
                      'rav_subs_x':self.raw_radial_averages[1][0], 'rav_subs_y': self.raw_radial_averages[1][1]}
             savemat(filename, mdict)
-
+        self.instructions.append('\n Radial averages saved.')
             
     def load(self, filename = None):
         """ Determines what to do when the load button is clicked """
@@ -567,6 +570,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.raw_radial_averages = [rav, rav_subs]
         self.image_viewer.displayRadialPattern(self.raw_radial_averages)
         self.state = 'radial averaged'
+        self.instructions.append('\n Radial averages loaded.')
 
     def centerWindow(self):
         """ Centers the window """
