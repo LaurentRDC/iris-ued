@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 #Basics
+from __future__ import division
 import numpy as n
 import scipy.optimize as opt
+
 
 # -----------------------------------------------------------------------------
 #           HELPER FUNCTIONS
 # -----------------------------------------------------------------------------
-
-def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0):
-    """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x) + e"""
-    return a*n.exp(-b*x) + c*n.exp(-d*x) + e
 
 def Gaussian(x, xc = 0, width_g = 0.1):
     """ Returns a Gaussian with maximal height of 1 (not area of 1)."""
@@ -182,6 +180,15 @@ def cutoff(patterns = list(), cutoff = [0,0]):
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
+
+def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0):
+    """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x) + e"""
+    return a*n.exp(-b*(x-f)) + c*n.exp(-d*(x-f)) + e
+
+def bilor(x, center, amp1, amp2, width1, width2, const):
+    """ Returns a Bilorentzian functions. """
+    return amp1*Lorentzian(x, center, width1) + amp2*Lorentzian(x, center, width2) + const
+    
 def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5):
     """ 
     Following Vance's inelastic background substraction method. We assume that the data has been corrected for diffuse scattering by substrate 
@@ -231,29 +238,49 @@ def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5)
     #TODO: smooth background data
     return background, profiles
     
-def inelasticBGSubstract(patterns, points = list()):
+def inelasticBGSubstract(patterns, points = list(), fit = 'biexp'):
     """
+    Inelastic scattering background substraction.
     
+    Parameters
+    ----------
+    patterns : list of lists of the form [xdata, ydata, name]
+    
+    points : list of lists of the form [x,y]
+    
+    fit : string
+        Function to use as fit. Allowed values are 'biexp' and 'bilor'
     """
     #Create x arrays for the points 
-    points = n.array(points) 
+    points = n.array(points, dtype = n.float) 
     x = points[:,0]
-    
-    biexponentials = patterns
+        
+    background_substracted = list()
+    function = bilor if fit == 'bilor' else biexp
     for pattern in patterns:
         xdata, ydata, name = pattern
+        xdata = xdata.astype(n.float)
+        ydata = ydata.astype(n.float)
+        
+        #Process ydata to remove any zeros
         
         #Create guess 
-        guesses = ydata.max(), 1/50, ydata.max()/2, 1/150, ydata.min() 
+        guesses = {'biexp': (ydata.max()/2, 1/50.0, ydata.max()/2, 1/150.0, ydata.min(), xdata.min()), 'bilor':  (xdata.min(), ydata.max()/1.5, ydata.max()/2.0, 50.0, 150.0, ydata.min())}
         
         #Interpolate the values of the patterns at the x points
         y = n.interp(x, xdata, ydata)
         
         #Fit with guesses 
-        optimal_parameters, parameters_covariance = opt.curve_fit(biexp, x, y, p0 = guesses, maxfev = 20000) 
-        
+        try:
+            optimal_parameters, parameters_covariance = opt.curve_fit(function, x, y, p0 = guesses[fit]) 
+        except(RuntimeError):
+            print 'Runtime error'
+            optimal_parameters = guesses[fit]
+
         #Create inelastic background function 
-        #a,b,c,d,e = optimal_parameters 
-        biexponentials.append([xdata, biexp(xdata, *optimal_parameters), 'Biexp ' + name]) 
-        
-    return biexponentials
+        a,b,c,d,e,f = optimal_parameters
+        new_fit = function(xdata, a, b, c, d, e, f) 
+        substracted = ydata - new_fit
+        background_substracted.append([xdata, substracted, 'BGS ' + name])
+    
+    return background_substracted
