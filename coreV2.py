@@ -1,10 +1,23 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 17 12:13:14 2015
 
-@author: Laurent
-"""
+import sys
+import os.path
+import numpy as n
+from PIL.Image import open
+import scipy.optimize as opt
 
+#plotting backends
+from matplotlib.backends import qt_compat
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.backends.backend_qt4agg as qt4agg
+from matplotlib.figure import Figure
+use_pyside = qt_compat.QT_API == qt_compat.QT_API_PYSIDE
+
+#GUI backends
+if use_pyside:
+    from PySide import QtGui, QtCore
+else:
+    from PyQt4 import QtGui, QtCore
 # -----------------------------------------------------------------------------
 #           HELPER FUNCTIONS
 # -----------------------------------------------------------------------------
@@ -36,38 +49,63 @@ def bilor(x, center, amp1, amp2, width1, width2, const):
 # -----------------------------------------------------------------------------
 class State(object):
     
-    def __init__(self, previous_state = None, next_state = None, application):
+    def __init__(self, previous_state = None, next_state = None, application = None, execute_button = None):
         
         self.previous_state = previous_state
         self.next_state = next_state
         self.application = application
-        self.available_buttons = list()
-        self.instructions = ''
-        self.patterns = list()
-        self.images = list()
-        self.on_click = None    #CLicking behavior on the Image Viewer
+        self.execute_button = None
+        self.execute_method = None
+        self.instructions = 'test'
+        self.data = list()
+        self.on_click = nothingHappens    #CLicking behavior on the Image Viewer (by default, nothingHappens(self, self.application.image_viewer))
+        self.layout = None
         self.others = dict()    #Storing data that is relevant for only one state
+        
+        self.hangleGui()
     
     def loadData(self, data):
         pass
+    
+    def plot(self, axes, **kwargs):
+        """ For handling lists of objects """
+        if isinstance(self.data, list):
+            for item in self.data:
+                item.plot(axes, **kwargs)
+        else:
+            self.data.plot(axes, **kwargs)
     
     def setInstructions(self, message):
         assert isinstance(message, str)
         self.instructions = message
     
-
+    def click(self, event):
+        self.on_click(self, self.application.image_viewer)
+    
+    def hangleGui(self):
+        
+        #Layout
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addWidget(QtGui.QLabel(self.instructions))
+        if self.execute_button != None:
+            self.layout.addWidget(self.execute_button)
+        
+        #Signals
+        if self.execute_button != None and self.execute_method != None:
+            self.execute_button.clicked.connect(self.execute_method)
+        
 # -----------------------------------------------------------------------------
 #           DATA CLASS
 # -----------------------------------------------------------------------------
       
 class Image(object):
     
-    def __init__(self, filename, source = ''):
+    def __init__(self, array, source = ''):
 
-        self.image = None
+        self.image = array.astype(n.float)
         self.source = source
     
-    def load(self):
+    def load(self, filename):
         from PIL.Image import open
         self.image = n.array(open(filename), dtype = n.float)
     
@@ -76,7 +114,7 @@ class Image(object):
         if self.image is None:
             self.image = n.zeros(shape = (1024,1024), dtype = n.float)
         #Plot
-        axes.imshow(image, vmin = self.image.min(), vmax = self.image.max(), label = self.source)
+        axes.imshow(self.image, vmin = self.image.min(), vmax = self.image.max(), label = self.source)
     
     def radialAverage(self, center = [562,549]):
         """
@@ -106,9 +144,7 @@ class Image(object):
         #Create meshgrid and compute radial positions of the data
         X, Y = n.meshgrid(x,y)
         R = n.around(n.sqrt( (X - xc)**2 + (Y - yc)**2 ), decimals = 0)
-        
-        results = list()
-    
+            
         #Flatten arrays
         intensity = self.image.flatten()
         radius = R.flatten()
@@ -123,7 +159,7 @@ class Image(object):
         bincount =  n.ones_like(unique_radii)
         
         #loop over image
-        for (i,j), value in n.ndenumerate(image):
+        for (i,j), value in n.ndenumerate(self.image):
           
             #Ignore top half image (where the beamblock is)
             if i < center[0]:
@@ -136,13 +172,13 @@ class Image(object):
             accumulation[ind] += value
             bincount[ind] += 1
     
-        return Pattern(unique_radii, n.divide(accumulation, bincount), self.source + ' radial average')
+        return RadialCurve(unique_radii, n.divide(accumulation, bincount), self.source + ' radial average')
 
 # -----------------------------------------------------------------------------
 #               PATTERN CLASS
 # -----------------------------------------------------------------------------
 
-class Pattern(object):
+class RadialCurve(object):
     """
     This class represents any radially averaged diffraction pattern or fit.
     """
@@ -166,7 +202,7 @@ class Pattern(object):
         self.ydata = self.ydata[cutoff_index::]
         
     def __sub__(self, pattern):
-        """ Definition of the subtraction operator. """
+        """ Definition of the subtraction operator. """ 
         #Interpolate values so that substraction makes sense
         self.ydata -= n.interp(self.xdata, pattern.xdata, pattern.ydata)
     
@@ -206,12 +242,39 @@ class Pattern(object):
     
         #Create inelastic background function 
         a,b,c,d,e,f = optimal_parameters
-        new_fit = function(xdata, a, b, c, d, e, f) 
-        fit = [xdata, new_fit, 'IBG ' + name]
+        new_fit = function(self.xdata, a, b, c, d, e, f) 
+        fit = [self.xdata, new_fit, 'IBG ' + self.source]
         
-        return Pattern(xdata, new_fit, 'Inelastic Background fit on ' + self.source)
-    
+        return RadialCurve(self.xdata, new_fit, 'Inelastic Background fit on ' + self.source)
+
+# -----------------------------------------------------------------------------
+#           SPECIFIC STATE RESET METHODS
+# -----------------------------------------------------------------------------
+
+def reset(state):
+    pass
+
 # -----------------------------------------------------------------------------
 #           IMAGE VIEWER CLICK METHOD
 # -----------------------------------------------------------------------------
 
+def nothingHappens(state, image_viewer):
+    pass
+
+def returnLastClickPosition(state, image_viewer):
+    return image_viewer.last_click_position
+
+def guessCenterOrRadius(state, image_viewer):
+    """ Only valid for the data_loaded_state state. """
+    if state.other['guess center'] == None:
+        state.other['guess center'] = image_viewer.last_click_position
+        #TODO: update image_viewer with center
+    elif state.other['guess radius'] == None:
+        ring_position = n.asarray(image_viewer.last_click_position)
+        state.other['guess radius'] = n.linalg.norm(state.other['guess center'] - ring_position)
+        #TODO: update image_viewer with guess center + ring
+    
+def cutoff(state, image_viewer):
+    state.other['cutoff'] = image_viewer.last_click_position
+    image_viewer.axes.axvline(state.other['cutoff'][0],ymax = image_viewer.axes.get_ylim()[1])
+    image_viewer.draw()
