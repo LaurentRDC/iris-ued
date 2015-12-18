@@ -56,23 +56,26 @@ def generateCircle(xc, yc, radius):
 # -----------------------------------------------------------------------------
 class State(object):
     
-    def __init__(self, previous_state = None, next_state = None, application = None, execute_button = None):
+    def __init__(self, previous_state = None, next_state = None, application = None, name = ''):
         
         self.previous_state = previous_state
         self.next_state = next_state
         self.application = application
-        self.execute_button = None
         self.execute_method = executeNothing
-        self.plotting_method = plot
+        self.plotting_method = plotDefault
         self.instructions = 'test'
         self.data = list()
+        self.name = name
         self.on_click = nothingHappens    #CLicking behavior on the Image Viewer (by default, nothingHappens(self, self.application.image_viewer))
-        self.layout = self.generateLayout()
-        self._others = dict()    #Storing data that is relevant for only one state
+        self.others = dict()    #Storing data that is relevant for only one state
+    
+    def __repr__(self):
+        return self.name
     
     def plot(self, axes, **kwargs):
         axes.cla()
         self.plotting_method(self, axes, **kwargs)
+        self.application.image_viewer.draw()
     
     def loadData(self, data):
         pass
@@ -83,14 +86,6 @@ class State(object):
     
     def click(self, event):
         self.on_click(self, self.application.image_viewer)
-    
-    def generateLayout(self):
-        
-        #Layout
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(QtGui.QLabel(self.instructions))
-        if self.execute_button != None:
-            self.layout.addWidget(self.execute_button)
         
 # -----------------------------------------------------------------------------
 #           DATA CLASS
@@ -254,6 +249,15 @@ class RadialCurve(object):
     def plot(self, axes, **kwargs):
         """ Plots the pattern in the axes specified """
         axes.plot(self.xdata, self.ydata, color = self.color, label = self.name, **kwargs)
+       
+        #Plot parameters
+        axes.set_xlim(self.xdata.min(), self.xdata.max())  #Set xlim and ylim on the first pattern args[0].
+        axes.set_ylim(self.ydata.min(), self.ydata.max())
+        axes.set_aspect('auto')
+        axes.set_title('Diffraction pattern')
+        axes.set_xlabel('radius (px)')
+        axes.set_ylabel('Intensity')
+        axes.legend( loc = 'upper right', numpoints = 1)
     
     def cutoff(self, cutoff = [0,0]):
         """ Cuts off a part of the pattern"""
@@ -311,7 +315,7 @@ class RadialCurve(object):
 #           SPECIFIC PLOTTING FUNCTIONS
 # -----------------------------------------------------------------------------
 
-def plot(state, axes, **kwargs):
+def plotDefault(state, axes, **kwargs):
     """ For handling lists of objects """
     if isinstance(state.data, list):
         for item in state.data:
@@ -322,7 +326,7 @@ def plot(state, axes, **kwargs):
 def plotGuessCenter(state, axes, **kwargs):
     """ """
     #Start by plotting data
-    plot(state, axes, **kwargs)
+    plotDefault(state, axes, **kwargs)
     
     #Overlay other informations
     if state.others['guess center'] != None:
@@ -345,7 +349,7 @@ def plotGuessCenter(state, axes, **kwargs):
 def plotComputedCenter(state, axes, **kwargs):
     """ """
     #Start by plotting data
-    plot(state, axes, **kwargs)
+    plotDefault(state, axes, **kwargs)
     
     #Overlay other informations
     if state.others['center'] != None:
@@ -355,12 +359,15 @@ def plotComputedCenter(state, axes, **kwargs):
         axes.set_ylim(state.data.image.shape[1],0)
     
     if state.others['radius'] != None:
-        xc, yc = state.others
+        xc, yc = state.others['center']
         xvals, yvals = generateCircle(xc, yc, state.others['radius'])
         axes.scatter(xvals, yvals, color = 'green')
         #Restrict view to the plotted circle (to better evaluate the fit)
         axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
         axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
+        
+    #Draw changes
+    state.application.image_viewer.draw()
 
 # -----------------------------------------------------------------------------
 #           EXECUTE METHODS
@@ -382,7 +389,7 @@ def computeCenter(state):
         xc, yc, rc = state.data.fCenter(xg, yg, guess_radius)
         
     #Go to next state
-    state.aplication.center_found_state.others = {'center': [xc, yc], 'radius': rc}
+    state.application.center_found_state.others = {'center': [xc, yc], 'radius': rc, 'substrate image': state.others['substrate image']}
     state.application.center_found_state.data = state.data
     state.application.current_state = state.application.center_found_state      #Includes plotting new data
 
@@ -393,10 +400,11 @@ def radiallyAverage(state):
     
     #Compute radial average
     rav = state.data.radialAverage(center)
+    substrate_rav = state.others['substrate image'].radialAverage(center)
     
     #Set up next state
-    state.application.radial_averaged_state.data = rav
-    state.application.current_state = state.application.radial_averaged_state         #Includes ploting new data
+    state.application.current_state.next_state.data = [rav, substrate_rav]
+    state.application.current_state = state.application.current_state.next_state         #Includes ploting new data
 # -----------------------------------------------------------------------------
 #           IMAGE VIEWER CLICK METHOD
 # -----------------------------------------------------------------------------
