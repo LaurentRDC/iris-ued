@@ -64,6 +64,7 @@ class State(object):
         self.execute_method = executeNothing
         self.plotting_method = plotDefault
         self.instructions = 'test'
+        self.reset_method = resetDefault
         self.data = list()
         self.name = name
         self.on_click = nothingHappens    #CLicking behavior on the Image Viewer (by default, nothingHappens(self, self.application.image_viewer))
@@ -71,6 +72,9 @@ class State(object):
     
     def __repr__(self):
         return self.name
+    
+    def reset(self):
+        self.reset_method(self)
     
     def plot(self, axes, **kwargs):
         axes.cla()
@@ -429,3 +433,21 @@ def cutoff(state, image_viewer):
     state.others['cutoff'] = image_viewer.last_click_position
     image_viewer.axes.axvline(state.others['cutoff'][0],ymax = image_viewer.axes.get_ylim()[1])
     image_viewer.draw()
+
+# -----------------------------------------------------------------------------
+#           RESET METHODS
+# -----------------------------------------------------------------------------
+
+def resetDefault(state):
+    pass
+
+def resetDataLoaded(state):
+    state.others['guess center'] = None
+    state.others['guess radius'] = None
+
+def resetCenterFound(state):
+    state.others['center'] = None
+    state.others['radius'] = None
+
+def resetRadialAveraged(state):
+    pass

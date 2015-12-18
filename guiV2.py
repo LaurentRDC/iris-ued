@@ -195,6 +195,10 @@ class UEDpowder(QtGui.QMainWindow):
         self.data_loaded_state.plotting_method = plotGuessCenter
         self.center_found_state.plotting_method = plotComputedCenter
         
+        #define specific erset methods
+        self.data_loaded_state.reset_method = resetDataLoaded
+        self.center_found_state.reset_method = resetCenterFound
+        
         #Define layouts
         for state, button in zip([self.initial_state, self.data_loaded_state, self.center_found_state, self.radial_averaged_state, self.data_baseline_state],
                                  [[self.imageLocatorBtn, self.revertBtn], self.data_loaded_execute_btn, self.center_found_execute_btn, self.radial_averaged_execute_btn, self.data_baseline_execute_btn]):
@@ -269,8 +273,8 @@ class UEDpowder(QtGui.QMainWindow):
     
     def revertState(self):
         if self.current_state != self.initial_state:
+            self.current_state.previous_state.reset()
             self.current_state = self.current_state.previous_state
-            self.current_state.reset()
 
     def imageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
