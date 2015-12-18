@@ -95,6 +95,13 @@ class ImageViewer(FigureCanvas):
         self.axes.imshow(missing_image)
     
     def click(self, event):
+        #Record last click position
+        if event.xdata == None or event.ydata == None:
+            self.last_click_position = [0,0]
+        else:
+            self.last_click_position = [event.xdata, event.ydata]
+            
+        #Run specific click method
         self.parent.current_state.click(event)
 
 # -----------------------------------------------------------------------------
@@ -139,7 +146,6 @@ class UEDpowder(QtGui.QMainWindow):
     @current_state.setter
     def current_state(self, value):
         self._current_state = value
-        self.updateLeftPane()
         
         #Plotting
         self.image_viewer.axes.cla()
@@ -167,15 +173,32 @@ class UEDpowder(QtGui.QMainWindow):
         self.center_found_state.next_state = self.data_loaded_state
         self.radial_averaged_state.next_state = self.data_baseline_state
         
+        #Define execute method
+        self.data_loaded_state.execute_method = computeCenter
+        self.center_found_state.execute_method = radiallyAverage
+        
+        #Connect methods
+        self.data_loaded_execute_btn.clicked.connect(self.data_loaded_state.execute_method)
+        self.center_found_execute_btn.clicked.connect(self.center_found_state.execute_method)
+        self.radial_averaged_execute_btn.clicked.connect(self.radial_averaged_state.execute_method)
+        self.data_baseline_execute_btn.clicked.connect(self.data_baseline_state.execute_method)
+        
         #Define onclick methods (default is nothingHappens)
         self.data_loaded_state.on_click = guessCenterOrRadius
         self.radial_averaged_state.on_click = cutoff
         
         #Define other attribute dictionnaries
-        self.data_loaded_state.other = {'guess center': None, 'guess radius': None}
-        self.radial_averaged_state.other = {'cutoff': None}
+        self.data_loaded_state.others = {'guess center': None, 'guess radius': None}
+        self.center_found_state.others = {'center': None, 'radius': None}
+        self.radial_averaged_state.others = {'cutoff': None}
+        
+        #Define specific plotting methods
+        self.data_loaded_state.plotting_method = plotGuessCenter
+        self.center_found_state.ploting_method = plotComputedCenter
         
         #Define layouts
+        for state in [self.initial_state, self.data_loaded_state, self.center_found_state, self.radial_averaged_state, self.data_baseline_state]:
+            self.bottom_pane.addLayout(state.layout)
         
     def initUI(self):
         
@@ -201,6 +224,8 @@ class UEDpowder(QtGui.QMainWindow):
         self.image_viewer = ImageViewer(parent = self)
         self.file_dialog = QtGui.QFileDialog()
         
+        self.bottom_pane = QtGui.QHBoxLayout()
+        
         # ---------------------------------------------------------------------
         #       SIGNALS
         # ---------------------------------------------------------------------
@@ -211,17 +236,13 @@ class UEDpowder(QtGui.QMainWindow):
         
     def initLayout(self):
         #Image viewer pane ----------------------------------------------------
-        right_pane = QtGui.QVBoxLayout()
-        right_pane.addWidget(self.image_viewer)
-        
-        #Controls pane --------------------------------------------------------
-        self.left_pane = None
-        self.updateLeftPane()
+        top_pane = QtGui.QVBoxLayout()
+        top_pane.addWidget(self.image_viewer)
         
         #Master Layout --------------------------------------------------------
-        grid = QtGui.QHBoxLayout()
-        grid.addLayout(self.left_pane)
-        grid.addLayout(right_pane)
+        grid = QtGui.QVBoxLayout()
+        grid.addLayout(top_pane)
+        grid.addLayout(self.bottom_pane)
         
         #Set master layout  ---------------------------------------------------
         self.central_widget = QtGui.QWidget()
@@ -233,14 +254,6 @@ class UEDpowder(QtGui.QMainWindow):
         self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()
         self.show()
-    
-    def updateLeftPane(self):
-        self.left_pane = QtGui.QVBoxLayout()
-        constant_controls = QtGui.QVBoxLayout()
-        constant_controls.addWidget(self.imageLocatorBtn)
-        constant_controls.addWidget(self.revertBtn)
-        self.left_pane.addLayout(constant_controls)
-        #self.left_pane.addLayout(self.current_state.layout)
     
     def revertState(self):
         if self.current_state != self.initial_state:

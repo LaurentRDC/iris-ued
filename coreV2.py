@@ -3,7 +3,6 @@
 import sys
 import os.path
 import numpy as n
-from PIL.Image import open
 import scipy.optimize as opt
 
 #plotting backends
@@ -44,6 +43,14 @@ def bilor(x, center, amp1, amp2, width1, width2, const):
     """ Returns a Bilorentzian functions. """
     return amp1*Lorentzian(x, center, width1) + amp2*Lorentzian(x, center, width2) + const
 
+def generateCircle(xc, yc, radius):
+    """
+    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
+    """
+    xvals = xc + radius*n.cos(n.linspace(0,2*n.pi,100))
+    yvals = yc + radius*n.sin(n.linspace(0,2*n.pi,100))
+    return xvals, yvals
+
 # -----------------------------------------------------------------------------
 #               STATE CLASS
 # -----------------------------------------------------------------------------
@@ -55,25 +62,20 @@ class State(object):
         self.next_state = next_state
         self.application = application
         self.execute_button = None
-        self.execute_method = None
+        self.execute_method = executeNothing
+        self.plotting_method = plot
         self.instructions = 'test'
         self.data = list()
         self.on_click = nothingHappens    #CLicking behavior on the Image Viewer (by default, nothingHappens(self, self.application.image_viewer))
-        self.layout = None
-        self.others = dict()    #Storing data that is relevant for only one state
-        
-        self.hangleGui()
+        self.layout = self.generateLayout()
+        self._others = dict()    #Storing data that is relevant for only one state
+    
+    def plot(self, axes, **kwargs):
+        axes.cla()
+        self.plotting_method(self, axes, **kwargs)
     
     def loadData(self, data):
         pass
-    
-    def plot(self, axes, **kwargs):
-        """ For handling lists of objects """
-        if isinstance(self.data, list):
-            for item in self.data:
-                item.plot(axes, **kwargs)
-        else:
-            self.data.plot(axes, **kwargs)
     
     def setInstructions(self, message):
         assert isinstance(message, str)
@@ -82,7 +84,7 @@ class State(object):
     def click(self, event):
         self.on_click(self, self.application.image_viewer)
     
-    def hangleGui(self):
+    def generateLayout(self):
         
         #Layout
         self.layout = QtGui.QVBoxLayout()
@@ -90,20 +92,17 @@ class State(object):
         if self.execute_button != None:
             self.layout.addWidget(self.execute_button)
         
-        #Signals
-        if self.execute_button != None and self.execute_method != None:
-            self.execute_button.clicked.connect(self.execute_method)
-        
 # -----------------------------------------------------------------------------
 #           DATA CLASS
 # -----------------------------------------------------------------------------
       
 class Image(object):
     
-    def __init__(self, array, source = ''):
+    def __init__(self, array, source = None, name = ''):
 
         self.image = array.astype(n.float)
         self.source = source
+        self.name = name
     
     def load(self, filename):
         from PIL.Image import open
@@ -114,7 +113,7 @@ class Image(object):
         if self.image is None:
             self.image = n.zeros(shape = (1024,1024), dtype = n.float)
         #Plot
-        axes.imshow(self.image, vmin = self.image.min(), vmax = self.image.max(), label = self.source)
+        axes.imshow(self.image, vmin = self.image.min(), vmax = self.image.max(), label = self.name)
     
     def radialAverage(self, center = [562,549]):
         """
@@ -172,21 +171,82 @@ class Image(object):
             accumulation[ind] += value
             bincount[ind] += 1
     
-        return RadialCurve(unique_radii, n.divide(accumulation, bincount), self.source + ' radial average')
+        return RadialCurve(xdata = unique_radii, ydata = n.divide(accumulation, bincount), source = self, name = self.name + ' radial average')
+    
+    def fCenter(self, xg, yg, rg, scalefactor = 20):
+        """
+        Finds the center of a diffraction pattern based on an initial guess of the center.
+        
+        Parameters
+        ----------
+        xg, yg, rg : ints
+            Guesses for the (x,y) position of the center, and the radius
+        im : ndarray, shape (N,N)
+            ndarray of a TIFF image
+        
+        Returns
+        -------
+        optimized center and peak position
+        
+        See also
+        --------
+        Scipy.optimize.fmin - Minimize a function using the downhill simplex algorithm
+        """
+        
+    
+        #find maximum intensity
+        xgscaled, ygscaled, rgscaled = n.array([xg,yg,rg])/scalefactor
+        c1 = lambda x: self.circ(x[0],x[1],x[2])
+        xcenter, ycenter, rcenter = n.array(\
+            opt.minimize(c1,[xgscaled,ygscaled,rgscaled],\
+            method = 'Nelder-Mead').x)*scalefactor
+        rcenter = rg    
+        return xcenter, ycenter, rcenter
+    
+    def circ(self, xg, yg, rg, scalefactor = 20):
+    
+        """
+        Sums the intensity over a circle of given radius and center position
+        on an image.
+        
+        Parameters
+        ----------
+        xg, yg, rg : ints
+            The (x,y) position of the center, and the radius
+        im : ndarray, shape (N,N)
+            ndarray of a TIFF image
+        
+        Returns
+        -------
+        Total intensity at pixels on the given circle. 
+        
+        """
+         #image size
+        s = self.image.shape[0]
+        xgscaled, ygscaled, rgscaled = n.array([xg,yg,rg])*scalefactor
+        xMat, yMat = n.meshgrid(n.linspace(1, s, s),n.linspace(1, s, s))
+        # find coords on circle and sum intensity
+        
+        residual = (xMat-xgscaled)**2+(yMat-ygscaled)**2-rgscaled**2
+        xvals, yvals = n.where(((residual < 10) & (yMat > 550)))
+        ftemp = n.mean(self.image[xvals, yvals])
+        
+        return 1/ftemp
 
 # -----------------------------------------------------------------------------
-#               PATTERN CLASS
+#               1D DATA CLASS
 # -----------------------------------------------------------------------------
 
 class RadialCurve(object):
     """
     This class represents any radially averaged diffraction pattern or fit.
     """
-    def __init__(self, xdata, ydata, source = '', color = 'b'):
+    def __init__(self, xdata, ydata, source = None, name = '', color = 'b'):
         
         self.xdata = xdata
         self.ydata = ydata
         self.source = source
+        self.name = name
         
         #Plotting attributes
         self.color = color
@@ -243,17 +303,100 @@ class RadialCurve(object):
         #Create inelastic background function 
         a,b,c,d,e,f = optimal_parameters
         new_fit = function(self.xdata, a, b, c, d, e, f) 
-        fit = [self.xdata, new_fit, 'IBG ' + self.source]
+        fit = [self.xdata, new_fit, 'IBG ' + self.name]
         
-        return RadialCurve(self.xdata, new_fit, 'Inelastic Background fit on ' + self.source)
+        return RadialCurve(self.xdata, new_fit, 'Inelastic Background fit on ' + self.name)
 
 # -----------------------------------------------------------------------------
-#           SPECIFIC STATE RESET METHODS
+#           SPECIFIC PLOTTING FUNCTIONS
 # -----------------------------------------------------------------------------
 
-def reset(state):
+def plot(state, axes, **kwargs):
+    """ For handling lists of objects """
+    if isinstance(state.data, list):
+        for item in state.data:
+            item.plot(axes, **kwargs)
+    else:
+        state.data.plot(axes, **kwargs)
+
+def plotGuessCenter(state, axes, **kwargs):
+    """ """
+    #Start by plotting data
+    plot(state, axes, **kwargs)
+    
+    #Overlay other informations
+    if state.others['guess center'] != None:
+        xc, yc = state.others['guess center']           #Center coordinates
+        axes.scatter(xc, yc, color = 'red')
+        axes.set_xlim(0, state.data.image.shape[0])
+        axes.set_ylim(state.data.image.shape[1],0)
+    
+    if state.others['guess radius'] != None:
+        xc, yc = state.others['guess center']
+        xvals, yvals = generateCircle(xc, yc, state.others['guess radius'])
+        axes.scatter(xvals, yvals, color = 'red')
+        #Restrict view to the plotted circle (to better evaluate the fit)
+        axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
+        axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
+    
+    #Draw changes
+    state.application.image_viewer.draw()
+
+def plotComputedCenter(state, axes, **kwargs):
+    """ """
+    #Start by plotting data
+    plot(state, axes, **kwargs)
+    
+    #Overlay other informations
+    if state.others['center'] != None:
+        xc, yc = state.others['center']           #Center coordinates
+        axes.scatter(xc, yc, color = 'green')
+        axes.set_xlim(0, state.data.image.shape[0])
+        axes.set_ylim(state.data.image.shape[1],0)
+    
+    if state.others['radius'] != None:
+        xc, yc = state.others
+        xvals, yvals = generateCircle(xc, yc, state.others['radius'])
+        axes.scatter(xvals, yvals, color = 'green')
+        #Restrict view to the plotted circle (to better evaluate the fit)
+        axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
+        axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
+
+# -----------------------------------------------------------------------------
+#           EXECUTE METHODS
+# These methods are used to pass onto the next state, sometimes involving computations
+# -----------------------------------------------------------------------------
+
+def executeNothing(state):
     pass
 
+def computeCenter(state):
+    """ Only valid for the data_loaded_state """
+    #Compute center
+    guess_center = state.others['guess center'] 
+    guess_radius = state.others['guess radius']
+    if guess_center == None or guess_radius == None:
+        pass
+    else:
+        xg, yg = guess_center
+        xc, yc, rc = state.data.fCenter(xg, yg, guess_radius)
+        
+    #Go to next state
+    state.aplication.center_found_state.others = {'center': [xc, yc], 'radius': rc}
+    state.application.center_found_state.data = state.data
+    state.application.current_state = state.application.center_found_state      #Includes plotting new data
+
+def radiallyAverage(state):
+    
+    center = state.others['center']
+    assert center != None
+    
+    #Compute radial average
+    rav = state.data.radialAverage(center)
+    
+    #Set up next state
+    state.application.radial_averaged_state.data = rav
+    state.application.current_state = state.application.radial_averaged_state         #Includes ploting new data
 # -----------------------------------------------------------------------------
 #           IMAGE VIEWER CLICK METHOD
 # -----------------------------------------------------------------------------
@@ -266,15 +409,15 @@ def returnLastClickPosition(state, image_viewer):
 
 def guessCenterOrRadius(state, image_viewer):
     """ Only valid for the data_loaded_state state. """
-    if state.other['guess center'] == None:
-        state.other['guess center'] = image_viewer.last_click_position
-        #TODO: update image_viewer with center
-    elif state.other['guess radius'] == None:
+    if state.others['guess center'] == None:
+        state.others['guess center'] = image_viewer.last_click_position
+        state.plot(state.application.image_viewer.axes)
+    elif state.others['guess radius'] == None:
         ring_position = n.asarray(image_viewer.last_click_position)
-        state.other['guess radius'] = n.linalg.norm(state.other['guess center'] - ring_position)
-        #TODO: update image_viewer with guess center + ring
-    
+        state.others['guess radius'] = n.linalg.norm(state.others['guess center'] - ring_position)
+        state.plot(state.application.image_viewer.axes)
+            
 def cutoff(state, image_viewer):
-    state.other['cutoff'] = image_viewer.last_click_position
-    image_viewer.axes.axvline(state.other['cutoff'][0],ymax = image_viewer.axes.get_ylim()[1])
+    state.others['cutoff'] = image_viewer.last_click_position
+    image_viewer.axes.axvline(state.others['cutoff'][0],ymax = image_viewer.axes.get_ylim()[1])
     image_viewer.draw()
