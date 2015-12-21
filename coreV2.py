@@ -49,82 +49,145 @@ def generateCircle(xc, yc, radius):
     """
     xvals = xc + radius*n.cos(n.linspace(0,2*n.pi,100))
     yvals = yc + radius*n.sin(n.linspace(0,2*n.pi,100))
-    return xvals, yvals
+    points = n.vstack( (xvals, yvals) ).T
+    
+    #Extend with the center point
+    center = n.array([xc, yc])
+    return n.vstack( (points, center) )
+    
+# -----------------------------------------------------------------------------
+#           WORKING CLASS
+# -----------------------------------------------------------------------------
+
+class WorkThread(QtCore.QThread):
+    """
+    Object taking care of computations
+    """
+    def __init__(self, function, *args, **kwargs):
+        QtCore.QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.result = None
+    
+    def __del__(self):
+        self.wait()
+    
+    def run(self):
+        """ Compute and emit a 'done' signal."""
+        self.emit(QtCore.SIGNAL('Display Loading'), '\n Computing...')
+        self.result = self.function(*self.args, **self.kwargs)
+        self.emit(QtCore.SIGNAL('Remove Loading'), '\n Done.')
+        self.emit(QtCore.SIGNAL('Computation done'), self.result)
 
 # -----------------------------------------------------------------------------
-#               STATE CLASS
-# -----------------------------------------------------------------------------
+#               DATA HANDLER CLASS
+# -----------------------------------------------------------------------------    
     
-class State(object):
+class DataHandler(object):
     
-    def __init__(self, previous_state = None, next_state = None, application = None, name = '', instructions = 'test'):
+    def __init__(self, application):
         
-        self.previous_state = previous_state
-        self.next_state = next_state
+        self._data = None
         self.application = application
-        self.execute_method = nothingHappens
-        self.plotting_method = plotDefault
-        self.instructions = instructions
-        self.reset_method = resetDefault
-        self.has_been_modified = False
-        self._data = list()
-        self.name = name
-        self.on_click = nothingHappens    #CLicking behavior on the Image Viewer (by default, nothingHappens(self, self.application.image_viewer))
-        self._others = dict()    #Storing data that is relevant for only one state
+        self.image_viewer = self.application.image_viewer
+        self.on_click = guessCenter
+        self.execute_function = None
         
+        #Important  attributes for batch processing
+        self._diffraction_center = None
+        self.__diffraction_radius = None
+        self.cutoff_point = [0,0]
+        self.background_fit_parameters = None
+    
+    # Property makes sure that modified data is concurrently plotted
     @property
     def data(self):
         return self._data
     
+    @property
+    def _diffraction_radius(self):
+        return self.__diffraction_radius
+    
+    @property
+    def diffraction_center(self):
+        return self._diffraction_center
+        
     @data.setter
     def data(self, value):
-        if self._data == list():
-            self._data = value
-        else:   #There was already data here, thus it has been modified
-            self._data.has_been_modified = True
-            print 'state has been modified'
-            self._data = value
-
-    def __repr__(self):
-        return self.name    
+        self._data = value
+        self.plot()
     
-    def reset(self):
-        """ Makes sure that data is reverted back to its source, and the nexecutes the specific reset method. """
-                
-        if isinstance(self.data, list):
-            result = list()
+    @_diffraction_radius.setter
+    def _diffraction_radius(self, value):
+        self.__diffraction_radius = value
+        
+        #Generate a circle and add replace previous scatterpoints
+        if value != None:
+            xc, yc = self.diffraction_center
+            old_data = self.data
+            self.data = Image(old_data.image, scatterpoints = generateCircle(xc, yc, value), scattercolor = 'red', source = old_data)
+    
+    @diffraction_center.setter
+    def diffraction_center(self, value):
+        self._diffraction_center = value
+        
+        #Add center to the scatterpoints
+        if value != None:
+            old_data = self.data
+            self.data = Image(old_data.image, scatterpoints = value, scattercolor = 'red', source = old_data)
+    
+    def plot(self, **kwargs):
+        """ Handles plotting Data objects or lists of Data objects. """
+        
+        self.image_viewer.axes.cla()            #Clears axes
+        
+        if isinstance(self.data, list):         #Plot an item at a time
             for item in self.data:
-                #Get source (which might be itself if item.source == None) and append
-                if item.source != None:
-                    result.append(item.source)
-                else:
-                    result.append(item)
-        else:   #Data is a single object
-            if self.data.source == None:
-                result = self.data
-            else:
-                result = self.data.source
-        self.data = result
+                item.plot(self.image_viewer.axes, **kwargs)
+        else:
+            self.data.plot(self.image_viewer.axes, **kwargs)            #Plot the only item
         
-        #Then run specific reset method
-        self.reset_method(self)
-        self.has_been_modified = False
+        #Update drawing
+        self.image_viewer.draw()
     
-    def plot(self, axes, **kwargs):
-        axes.cla()
-        self.plotting_method(self, axes, **kwargs)
-        self.application.image_viewer.draw()
+    def onClick(self):
+        """ Operates according to whatever function has been passed. """
+        if self.on_click != None:
+            self.on_click(self)
     
-    def loadData(self, data):
-        pass
-    
-    def setInstructions(self, message):
-        assert isinstance(message, str)
-        self.instructions = message
-    
-    def click(self, event):
-        self.on_click(self, self.application.image_viewer)
+    def executeFunction(self):
+        """ """
+        if self.execute_function != None:
+            self.execute_function(self)
         
+    def revert(self):
+        """ """
+        
+        if isinstance(self.data, list):
+            reverted = list()
+            for item in self.data:
+                reverted.append(item.source)
+            self.data = reverted
+        else:
+            self.data = self.data.source
+        
+        #Specific hacks
+        if self.diffraction_center != None and self._diffraction_radius == None:
+            self.diffraction_center = None
+            
+
+def guessCenter(dataHandler):
+    
+    #Check cases
+    point = n.asarray(dataHandler.image_viewer.last_click_position)
+    if dataHandler.diffraction_center is None and dataHandler._diffraction_radius is None:      #If center and radius have not been set
+        dataHandler.diffraction_center = point
+    elif dataHandler.diffraction_center is not None and dataHandler._diffraction_radius is None:    #If center is set but not the radius
+        dataHandler._diffraction_radius = n.linalg.norm(n.asarray(dataHandler.diffraction_center) - point)
+    elif dataHandler.diffraction_center is not None and dataHandler._diffraction_radius is not None:    #If both center and radius have been set, overwrite all
+        dataHandler.diffraction_center = point
+        dataHandler._diffraction_radius = None
 # -----------------------------------------------------------------------------
 #           DATA CLASS
 # -----------------------------------------------------------------------------
@@ -148,15 +211,27 @@ class Data(object):
         self.source = source
         self.name = name
     
-    def plot(self, axes, **kwargs):
-        pass
+    def __repr__(self):
+        return self.name    
     
 class Image(Data):
     
-    def __init__(self, array, source = None, name = ''):
+    def __init__(self, array, scatterpoints = None, scattercolor = 'red', source = None, name = ''):
         
         Data.__init__(self, source, name)
         self.image = array.astype(n.float)
+        self._scatterpoints = scatterpoints  #in format [ [x1,y1], [x2,y2], ...]  ]
+        self.scattercolor = scattercolor
+    
+    @property
+    def scatterpoints(self):
+        return self._scatterpoints
+    
+    @scatterpoints.setter
+    def scatterpoints(self, value):
+        """ Makes sure scatterpoints is a NumPy array. """
+        if isinstance(value, list):
+            self._scatterpoints = n.asarray(value)
     
     def load(self, filename):
         from PIL.Image import open
@@ -166,8 +241,25 @@ class Image(Data):
         #Handle empty images
         if self.image is None:
             self.image = n.zeros(shape = (1024,1024), dtype = n.float)
-        #Plot
+            
+        #Plot image
         axes.imshow(self.image, vmin = self.image.min(), vmax = self.image.max(), cmap = 'jet', label = self.name)
+        
+        #plot scatterpoints
+        if self.scatterpoints != None and n.size(self.scatterpoints) >= 2 :    #If array is not empty
+            if n.size(self.scatterpoints) == 2:     #Indexing hack
+                xp, yp = self.scatterpoints
+            else:
+                xp, yp = self.scatterpoints[:,0], self.scatterpoints[:,1]
+            axes.scatter(xp, yp, color = self.scattercolor)
+        
+            #Restrict to the outline of the circle if circle there is (that is, not only a center, or len(scatterpoints) > 1)
+            if n.size(self.scatterpoints) == 2:
+                axes.set_xlim(0, self.image.shape[0])
+                axes.set_ylim(self.image.shape[1],0)
+            if n.size(self.scatterpoints) > 2:
+                axes.set_xlim(xp.min() - 10, xp.max() + 10)
+                axes.set_ylim(yp.max() + 10, yp.min() - 10)
 
     
     def radialAverage(self, center = [562,549]):
@@ -373,14 +465,6 @@ class RadialCurve(Data):
 #           SPECIFIC PLOTTING FUNCTIONS
 # -----------------------------------------------------------------------------
 
-def plotDefault(state, axes, **kwargs):
-    """ For handling lists of objects """
-    if isinstance(state.data, list):
-        for item in state.data:
-            item.plot(axes, **kwargs)
-    else:
-        state.data.plot(axes, **kwargs)
-
 def plotGuessCenter(state, axes, **kwargs):
     """ """
     #Start by plotting data
@@ -403,8 +487,6 @@ def plotGuessCenter(state, axes, **kwargs):
 
 def plotComputedCenter(state, axes, **kwargs):
     """ """
-    #Start by plotting data
-    plotDefault(state, axes, **kwargs)
     
     #Overlay other informations
     if state.others['center'] != None:

@@ -95,15 +95,13 @@ class ImageViewer(FigureCanvas):
         self.axes.imshow(missing_image)
     
     def click(self, event):
-        #Record last click position
-        if event.xdata == None or event.ydata == None:
+        #Records last click position
+        if event.xdata is None or event.ydata is None:
             self.last_click_position = [0,0]
         else:
             self.last_click_position = [event.xdata, event.ydata]
-            
-        #Run specific click method
-        self.parent.current_state.click(event)
-
+        
+        self.parent.dataHandler.onClick()
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
 # -----------------------------------------------------------------------------
@@ -130,109 +128,13 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Attributes
         self.work_thread = None
-        self._current_state = None
+        self.dataHandler = None
         
         #Initialize
         super(UEDpowder, self).__init__()     #inherit from the constructor of QMainWindow
         self.initUI()
-        self.setupStates()
-        self.current_state = self.initial_state        
         self.initLayout()
-
-    @property
-    def current_state(self):
-        return self._current_state
-    
-    @current_state.setter
-    def current_state(self, value):
-        self._current_state = value
-        
-        #Plotting
-        self.image_viewer.axes.cla()
-        self.current_state.plot(self.image_viewer.axes)
-        #TODO: figure out what to do when changing state
-        print value     
-        
-    def setupStates(self):
-        
-        #Create instances
-        self.initial_state = State(application = self, name = 'initial')
-        self.data_loaded_state = State(application = self, name = 'data loaded')
-        self.center_found_state = State(application = self, name = 'center found')
-        self.radial_averaged_state = State(application = self, name = 'radial averaged')
-        self.data_baseline_state = State(application = self, name = 'data baseline')
-        self.processed_data_state = State(application = self, name = 'processed data')
-        
-        #Set instructions
-        self.initial_state.instructions = 'Select a diffraction pattern to begin.'
-        self.data_loaded_state.instructions = 'Click on the center of the pattern, then on a ring.'
-        self.center_found_state.instructions = 'Radially average if satisfied.'
-        self.radial_averaged_state.instructions = 'Select a cutoff point.'
-        self.data_baseline_state.instructions = 'Dunno yet again.'
-        self.processed_data_state.instructions = 'Satisfied?'
-        
-        #Define previous states
-        self.data_loaded_state.previous_state = self.initial_state
-        self.center_found_state.previous_state = self.data_loaded_state
-        self.radial_averaged_state.previous_state = self.data_loaded_state      #This is not a typo. Reverting radially averaging should let you choose another center 
-        self.data_baseline_state.previous_state = self.radial_averaged_state
-        self.processed_data_state.previous_state = self.data_baseline_state
-        
-        #Define next states
-        self.initial_state.next_state = self.data_loaded_state
-        self.data_loaded_state.next_state = self.center_found_state
-        self.center_found_state.next_state = self.radial_averaged_state
-        self.radial_averaged_state.next_state = self.data_baseline_state
-        self.data_baseline_state.next_state = self.processed_data_state
-        
-        #Define execute method
-        self.data_loaded_state.execute_method = computeCenter
-        self.center_found_state.execute_method = radiallyAverage
-        self.radial_averaged_state.execute_method = cutoffRadialCurves
-        self.data_baseline_state.execute_method = inelasticBackgroundFit
-        
-        #Connect execute button methods
-        for btn in [self.data_loaded_execute_btn, self.center_found_execute_btn, self.cutoff_btn, self.data_baseline_execute_btn, self.processed_data_execute_btn]:
-            btn.clicked.connect(self.executeClick)
-        
-        #Define onclick methods (default is nothingHappens)
-        self.data_loaded_state.on_click = guessCenterOrRadius
-        self.radial_averaged_state.on_click = cutoff
-        self.data_baseline_state.on_click = baselineGuesses
-        
-        #Define other attribute dictionnaries
-        self.data_loaded_state.others = {'guess center': None, 'guess radius': None, 'substrate image': None}
-        self.center_found_state.others = {'center': None, 'radius': None, 'substrate image': self.data_loaded_state.others['substrate image']}
-        self.radial_averaged_state.others = {'cutoff': None}
-        self.data_baseline_state.others = {'guesses': list()}
-        
-        #Define specific plotting methods
-        self.data_loaded_state.plotting_method = plotGuessCenter
-        self.center_found_state.plotting_method = plotComputedCenter
-        self.radial_averaged_state.plotting_method = plotDefault
-        
-        #define specific reset methods
-        self.data_loaded_state.reset_method = resetDataLoaded
-        self.center_found_state.reset_method = resetCenterFound
-        self.radial_averaged_state.reset_method = resetRadialAveraged
-        self.data_baseline_state.reset_method = resetDataBaseline
-        
-        #Define layouts
-        for state, button in zip([self.initial_state, self.data_loaded_state, self.center_found_state, self.radial_averaged_state, self.data_baseline_state, self.processed_data_state],
-                                 [[self.imageLocatorBtn, self.revertBtn], self.data_loaded_execute_btn, self.center_found_execute_btn, self.cutoff_btn, self.data_baseline_execute_btn, self.processed_data_execute_btn]):
-            #Layout
-            layout = QtGui.QVBoxLayout()
-            layout.addWidget(QtGui.QLabel(state.instructions))
-            if button != None:
-                if isinstance(button, list):
-                    for btn in button:
-                        layout.addWidget(btn)
-                else:    
-                    layout.addWidget(button)
-            self.bottom_pane.addLayout(layout)
-    
-    def executeClick(self):
-        self.current_state.execute_method(self.current_state)
+        self.dataHandler = DataHandler(self)
         
     def initUI(self):
         
@@ -248,18 +150,22 @@ class UEDpowder(QtGui.QMainWindow):
         self.imageLocatorBtn = QtGui.QPushButton('Open diffraction image', self)
         self.imageLocatorBtn.setIcon(QtGui.QIcon('images\diffraction.png'))
         
+        self.executeBtn = QtGui.QPushButton('Execute Operation')
+        
         #State buttons
-        self.data_loaded_execute_btn = QtGui.QPushButton('Find center')
-        self.center_found_execute_btn = QtGui.QPushButton('Radially average')
-        self.cutoff_btn = QtGui.QPushButton('Cutoff')
-        self.data_baseline_execute_btn = QtGui.QPushButton('Fit background')
-        self.processed_data_execute_btn = QtGui.QPushButton('Accept processing')
+        self.findCenterBtn = QtGui.QPushButton('Find center')
+        self.radiallyAverageButton = QtGui.QPushButton('Radially average')
+        self.cutoffBtn = QtGui.QPushButton('Cutoff')
+        self.fitBackgroundBtn = QtGui.QPushButton('Fit background')
+        self.batchProcessBtn = QtGui.QPushButton('Accept processing')
+        
+        #Set checkable
+        for btn in [self.findCenterBtn, self.radiallyAverageButton, self.cutoffBtn, self.fitBackgroundBtn, self.batchProcessBtn]:
+            btn.setCheckable(True)
         
         #Set up ImageViewer
         self.image_viewer = ImageViewer(parent = self)
         self.file_dialog = QtGui.QFileDialog()
-        
-        self.bottom_pane = QtGui.QHBoxLayout()
         
         # ---------------------------------------------------------------------
         #       SIGNALS
@@ -272,6 +178,20 @@ class UEDpowder(QtGui.QMainWindow):
         #Image viewer pane ----------------------------------------------------
         top_pane = QtGui.QVBoxLayout()
         top_pane.addWidget(self.image_viewer)
+               
+        master_buttons = QtGui.QVBoxLayout()
+        master_buttons.addWidget(self.imageLocatorBtn)
+        master_buttons.addWidget(self.executeBtn)
+        master_buttons.addWidget(self.revertBtn)
+        
+        action_buttons = QtGui.QVBoxLayout()
+        for btn in [self.findCenterBtn, self.radiallyAverageButton, self.cutoffBtn, self.fitBackgroundBtn, self.batchProcessBtn]:
+            action_buttons.addWidget(btn)
+            
+        self.bottom_pane = QtGui.QHBoxLayout()
+        self.bottom_pane.addLayout(master_buttons)
+        self.bottom_pane.addSpacing(10)
+        self.bottom_pane.addLayout(action_buttons)
         
         #Master Layout --------------------------------------------------------
         grid = QtGui.QVBoxLayout()
@@ -290,22 +210,12 @@ class UEDpowder(QtGui.QMainWindow):
         self.show()
     
     def revertState(self):
-        if self.current_state != self.initial_state:
-            if self.current_state.has_been_modified:
-                self.current_state.reset()
-                self.current_state = self.current_state
-            else:
-                self.current_state.previous_state.reset()
-                self.current_state = self.current_state.previous_state
+        self.dataHandler.revert()
 
     def imageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
-        images = self.loadImage(filename)
-        self.data_loaded_state.data = images[0]     #Sample image
-        self.data_loaded_state.others['substrate image'] = images[1]    #Keeping substrate image
-        self.current_state = self.data_loaded_state
-        print 'data loaded'
+        self.dataHandler.data = self.loadImage(filename)
     
     def loadImage(self, filename):
         """ Loads an image (and the associated background image) and sets the first state. """
@@ -314,13 +224,15 @@ class UEDpowder(QtGui.QMainWindow):
         #Load images
         background = n.array(open(background_filename), dtype = n.float)
         image = n.array(open(filename), dtype = n.float) - background
+        
+        #TODO: Implement a way to change the exposure scaling (currently set to 2/5)
         substrate_image = (2.0/5.0)*(n.array(open(substrate_filename), dtype = n.float) - background)
         
         #Process data
         image[image < 0] = 0
         substrate_image[substrate_image < 0] = 0
     
-        return [Image(image, None, 'Sample'), Image(substrate_image, None, 'Substrate')]
+        return Image(image - substrate_image, source = None, name = 'Sample') #, Image(substrate_image, None, 'Substrate')]
 
     def centerWindow(self):
         """ Centers the window """
