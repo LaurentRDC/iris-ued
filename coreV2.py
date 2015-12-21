@@ -54,27 +54,61 @@ def generateCircle(xc, yc, radius):
 # -----------------------------------------------------------------------------
 #               STATE CLASS
 # -----------------------------------------------------------------------------
+    
 class State(object):
     
-    def __init__(self, previous_state = None, next_state = None, application = None, name = ''):
+    def __init__(self, previous_state = None, next_state = None, application = None, name = '', instructions = 'test'):
         
         self.previous_state = previous_state
         self.next_state = next_state
         self.application = application
-        self.execute_method = executeNothing
+        self.execute_method = nothingHappens
         self.plotting_method = plotDefault
-        self.instructions = 'test'
+        self.instructions = instructions
         self.reset_method = resetDefault
-        self.data = list()
+        self.has_been_modified = False
+        self._data = list()
         self.name = name
         self.on_click = nothingHappens    #CLicking behavior on the Image Viewer (by default, nothingHappens(self, self.application.image_viewer))
-        self.others = dict()    #Storing data that is relevant for only one state
+        self._others = dict()    #Storing data that is relevant for only one state
+        
+    @property
+    def data(self):
+        return self._data
     
+    @data.setter
+    def data(self, value):
+        if self._data == list():
+            self._data = value
+        else:   #There was already data here, thus it has been modified
+            self._data.has_been_modified = True
+            print 'state has been modified'
+            self._data = value
+
     def __repr__(self):
-        return self.name
+        return self.name    
     
     def reset(self):
+        """ Makes sure that data is reverted back to its source, and the nexecutes the specific reset method. """
+                
+        if isinstance(self.data, list):
+            result = list()
+            for item in self.data:
+                #Get source (which might be itself if item.source == None) and append
+                if item.source != None:
+                    result.append(item.source)
+                else:
+                    result.append(item)
+        else:   #Data is a single object
+            if self.data.source == None:
+                result = self.data
+            else:
+                result = self.data.source
+        self.data = result
+        
+        #Then run specific reset method
         self.reset_method(self)
+        self.has_been_modified = False
     
     def plot(self, axes, **kwargs):
         axes.cla()
@@ -94,14 +128,35 @@ class State(object):
 # -----------------------------------------------------------------------------
 #           DATA CLASS
 # -----------------------------------------------------------------------------
-      
-class Image(object):
+        
+class Data(object):
+    """
+    Abstract data container.
     
-    def __init__(self, array, source = None, name = ''):
-
-        self.image = array.astype(n.float)
+    Attributes
+    ----------
+    source - Data object
+        Data object from which the current data object is derived. This attribute should be used for intra-state calculations (e.g. the source of a cutoff radial curve is the uncut radial curve), which makes
+        it easier to revert operations.
+    
+    name - string
+        String identifier for debugging
+    """
+    
+    def __init__(self, source = None, name = ''):
+        
         self.source = source
         self.name = name
+    
+    def plot(self, axes, **kwargs):
+        pass
+    
+class Image(Data):
+    
+    def __init__(self, array, source = None, name = ''):
+        
+        Data.__init__(self, source, name)
+        self.image = array.astype(n.float)
     
     def load(self, filename):
         from PIL.Image import open
@@ -112,7 +167,8 @@ class Image(object):
         if self.image is None:
             self.image = n.zeros(shape = (1024,1024), dtype = n.float)
         #Plot
-        axes.imshow(self.image, vmin = self.image.min(), vmax = self.image.max(), label = self.name)
+        axes.imshow(self.image, vmin = self.image.min(), vmax = self.image.max(), cmap = 'jet', label = self.name)
+
     
     def radialAverage(self, center = [562,549]):
         """
@@ -170,7 +226,7 @@ class Image(object):
             accumulation[ind] += value
             bincount[ind] += 1
     
-        return RadialCurve(xdata = unique_radii, ydata = n.divide(accumulation, bincount), source = self, name = self.name + ' radial average')
+        return RadialCurve(xdata = unique_radii, ydata = n.divide(accumulation, bincount), source = None, name = self.name + ' radial average')
     
     def fCenter(self, xg, yg, rg, scalefactor = 20):
         """
@@ -236,23 +292,22 @@ class Image(object):
 #               1D DATA CLASS
 # -----------------------------------------------------------------------------
 
-class RadialCurve(object):
+class RadialCurve(Data):
     """
     This class represents any radially averaged diffraction pattern or fit.
     """
     def __init__(self, xdata, ydata, source = None, name = '', color = 'b'):
         
+        Data.__init__(self, source, name)
         self.xdata = xdata
         self.ydata = ydata
-        self.source = source
-        self.name = name
         
         #Plotting attributes
         self.color = color
     
     def plot(self, axes, **kwargs):
         """ Plots the pattern in the axes specified """
-        axes.plot(self.xdata, self.ydata, color = self.color, label = self.name, **kwargs)
+        axes.plot(self.xdata, self.ydata, '.', color = self.color, label = self.name, **kwargs)
        
         #Plot parameters
         axes.set_xlim(self.xdata.min(), self.xdata.max())  #Set xlim and ylim on the first pattern args[0].
@@ -266,15 +321,14 @@ class RadialCurve(object):
     def cutoff(self, cutoff = [0,0]):
         """ Cuts off a part of the pattern"""
         cutoff_index = n.argmin(n.abs(self.xdata - cutoff[0]))
-        self.xdata = self.xdata[cutoff_index::]
-        self.ydata = self.ydata[cutoff_index::]
+        return RadialCurve(self.xdata[cutoff_index::], self.ydata[cutoff_index::], source = self, name = 'Cutoff ' + self.name, color = self.color)
         
     def __sub__(self, pattern):
         """ Definition of the subtraction operator. """ 
         #Interpolate values so that substraction makes sense
-        self.ydata -= n.interp(self.xdata, pattern.xdata, pattern.ydata)
+        return RadialCurve(self.xdata, self.ydata - n.interp(self.xdata, pattern.xdata, pattern.ydata), source = self, name = self.name, color = self.color)
     
-    def inelasticBGfit(self, points = list(), fit = 'biexp'):
+    def inelasticBGFit(self, points = list(), fit = 'biexp'):
         """
         Inelastic scattering background substraction.
         
@@ -313,7 +367,7 @@ class RadialCurve(object):
         new_fit = function(self.xdata, a, b, c, d, e, f) 
         fit = [self.xdata, new_fit, 'IBG ' + self.name]
         
-        return RadialCurve(self.xdata, new_fit, 'Inelastic Background fit on ' + self.name)
+        return RadialCurve(self.xdata, new_fit, source = None, name = 'Inelastic Background fit on ' + self.name, color = 'red')
 
 # -----------------------------------------------------------------------------
 #           SPECIFIC PLOTTING FUNCTIONS
@@ -346,9 +400,6 @@ def plotGuessCenter(state, axes, **kwargs):
         #Restrict view to the plotted circle (to better evaluate the fit)
         axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
         axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
-    
-    #Draw changes
-    state.application.image_viewer.draw()
 
 def plotComputedCenter(state, axes, **kwargs):
     """ """
@@ -369,16 +420,13 @@ def plotComputedCenter(state, axes, **kwargs):
         #Restrict view to the plotted circle (to better evaluate the fit)
         axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
         axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
-        
-    #Draw changes
-    state.application.image_viewer.draw()
 
 # -----------------------------------------------------------------------------
 #           EXECUTE METHODS
 # These methods are used to pass onto the next state, sometimes involving computations
 # -----------------------------------------------------------------------------
 
-def executeNothing(state):
+def nothingHappens(*args):
     pass
 
 def computeCenter(state):
@@ -407,14 +455,58 @@ def radiallyAverage(state):
     substrate_rav = state.others['substrate image'].radialAverage(center)
     
     #Set up next state
-    state.application.current_state.next_state.data = [rav, substrate_rav]
+    state.application.current_state.next_state.data = rav - substrate_rav
     state.application.current_state = state.application.current_state.next_state         #Includes ploting new data
+
+def cutoffRadialCurves(state):
+    #Identify if appropriate state
+    try:
+        cutoff = state.others['cutoff']
+    except:
+        return
+    
+    #Do nothing if cutoff is not set
+    if cutoff == None:
+        return
+    
+    if isinstance(state.data, list):
+        result = list()
+        for item in state.data:
+            result.append(item.cutoff(cutoff))
+    else:
+        result = state.data.cutoff(cutoff)
+    
+    #Set up next state
+    state.application.current_state.next_state.data = result
+    state.application.current_state = state.application.current_state.next_state
+
+def inelasticBackgroundFit(state):
+    #Identify if appropriate state
+    try:
+        guesses = state.others['guesses']
+    except:
+        return
+    #Do nothing if not enough guesses
+    if len(guesses) < 6:
+        return
+    
+    #Actual fitting
+    if isinstance(state.data, list):
+        result = state.data
+        for item in state.data:
+            result.append(state.data.inelasticBGFit(guesses, 'biexp'))
+    else:
+        result = [state.data]
+        result.append(state.data.inelasticBGFit(guesses, 'biexp'))
+
+    #Set up next state with a list of data + fit
+    state.application.current_state.next_state.data = result
+    state.application.current_state = state.application.current_state.next_state
+    
+    
 # -----------------------------------------------------------------------------
 #           IMAGE VIEWER CLICK METHOD
 # -----------------------------------------------------------------------------
-
-def nothingHappens(state, image_viewer):
-    pass
 
 def returnLastClickPosition(state, image_viewer):
     return image_viewer.last_click_position
@@ -422,6 +514,7 @@ def returnLastClickPosition(state, image_viewer):
 def guessCenterOrRadius(state, image_viewer):
     """ Only valid for the data_loaded_state state. """
     if state.others['guess center'] == None:
+        state.has_been_modified = True
         state.others['guess center'] = image_viewer.last_click_position
         state.plot(state.application.image_viewer.axes)
     elif state.others['guess radius'] == None:
@@ -430,13 +523,24 @@ def guessCenterOrRadius(state, image_viewer):
         state.plot(state.application.image_viewer.axes)
             
 def cutoff(state, image_viewer):
+    """ Only valid for radial_averaged_state. """
+    #Reset plot and redraw
+    state.plot(image_viewer.axes)
+    state.has_been_modified = True
     state.others['cutoff'] = image_viewer.last_click_position
-    image_viewer.axes.axvline(state.others['cutoff'][0],ymax = image_viewer.axes.get_ylim()[1])
+    image_viewer.axes.axvline(state.others['cutoff'][0],ymax = image_viewer.axes.get_ylim()[1], color = 'black')
     image_viewer.draw()
 
+def baselineGuesses(state, image_viewer):
+    """ Only valid for data_baseline_state. """
+    state.has_been_modified = True
+    state.others['guesses'].append(image_viewer.last_click_position)
+    image_viewer.axes.axvline(state.others['guesses'][-1][0],ymax = image_viewer.axes.get_ylim()[1], color = 'black')
+    image_viewer.draw()
 # -----------------------------------------------------------------------------
 #           RESET METHODS
 # -----------------------------------------------------------------------------
+        #Define other attribute dictionnaries
 
 def resetDefault(state):
     pass
@@ -450,4 +554,7 @@ def resetCenterFound(state):
     state.others['radius'] = None
 
 def resetRadialAveraged(state):
-    pass
+    state.others['cutoff'] = None
+
+def resetDataBaseline(state):
+    state.others['guesses'] = list()
