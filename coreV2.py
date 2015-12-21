@@ -91,7 +91,7 @@ class DataHandler(object):
         self._data = None
         self.application = application
         self.image_viewer = self.application.image_viewer
-        self.on_click = guessCenter
+        self.on_click = None
         self.execute_function = None
         
         #Important  attributes for batch processing

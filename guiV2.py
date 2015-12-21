@@ -154,14 +154,19 @@ class UEDpowder(QtGui.QMainWindow):
         
         #State buttons
         self.findCenterBtn = QtGui.QPushButton('Find center')
-        self.radiallyAverageButton = QtGui.QPushButton('Radially average')
+        self.radiallyAverageBtn = QtGui.QPushButton('Radially average')
         self.cutoffBtn = QtGui.QPushButton('Cutoff')
         self.fitBackgroundBtn = QtGui.QPushButton('Fit background')
         self.batchProcessBtn = QtGui.QPushButton('Accept processing')
         
         #Set checkable
-        for btn in [self.findCenterBtn, self.radiallyAverageButton, self.cutoffBtn, self.fitBackgroundBtn, self.batchProcessBtn]:
+        for btn in [self.findCenterBtn, self.radiallyAverageBtn, self.cutoffBtn, self.fitBackgroundBtn, self.batchProcessBtn]:
             btn.setCheckable(True)
+        
+        #Connect toggleable buttons
+        for btn, handle_function in zip([self.findCenterBtn, self.radiallyAverageBtn, self.cutoffBtn, self.fitBackgroundBtn, self.batchProcessBtn],
+                                        [self.handleFindCenter, self.handleRadiallyAverage, self.handleCutoff, self.handleFitBackground, self.handleBatchProcess]):
+            btn.toggled.connect(handle_function)
         
         #Set up ImageViewer
         self.image_viewer = ImageViewer(parent = self)
@@ -185,7 +190,7 @@ class UEDpowder(QtGui.QMainWindow):
         master_buttons.addWidget(self.revertBtn)
         
         action_buttons = QtGui.QVBoxLayout()
-        for btn in [self.findCenterBtn, self.radiallyAverageButton, self.cutoffBtn, self.fitBackgroundBtn, self.batchProcessBtn]:
+        for btn in [self.findCenterBtn, self.radiallyAverageBtn, self.cutoffBtn, self.fitBackgroundBtn, self.batchProcessBtn]:
             action_buttons.addWidget(btn)
             
         self.bottom_pane = QtGui.QHBoxLayout()
@@ -208,6 +213,43 @@ class UEDpowder(QtGui.QMainWindow):
         self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()
         self.show()
+    
+    def handleFindCenter(self):
+        if self.findCenterBtn.isChecked() == True:
+            self.uncheckActionButtons(self.findCenterBtn)       #Uncheck all other buttons
+            self.dataHandler.on_click = guessCenter
+            self.dataHandler.execute_function = None
+    
+    def handleRadiallyAverage(self):
+        if self.radiallyAverageBtn.isChecked() == True:
+            self.uncheckActionButtons(self.radiallyAverageBtn)       #Uncheck all other buttons
+            self.dataHandler.on_click = None
+            self.dataHandler.execute_function = None
+    
+    def handleCutoff(self):
+        if self.cutoffBtn.isChecked() == True:
+            self.uncheckActionButtons(self.cutoffBtn)       #Uncheck all other buttons
+            self.dataHandler.on_click = None
+            self.dataHandler.execute_function = None
+    
+    def handleFitBackground(self):
+        if self.fitBackgroundBtn.isChecked() == True:
+            self.uncheckActionButtons(self.fitBackgroundBtn)       #Uncheck all other buttons
+            self.dataHandler.on_click = None
+            self.dataHandler.execute_function = None
+    
+    def handleBatchProcess(self):
+        if self.batchProcessBtn.isChecked() == True:
+            self.uncheckActionButtons(self.batchProcessBtn)       #Uncheck all other buttons
+            self.dataHandler.on_click = None
+            self.dataHandler.execute_function = None
+    
+    def uncheckActionButtons(self, exception):
+        """ Unckecks all buttons except the exception. """
+        for btn in [self.findCenterBtn, self.radiallyAverageBtn, self.cutoffBtn, self.fitBackgroundBtn, self.batchProcessBtn]:
+            if btn == exception:
+                continue
+            btn.setChecked(False)
     
     def revertState(self):
         self.dataHandler.revert()
