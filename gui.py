@@ -120,29 +120,15 @@ class ImageViewer(FigureCanvas):
             self.axes.axvline(self.parent.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
             self.draw()
             self.parent.state = 'cutoff set'
-            
-        elif self.parent.state == 'radial cutoff' or self.parent.state == 'substrate background guessed':
-            if len(self.parent.background_guesses) < 9:
+                
+        elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
+            if len(self.parent.background_guesses) < 3:
                 self.parent.background_guesses.append(self.last_click_position)
                 self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
                 self.draw()
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 
-            elif len(self.parent.background_guesses) >= 9:
-                self.parent.background_guesses.append(self.last_click_position)
-                print 'Background guess #' + str(len(self.parent.background_guesses))
-                self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-                self.draw()
-                self.parent.state = 'substrate background guessed'
-                
-        elif self.parent.state == 'substrate background determined' or self.parent.state == 'background guessed':
-            if len(self.parent.background_guesses) < 9:
-                self.parent.background_guesses.append(self.last_click_position)
-                self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-                self.draw()
-                print 'Background guess #' + str(len(self.parent.background_guesses))
-                
-            elif len(self.parent.background_guesses) >= 9:
+            elif len(self.parent.background_guesses) >= 3:
                 self.parent.background_guesses.append(self.last_click_position)
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
@@ -199,7 +185,7 @@ class ImageViewer(FigureCanvas):
 
         for item in data:
             s, pattern, name = item   
-            self.axes.plot(s, pattern, '.', label = name, **kwargs)
+            self.axes.plot(s, pattern, '.-', label = name, **kwargs)
         
         #Determine scaling
         xmax = max([item[0].max() for item in data])
@@ -257,6 +243,8 @@ class UEDpowder(QtGui.QMainWindow):
         self.backgorund_fit = list()
         self.substrate_image = None
         self.raw_radial_averages = list()    #Before inelastic background substraction
+        self.raw_radial_difference = list()
+        self.voigt_profiles = list()
         self.radial_average = list()        #After inelastic background substraction
         self.background_guesses = list()
         self._state = None
@@ -584,19 +572,20 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'cutoff set':
             #Cutoff radial patterns
             self.raw_radial_averages = fc.cutoff(self.raw_radial_averages, self.cutoff)
-            self.image_viewer.displayRadialPattern([self.raw_radial_averages[1]], color = 'g')
+            self.raw_radial_difference = fc.substract(self.raw_radial_averages)
+            self.image_viewer.displayRadialPattern([self.raw_radial_difference], color = 'g')
             self.state = 'radial cutoff'
         elif self.state == 'substrate background guessed':
             #Create guess data
-            self.substrate_background_fit = fc.inelasticBG(self.raw_radial_averages[1], self.background_guesses)
-            self.image_viewer.displayRadialPattern([self.raw_radial_averages[1], self.substrate_background_fit])
+            self.substrate_background_fit = fc.inelasticBG(self.raw_radial_averages[0], self.background_guesses)
+            self.image_viewer.displayRadialPattern([self.raw_radial_averages[0], self.substrate_background_fit])
             self.background_guesses = list()
             self.state = 'substrate background determined'
         
         elif self.state == 'background guessed':
             #Create guess data
-            self.background_fit = fc.inelasticBG(self.raw_radial_averages[0], self.background_guesses)
-            self.image_viewer.displayRadialPattern([self.raw_radial_averages[0], self.background_fit])
+            self.background_fit,self.voigt_profiles = fc.prototypeInelasticBGSubstract(self.raw_radial_difference, self.background_guesses)
+            self.image_viewer.displayRadialPattern([[self.raw_radial_difference]+self.voigt_profiles+[self.backgorund_fit]])
             self.state = 'background determined'
     
     def save(self):

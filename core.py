@@ -169,14 +169,24 @@ def cutoff(patterns = list(), cutoff = [0,0]):
     
     #Find index of cutoff[0]
     cutoff_index = n.argmin(n.abs(xdata - cutoff[0]))
-    
+    endpoint = 400
     #cut
     cut_patterns = list() 
     for pattern in patterns:
         xdata, ydata, name = pattern
-        cut_patterns.append( [xdata[cutoff_index::], ydata[cutoff_index::], name] )
+        cut_patterns.append( [xdata[cutoff_index:400], ydata[cutoff_index:400], name] )
 
     return cut_patterns
+    
+def substract(patterns = list()):
+    first_pattern = patterns[0]
+    xdata1, ydata1, name1 = first_pattern
+    second_pattern = patterns[1]
+    xdata2, ydata2, name2 = second_pattern
+    
+    ratio = ydata1[0]/ydata2[0]
+
+    return [xdata1,ydata1-ydata2*ratio,'Diff']
 # -----------------------------------------------------------------------------
 #           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
 # -----------------------------------------------------------------------------
@@ -189,7 +199,7 @@ def bilor(x, center, amp1, amp2, width1, width2, const):
     """ Returns a Bilorentzian functions. """
     return amp1*Lorentzian(x, center, width1) + amp2*Lorentzian(x, center, width2) + const
     
-def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5):
+def prototypeInelasticBGSubstract(pattern, points = list(), chunk_size = 5):
     """ 
     Following Vance's inelastic background substraction method. We assume that the data has been corrected for diffuse scattering by substrate 
     (e.g. silicon nitride substrate for VO2 samples)
@@ -204,6 +214,8 @@ def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5)
     
     points : list of array-like
     """
+
+    xdata, ydata, name = pattern    
     
     #Determine data chunks based on user-input points
     xfeatures = n.asarray(points)[:,0]      #Only consider x-position of the diffraction feature
@@ -228,12 +240,13 @@ def prototypeInelasticBGSubstract(xdata, ydata, points = list(), chunk_size = 5)
     #Extend constants to x-values outside xchunks
     constant_background = n.asarray(constants).flatten()
     x_background = n.asarray(xchunks).flatten()
-    background = n.interp(xdata, x_background, constant_background)
+    background = [xdata,n.interp(xdata, x_background, constant_background),'background']
     
     #Create diagnostics Voigt profiles
     profiles = list()
-    for params in voigt_parameters:
-        profiles.append( pseudoVoigt(xdata, params[0], params[1], params[2], params[3], params[4]) )
+    for index, params in enumerate(voigt_parameters):
+        profiles.append( [xdata,pseudoVoigt(xdata, params[0], params[1], params[2], params[3], params[4]),'peak'+str(index)]) 
+
     
     #TODO: smooth background data
     return background, profiles
@@ -282,3 +295,6 @@ def inelasticBG(pattern, points = list(), fit = 'biexp'):
     fit = [xdata, new_fit, 'IBG ' + name]
     
     return fit
+    
+if __name__ == '__main__':
+    pass
