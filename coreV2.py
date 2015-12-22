@@ -97,7 +97,7 @@ class DataHandler(object):
         #Important  attributes for batch processing
         self._diffraction_center = None
         self.__diffraction_radius = None
-        self.cutoff_point = [0,0]
+        self._cutoff = None
         self.background_fit_parameters = None
     
     # Property makes sure that modified data is concurrently plotted
@@ -112,6 +112,10 @@ class DataHandler(object):
     @property
     def diffraction_center(self):
         return self._diffraction_center
+    
+    @property
+    def cutoff(self):
+        return self._cutoff
         
     @data.setter
     def data(self, value):
@@ -136,6 +140,15 @@ class DataHandler(object):
         if value is not None:
             old_data = self.data
             self.data = Image(old_data.image, scatterpoints = value, source = old_data)
+    
+    @cutoff.setter
+    def cutoff(self, value):
+        self._cutoff = value
+        
+        #Set new cutoff
+        if value is not None:
+            old_data = self.data
+            self.data = RadialCurve(old_data.xdata, old_data.ydata, vert_lines = value, source = old_data)
     
     def plot(self, **kwargs):
         """ Handles plotting Data objects or lists of Data objects. """
@@ -208,6 +221,25 @@ def computeCenter(dataHandler):
     dataHandler.diffraction_center = [xc,yc]
     dataHandler._diffraction_radius = rc
 
+def radiallyAverage(dataHandler):
+    """ """
+    center = dataHandler.diffraction_center #Shorthand
+    assert isinstance(dataHandler.data, Image) and center is not None #Check validity of radial average
+    dataHandler.data = dataHandler.data.radialAverage(center) #Compute radial average
+
+def cutoffRadialCurve(dataHandler):
+    """ """
+    cutoff = dataHandler.cutoff
+    #Do nothing if cutoff is not set or the data is not a RadialCurve
+    if cutoff is None or not isinstance(dataHandler.data, RadialCurve): 
+        return
+    
+    dataHandler.data = dataHandler.data.cutoff(cutoff)
+
+def cutoffClick(dataHandler):
+    """ Only valid for radial_averaged_state. """
+    dataHandler.cutoff = dataHandler.image_viewer.last_click_position
+    
         
 # -----------------------------------------------------------------------------
 #           DATA CLASS
@@ -299,7 +331,7 @@ class Image(Data):
         -------
         [[radius1, pattern1, name1], [radius2, pattern2, name2], ... ], : list of ndarrays, shapes (M,), and an ID string
         """
-        assert self.image != None
+        assert self.image is not None
         
         #Get shape
         im_shape = self.image.shape
@@ -339,7 +371,7 @@ class Image(Data):
             accumulation[ind] += value
             bincount[ind] += 1
     
-        return RadialCurve(xdata = unique_radii, ydata = n.divide(accumulation, bincount), source = None, name = self.name + ' radial average')
+        return RadialCurve(xdata = unique_radii, ydata = n.divide(accumulation, bincount), source = self, name = self.name + ' radial average')
     
     def fCenter(self, xg, yg, rg, scalefactor = 20):
         """
@@ -409,11 +441,12 @@ class RadialCurve(Data):
     """
     This class represents any radially averaged diffraction pattern or fit.
     """
-    def __init__(self, xdata, ydata, source = None, name = '', color = 'b'):
+    def __init__(self, xdata, ydata, vert_lines = list(), source = None, name = '', color = 'b'):
         
         Data.__init__(self, source, name)
         self.xdata = xdata
         self.ydata = ydata
+        self.vert_lines = vert_lines
         
         #Plotting attributes
         self.color = color
@@ -421,6 +454,14 @@ class RadialCurve(Data):
     def plot(self, axes, **kwargs):
         """ Plots the pattern in the axes specified """
         axes.plot(self.xdata, self.ydata, '.', color = self.color, label = self.name, **kwargs)
+        
+        #Plot vertical lines if there are any
+        if len(self.vert_lines) > 0:
+            if len(self.vert_lines) == 2:
+                axes.axvline(self.vert_lines[0],ymax = axes.get_ylim()[1], color = 'black')
+            else:
+                for point in self.vert_lines:
+                    axes.axvline(point[0],ymax = axes.get_ylim()[1], color = 'black')
        
         #Plot parameters
         axes.set_xlim(self.xdata.min(), self.xdata.max())  #Set xlim and ylim on the first pattern args[0].
@@ -483,86 +524,9 @@ class RadialCurve(Data):
         return RadialCurve(self.xdata, new_fit, source = None, name = 'Inelastic Background fit on ' + self.name, color = 'red')
 
 # -----------------------------------------------------------------------------
-#           SPECIFIC PLOTTING FUNCTIONS
-# -----------------------------------------------------------------------------
-
-def plotGuessCenter(state, axes, **kwargs):
-    """ """
-    #Start by plotting data
-    plotDefault(state, axes, **kwargs)
-    
-    #Overlay other informations
-    if state.others['guess center'] != None:
-        xc, yc = state.others['guess center']           #Center coordinates
-        axes.scatter(xc, yc, color = 'red')
-        axes.set_xlim(0, state.data.image.shape[0])
-        axes.set_ylim(state.data.image.shape[1],0)
-    
-    if state.others['guess radius'] != None:
-        xc, yc = state.others['guess center']
-        xvals, yvals = generateCircle(xc, yc, state.others['guess radius'])
-        axes.scatter(xvals, yvals, color = 'red')
-        #Restrict view to the plotted circle (to better evaluate the fit)
-        axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
-        axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
-
-def plotComputedCenter(state, axes, **kwargs):
-    """ """
-    
-    #Overlay other informations
-    if state.others['center'] != None:
-        xc, yc = state.others['center']           #Center coordinates
-        axes.scatter(xc, yc, color = 'green')
-        axes.set_xlim(0, state.data.image.shape[0])
-        axes.set_ylim(state.data.image.shape[1],0)
-    
-    if state.others['radius'] != None:
-        xc, yc = state.others['center']
-        xvals, yvals = generateCircle(xc, yc, state.others['radius'])
-        axes.scatter(xvals, yvals, color = 'green')
-        #Restrict view to the plotted circle (to better evaluate the fit)
-        axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
-        axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
-
-# -----------------------------------------------------------------------------
 #           EXECUTE METHODS
 # These methods are used to pass onto the next state, sometimes involving computations
 # -----------------------------------------------------------------------------
-
-def radiallyAverage(state):
-    
-    center = state.others['center']
-    assert center != None
-    
-    #Compute radial average
-    rav = state.data.radialAverage(center)
-    substrate_rav = state.others['substrate image'].radialAverage(center)
-    
-    #Set up next state
-    state.application.current_state.next_state.data = rav - substrate_rav
-    state.application.current_state = state.application.current_state.next_state         #Includes ploting new data
-
-def cutoffRadialCurves(state):
-    #Identify if appropriate state
-    try:
-        cutoff = state.others['cutoff']
-    except:
-        return
-    
-    #Do nothing if cutoff is not set
-    if cutoff == None:
-        return
-    
-    if isinstance(state.data, list):
-        result = list()
-        for item in state.data:
-            result.append(item.cutoff(cutoff))
-    else:
-        result = state.data.cutoff(cutoff)
-    
-    #Set up next state
-    state.application.current_state.next_state.data = result
-    state.application.current_state = state.application.current_state.next_state
 
 def inelasticBackgroundFit(state):
     #Identify if appropriate state
@@ -592,28 +556,7 @@ def inelasticBackgroundFit(state):
 #           IMAGE VIEWER CLICK METHOD
 # -----------------------------------------------------------------------------
 
-def returnLastClickPosition(state, image_viewer):
-    return image_viewer.last_click_position
-
-def guessCenterOrRadius(state, image_viewer):
-    """ Only valid for the data_loaded_state state. """
-    if state.others['guess center'] == None:
-        state.has_been_modified = True
-        state.others['guess center'] = image_viewer.last_click_position
-        state.plot(state.application.image_viewer.axes)
-    elif state.others['guess radius'] == None:
-        ring_position = n.asarray(image_viewer.last_click_position)
-        state.others['guess radius'] = n.linalg.norm(state.others['guess center'] - ring_position)
-        state.plot(state.application.image_viewer.axes)
             
-def cutoff(state, image_viewer):
-    """ Only valid for radial_averaged_state. """
-    #Reset plot and redraw
-    state.plot(image_viewer.axes)
-    state.has_been_modified = True
-    state.others['cutoff'] = image_viewer.last_click_position
-    image_viewer.axes.axvline(state.others['cutoff'][0],ymax = image_viewer.axes.get_ylim()[1], color = 'black')
-    image_viewer.draw()
 
 def baselineGuesses(state, image_viewer):
     """ Only valid for data_baseline_state. """

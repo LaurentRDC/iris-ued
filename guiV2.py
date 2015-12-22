@@ -230,15 +230,15 @@ class UEDpowder(QtGui.QMainWindow):
             self.executeBtn.setText('Radial average image')           #Change text on execute button
             
             self.dataHandler.on_click = None
-            self.dataHandler.execute_function = None
+            self.dataHandler.execute_function = radiallyAverage
     
     def handleCutoff(self):
         if self.cutoffBtn.isChecked() == True:
             self.uncheckActionButtons(self.cutoffBtn)       #Uncheck all other buttons
             self.executeBtn.setText('Cutoff curve')           #Change text on execute button
             
-            self.dataHandler.on_click = None
-            self.dataHandler.execute_function = None
+            self.dataHandler.on_click = cutoffClick
+            self.dataHandler.execute_function = cutoffRadialCurve
     
     def handleFitBackground(self):
         if self.fitBackgroundBtn.isChecked() == True:
