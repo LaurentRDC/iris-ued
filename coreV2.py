@@ -105,30 +105,28 @@ class DataHandler(object):
     @property
     def data(self):
         return self._data
-    
     @property
     def _diffraction_radius(self):
         return self.__diffraction_radius
-    
     @property
     def diffraction_center(self):
         return self._diffraction_center
-    
     @property
     def cutoff(self):
         return self._cutoff
+    @property
+    def background_guesses(self):
+        return self._background_guesses
         
     @data.setter
     def data(self, value):
         self._data = value
         self.plot()
-    
+        
     @_diffraction_radius.setter
     def _diffraction_radius(self, value):
         self.__diffraction_radius = value
-        
-        #Generate a circle and add replace previous scatterpoints
-        if value is not None:
+        if value is not None: #Generate a circle and add replace previous scatterpoints
             xc, yc = self.diffraction_center
             old_data = self.data
             self.data = Image(old_data.image, scatterpoints = generateCircle(xc, yc, value), source = old_data)
@@ -136,21 +134,25 @@ class DataHandler(object):
     @diffraction_center.setter
     def diffraction_center(self, value):
         self._diffraction_center = value
-        
-        #Add center to the scatterpoints
-        if value is not None:
+        if value is not None:  #Add center to the scatterpoints
             old_data = self.data
             self.data = Image(old_data.image, scatterpoints = value, source = old_data)
     
     @cutoff.setter
     def cutoff(self, value):
-        self._cutoff = value
+        self._cutoff = [value]      #Makes it easier to generalize for plotting
+        if value is not None:  #Set new cutoff
+            old_data = self.data
+            self.data = RadialCurve(old_data.xdata, old_data.ydata, vert_lines = [value], source = old_data)
+    
+    @background_guesses.setter
+    def background_guesses(self, value):
+        """CAREFUL: background_guesses cannot be appended to. It must be fully replaced. """
+        self._background_guesses = value
         
-        #Set new cutoff
-        if value is not None:
+        if not value and value is not None: #If not empty list
             old_data = self.data
             self.data = RadialCurve(old_data.xdata, old_data.ydata, vert_lines = value, source = old_data)
-
 # ------------------ METHODS --------------------------------------------------
     def plot(self, **kwargs):
         """ Handles plotting Data objects or lists of Data objects. """
@@ -231,7 +233,7 @@ def radiallyAverage(dataHandler):
 
 def cutoffRadialCurve(dataHandler):
     """ """
-    cutoff = dataHandler.cutoff
+    cutoff = dataHandler.cutoff[0]
     #Do nothing if cutoff is not set or the data is not a RadialCurve
     if cutoff is None or not isinstance(dataHandler.data, RadialCurve): 
         return
@@ -241,7 +243,19 @@ def cutoffRadialCurve(dataHandler):
 def cutoffClick(dataHandler):
     """ Only valid for radial_averaged_state. """
     dataHandler.cutoff = dataHandler.image_viewer.last_click_position
+
+def guessBackground(dataHandler):
+    """ """
+    dataHandler.background_guesses = dataHandler._background_guesses.append(dataHandler.image_viewer.last_click_position)
+
+def fitBackground(dataHandler):
+    """ """
+    guesses = dataHandler.background_guesses
+    if len(guesses) < 6: #Do nothing if not enough guesses
+        return
     
+    dataHandler.data = [dataHandler.data, dataHandler.data.inelasticBGFit(guesses, 'biexp')]
+        
         
 # -----------------------------------------------------------------------------
 #           DATA CLASS
@@ -458,12 +472,11 @@ class RadialCurve(Data):
         axes.plot(self.xdata, self.ydata, '.', color = self.color, label = self.name, **kwargs)
         
         #Plot vertical lines if there are any
-        if len(self.vert_lines) > 0:
-            if len(self.vert_lines) == 2:
-                axes.axvline(self.vert_lines[0],ymax = axes.get_ylim()[1], color = 'black')
-            else:
-                for point in self.vert_lines:
-                    axes.axvline(point[0],ymax = axes.get_ylim()[1], color = 'black')
+        if len(self.vert_lines) == 1:
+            axes.axvline(self.vert_lines[0][0],ymax = axes.get_ylim()[1], color = 'black')
+        else:
+            for point in self.vert_lines:
+                axes.axvline(point[0],ymax = axes.get_ylim()[1], color = 'black')
        
         #Plot parameters
         axes.set_xlim(self.xdata.min(), self.xdata.max())  #Set xlim and ylim on the first pattern args[0].
@@ -523,46 +536,4 @@ class RadialCurve(Data):
         new_fit = function(self.xdata, a, b, c, d, e, f) 
         fit = [self.xdata, new_fit, 'IBG ' + self.name]
         
-        return RadialCurve(self.xdata, new_fit, source = None, name = 'Inelastic Background fit on ' + self.name, color = 'red')
-
-# -----------------------------------------------------------------------------
-#           EXECUTE METHODS
-# These methods are used to pass onto the next state, sometimes involving computations
-# -----------------------------------------------------------------------------
-
-def inelasticBackgroundFit(state):
-    #Identify if appropriate state
-    try:
-        guesses = state.others['guesses']
-    except:
-        return
-    #Do nothing if not enough guesses
-    if len(guesses) < 6:
-        return
-    
-    #Actual fitting
-    if isinstance(state.data, list):
-        result = state.data
-        for item in state.data:
-            result.append(state.data.inelasticBGFit(guesses, 'biexp'))
-    else:
-        result = [state.data]
-        result.append(state.data.inelasticBGFit(guesses, 'biexp'))
-
-    #Set up next state with a list of data + fit
-    state.application.current_state.next_state.data = result
-    state.application.current_state = state.application.current_state.next_state
-    
-    
-# -----------------------------------------------------------------------------
-#           IMAGE VIEWER CLICK METHOD
-# -----------------------------------------------------------------------------
-
-            
-
-def baselineGuesses(state, image_viewer):
-    """ Only valid for data_baseline_state. """
-    state.has_been_modified = True
-    state.others['guesses'].append(image_viewer.last_click_position)
-    image_viewer.axes.axvline(state.others['guesses'][-1][0],ymax = image_viewer.axes.get_ylim()[1], color = 'black')
-    image_viewer.draw()
+        return RadialCurve(self.xdata, new_fit, source = self, name = 'Inelastic Background fit on ' + self.name, color = 'red')

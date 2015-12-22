@@ -244,8 +244,8 @@ class UEDpowder(QtGui.QMainWindow):
         if self.fitBackgroundBtn.isChecked() == True:
             self.uncheckActionButtons(self.fitBackgroundBtn)       #Uncheck all other buttons
             self.executeBtn.setText('Fit to background')           #Change text on execute button
-            self.dataHandler.on_click = None
-            self.dataHandler.execute_function = None
+            self.dataHandler.on_click = guessBackground
+            self.dataHandler.execute_function = fitBackground
     
     def handleBatchProcess(self):
         if self.batchProcessBtn.isChecked() == True:
