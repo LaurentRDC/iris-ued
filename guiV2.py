@@ -217,30 +217,39 @@ class UEDpowder(QtGui.QMainWindow):
     def handleFindCenter(self):
         if self.findCenterBtn.isChecked() == True:
             self.uncheckActionButtons(self.findCenterBtn)       #Uncheck all other buttons
-            self.dataHandler.on_click = guessCenter
+            self.executeBtn.setText('Compute center')           #Change text on execute button
+            
+            self.dataHandler.on_click = guessCenter             
             self.dataHandler.execute_function = None
     
     def handleRadiallyAverage(self):
         if self.radiallyAverageBtn.isChecked() == True:
             self.uncheckActionButtons(self.radiallyAverageBtn)       #Uncheck all other buttons
+            self.executeBtn.setText('Radial average image')           #Change text on execute button
+            
             self.dataHandler.on_click = None
             self.dataHandler.execute_function = None
     
     def handleCutoff(self):
         if self.cutoffBtn.isChecked() == True:
             self.uncheckActionButtons(self.cutoffBtn)       #Uncheck all other buttons
+            self.executeBtn.setText('Cutoff curve')           #Change text on execute button
+            
             self.dataHandler.on_click = None
             self.dataHandler.execute_function = None
     
     def handleFitBackground(self):
         if self.fitBackgroundBtn.isChecked() == True:
             self.uncheckActionButtons(self.fitBackgroundBtn)       #Uncheck all other buttons
+            self.executeBtn.setText('Fit to background')           #Change text on execute button
             self.dataHandler.on_click = None
             self.dataHandler.execute_function = None
     
     def handleBatchProcess(self):
         if self.batchProcessBtn.isChecked() == True:
             self.uncheckActionButtons(self.batchProcessBtn)       #Uncheck all other buttons
+            self.executeBtn.setText('Accept')           #Change text on execute button
+            
             self.dataHandler.on_click = None
             self.dataHandler.execute_function = None
     
