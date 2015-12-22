@@ -270,8 +270,11 @@ class UEDpowder(QtGui.QMainWindow):
 
     def imageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
+        #Reinitialize dataHandler
+        self.dataHandler = DataHandler(self)
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
         self.dataHandler.data = self.loadImage(filename)
+        
     
     def loadImage(self, filename):
         """ Loads an image (and the associated background image) and sets the first state. """

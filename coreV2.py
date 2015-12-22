@@ -98,6 +98,7 @@ class DataHandler(object):
         self._diffraction_center = None
         self.__diffraction_radius = None
         self._cutoff = None
+        self._background_guesses = list()
         self.background_fit_parameters = None
     
     # Property makes sure that modified data is concurrently plotted
@@ -149,7 +150,8 @@ class DataHandler(object):
         if value is not None:
             old_data = self.data
             self.data = RadialCurve(old_data.xdata, old_data.ydata, vert_lines = value, source = old_data)
-    
+
+# ------------------ METHODS --------------------------------------------------
     def plot(self, **kwargs):
         """ Handles plotting Data objects or lists of Data objects. """
         
@@ -187,7 +189,7 @@ class DataHandler(object):
         
         #Specific hacks
         if self.diffraction_center is not None and self._diffraction_radius is not None:
-            self.diffraction_center = None
+            self.diffraction_radius = None
             
 
 def guessCenter(dataHandler):
