@@ -123,19 +123,19 @@ class DataHandler(object):
         self.__diffraction_radius = value
         
         #Generate a circle and add replace previous scatterpoints
-        if value != None:
+        if value is not None:
             xc, yc = self.diffraction_center
             old_data = self.data
-            self.data = Image(old_data.image, scatterpoints = generateCircle(xc, yc, value), scattercolor = 'red', source = old_data)
+            self.data = Image(old_data.image, scatterpoints = generateCircle(xc, yc, value), source = old_data)
     
     @diffraction_center.setter
     def diffraction_center(self, value):
         self._diffraction_center = value
         
         #Add center to the scatterpoints
-        if value != None:
+        if value is not None:
             old_data = self.data
-            self.data = Image(old_data.image, scatterpoints = value, scattercolor = 'red', source = old_data)
+            self.data = Image(old_data.image, scatterpoints = value, source = old_data)
     
     def plot(self, **kwargs):
         """ Handles plotting Data objects or lists of Data objects. """
@@ -173,7 +173,7 @@ class DataHandler(object):
             self.data = self.data.source
         
         #Specific hacks
-        if self.diffraction_center != None and self._diffraction_radius == None:
+        if self.diffraction_center is not None and self._diffraction_radius is not None:
             self.diffraction_center = None
             
 
@@ -182,12 +182,33 @@ def guessCenter(dataHandler):
     #Check cases
     point = n.asarray(dataHandler.image_viewer.last_click_position)
     if dataHandler.diffraction_center is None and dataHandler._diffraction_radius is None:      #If center and radius have not been set
+        dataHandler.data.scattercolor = 'red'
         dataHandler.diffraction_center = point
     elif dataHandler.diffraction_center is not None and dataHandler._diffraction_radius is None:    #If center is set but not the radius
+        dataHandler.data.scattercolor = 'red'
         dataHandler._diffraction_radius = n.linalg.norm(n.asarray(dataHandler.diffraction_center) - point)
     elif dataHandler.diffraction_center is not None and dataHandler._diffraction_radius is not None:    #If both center and radius have been set, overwrite all
+        dataHandler.data.scattercolor = 'red'
         dataHandler.diffraction_center = point
         dataHandler._diffraction_radius = None
+
+def computeCenter(dataHandler):
+    """ Only valid for the data_loaded_state """
+    #Compute center
+    guess_center = dataHandler.diffraction_center
+    guess_radius = dataHandler._diffraction_radius
+    
+    if guess_center is None or guess_radius is None:
+        return
+    else:
+        xc, yc, rc = dataHandler.data.fCenter(guess_center[0], guess_center[1], guess_radius)
+    
+    #Assignment
+    dataHandler.data.scattercolor = 'green'
+    dataHandler.diffraction_center = [xc,yc]
+    dataHandler._diffraction_radius = rc
+
+        
 # -----------------------------------------------------------------------------
 #           DATA CLASS
 # -----------------------------------------------------------------------------
@@ -246,7 +267,7 @@ class Image(Data):
         axes.imshow(self.image, vmin = self.image.min(), vmax = self.image.max(), cmap = 'jet', label = self.name)
         
         #plot scatterpoints
-        if self.scatterpoints != None and n.size(self.scatterpoints) >= 2 :    #If array is not empty
+        if self.scatterpoints is not None and n.size(self.scatterpoints) >= 2 :    #If array is not empty
             if n.size(self.scatterpoints) == 2:     #Indexing hack
                 xp, yp = self.scatterpoints
             else:
@@ -508,25 +529,6 @@ def plotComputedCenter(state, axes, **kwargs):
 # These methods are used to pass onto the next state, sometimes involving computations
 # -----------------------------------------------------------------------------
 
-def nothingHappens(*args):
-    pass
-
-def computeCenter(state):
-    """ Only valid for the data_loaded_state """
-    #Compute center
-    guess_center = state.others['guess center'] 
-    guess_radius = state.others['guess radius']
-    if guess_center == None or guess_radius == None:
-        pass
-    else:
-        xg, yg = guess_center
-        xc, yc, rc = state.data.fCenter(xg, yg, guess_radius)
-        
-    #Go to next state
-    state.application.center_found_state.others = {'center': [xc, yc], 'radius': rc, 'substrate image': state.others['substrate image']}
-    state.application.center_found_state.data = state.data
-    state.application.current_state = state.application.center_found_state      #Includes plotting new data
-
 def radiallyAverage(state):
     
     center = state.others['center']
@@ -619,24 +621,3 @@ def baselineGuesses(state, image_viewer):
     state.others['guesses'].append(image_viewer.last_click_position)
     image_viewer.axes.axvline(state.others['guesses'][-1][0],ymax = image_viewer.axes.get_ylim()[1], color = 'black')
     image_viewer.draw()
-# -----------------------------------------------------------------------------
-#           RESET METHODS
-# -----------------------------------------------------------------------------
-        #Define other attribute dictionnaries
-
-def resetDefault(state):
-    pass
-
-def resetDataLoaded(state):
-    state.others['guess center'] = None
-    state.others['guess radius'] = None
-
-def resetCenterFound(state):
-    state.others['center'] = None
-    state.others['radius'] = None
-
-def resetRadialAveraged(state):
-    state.others['cutoff'] = None
-
-def resetDataBaseline(state):
-    state.others['guesses'] = list()

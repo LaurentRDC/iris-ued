@@ -151,6 +151,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.imageLocatorBtn.setIcon(QtGui.QIcon('images\diffraction.png'))
         
         self.executeBtn = QtGui.QPushButton('Execute Operation')
+        self.executeBtn.setIcon(QtGui.QIcon('images\science.png'))
         
         #State buttons
         self.findCenterBtn = QtGui.QPushButton('Find center')
@@ -178,6 +179,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         self.imageLocatorBtn.clicked.connect(self.imageLocator)
         self.revertBtn.clicked.connect(self.revertState)
+        self.executeBtn.clicked.connect(self.executeOperation)
         
     def initLayout(self):
         #Image viewer pane ----------------------------------------------------
@@ -220,7 +222,7 @@ class UEDpowder(QtGui.QMainWindow):
             self.executeBtn.setText('Compute center')           #Change text on execute button
             
             self.dataHandler.on_click = guessCenter             
-            self.dataHandler.execute_function = None
+            self.dataHandler.execute_function = computeCenter
     
     def handleRadiallyAverage(self):
         if self.radiallyAverageBtn.isChecked() == True:
@@ -262,6 +264,9 @@ class UEDpowder(QtGui.QMainWindow):
     
     def revertState(self):
         self.dataHandler.revert()
+    
+    def executeOperation(self):
+        self.dataHandler.executeFunction()
 
     def imageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
