@@ -122,13 +122,13 @@ class ImageViewer(FigureCanvas):
             self.parent.state = 'cutoff set'
                 
         elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
-            if len(self.parent.background_guesses) < 3:
+            if len(self.parent.background_guesses) < 6:
                 self.parent.background_guesses.append(self.last_click_position)
                 self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
                 self.draw()
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 
-            elif len(self.parent.background_guesses) >= 3:
+            elif len(self.parent.background_guesses) >= 6:
                 self.parent.background_guesses.append(self.last_click_position)
                 print 'Background guess #' + str(len(self.parent.background_guesses))
                 self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
@@ -179,28 +179,18 @@ class ImageViewer(FigureCanvas):
         
         Parameters
         ----------
-        *args : lists of the form [s, pattern, name]
+        *args : lists of RadialCurve objects
         """
-        self.axes.cla()       
-
+        self.axes.cla()
+        
+        #Create a list with only one element if the data is not already in list form
+        if isinstance(data, fc.RadialCurve):
+            data = [data]
+        
+        #Plot list of objects
         for item in data:
-            s, pattern, name = item   
-            self.axes.plot(s, pattern, '.-', label = name, **kwargs)
+            item.plot(self.axes, **kwargs)
         
-        #Determine scaling
-        xmax = max([item[0].max() for item in data])
-        xmin = min([item[0].min() for item in data])
-        ymax = max([item[1].max() for item in data])
-        ymin = min([item[1].min() for item in data])
-        
-        #Plot parameters
-        self.axes.set_xlim(xmin, xmax)  #Set xlim and ylim on the first pattern args[0].
-        self.axes.set_ylim(ymin, ymax)
-        self.axes.set_aspect('auto')
-        self.axes.set_title('Diffraction pattern')
-        self.axes.set_xlabel('radius (px)')
-        self.axes.set_ylabel('Intensity')
-        self.axes.legend( loc = 'upper right', numpoints = 1)
         self.draw()
         
     def startLoading(self):
@@ -226,8 +216,8 @@ class UEDpowder(QtGui.QMainWindow):
         list of 2 ndarrays, shape (M,). r is the radius array, and i is the radially-averaged intensity. 'name' is a string used to make the plot legend.
     state : string
         Value describing in what state the software is. Possible values are:
-            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'radial cutoff', 'substrate background guessed', 'substrate background determined', 'background guessed', 'background determined']
-    raw_radial_averages : list of lists
+            state in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'radial cutoff', 'background guessed', 'background determined', 'background substracted']
+    raw_radial_average : list of lists
         List of the form [[radii1, pattern1, name1], [radii2, pattern2, name2], ... ], : list of ndarrays, shapes (M,), and an ID string
     """
     def __init__(self):
@@ -240,12 +230,12 @@ class UEDpowder(QtGui.QMainWindow):
         self.guess_radius = None
         self.cutoff = list()
         self.substrate_background_fit = list()
-        self.backgorund_fit = list()
+        self.background_fit = list()
         self.substrate_image = None
-        self.raw_radial_averages = list()    #Before inelastic background substraction
-        self.raw_radial_difference = list()
+        self.raw_radial_average = None     #Before inelastic background substraction
         self.voigt_profiles = list()
-        self.radial_average = list()        #After inelastic background substraction
+        self.radial_average = list()         #After inelastic background substraction
+
         self.background_guesses = list()
         self._state = None
         
@@ -257,10 +247,10 @@ class UEDpowder(QtGui.QMainWindow):
     # -------------------------------------------------------------------------
     #           SETTER METHODS FOR THREADING
     # -------------------------------------------------------------------------
-    def setRawRadialAverages(self, value):
+    def setRawRadialAverage(self, value):
         """ Handles the radial averages for both the diffraction pattern adn the substrate from a thread. """
-        self.raw_radial_averages = value
-        self.image_viewer.displayRadialPattern(self.raw_radial_averages)
+        self.raw_radial_average = value
+        self.image_viewer.displayRadialPattern(self.raw_radial_average)
         self.state = 'radial averaged'
     
     def setImageCenter(self, value):
@@ -276,7 +266,7 @@ class UEDpowder(QtGui.QMainWindow):
     
     @state.setter
     def state(self, value):
-        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff','substrate background guessed','substrate background determined', 'background guessed','background determined', 'inelastic background substracted']
+        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff', 'background guessed','background determined', 'inelastic background substracted']
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
@@ -340,15 +330,8 @@ class UEDpowder(QtGui.QMainWindow):
         beamblock_box.addWidget(self.executeRadialCutoffBtn)
         
         #For the inelastic scattering correction
-        substrate_inelastic_box = QtGui.QHBoxLayout()
-        substrate_inelastic_box.addWidget(QtGui.QLabel('Step 4: Remove inelastic scattering background from substrate.'))
-        self.executeSubstrateInelasticBtn = QtGui.QPushButton('Fit', self)
-        self.executeSubstrateInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
-        substrate_inelastic_box.addWidget(self.executeSubstrateInelasticBtn)
-        
-        #For the inelastic scattering correction
         inelastic_box = QtGui.QHBoxLayout()
-        inelastic_box.addWidget(QtGui.QLabel('Step 5: Remove inelastic scattering background from data.'))
+        inelastic_box.addWidget(QtGui.QLabel('Step 4: Remove inelastic scattering background from data.'))
         self.executeInelasticBtn = QtGui.QPushButton('Fit', self)
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
@@ -375,7 +358,6 @@ class UEDpowder(QtGui.QMainWindow):
         self.rejectBtn.clicked.connect(self.rejectState)
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
         self.executeRadialCutoffBtn.clicked.connect(self.executeStateOperation)
-        self.executeSubstrateInelasticBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         self.saveBtn.clicked.connect(self.save)
         self.loadBtn.clicked.connect(self.load)
@@ -397,7 +379,6 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes.addLayout(initial_box)
         state_boxes.addLayout(center_box)
         state_boxes.addLayout(beamblock_box)
-        state_boxes.addLayout(substrate_inelastic_box)
         state_boxes.addLayout(inelastic_box)
         state_boxes.addLayout(instruction_box)
         state_boxes.addLayout(state_controls)
@@ -457,52 +438,36 @@ class UEDpowder(QtGui.QMainWindow):
         """
         #Create list of buttons to be disabled and enables
         availableButtons = list()
-        unavailableButtons = list()
+        unavailableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
         
         if self.state == 'initial':
             availableButtons = [self.imageLocatorBtn, self.loadBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn, self.executeSubstrateInelasticBtn]
         elif self.state == 'data loaded':
             availableButtons = [self.imageLocatorBtn, self.loadBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn, self.executeSubstrateInelasticBtn]
         elif self.state == 'center guessed':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.loadBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.rejectBtn, self.saveBtn,self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'radius guessed':
             availableButtons = [self.imageLocatorBtn, self.executeCenterBtn, self.loadBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn,self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'center found':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.loadBtn]
-            unavailableButtons = [self.executeCenterBtn, self.executeInelasticBtn, self.saveBtn,self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'radial averaged':
             availableButtons = [self.imageLocatorBtn,  self.saveBtn, self.loadBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn,self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'cutoff set':
             availableButtons = [self.imageLocatorBtn, self.executeRadialCutoffBtn, self.loadBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn,self.executeSubstrateInelasticBtn, self.saveBtn]
         elif self.state == 'radial cutoff':
             availableButtons = [self.imageLocatorBtn, self.saveBtn, self.loadBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeCenterBtn, self.executeInelasticBtn, self.executeRadialCutoffBtn]
-        elif self.state == 'substrate background guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeSubstrateInelasticBtn, self.loadBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeInelasticBtn, self.executeCenterBtn, self.saveBtn, self.executeRadialCutoffBtn]
-        elif self.state == 'substrate background determined':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.loadBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn, self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'background guessed':
             availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn, self.loadBtn]
-            unavailableButtons = [self.acceptBtn, self.rejectBtn, self.executeSubstrateInelasticBtn, self.executeCenterBtn, self.saveBtn, self.executeRadialCutoffBtn]
         elif self.state == 'background determined':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.loadBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn, self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn]
         elif self.state == 'inelastic background substracted':
             availableButtons = [self.imageLocatorBtn, self.loadBtn]
-            unavailableButtons = [self.executeInelasticBtn, self.executeCenterBtn, self.executeSubstrateInelasticBtn, self.executeRadialCutoffBtn, self.acceptBtn, self.rejectBtn, self.saveBtn]
+            
         #Act!
-        for btn in availableButtons:
-            btn.setEnabled(True)
         for btn in unavailableButtons:
             btn.setEnabled(False)
+        for btn in availableButtons:
+            btn.setEnabled(True)
         
     def imageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
@@ -521,24 +486,17 @@ class UEDpowder(QtGui.QMainWindow):
             
         elif self.state == 'center found':
 
-            self.work_thread = WorkThread(fc.radialAverage, [self.image, self.substrate_image], ['Raw', 'Subtrate'], self.image_center)              #Create thread with a specific function and arguments
-            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverages) #Connect the outcome with a setter method
+            self.work_thread = WorkThread(fc.radialAverage, self.image, 'Sample', self.image_center)              #Create thread with a specific function and arguments
+            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
 
-            self.work_thread.start()                                                                    #Compute stuff
-        elif self.state == 'substrate background determined':
-            self.image_viewer.displayRadialPattern([self.raw_radial_averages[0]])
-            self.background_guesses = list()
-        
+            self.work_thread.start()                                                                    #Compute stuff        
         elif self.state == 'background determined':
             #Subtract backgrounds
-            self.radial_averages = list(self.raw_radial_averages)   #Copy list
-            self.radial_averages[1][1] -= self.substrate_background_fit[1]  #Substract inelastic background from substrate data
-            self.radial_averages[0][1] -= self.background_fit[1]            #Substract inelastic background from data
-            self.image_viewer.displayRadialPattern(self.radial_averages)
+            self.radial_average = self.raw_radial_average - self.background_fit            #Substract inelastic background from data
+            self.image_viewer.displayRadialPattern(self.radial_average)
             self.state = 'inelastic background substracted'
-            
             
     def rejectState(self):
         """ Master reject function that invalidates a state and reverts to an appropriate state. """
@@ -547,15 +505,10 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'data loaded'
             self.image_viewer.guess_center, self.image_viewer.guess_radius = None, None
             self.image_viewer.displayImage(self.image)
-        elif self.state == 'substrate background determined':
-            #Go back to choosing the guesses for the background
-            self.image_viewer.displayRadialPattern([self.raw_radial_averages[1]])
-            self.background_guesses = list() #Clear guesses
-            self.state = 'radial cutoff'
         elif self.state == 'background determined':
-            self.image_viewer.displayRadialPattern([self.raw_radial_averages[0]])
+            self.image_viewer.displayRadialPattern(self.raw_radial_average)
             self.background_guesses = list()
-            self.state = 'substrate background determined'
+            self.state = 'radial cutoff'
 
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases. """
@@ -571,21 +524,13 @@ class UEDpowder(QtGui.QMainWindow):
             self.work_thread.start()
         elif self.state == 'cutoff set':
             #Cutoff radial patterns
-            self.raw_radial_averages = fc.cutoff(self.raw_radial_averages, self.cutoff)
-            self.raw_radial_difference = fc.substract(self.raw_radial_averages)
-            self.image_viewer.displayRadialPattern([self.raw_radial_difference], color = 'g')
-            self.state = 'radial cutoff'
-        elif self.state == 'substrate background guessed':
-            #Create guess data
-            self.substrate_background_fit = fc.inelasticBG(self.raw_radial_averages[0], self.background_guesses)
-            self.image_viewer.displayRadialPattern([self.raw_radial_averages[0], self.substrate_background_fit])
-            self.background_guesses = list()
-            self.state = 'substrate background determined'
-        
+            self.raw_radial_average = self.raw_radial_average.cutoff(self.cutoff)
+            self.image_viewer.displayRadialPattern(self.raw_radial_average)
+            self.state = 'radial cutoff'        
         elif self.state == 'background guessed':
             #Create guess data
-            self.background_fit,self.voigt_profiles = fc.prototypeInelasticBGSubstract(self.raw_radial_difference, self.background_guesses)
-            self.image_viewer.displayRadialPattern([[self.raw_radial_difference]+self.voigt_profiles+[self.backgorund_fit]])
+            self.background_fit = self.raw_radial_average.inelasticBG(self.background_guesses)
+            self.image_viewer.displayRadialPattern([self.raw_radial_average, self.background_fit])
             self.state = 'background determined'
     
     def save(self):
@@ -594,8 +539,7 @@ class UEDpowder(QtGui.QMainWindow):
         if self.state == 'radial averaged':
             filename = self.file_dialog.getSaveFileName(self, 'Save radial averages', 'C:\\')
     
-            mdict = {'rav_x':self.raw_radial_averages[0][0], 'rav_y': self.raw_radial_averages[0][1],
-                     'rav_subs_x':self.raw_radial_averages[1][0], 'rav_subs_y': self.raw_radial_averages[1][1]}
+            mdict = {'rav_x':self.raw_radial_average.xdata, 'rav_y': self.raw_radial_average.ydata}
             savemat(filename, mdict)
         self.instructions.append('\n Radial averages saved.')
             
@@ -607,10 +551,8 @@ class UEDpowder(QtGui.QMainWindow):
         
         mdict = dict()
         mdict = loadmat(filename)
-        rav = [ mdict['rav_x'][0], mdict['rav_y'][0], 'Raw' ]
-        rav_subs = [ mdict['rav_subs_x'][0], mdict['rav_subs_y'][0], 'Subs' ]
-        self.raw_radial_averages = [rav, rav_subs]
-        self.image_viewer.displayRadialPattern(self.raw_radial_averages)
+        self.raw_radial_average = fc.RadialCurve(mdict['rav_x'][0], mdict['rav_y'][0], 'Raw' )
+        self.image_viewer.displayRadialPattern(self.raw_radial_average)
         self.state = 'radial averaged'
         self.instructions.append('\n Radial averages loaded.')
 
@@ -627,12 +569,15 @@ class UEDpowder(QtGui.QMainWindow):
         background_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'bg.tif'))
         #Load images
         background = n.array(Image.open(background_filename), dtype = n.float)
-        self.image = n.array(Image.open(filename), dtype = n.float) - background
-        self.substrate_image = n.array(Image.open(substrate_filename), dtype = n.float) - background
+        image = n.array(Image.open(filename), dtype = n.float) - background
+        substrate_image = n.array(Image.open(substrate_filename), dtype = n.float) - background
         
         #Process data
-        self.image[self.image < 0] = 0
-        self.substrate_image[self.substrate_image < 0] = 0
+        image[image < 0] = 0
+        substrate_image[substrate_image < 0] = 0
+        
+        #Substract substrate effects weighted by exposure
+        self.image = image - (2.0/5.0)*substrate_image
     
         self.state = 'data loaded'
         
