@@ -6,7 +6,7 @@ import numpy as n
 from PIL import Image
 
 #Core functions
-import core as fc
+from core import *
 
 #plotting backends
 from matplotlib.backends import qt_compat
@@ -179,7 +179,7 @@ class ImageViewer(FigureCanvas):
         self.axes.cla()
         
         #Create a list with only one element if the data is not already in list form
-        if isinstance(data, fc.RadialCurve):
+        if isinstance(data, RadialCurve):
             data = [data]
         
         #Plot list of objects
@@ -326,6 +326,13 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeInelasticBtn.setIcon(QtGui.QIcon('images\science.png'))
         inelastic_box.addWidget(self.executeInelasticBtn)
         
+        #For the batch processing box
+        batch_process_box = QtGui.QHBoxLayout()
+        batch_process_box.addWidget(QtGui.QLabel('Step 5: Initiate batch processing.'))
+        self.executeBatchProcessingBtn = QtGui.QPushButton('Batch process', self)
+        self.executeBatchProcessingBtn.setIcon(QtGui.QIcon('images\science.png'))
+        batch_process_box.addWidget(self.executeBatchProcessingBtn)
+        
         #For instructions and printing
         instruction_box = QtGui.QVBoxLayout()
         instruction_box.addWidget(QtGui.QLabel('Instructions:'))
@@ -349,6 +356,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
         self.executeRadialCutoffBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
+        self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
         self.saveBtn.clicked.connect(self.save)
         self.loadBtn.clicked.connect(self.load)
         
@@ -370,6 +378,7 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes.addLayout(center_box)
         state_boxes.addLayout(beamblock_box)
         state_boxes.addLayout(inelastic_box)
+        state_boxes.addLayout(batch_process_box)
         state_boxes.addLayout(instruction_box)
         state_boxes.addLayout(state_controls)
         
@@ -428,7 +437,7 @@ class UEDpowder(QtGui.QMainWindow):
         """
         #Create list of buttons to be disabled and enables
         availableButtons = list()
-        unavailableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn]
+        unavailableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn, self.executeBatchProcessingBtn]
         
         if self.state == 'initial':
             availableButtons = [self.imageLocatorBtn, self.loadBtn]
@@ -451,7 +460,7 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'background determined':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.loadBtn]
         elif self.state == 'inelastic background substracted':
-            availableButtons = [self.imageLocatorBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeBatchProcessingBtn]
             
         #Act!
         for btn in unavailableButtons:
@@ -476,7 +485,7 @@ class UEDpowder(QtGui.QMainWindow):
             
         elif self.state == 'center found':
 
-            self.work_thread = WorkThread(fc.radialAverage, self.image, 'Sample', self.image_center)              #Create thread with a specific function and arguments
+            self.work_thread = WorkThread(radialAverage, self.image, 'Sample', self.image_center)              #Create thread with a specific function and arguments
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
@@ -507,7 +516,7 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'radius guessed':
             #Compute center
             xg, yg = self.guess_center
-            self.work_thread = WorkThread(fc.fCenter, xg, yg, self.guess_radius, self.image)
+            self.work_thread = WorkThread(fCenter, xg, yg, self.guess_radius, self.image)
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setImageCenter)            
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
@@ -522,6 +531,9 @@ class UEDpowder(QtGui.QMainWindow):
             self.background_fit = self.raw_radial_average.inelasticBG(self.background_guesses)
             self.image_viewer.displayRadialPattern([self.raw_radial_average, self.background_fit])
             self.state = 'background determined'
+        elif self.state == 'background substracted':
+            #TODO: Initiate batch processing
+            pass
     
     def save(self):
         """ Determines what to do when the save button is clicked """
@@ -541,7 +553,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         mdict = dict()
         mdict = loadmat(filename)
-        self.raw_radial_average = fc.RadialCurve(mdict['rav_x'][0], mdict['rav_y'][0], 'Raw' )
+        self.raw_radial_average = RadialCurve(mdict['rav_x'][0], mdict['rav_y'][0], 'Raw' )
         self.image_viewer.displayRadialPattern(self.raw_radial_average)
         self.state = 'radial averaged'
         self.instructions.append('\n Radial averages loaded.')
