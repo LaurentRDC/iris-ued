@@ -79,17 +79,11 @@ class ImageViewer(FigureCanvas):
         self.axes.hold(True)
 
         self.initialFigure()
-
-        #
         FigureCanvas.__init__(self, fig)
         self.setParent(parent)
 
-        FigureCanvas.setSizePolicy(self,
-                                   QtGui.QSizePolicy.Expanding,
-                                   QtGui.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
-        
-        #Set toolbar
         
         #connect clicking events
         self.mpl_connect('button_press_event', self.click)
@@ -139,15 +133,6 @@ class ImageViewer(FigureCanvas):
     def displayImage(self, image, circle = None, center = None, colour = 'red'):
         """ 
         This method displays a raw TIFF image from the instrument. Optional arguments can be used to overlay a circle.
-        
-        Parameters
-        ----------
-        filename : string
-            Filename of the image to be displayed.
-        cicle : list, optional, shape (2,)
-            List of 2 ndarrays that decribe scatter points of a circle
-        guess : list, optional,
-            x and y coordinates of center guess
         """
         if image is None:
             self.initialFigure()
@@ -219,13 +204,11 @@ class UEDpowder(QtGui.QMainWindow):
         self.guess_center = None
         self.guess_radius = None
         self.cutoff = list()
-        self.substrate_background_fit = list()
         self.background_fit = list()
         self.substrate_image = None
-        self.raw_radial_average = None     #Before inelastic background substraction
+        self.raw_radial_average = None       #Before inelastic background substraction
         self.voigt_profiles = list()
         self.radial_average = list()         #After inelastic background substraction
-
         self.background_guesses = list()
         self._state = None
         
