@@ -122,17 +122,12 @@ class ImageViewer(FigureCanvas):
             self.parent.state = 'cutoff set'
                 
         elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
-            if len(self.parent.background_guesses) < 6:
-                self.parent.background_guesses.append(self.last_click_position)
-                self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-                self.draw()
-                print 'Background guess #' + str(len(self.parent.background_guesses))
-                
-            elif len(self.parent.background_guesses) >= 6:
-                self.parent.background_guesses.append(self.last_click_position)
-                print 'Background guess #' + str(len(self.parent.background_guesses))
-                self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-                self.draw()
+            self.parent.background_guesses.append(self.last_click_position)
+            self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
+            self.draw()
+            print 'Background guess #' + str(len(self.parent.background_guesses))
+            #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
+            if len(self.parent.background_guesses) == 6:
                 self.parent.state = 'background guessed'
 
     def initialFigure(self):
@@ -192,12 +187,7 @@ class ImageViewer(FigureCanvas):
             item.plot(self.axes, **kwargs)
         
         self.draw()
-        
-    def startLoading(self):
-        self.parent.startLoading()
-    def endLoading(self):
-        self.parent.endLoading()
-            
+
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
 # -----------------------------------------------------------------------------
@@ -417,19 +407,19 @@ class UEDpowder(QtGui.QMainWindow):
             elif self.state == 'center guessed':
                 self.instructions.append('\n Click on a diffraction ring to guess a diffraction pattern radius.')
             elif self.state == 'radius guessed':
-                self.instructions.append('\n Click on the "Find center" button to fit a circle to the diffraction ring you selected.')
+                self.instructions.append('\n Click on "Find center" to fit a circle to the diffraction ring you selected.')
             elif self.state == 'center found':
-                self.instructions.append('\n Click the "Accept" button to radially average the data, or click "Reject" to guess for a center again.')
+                self.instructions.append('\n "Accept" to radially average the data, or click "Reject" to guess for a center again.')
             elif self.state == 'radial averaged':
                 self.instructions.append('\n Click on the pattern to cutoff the area affected by the beam block.')
             elif self.state == 'cutoff set':
-                self.instructions.append('\n Click on the "Cutoff radial patterns" button if you are satisfied with the cutoff or click again on the image viewer to set a new cutoff.')
+                self.instructions.append('\n Click on "Cutoff radial patterns" if you are satisfied with the cutoff or click again on the image viewer to set a new cutoff.')
             elif self.state == 'radial cutoff':
                 self.instructions.append('\n Click on the image viewer to select sampling points to fit a background to.')
             elif self.state == 'background guessed':
-                self.instructions.append('\n Click on the "Fit" button to fit the inelastic background.')
+                self.instructions.append('\n Click on the "Fit" button to fit the inelastic background, or click on the image viewer for more sampling points.')
             elif self.state == 'background determined':
-                pass
+                self.instructions.append('\n Accept the background fit to substract it from the data, or reject to sample the background again.')
             elif self.state == 'background substracted':
                 pass
 
@@ -580,12 +570,6 @@ class UEDpowder(QtGui.QMainWindow):
         self.image = image - (2.0/5.0)*substrate_image
     
         self.state = 'data loaded'
-        
-    def startLoading(self):
-        self.instructions.append('\n loading...')
-        
-    def endLoading(self):
-        self.instructions.append('\n loading...done')
     
     def fileQuit(self):
         self.close()
