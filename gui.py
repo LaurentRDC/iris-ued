@@ -22,21 +22,12 @@ else:
     from PyQt4 import QtGui, QtCore
 
 # -----------------------------------------------------------------------------
-#           IMAGE VIEWER CLASSES AND FUNCTIONS
+#           WORKING CLASS
 # -----------------------------------------------------------------------------
-    
-def generateCircle(xc, yc, radius):
-    """
-    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
-    """
-    xvals = xc+ radius*n.cos(n.linspace(0,2*n.pi,100))
-    yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
-    return [xvals,yvals]
-    
 
 class WorkThread(QtCore.QThread):
     """
-    Object taking care of computations
+    Object taking care of threading computations
     """
     def __init__(self, function, *args, **kwargs):
         QtCore.QThread.__init__(self)
@@ -54,6 +45,18 @@ class WorkThread(QtCore.QThread):
         self.result = self.function(*self.args, **self.kwargs)
         self.emit(QtCore.SIGNAL('Remove Loading'), '\n Done.')
         self.emit(QtCore.SIGNAL('Computation done'), self.result)
+        
+# -----------------------------------------------------------------------------
+#           IMAGE VIEWER CLASSES AND FUNCTIONS
+# -----------------------------------------------------------------------------
+    
+def generateCircle(xc, yc, radius):
+    """
+    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
+    """
+    xvals = xc+ radius*n.cos(n.linspace(0,2*n.pi,100))
+    yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
+    return [xvals,yvals]
 
 class ImageViewer(FigureCanvas):
     """

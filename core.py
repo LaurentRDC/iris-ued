@@ -23,8 +23,26 @@ def pseudoVoigt(x, height, xc, width_g, width_l, constant = 0):
     """ Returns a pseudo Voigt profile centered at xc with weighting factor 1/2. """
     return height*(0.5*Gaussian(x, xc, width_g) + 0.5*Lorentzian(x, xc, width_l)) + constant
     
+def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0):
+    """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x) + e"""
+    return a*n.exp(-b*(x-f)) + c*n.exp(-d*(x-f)) + e
+
+def bilor(x, center, amp1, amp2, width1, width2, const):
+    """ Returns a Bilorentzian functions. """
+    return amp1*Lorentzian(x, center, width1) + amp2*Lorentzian(x, center, width2) + const
+    
 # -----------------------------------------------------------------------------
-#           RADIAL CURVE FUNCTION
+#           I/O FUNCTIONS
+# -----------------------------------------------------------------------------
+
+def diffractionFileList(folder_path = 'C:\\' ):
+    """
+    returns a list of filenames corresponding to diffraction pictures
+    """
+    return
+    
+# -----------------------------------------------------------------------------
+#           RADIAL CURVE CLASS
 # -----------------------------------------------------------------------------
 
 class RadialCurve(object):
@@ -151,15 +169,7 @@ class RadialCurve(object):
         
         return RadialCurve(self.xdata, new_fit, 'IBG ' + self.name)
 
-# -----------------------------------------------------------------------------
-#           I/O FUNCTIONS
-# -----------------------------------------------------------------------------
 
-def diffractionFileList(folder_path = 'C:\\' ):
-    """
-    returns a list of filenames corresponding to diffraction pictures
-    """
-    return
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
@@ -184,7 +194,6 @@ def fCenter(xg, yg, rg, im, scalefactor = 20):
     Scipy.optimize.fmin - Minimize a function using the downhill simplex algorithm
     """
     
-
     #find maximum intensity
     xgscaled, ygscaled, rgscaled = n.array([xg,yg,rg])/scalefactor
     c1 = lambda x: circ(x[0],x[1],x[2],im)
@@ -285,18 +294,3 @@ def radialAverage(image, name, center = [562,549]):
         
         #Return normalized radial average
     return RadialCurve(unique_radii, n.divide(accumulation,bincount), name + ' radial average')
-
-# -----------------------------------------------------------------------------
-#           INELASTIC SCATTERING BACKGROUND SUBSTRACTION
-# -----------------------------------------------------------------------------
-
-def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0):
-    """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x) + e"""
-    return a*n.exp(-b*(x-f)) + c*n.exp(-d*(x-f)) + e
-
-def bilor(x, center, amp1, amp2, width1, width2, const):
-    """ Returns a Bilorentzian functions. """
-    return amp1*Lorentzian(x, center, width1) + amp2*Lorentzian(x, center, width2) + const
-    
-if __name__ == '__main__':
-    pass
