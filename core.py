@@ -4,6 +4,9 @@ from __future__ import division
 import numpy as n
 import scipy.optimize as opt
 
+import os.path
+import PIL.Image
+import glob
 
 # -----------------------------------------------------------------------------
 #           HELPER FUNCTIONS
@@ -80,55 +83,6 @@ class RadialCurve(object):
         cutoff_index = n.argmin(n.abs(self.xdata - cutoff[0]))
         return RadialCurve(self.xdata[cutoff_index::], self.ydata[cutoff_index::], name = 'Cutoff ' + self.name, color = self.color)
 
-    def prototypeInelasticBGSubstract(self, points = list(), chunk_size = 5):
-        """ 
-        Following Vance's inelastic background substraction method. We assume that the data has been corrected for diffuse scattering by substrate 
-        (e.g. silicon nitride substrate for VO2 samples)
-        
-        In order to determine the shape of the background, we use a list of points selected by the user as 'diffraction feature'. These diffraction features are fit with 
-        a pseudo-Voigt + constant. Concatenating this constant for multiple diffraction features, we can get a 'stair-steps' description of the background. We then smooth this
-        data to get a nice background.
-        
-        Parameters
-        ----------
-        xdata, ydata : ndarrays, shape (N,)
-        
-        points : list of array-like
-        """
-        
-        #Determine data chunks based on user-input points
-        xfeatures = n.asarray(points)[:,0]      #Only consider x-position of the diffraction feature
-        xchunks, ychunks= list(), list()
-        for feature in xfeatures:
-            #Find where in xdata is the feature
-            ind = n.argmin(n.abs(self.xdata - feature))
-            chunk_ind = n.arange(ind - chunk_size, ind + chunk_size + 1)    #Add 1 to stop parameter because chunk = [start, stop)
-            xchunks.append(self.xdata[chunk_ind])
-            ychunks.append(self.ydata[chunk_ind])
-        
-        #Fit a pseudo-Voigt + constant for each xchunk and save constant
-        voigt_parameters = list()
-        constants = list()
-        for xchunk, ychunk in zip(xchunks, ychunks):
-            temp_ychunk = ychunk - ychunk.min()         #Trick to get a better fit: remove most of the offset
-            parameter_guesses = [temp_ychunk.max(), (xchunk.max()-xchunk.min())/2 + xchunk.min(), 0.1, 0.1, 0]
-            opt_parameters = opt.curve_fit(pseudoVoigt, xchunk, ychunk, p0 = parameter_guesses)[0]
-            voigt_parameters.append(opt_parameters)
-            constants.append(opt_parameters[-1]*n.ones_like(xchunk) + ychunk.min())    # constant is the last parameter in the definition of pseudoVoigt
-        
-        #Extend constants to x-values outside xchunks
-        constant_background = n.asarray(constants).flatten()
-        x_background = n.asarray(xchunks).flatten()
-        background = RadialCurve(self.xdata,n.interp(self.xdata, x_background, constant_background),'background')
-        
-        #Create diagnostics Voigt profiles
-        profiles = list()
-        for index, params in enumerate(voigt_parameters):
-            profiles.append( RadialCurve(self.xdata,pseudoVoigt(self.xdata, params[0], params[1], params[2], params[3], params[4]),'peak'+str(index)) ) 
-    
-        #TODO: smooth background data
-        return background, profiles
-
     def inelasticBG(self, points = list(), fit = 'biexp'):
         """
         Inelastic scattering background substraction.
@@ -167,8 +121,7 @@ class RadialCurve(object):
         a,b,c,d,e,f = optimal_parameters
         new_fit = function(self.xdata, a, b, c, d, e, f)
         
-        return RadialCurve(self.xdata, new_fit, 'IBG ' + self.name)
-
+        return RadialCurve(self.xdata, new_fit, 'IBG ' + self.name, 'red')
 
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
@@ -294,3 +247,29 @@ def radialAverage(image, name, center = [562,549]):
         
         #Return normalized radial average
     return RadialCurve(unique_radii, n.divide(accumulation,bincount), name + ' radial average')
+
+# -----------------------------------------------------------------------------
+#           BATCH FILE PROCESSING
+# -----------------------------------------------------------------------------
+
+class DiffractionDataset(object):
+    
+    def __init__(self, directory):
+        
+        self.directory = directory
+        self.pumpon_background = self.averageImages('background.*.pumpon.tif')
+        self.pumpoff_background = self.averageImages('background.*.pumpoff.tif')
+        self.file_list = list()
+    
+    def averageImages(self, filename_template):
+        """
+        Averages images matching a filename template within the dataset directory.
+        
+        See also
+        --------
+        Glob.glob
+        """
+        image_list = glob.glob(os.path.join(self.directory, filename_template))
+        images = [n.array(PIL.Image.open(filename)) for filename in image_list]
+        return sum(images)/float(len(images))
+            

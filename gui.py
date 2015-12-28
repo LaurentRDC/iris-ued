@@ -122,7 +122,6 @@ class ImageViewer(FigureCanvas):
             self.parent.background_guesses.append(self.last_click_position)
             self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
             self.draw()
-            print 'Background guess #' + str(len(self.parent.background_guesses))
             #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
             if len(self.parent.background_guesses) == 6:
                 self.parent.state = 'background guessed'
