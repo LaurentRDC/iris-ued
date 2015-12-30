@@ -8,7 +8,7 @@ import os.path
 import PIL.Image
 import glob
 import re
-
+from tqdm import tqdm
 # -----------------------------------------------------------------------------
 #           HELPER FUNCTIONS
 # -----------------------------------------------------------------------------
@@ -284,7 +284,7 @@ class DiffractionDataset(object):
         image_list = glob.glob(os.path.join(self.directory, filename_template))
         
         image = n.zeros(shape = self.resolution, dtype = n.float)
-        for filename in image_list:
+        for filename in tqdm(image_list):
             new_image = n.array(PIL.Image.open(filename), dtype = n.float)
             if background is not None:
                 new_image -= background
@@ -318,8 +318,10 @@ class DiffractionDataset(object):
         
         #preliminaries
         if isinstance(time_point, float):
+            print 'Time point entered as float'
             sign_prefix = '+' if time_point >= 0.0 else '-'
             time_point = sign_prefix + str(time_point) + '0'
+            print 'New time point format: {0}'.format(time_point)
         
         assert time_point.endswith('.00')
         
