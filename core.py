@@ -312,11 +312,14 @@ class DiffractionDataset(object):
         
         Parameters
         ----------
-        time_point : string or float
-            string in the form of +150.00, -10.00, etc. If a float is provided, it will be converted to a string of the correct format.
+        time_point : string or numerical
+            string in the form of +150.00, -10.00, etc. If a float or int is provided, it will be converted to a string of the correct format.
         """
         
         #preliminaries
+        if isinstance(time_point, int):
+            time_point = float(time_point)
+            
         if isinstance(time_point, float):
             print 'Time point entered as float'
             sign_prefix = '+' if time_point >= 0.0 else '-'
