@@ -7,6 +7,7 @@ import scipy.optimize as opt
 import os.path
 import PIL.Image
 import glob
+import re
 
 # -----------------------------------------------------------------------------
 #           HELPER FUNCTIONS
@@ -254,22 +255,79 @@ def radialAverage(image, name, center = [562,549]):
 
 class DiffractionDataset(object):
     
-    def __init__(self, directory):
+    def __init__(self, directory, resolution = (2048, 2048)):
         
         self.directory = directory
+        self.resolution = resolution
         self.pumpon_background = self.averageImages('background.*.pumpon.tif')
         self.pumpoff_background = self.averageImages('background.*.pumpoff.tif')
-        self.file_list = list()
+        self.time_points = self.getTimePoints()
+        
     
-    def averageImages(self, filename_template):
+    def averageImages(self, filename_template, background = None):
         """
         Averages images matching a filename template within the dataset directory.
+        
+        Parameters
+        ----------
+        filename_templates : string
+            Examples of filename templates: 'background.*.pumpon.tif', '*.jpeg', etc.
         
         See also
         --------
         Glob.glob
-        """
-        image_list = glob.glob(os.path.join(self.directory, filename_template))
-        images = [n.array(PIL.Image.open(filename)) for filename in image_list]
-        return sum(images)/float(len(images))
+        """ 
+        #Preliminaries               
+        if background is not None:
+            background = background.astype(n.float)
             
+        image_list = glob.glob(os.path.join(self.directory, filename_template))
+        
+        image = n.zeros(shape = self.resolution, dtype = n.float)
+        for filename in image_list:
+            new_image = n.array(PIL.Image.open(filename), dtype = n.float)
+            if background is not None:
+                new_image -= background
+            image += new_image
+            
+        #Average    
+        return image/len(image_list)
+    
+    def getTimePoints(self):
+        """ """
+        #Get TIFF images
+        image_list = [f for f in os.listdir(self.directory) 
+                if os.path.isfile(os.path.join(self.directory, f)) 
+                and f.startswith('data.timedelay.') 
+                and f.endswith('pumpon.tif')]
+        
+        #get time points
+        #TODO: check if sorting is necessary
+        time_data = [float( re.search('[+-]\d+[.]\d+', f).group() ) for f in image_list]
+        return list(set(time_data))     #Conversion to set then back to list to remove repeated values
+    
+    def dataAverage(self, time_point, pump = 'pumpon'):
+        """ 
+        Returns a UNIX-like file template, to be used in conjunction with self.averageImages.
+        
+        Parameters
+        ----------
+        time_point : string or float
+            string in the form of +150.00, -10.00, etc. If a float is provided, it will be converted to a string of the correct format.
+        """
+        
+        #preliminaries
+        if isinstance(time_point, float):
+            sign_prefix = '+' if time_point >= 0.0 else '-'
+            time_point = sign_prefix + str(time_point) + '0'
+        
+        assert time_point.endswith('.00')
+        
+        glob_template = 'data.timedelay.' + time_point + '.nscan.*.' + pump + '.tif'
+        background = self.pumpon_background if pump == 'pumpon' else self.pumpoff_background
+        
+        return self.averageImages(glob_template, background)
+        
+        
+        
+        
