@@ -212,6 +212,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.voigt_profiles = list()
         self.radial_average = list()         #After inelastic background substraction
         self.background_guesses = list()
+        self.background_fit = None
         self._state = None
         
         #Initialize

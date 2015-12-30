@@ -123,7 +123,10 @@ class RadialCurve(object):
         new_fit = function(self.xdata, a, b, c, d, e, f)
         
         return RadialCurve(self.xdata, new_fit, 'IBG ' + self.name, 'red')
-
+    
+    def save(self, filename):
+        #TODO: determine save file format with MJStern
+        pass
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
@@ -333,6 +336,26 @@ class DiffractionDataset(object):
         
         return self.averageImages(glob_template, background)
         
+    def process(self, time, center = [0,0], cutoff = [0,0], substrate = None, inelasticBGCurve = None, pump = 'pumpon', save = False):
+        """
+        Returns a processed radial curve associated with a radial diffraction pattern at a certain time point.
         
+        Parameters
+        ----------
         
+        """
+        image = self.dataAverage(time, pump)                #Average apropriate pictures
         
+        if substrate is not None:                           #substract substrate if it is provided
+            assert image.shape == substrate.shape
+            substrate = substrate.astype(n.float)
+            image -= substrate
+            
+        curve = radialAverage(image, str(time), center)     #Radially average
+        curve = curve.cutoff(cutoff)                        #cutoff curve
+
+        if inelasticBGCurve is not None:                    #substract inelastic scattering background if it is provided
+            assert isinstance(inelasticBGCurve, RadialCurve) 
+            return curve - inelasticBGCurve
+        else:
+            return curve
