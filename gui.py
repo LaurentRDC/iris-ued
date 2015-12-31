@@ -342,7 +342,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
         self.executeRadialCutoffBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
-        self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
+        self.executeBatchProcessingBtn.clicked.connect(self.testBatchProcess)
         self.saveBtn.clicked.connect(self.save)
         self.loadBtn.clicked.connect(self.load)
         
@@ -426,7 +426,7 @@ class UEDpowder(QtGui.QMainWindow):
         unavailableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn, self.executeBatchProcessingBtn]
         
         if self.state == 'initial':
-            availableButtons = [self.imageLocatorBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeBatchProcessingBtn]
         elif self.state == 'data loaded':
             availableButtons = [self.imageLocatorBtn, self.loadBtn]
         elif self.state == 'center guessed':
@@ -518,8 +518,14 @@ class UEDpowder(QtGui.QMainWindow):
             self.image_viewer.displayRadialPattern([self.raw_radial_average, self.background_fit])
             self.state = 'background determined'
         elif self.state == 'background substracted':
-            #TODO: Initiate batch processing
-            pass
+            self.w = BatchProcess(self)
+            self.w.setGeometry(QRect(100, 100, 400, 200))
+            self.w.show()
+    
+    def testBatchProcess(self):
+            self.w = BatchProcess(self)
+            self.w.setGeometry(100, 100, 400, 200)
+            self.w.show()
     
     def save(self):
         """ Determines what to do when the save button is clicked """
@@ -574,6 +580,49 @@ class UEDpowder(QtGui.QMainWindow):
 
     def closeEvent(self, ce):
         self.fileQuit()
+
+# -----------------------------------------------------------------------------
+#           BATCH PROCESSING WINDOW
+# -----------------------------------------------------------------------------
+
+class BatchProcess(QtGui.QWidget):
+    
+    def __init__(self, parent):
+        super(BatchProcess, self).__init__()
+        self.parent = parent
+        self.initUI()
+    
+    def initUI(self):
+               
+        self.pb = QtGui.QProgressBar(self)
+        self.pb.setValue(0)
+        
+        #Master Layout --------------------------------------------------------
+        grid = QtGui.QVBoxLayout()
+        grid.addWidget(QtGui.QLabel('Data processing in progress...'))
+        grid.addWidget(self.pb)
+        
+        #Set master layout  ---------------------------------------------------
+        self.central_widget = QtGui.QWidget()
+        self.central_widget.setLayout(grid)
+        
+        #Window settings ------------------------------------------------------
+        self.setGeometry(600, 600, 350, 300)
+        self.setWindowTitle('Batch Processing Dialog')
+        self.centerWindow()
+        self.show()
+    
+    def centerWindow(self):
+        """ Centers the window """
+        qr = self.frameGeometry()
+        cp = QtGui.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+    
+    def paintEvent(self, event):
+        dc = QtGui.QPainter(self)
+        dc.drawLine(0, 0, 100, 100)
+        dc.drawLine(100, 0, 0, 100)
         
 #Run
 if __name__ == '__main__':
