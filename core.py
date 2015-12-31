@@ -4,6 +4,19 @@ from __future__ import division
 import numpy as n
 import scipy.optimize as opt
 
+#plotting backends
+from matplotlib.backends import qt_compat
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.backends.backend_qt4agg as qt4agg
+from matplotlib.figure import Figure
+use_pyside = qt_compat.QT_API == qt_compat.QT_API_PYSIDE
+
+#GUI backends
+if use_pyside:
+    from PySide import QtGui, QtCore
+else:
+    from PyQt4 import QtGui, QtCore
+
 import os.path
 import PIL.Image
 import glob
@@ -317,6 +330,8 @@ class DiffractionDataset(object):
         ----------
         time_point : string or numerical
             string in the form of +150.00, -10.00, etc. If a float or int is provided, it will be converted to a string of the correct format.
+        pump : string
+            Determines whether to average 'pumpon' data or 'pumpoff' data
         """
         
         #preliminaries
@@ -324,7 +339,7 @@ class DiffractionDataset(object):
             time_point = float(time_point)
             
         if isinstance(time_point, float):
-            print 'Time point entered as float'
+            print 'Time point entered as numerical'
             sign_prefix = '+' if time_point >= 0.0 else '-'
             time_point = sign_prefix + str(time_point) + '0'
             print 'New time point format: {0}'.format(time_point)
@@ -336,7 +351,7 @@ class DiffractionDataset(object):
         
         return self.averageImages(glob_template, background)
         
-    def process(self, time, center = [0,0], cutoff = [0,0], substrate = None, inelasticBGCurve = None, pump = 'pumpon', save = False):
+    def process(self, time, center = [0,0], cutoff = [0,0], substrate = None, inelasticBGCurve = None, pump = 'pumpon'):
         """
         Returns a processed radial curve associated with a radial diffraction pattern at a certain time point.
         
@@ -359,3 +374,15 @@ class DiffractionDataset(object):
             return curve - inelasticBGCurve
         else:
             return curve
+        
+    def batchProcess(self, center = [0,0], cutoff = [0,0], substrate = None, inelasticBGCurve = None, pump = 'pumpon'):
+        """
+        Returns a list of RadialCurve objects (one for every time point)
+        """
+        
+        results = list()
+        for time in self.time_points:
+            #TODO: How to emit signal to update progress bar?
+            results.append(self.process(time, center, cutoff, substrate, inelasticBGCurve, pump))
+        
+        return results
