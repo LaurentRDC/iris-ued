@@ -215,6 +215,8 @@ class UEDpowder(QtGui.QMainWindow):
         self.background_fit = None
         self._state = None
         
+        self.diffractionDataset = None
+        
         #Initialize
         super(UEDpowder, self).__init__()     #inherit from the constructor of QMainWindow        
         self.initUI()
@@ -460,6 +462,9 @@ class UEDpowder(QtGui.QMainWindow):
         self.loadImage(filename)
         self.image_viewer.displayImage(self.image)     #display raw image
         
+        #Create diffraction dataset for upcoming batch processing
+        self.diffractionDataset = DiffractionDataset(os.path.dirname(filename), resolution = self.image.shape)
+        
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
         
@@ -523,9 +528,7 @@ class UEDpowder(QtGui.QMainWindow):
             self.w.show()
     
     def testBatchProcess(self):
-            self.work_thread = WorkThread()
-            self.w.setGeometry(100, 100, 400, 200)
-            self.w.show()
+        self.diffractionDataset.batchProcess(self.image_center, self.cutoff, inelasticBGCurve, pump)
     
     def save(self):
         """ Determines what to do when the save button is clicked """

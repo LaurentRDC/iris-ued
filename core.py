@@ -275,10 +275,20 @@ class DiffractionDataset(object):
         
         self.directory = directory
         self.resolution = resolution
+        self.substrate = self.getSubstrateImage
         self.pumpon_background = self.averageImages('background.*.pumpon.tif')
         self.pumpoff_background = self.averageImages('background.*.pumpoff.tif')
         self.time_points = self.getTimePoints()
         
+    def getSubstrateImage(self):
+        """ """
+        files = os.listdir(self.directory)
+        
+        substrate_filenames = [os.path.join(self.folder, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
+        for possible_substrate in substrate_filenames:
+            if possible_substrate in files:
+                return n.array(PIL.Image.open(possible_substrate), dtype = n.float)
+        return None         #If file not found
     
     def averageImages(self, filename_template, background = None):
         """
@@ -351,20 +361,22 @@ class DiffractionDataset(object):
         
         return self.averageImages(glob_template, background)
         
-    def process(self, time, center = [0,0], cutoff = [0,0], substrate = None, inelasticBGCurve = None, pump = 'pumpon'):
+    def process(self, time, center, cutoff, inelasticBGCurve, pump):
         """
         Returns a processed radial curve associated with a radial diffraction pattern at a certain time point.
         
         Parameters
         ----------
-        
+        time : string or numerical
+            Either a string formatted as {'+150.00', '-10.00'} or equivalent float or integer. See self.dataAverage
+        TBD
         """
         image = self.dataAverage(time, pump)                #Average apropriate pictures
         
-        if substrate is not None:                           #substract substrate if it is provided
-            assert image.shape == substrate.shape
-            substrate = substrate.astype(n.float)
-            image -= substrate
+        if self.substrate is not None:                           #substract substrate if it is provided
+            assert image.shape == self.substrate.shape
+            self.substrate = self.substrate.astype(n.float)
+            image -= self.substrate
             
         curve = radialAverage(image, str(time), center)     #Radially average
         curve = curve.cutoff(cutoff)                        #cutoff curve
@@ -375,7 +387,7 @@ class DiffractionDataset(object):
         else:
             return curve
         
-    def batchProcess(self, center = [0,0], cutoff = [0,0], substrate = None, inelasticBGCurve = None, pump = 'pumpon'):
+    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, pump = 'pumpon'):
         """
         Returns a list of RadialCurve objects (one for every time point)
         """
@@ -383,6 +395,6 @@ class DiffractionDataset(object):
         results = list()
         for time in self.time_points:
             #TODO: How to emit signal to update progress bar?
-            results.append(self.process(time, center, cutoff, substrate, inelasticBGCurve, pump))
+            results.append(self.process(time, center, cutoff, inelasticBGCurve, pump))
         
         return results
