@@ -281,12 +281,11 @@ class DiffractionDataset(object):
         self.time_points = self.getTimePoints()
         
     def getSubstrateImage(self):
-        """ """
-        files = os.listdir(self.directory)
+        """ Finds and stores a substrate image, and returns None if criterias are not matched. """
         
-        substrate_filenames = [os.path.join(self.folder, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
+        substrate_filenames = [os.path.join(self.directory, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
         for possible_substrate in substrate_filenames:
-            if possible_substrate in files:
+            if possible_substrate in os.listdir(self.directory):
                 return n.array(PIL.Image.open(possible_substrate), dtype = n.float)
         return None         #If file not found
     
