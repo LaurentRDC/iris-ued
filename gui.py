@@ -244,7 +244,7 @@ class UEDpowder(QtGui.QMainWindow):
     
     @state.setter
     def state(self, value):
-        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff', 'background guessed','background determined', 'inelastic background substracted']
+        assert value in ['initial','data loaded', 'center guessed', 'radius guessed', 'center found', 'radial averaged', 'cutoff set', 'radial cutoff', 'background guessed','background determined', 'background substracted']
         self._state = value
         print 'New state: ' + self._state
         self.updateButtonAvailability()     #Update which buttons are valid
@@ -344,7 +344,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeCenterBtn.clicked.connect(self.executeStateOperation)
         self.executeRadialCutoffBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
-        self.executeBatchProcessingBtn.clicked.connect(self.testBatchProcess)
+        self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
         self.saveBtn.clicked.connect(self.save)
         self.loadBtn.clicked.connect(self.load)
         
@@ -447,7 +447,7 @@ class UEDpowder(QtGui.QMainWindow):
             availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn, self.loadBtn]
         elif self.state == 'background determined':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.loadBtn]
-        elif self.state == 'inelastic background substracted':
+        elif self.state == 'background substracted':
             availableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeBatchProcessingBtn]
             
         #Act!
@@ -486,7 +486,7 @@ class UEDpowder(QtGui.QMainWindow):
             #Subtract backgrounds
             self.radial_average = self.raw_radial_average - self.background_fit            #Substract inelastic background from data
             self.image_viewer.displayRadialPattern(self.radial_average)
-            self.state = 'inelastic background substracted'
+            self.state = 'background substracted'
             
     def rejectState(self):
         """ Master reject function that invalidates a state and reverts to an appropriate state. """
@@ -523,12 +523,11 @@ class UEDpowder(QtGui.QMainWindow):
             self.image_viewer.displayRadialPattern([self.raw_radial_average, self.background_fit])
             self.state = 'background determined'
         elif self.state == 'background substracted':
-            self.w = BatchProcess(self)
-            self.w.setGeometry(QRect(100, 100, 400, 200))
-            self.w.show()
-    
-    def testBatchProcess(self):
-        self.diffractionDataset.batchProcess(self.image_center, self.cutoff, inelasticBGCurve, pump)
+            print 'Batch processing...'
+            save_filename = self.file_dialog.getSaveFileName(self, 'Save image', 'C:\\', 'HDF5 file (*.hdf5)')
+            print 'Save filename: ' + save_filename
+            self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon', save_filename = save_filename)
+            print 'done.'
     
     def save(self):
         """ Determines what to do when the save button is clicked """

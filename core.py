@@ -263,7 +263,7 @@ def radialAverage(image, name, center = [562,549]):
         bincount[ind] += 1
         
         #Return normalized radial average
-    return RadialCurve(unique_radii, n.divide(accumulation,bincount), name + ' radial average')
+    return RadialCurve(unique_radii, n.divide(accumulation,bincount), name)
 
 # -----------------------------------------------------------------------------
 #           BATCH FILE PROCESSING
@@ -331,6 +331,23 @@ class DiffractionDataset(object):
         time_data = [float( re.search('[+-]\d+[.]\d+', f).group() ) for f in image_list]
         return list(set(time_data))     #Conversion to set then back to list to remove repeated values
     
+    @staticmethod
+    def timeToString(time, units = False):
+        """ 
+        Converts input time to string notation of the form: '+150.00', '-10.00', etc. 
+        If units = True, returns units as well: '+150.00ns'
+        """
+        if isinstance(time, int):
+            time = float(time)
+        if isinstance(time, float):
+            sign_prefix = '+' if time >= 0.0 else '-'
+            str_time = sign_prefix + str(time) + '0'
+        
+        assert str_time.endswith('.00')
+        if units:
+            str_time + 'ns'
+        return str_time
+    
     def dataAverage(self, time_point, pump = 'pumpon'):
         """ 
         Returns a UNIX-like file template, to be used in conjunction with self.averageImages.
@@ -343,18 +360,7 @@ class DiffractionDataset(object):
             Determines whether to average 'pumpon' data or 'pumpoff' data
         """
         
-        #preliminaries
-        if isinstance(time_point, int):
-            time_point = float(time_point)
-            
-        if isinstance(time_point, float):
-            print 'Time point entered as numerical'
-            sign_prefix = '+' if time_point >= 0.0 else '-'
-            time_point = sign_prefix + str(time_point) + '0'
-            print 'New time point format: {0}'.format(time_point)
-        
-        assert time_point.endswith('.00')
-        
+        time_point = self.timeToString(time_point)
         glob_template = 'data.timedelay.' + time_point + '.nscan.*.' + pump + '.tif'
         background = self.pumpon_background if pump == 'pumpon' else self.pumpoff_background
         
@@ -386,7 +392,7 @@ class DiffractionDataset(object):
         else:
             return curve
         
-    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, pump = 'pumpon'):
+    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, pump = 'pumpon', save_filename = None):
         """
         Returns a list of RadialCurve objects (one for every time point)
         """
@@ -394,6 +400,33 @@ class DiffractionDataset(object):
         results = list()
         for time in self.time_points:
             #TODO: How to emit signal to update progress bar?
-            results.append(self.process(time, center, cutoff, inelasticBGCurve, pump))
+            results.append( (time, self.process(time, center, cutoff, inelasticBGCurve, pump)) )
         
-        return results
+        #Export results
+        if save_filename is not None:       #Save filename has been provided (not empty string)
+            self.export(results, save_filename)
+        return results            
+            
+    def export(self, results, save_filename):
+        """ """
+        import h5py as h5
+        
+        #Prelim checks
+        save_filename = os.path.abspath(save_filename)
+        #assert isinstance(save_filename, str) and save_filename.endswith('.hdf5')
+        
+        f = h5.File(save_filename, 'w', libver = 'latest')
+        
+        #Iteratively create a group for each timepoint
+        for item in results:
+            timepoint, curve = results
+            timepoint = self.timeToString(timepoint, units = True)      #Checking that the timepoint string formatting is consistent
+            
+            #Create group and attribute
+            group = f.create_group(timepoint)
+            group.attrs['timepoint'] = timepoint
+            
+            #Add some data to the file
+            group.create_dataset(name = 'Radial average at ' + timepoint, data = n.vstack((curve.xdata, curve.ydata)) )
+        
+        f.close()
