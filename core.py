@@ -74,8 +74,12 @@ class RadialCurve(object):
         #Plotting attributes
         self.color = color
     
-    def plot(self, axes, **kwargs):
+    def plot(self, axes = None, **kwargs):
         """ Plots the pattern in the axes specified """
+        if axes is None:
+            fig = matplotlib.pyplot.figure()
+            axes = fig.add_subplot(111)
+        
         axes.plot(self.xdata, self.ydata, '.-', color = self.color, label = self.name, **kwargs)
        
         #Plot parameters
@@ -136,10 +140,7 @@ class RadialCurve(object):
         new_fit = function(self.xdata, a, b, c, d, e, f)
         
         return RadialCurve(self.xdata, new_fit, 'IBG ' + self.name, 'red')
-    
-    def save(self, filename):
-        #TODO: determine save file format with MJStern
-        pass
+
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
@@ -275,7 +276,7 @@ class DiffractionDataset(object):
         
         self.directory = directory
         self.resolution = resolution
-        self.substrate = self.getSubstrateImage
+        self.substrate = self.getSubstrateImage()
         self.pumpon_background = self.averageImages('background.*.pumpon.tif')
         self.pumpoff_background = self.averageImages('background.*.pumpoff.tif')
         self.time_points = self.getTimePoints()
@@ -399,7 +400,7 @@ class DiffractionDataset(object):
         
         results = list()
         for time in self.time_points:
-            #TODO: How to emit signal to update progress bar?
+            #TODO: How to emit signal to update a progress bar?
             results.append( (time, self.process(time, center, cutoff, inelasticBGCurve, pump)) )
         
         #Export results
@@ -413,13 +414,11 @@ class DiffractionDataset(object):
         
         #Prelim checks
         save_filename = os.path.abspath(save_filename)
-        #assert isinstance(save_filename, str) and save_filename.endswith('.hdf5')
         
         f = h5.File(save_filename, 'w', libver = 'latest')
-        
         #Iteratively create a group for each timepoint
         for item in results:
-            timepoint, curve = results
+            timepoint, curve = item
             timepoint = self.timeToString(timepoint, units = True)      #Checking that the timepoint string formatting is consistent
             
             #Create group and attribute

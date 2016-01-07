@@ -561,14 +561,24 @@ class UEDpowder(QtGui.QMainWindow):
         
     def loadImage(self, filename):
         """ Loads an image (and the associated background image) and sets the first state. """
+        image = n.array(Image.open(filename), dtype = n.float)
+        
         substrate_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'subs.tif'))
         background_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'bg.tif'))
-        #Load images
-        background = n.array(Image.open(background_filename), dtype = n.float)
-        image = n.array(Image.open(filename), dtype = n.float) - background
-        substrate_image = n.array(Image.open(substrate_filename), dtype = n.float) - background
         
+        #Load images if they exist
+        try:
+            background = n.array(Image.open(background_filename), dtype = n.float)
+        except: #background image not found
+            background = n.zeros_like(image)        
+        try:
+            substrate_image = n.array(Image.open(substrate_filename), dtype = n.float)
+        except:
+            substrate_image = n.zeros_like(image)
+                    
         #Process data
+        image = image - background
+        substrate_image = substrate_image - background
         image[image < 0] = 0
         substrate_image[substrate_image < 0] = 0
         
