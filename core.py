@@ -399,7 +399,6 @@ class DiffractionDataset(object):
         
         results = list()
         for time in self.time_points:
-            #TODO: How to emit signal to update progress bar?
             results.append( (time, self.process(time, center, cutoff, inelasticBGCurve, pump)) )
         
         #Export results
