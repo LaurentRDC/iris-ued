@@ -274,11 +274,11 @@ class DiffractionDataset(object):
         self.pumpoff_background = None
         self.time_points = self.getTimePoints()
         self.acquisition_date = self.getAcquisitionDate()
+        self.output_directory = None
         
     def getAcquisitionDate(self):
         """ Returns a string containing the date of acquisition. """
         path = os.path.join(self.directory, 'background.1.pumpon.tif')
-
         return datetime.datetime.fromtimestamp(os.path.getmtime(path)).strftime("%B %d, %Y")
         
     def getSubstrateImage(self):
@@ -312,7 +312,7 @@ class DiffractionDataset(object):
         image_list = glob.glob(os.path.join(self.directory, filename_template))
         
         image = n.zeros(shape = self.resolution, dtype = n.float)
-        for filename in tqdm(image_list, ascii = True, nested = True):
+        for filename in tqdm(image_list, nested = True):
             new_image = t.imread(filename).astype(n.float)
             if background is not None:
                 new_image -= background
@@ -320,6 +320,54 @@ class DiffractionDataset(object):
             
         #Average    
         return image/float(len(image_list))
+
+    def dataAverage(self, time_point, pump = 'pumpon', export = False):
+        """         
+        Parameters
+        ----------
+        time_point : string or numerical
+            string in the form of +150.00, -10.00, etc. If a float or int is provided, it will be converted to a string of the correct format.
+        pump : string
+            Determines whether to average 'pumpon' data or 'pumpoff' data
+        """
+        
+        time_point = self.timeToString(time_point, units = False)
+        glob_template = 'data.timedelay.' + time_point + '.nscan.*.' + pump + '.tif'
+        background = self.pumpon_background if pump == 'pumpon' else self.pumpoff_background
+        
+        #Average calculation
+        average = self.averageImages(glob_template, background)
+        
+        if export:
+            output_directory = os.path.join(self.directory, 'processed')
+            if not os.path.isdir(output_directory):             #Find out if output directory exists and create if necessary
+                os.makedirs(output_directory)                
+            save_path = os.path.join(output_directory, 'data.timedelay.' + time_point + '.average.' + pump + '.tif')
+            
+            #Format array to be uint16
+            export_average = (average - average.min()) / (average.max() - average.min())
+            export_average = (export_average * (2**16 - 1)).astype(n.uint16)
+            #TODO: add datetime parameter that mirrors the source data
+            t.imsave(save_path, export_average)
+        
+        return average
+        
+    def batchAverage(self, pump = 'pumpon', check_for_averages = False):
+        """ 
+        Averages all relevant TIFF images and saves them in self.directory\processed. Saved images can be radially-averaged later.
+        
+        Parameters
+        ----------
+        check_for_duplicates : bool
+            Stops if the average has already been computed (i.e. if the folder 'processed' exists)        
+        """
+        if check_for_averages:
+            if os.path.isdir( os.path.join(self.directory, 'processed') ):      #Data has been processed already
+                return None
+                
+        #Average images        
+        for time in tqdm(self.time_points, nested = False):
+            self.dataAverage(time, pump, export = True)
     
     def getTimePoints(self):
         """ """
@@ -330,7 +378,6 @@ class DiffractionDataset(object):
                 and f.endswith('pumpon.tif')]
         
         #get time points
-        #TODO: check if sorting is necessary
         time_data = [float( re.search('[+-]\d+[.]\d+', f).group() ) for f in image_list]
         return list(set(time_data))     #Conversion to set then back to list to remove repeated values
     
@@ -340,6 +387,8 @@ class DiffractionDataset(object):
         Converts input time to string notation of the form: '+150.00', '-10.00', etc. 
         If units = True, returns units as well: '+150.00ns'
         """
+        if isinstance(time, str):
+            return time
         if isinstance(time, int):
             time = float(time)
         if isinstance(time, float):
@@ -351,26 +400,8 @@ class DiffractionDataset(object):
             return str_time + 'ns'
         else:
             return str_time
-    
-    def dataAverage(self, time_point, pump = 'pumpon'):
-        """ 
-        Returns a UNIX-like file template, to be used in conjunction with self.averageImages.
         
-        Parameters
-        ----------
-        time_point : string or numerical
-            string in the form of +150.00, -10.00, etc. If a float or int is provided, it will be converted to a string of the correct format.
-        pump : string
-            Determines whether to average 'pumpon' data or 'pumpoff' data
-        """
-        
-        time_point = self.timeToString(time_point)
-        glob_template = 'data.timedelay.' + time_point + '.nscan.*.' + pump + '.tif'
-        background = self.pumpon_background if pump == 'pumpon' else self.pumpoff_background
-        
-        return self.averageImages(glob_template, background)
-        
-    def process(self, time, center, cutoff, inelasticBGCurve, pump):
+    def processImage(self, filename, center, cutoff, inelasticBGCurve, pump):
         """
         Returns a processed radial curve associated with a radial diffraction pattern at a certain time point.
         
@@ -380,14 +411,14 @@ class DiffractionDataset(object):
             Either a string formatted as {'+150.00', '-10.00'} or equivalent float or integer. See self.dataAverage
         TBD
         """
-        image = self.dataAverage(time, pump)                #Average apropriate pictures
+        image = t.imread(filename).astype(n.float)
         
         if self.substrate is not None:                           #substract substrate if it is provided
             assert image.shape == self.substrate.shape
             self.substrate = self.substrate.astype(n.float)
             image -= self.substrate
             
-        curve = radialAverage(image, str(time), center)     #Radially average
+        curve = radialAverage(image, 'Radial average', center)     #Radially average
         curve = curve.cutoff(cutoff)                        #cutoff curve
 
         if inelasticBGCurve is not None:                    #substract inelastic scattering background if it is provided
@@ -396,19 +427,18 @@ class DiffractionDataset(object):
         else:
             return curve
         
-    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, pump = 'pumpon', save_filename = None):
+    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, pump = 'pumpon'):
         """
         Returns a list of RadialCurve objects (one for every time point)
         """
         
         results = list()
-        for time in tqdm(self.time_points, ascii = True):
-            results.append( (time, self.process(time, center, cutoff, inelasticBGCurve, pump)) )
+        for time in tqdm(self.time_points):
+            filename = os.path.join(self.directory, 'processed', 'data.timedelay.' + self.timeToString(time) + '.average.' + pump + '.tif')
+            curve = self.processImage(filename, center, cutoff, inelasticBGCurve, pump)
+            results.append( (self.timeToString(time), curve) )
         
-        #Export results
-        if save_filename is not None:       #Save filename has been provided (not empty string)
-            self.export(results, save_filename)
-        return results            
+        self.export(results, os.path.join(self.directory, 'radial_averages.hdf5'))          
             
     def export(self, results, save_filename):
         """ """

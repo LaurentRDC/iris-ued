@@ -520,11 +520,10 @@ class UEDpowder(QtGui.QMainWindow):
             self.image_viewer.displayRadialPattern([self.raw_radial_average, self.background_fit])
             self.state = 'background determined'
         elif self.state == 'background substracted':
-            print 'Batch processing...'
-            save_filename = self.file_dialog.getSaveFileName(self, 'Save image', 'C:\\', 'HDF5 file (*.hdf5)')
-            print 'Save filename: ' + save_filename
-            self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon', save_filename = save_filename)
-            print 'done.'
+            # UEDPowder will skip reaveraging images if the folder already exists
+            self.diffractionDataset.batchAverage(pump = 'pumpon', check_for_averages = True)
+            self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon')
+            self.instructions.append('\n Batch radial averages exported. See processed\radial_averages.hdf5 in the data directory.')
     
     def save(self):
         """ Determines what to do when the save button is clicked """
@@ -574,10 +573,13 @@ class UEDpowder(QtGui.QMainWindow):
             substrate_image = n.zeros_like(image)
                     
         #Process data
-        image = image - background
-        substrate_image = substrate_image - background
-        image[image < 0] = 0
-        substrate_image[substrate_image < 0] = 0
+        #remove hot spots
+        for im in [image, substrate_image, background]:
+            im[im > 30000] = 0
+        
+        for im in [image, substrate_image]:
+            im -= background
+            im[im < 0] = 0
         
         #Substract substrate effects weighted by exposure
         self.image = image - (2.0/5.0)*substrate_image
