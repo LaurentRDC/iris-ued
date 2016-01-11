@@ -289,10 +289,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.imageLocatorBtn = QtGui.QPushButton('Open diffraction image', self)
         self.imageLocatorBtn.setIcon(QtGui.QIcon('images\diffraction.png'))
         initial_box.addWidget(self.imageLocatorBtn)
-        self.directoryLocatorBtn = QtGui.QPushButton('Open data directory', self)
-        self.directoryLocatorBtn.setIcon(QtGui.QIcon('images\locator.png'))
-        initial_box.addWidget(self.directoryLocatorBtn)
-        
+
         #For image center select box
         center_box = QtGui.QHBoxLayout()
         center_box.addWidget(QtGui.QLabel('Step 2: Find the center of the image'))
@@ -428,7 +425,7 @@ class UEDpowder(QtGui.QMainWindow):
         unavailableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn, self.executeBatchProcessingBtn]
         
         if self.state == 'initial':
-            availableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeBatchProcessingBtn]
+            availableButtons = [self.imageLocatorBtn, self.loadBtn]
         elif self.state == 'data loaded':
             availableButtons = [self.imageLocatorBtn, self.loadBtn]
         elif self.state == 'center guessed':

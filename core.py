@@ -17,11 +17,14 @@ if use_pyside:
 else:
     from PyQt4 import QtGui, QtCore
 
+#Batch processing libraries
 import os.path
 import PIL.Image
+import tifffile as t
 import glob
 import re
 from tqdm import tqdm
+
 # -----------------------------------------------------------------------------
 #           HELPER FUNCTIONS
 # -----------------------------------------------------------------------------
@@ -47,17 +50,7 @@ def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0):
 def bilor(x, center, amp1, amp2, width1, width2, const):
     """ Returns a Bilorentzian functions. """
     return amp1*Lorentzian(x, center, width1) + amp2*Lorentzian(x, center, width2) + const
-    
-# -----------------------------------------------------------------------------
-#           I/O FUNCTIONS
-# -----------------------------------------------------------------------------
-
-def diffractionFileList(folder_path = 'C:\\' ):
-    """
-    returns a list of filenames corresponding to diffraction pictures
-    """
-    return
-    
+        
 # -----------------------------------------------------------------------------
 #           RADIAL CURVE CLASS
 # -----------------------------------------------------------------------------
@@ -275,9 +268,9 @@ class DiffractionDataset(object):
         
         self.directory = directory
         self.resolution = resolution
-        self.substrate = self.getSubstrateImage
+        self.substrate = self.getSubstrateImage()
         self.pumpon_background = self.averageImages('background.*.pumpon.tif')
-        self.pumpoff_background = self.averageImages('background.*.pumpoff.tif')
+        self.pumpoff_background = None
         self.time_points = self.getTimePoints()
         
     def getSubstrateImage(self):
@@ -286,7 +279,7 @@ class DiffractionDataset(object):
         substrate_filenames = [os.path.join(self.directory, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
         for possible_substrate in substrate_filenames:
             if possible_substrate in os.listdir(self.directory):
-                return n.array(PIL.Image.open(possible_substrate), dtype = n.float)
+                return t.imread(possible_substrate)
         return None         #If file not found
     
     def averageImages(self, filename_template, background = None):
@@ -302,21 +295,23 @@ class DiffractionDataset(object):
         --------
         Glob.glob
         """ 
-        #Preliminaries               
+        #Format background correctly
         if background is not None:
-            background = background.astype(n.float)
-            
+            if background.dtype != n.uint16:
+                background = background.astype(n.uint16)
+        
+        #Get file list
         image_list = glob.glob(os.path.join(self.directory, filename_template))
         
-        image = n.zeros(shape = self.resolution, dtype = n.float)
+        image = n.zeros(shape = self.resolution, dtype = n.uint16)
         for filename in tqdm(image_list):
-            new_image = n.array(PIL.Image.open(filename), dtype = n.float)
+            new_image = t.imread(filename)
             if background is not None:
                 new_image -= background
             image += new_image
             
         #Average    
-        return image/len(image_list)
+        return image.astype(n.float)/len(image_list)
     
     def getTimePoints(self):
         """ """
@@ -418,7 +413,7 @@ class DiffractionDataset(object):
         
         #Iteratively create a group for each timepoint
         for item in results:
-            timepoint, curve = results
+            timepoint, curve = item
             timepoint = self.timeToString(timepoint, units = True)      #Checking that the timepoint string formatting is consistent
             
             #Create group and attribute
