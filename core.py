@@ -24,6 +24,7 @@ import tifffile as t
 import glob
 import re
 from tqdm import tqdm
+import datetime
 
 # -----------------------------------------------------------------------------
 #           HELPER FUNCTIONS
@@ -272,6 +273,13 @@ class DiffractionDataset(object):
         self.pumpon_background = self.averageImages('background.*.pumpon.tif')
         self.pumpoff_background = None
         self.time_points = self.getTimePoints()
+        self.acquisition_date = self.getAcquisitionDate()
+        
+    def getAcquisitionDate(self):
+        """ Returns a string containing the date of acquisition. """
+        path = os.path.join(self.directory, 'background.1.pumpon.tif')
+
+        return datetime.datetime.fromtimestamp(os.path.getmtime(path)).strftime("%B %d, %Y")
         
     def getSubstrateImage(self):
         """ Finds and stores a substrate image, and returns None if criterias are not matched. """
@@ -279,7 +287,7 @@ class DiffractionDataset(object):
         substrate_filenames = [os.path.join(self.directory, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
         for possible_substrate in substrate_filenames:
             if possible_substrate in os.listdir(self.directory):
-                return t.imread(possible_substrate)
+                return t.imread(possible_substrate).astype(n.float)
         return None         #If file not found
     
     def averageImages(self, filename_template, background = None):
@@ -297,21 +305,21 @@ class DiffractionDataset(object):
         """ 
         #Format background correctly
         if background is not None:
-            if background.dtype != n.uint16:
-                background = background.astype(n.uint16)
+            if background.dtype != n.float:
+                background = background.astype(n.float)
         
         #Get file list
         image_list = glob.glob(os.path.join(self.directory, filename_template))
         
-        image = n.zeros(shape = self.resolution, dtype = n.uint16)
-        for filename in tqdm(image_list):
-            new_image = t.imread(filename)
+        image = n.zeros(shape = self.resolution, dtype = n.float)
+        for filename in tqdm(image_list, ascii = True, nested = True):
+            new_image = t.imread(filename).astype(n.float)
             if background is not None:
                 new_image -= background
             image += new_image
             
         #Average    
-        return image.astype(n.float)/len(image_list)
+        return image/float(len(image_list))
     
     def getTimePoints(self):
         """ """
@@ -336,12 +344,13 @@ class DiffractionDataset(object):
             time = float(time)
         if isinstance(time, float):
             sign_prefix = '+' if time >= 0.0 else '-'
-            str_time = sign_prefix + str(time) + '0'
+            str_time = sign_prefix + str(abs(time)) + '0'
         
         assert str_time.endswith('.00')
         if units:
-            str_time + 'ns'
-        return str_time
+            return str_time + 'ns'
+        else:
+            return str_time
     
     def dataAverage(self, time_point, pump = 'pumpon'):
         """ 
@@ -393,7 +402,7 @@ class DiffractionDataset(object):
         """
         
         results = list()
-        for time in self.time_points:
+        for time in tqdm(self.time_points, ascii = True):
             results.append( (time, self.process(time, center, cutoff, inelasticBGCurve, pump)) )
         
         #Export results
@@ -410,6 +419,7 @@ class DiffractionDataset(object):
         #assert isinstance(save_filename, str) and save_filename.endswith('.hdf5')
         
         f = h5.File(save_filename, 'w', libver = 'latest')
+        f.attrs['date'] = self.acquisition_date
         
         #Iteratively create a group for each timepoint
         for item in results:
@@ -421,6 +431,6 @@ class DiffractionDataset(object):
             group.attrs['timepoint'] = timepoint
             
             #Add some data to the file
-            group.create_dataset(name = 'Radial average at ' + timepoint, data = n.vstack((curve.xdata, curve.ydata)) )
+            group.create_dataset(name = 'Radav ' + timepoint, data = n.vstack((curve.xdata, curve.ydata)) )
         
         f.close()
