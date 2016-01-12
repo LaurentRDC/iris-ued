@@ -456,11 +456,12 @@ class UEDpowder(QtGui.QMainWindow):
     def imageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
-        self.loadImage(filename)
-        self.image_viewer.displayImage(self.image)     #display raw image
         
         #Create diffraction dataset for upcoming batch processing
-        self.diffractionDataset = DiffractionDataset(os.path.dirname(filename), resolution = self.image.shape)
+        self.diffractionDataset = DiffractionDataset(os.path.dirname(filename), resolution = (2048,2048))
+        
+        self.loadImage(filename)
+        self.image_viewer.displayImage(self.image)     #display raw image
         
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
@@ -522,7 +523,8 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'background substracted':
             # UEDPowder will skip reaveraging images if the folder already exists
             self.diffractionDataset.batchAverage(pump = 'pumpon', check_for_averages = True)
-            self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon')
+            #self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon')
+            self.diffractionDataset.batchProcess(self.image_center, self.cutoff)
             self.instructions.append('\n Batch radial averages exported. See processed\radial_averages.hdf5 in the data directory.')
     
     def save(self):
@@ -559,18 +561,9 @@ class UEDpowder(QtGui.QMainWindow):
         """ Loads an image (and the associated background image) and sets the first state. """
         image = n.array(Image.open(filename), dtype = n.float)
         
-        substrate_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'subs.tif'))
-        background_filename = os.path.normpath(os.path.join(os.path.dirname(filename), 'bg.tif'))
-        
         #Load images if they exist
-        try:
-            background = n.array(Image.open(background_filename), dtype = n.float)
-        except: #background image not found
-            background = n.zeros_like(image)        
-        try:
-            substrate_image = n.array(Image.open(substrate_filename), dtype = n.float)
-        except:
-            substrate_image = n.zeros_like(image)
+        background = self.diffractionDataset.pumpon_background
+        substrate_image = self.diffractionDataset.substrate
                     
         #Process data
         #remove hot spots
@@ -591,6 +584,7 @@ class UEDpowder(QtGui.QMainWindow):
 
     def closeEvent(self, ce):
         self.fileQuit()
+   
 
 #Run
 if __name__ == '__main__':

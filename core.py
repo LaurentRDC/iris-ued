@@ -19,7 +19,7 @@ else:
 
 #Batch processing libraries
 import os.path
-import PIL.Image
+import h5py
 import tifffile as t
 import glob
 import re
@@ -167,7 +167,7 @@ def fCenter(xg, yg, rg, im, scalefactor = 20):
     rcenter = rg    
     return xcenter, ycenter, rcenter
 
-def circ(xg, yg, rg, im, scalefactor = 20):
+def circ(xg, yg, rg, im, scalefactor = 5):
 
     """
     Sums the intensity over a circle of given radius and center position
@@ -237,6 +237,13 @@ def radialAverage(image, name, center = [562,549]):
     intensity = intensity[n.argsort(radius)]
     radius = n.around(radius, decimals = 0)
     
+    #radii beyond r_max don't fit a full circle within the image
+    candidates = [R[0,:], R[-1,:], R[:,0], R[:,-1]]
+    r_max = n.min(n.array(candidates))  
+    loc = n.argmin(n.abs(radius - r_max))   #Beyond this index, radii are too big
+    radius = radius[::loc]
+    intensity = intensity[::loc]
+    
     #Average intensity values for equal radii
     unique_radii = n.unique(radius)
     accumulation = n.zeros_like(unique_radii)
@@ -287,8 +294,9 @@ class DiffractionDataset(object):
         substrate_filenames = [os.path.join(self.directory, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
         for possible_substrate in substrate_filenames:
             if possible_substrate in os.listdir(self.directory):
+                print 'Substrate image found'
                 return t.imread(possible_substrate).astype(n.float)
-        return None         #If file not found
+        return n.zeros(shape = self.resolution, dtype = n.float)         #If file not found
     
     def averageImages(self, filename_template, background = None):
         """
@@ -312,7 +320,7 @@ class DiffractionDataset(object):
         image_list = glob.glob(os.path.join(self.directory, filename_template))
         
         image = n.zeros(shape = self.resolution, dtype = n.float)
-        for filename in tqdm(image_list, nested = True):
+        for filename in tqdm(image_list, nested = True, ):
             new_image = t.imread(filename).astype(n.float)
             if background is not None:
                 new_image -= background
@@ -438,17 +446,16 @@ class DiffractionDataset(object):
             curve = self.processImage(filename, center, cutoff, inelasticBGCurve, pump)
             results.append( (self.timeToString(time), curve) )
         
-        self.export(results, os.path.join(self.directory, 'radial_averages.hdf5'))          
+        self.export(results, os.path.join(self.directory, 'processed', 'radial_averages.hdf5'))          
             
     def export(self, results, save_filename):
         """ """
-        import h5py as h5
         
         #Prelim checks
         save_filename = os.path.abspath(save_filename)
         #assert isinstance(save_filename, str) and save_filename.endswith('.hdf5')
         
-        f = h5.File(save_filename, 'w', libver = 'latest')
+        f = h5py.File(save_filename, 'w', libver = 'latest')
         f.attrs['date'] = self.acquisition_date
         
         #Iteratively create a group for each timepoint
@@ -464,3 +471,21 @@ class DiffractionDataset(object):
             group.create_dataset(name = 'Radav ' + timepoint, data = n.vstack((curve.xdata, curve.ydata)) )
         
         f.close()
+
+# -----------------------------------------------------------------------------
+#           TESTING FUNCTION FOR PLOTTING DYNAMIC DATA 
+# -----------------------------------------------------------------------------
+
+def plotTimeResolved(filename):    
+    
+    f = h5py.File(filename, 'r')
+    times = f.keys()
+    times.sort()
+    datasets = [(f[time]['Radav ' + time], time) for time in times]
+    
+    #Plotting
+    import matplotlib.pyplot as plt
+    for dataset in datasets:
+        data, time = dataset
+        plt.plot(data[0], data[1], label = str(time))
+        plt.legend()
