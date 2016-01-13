@@ -238,20 +238,22 @@ def radialAverage(image, name, center = [562,549]):
     radius = n.around(radius, decimals = 0)
     
     #radii beyond r_max don't fit a full circle within the image
-    candidates = [R[0,:], R[-1,:], R[:,0], R[:,-1]]
-    r_max = n.min(n.array(candidates))  
-    loc = n.argmin(n.abs(radius - r_max))   #Beyond this index, radii are too big
-    radius = radius[::loc]
-    intensity = intensity[::loc]
+    #TODO: Figure out how to do the following elegantly
+    edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
+    r_max = n.min(n.array(edge_values))  
     
     #Average intensity values for equal radii
     unique_radii = n.unique(radius)
+    loc = n.argmin(n.abs(unique_radii - r_max))
+    unique_radii = unique_radii[:loc]       #Remove radii that don't fit in the image
     accumulation = n.zeros_like(unique_radii)
     bincount =  n.ones_like(unique_radii)
     
     #loop over image
     for (i,j), value in n.ndenumerate(image):
-      
+        
+        #TODO: replace the below condition with something that does not
+        # ignore so much data
         #Ignore top half image (where the beamblock is)
         if i < center[0]:
             continue
@@ -263,7 +265,7 @@ def radialAverage(image, name, center = [562,549]):
         accumulation[ind] += value
         bincount[ind] += 1
         
-        #Return normalized radial average
+    #Return normalized radial average
     return RadialCurve(unique_radii, n.divide(accumulation,bincount), name)
 
 # -----------------------------------------------------------------------------
@@ -320,7 +322,7 @@ class DiffractionDataset(object):
         image_list = glob.glob(os.path.join(self.directory, filename_template))
         
         image = n.zeros(shape = self.resolution, dtype = n.float)
-        for filename in tqdm(image_list, nested = True, ):
+        for filename in tqdm(image_list, nested = True):
             new_image = t.imread(filename).astype(n.float)
             if background is not None:
                 new_image -= background
@@ -374,7 +376,7 @@ class DiffractionDataset(object):
                 return None
                 
         #Average images        
-        for time in tqdm(self.time_points, nested = False):
+        for time in tqdm(self.time_points):
             self.dataAverage(time, pump, export = True)
     
     def getTimePoints(self):
