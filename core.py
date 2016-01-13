@@ -240,7 +240,7 @@ def radialAverage(image, name, center = [562,549]):
     #radii beyond r_max don't fit a full circle within the image
     #TODO: Figure out how to do the following elegantly
     edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
-    r_max = n.min(n.array(edge_values))  
+    r_max = n.min(n.array(edge_values))  #Maximal valid radius
     
     #Average intensity values for equal radii
     unique_radii = n.unique(radius)
