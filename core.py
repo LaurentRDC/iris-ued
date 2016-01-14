@@ -131,9 +131,6 @@ class RadialCurve(object):
         
         return RadialCurve(self.xdata, new_fit, 'IBG ' + self.name, 'red')
     
-    def save(self, filename):
-        #TODO: determine save file format with MJStern
-        pass
 # -----------------------------------------------------------------------------
 #           FIND CENTER OF DIFFRACTION PATTERN
 # -----------------------------------------------------------------------------
@@ -238,7 +235,6 @@ def radialAverage(image, name, center = [562,549]):
     radius = n.around(radius, decimals = 0)
     
     #radii beyond r_max don't fit a full circle within the image
-    #TODO: Figure out how to do the following elegantly
     edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
     r_max = n.min(n.array(edge_values))  #Maximal valid radius
     
@@ -253,9 +249,9 @@ def radialAverage(image, name, center = [562,549]):
     for (i,j), value in n.ndenumerate(image):
         
         #TODO: replace the below condition with something that does not
-        # ignore so much data
+        #      ignore so much data
         #Ignore top half image (where the beamblock is)
-        if i < center[0]:
+        if j < center[1]:
             continue
 
         r = R[i,j]
