@@ -439,7 +439,7 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'cutoff set':
             availableButtons = [self.imageLocatorBtn, self.executeRadialCutoffBtn, self.loadBtn]
         elif self.state == 'radial cutoff':
-            availableButtons = [self.imageLocatorBtn, self.saveBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.saveBtn, self.loadBtn, self.acceptBtn]
         elif self.state == 'background guessed':
             availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn, self.loadBtn]
         elif self.state == 'background determined':
@@ -456,12 +456,42 @@ class UEDpowder(QtGui.QMainWindow):
     def imageLocator(self):
         """ File dialog that selects the TIFF image file to be processed. """
         filename = self.file_dialog.getOpenFileName(self, 'Open image', 'C:\\')
-        
+        filename = os.path.abspath(filename)
         #Create diffraction dataset for upcoming batch processing
-        self.diffractionDataset = DiffractionDataset(os.path.dirname(filename), resolution = (2048,2048))
-        
+        #Check if folder is 'processed'. If so, back up one directory. This
+        #makes it possible to re-analyze averaged images without having to keep
+        #unaverages data on the computer (it takes lots of space)
+        last_directory = os.path.dirname(filename).split('\\')[-1]
+        if last_directory == 'processed':
+            directory = os.path.dirname(os.path.dirname(filename)) #If directory is 'processed', back up one directory
+        else:
+            directory = os.path.dirname(filename)
+
+        self.diffractionDataset = DiffractionDataset(directory, resolution = (2048,2048))
         self.loadImage(filename)
         self.image_viewer.displayImage(self.image)     #display raw image
+        
+    def loadImage(self, filename):
+        """ Loads an image (and the associated background image) and sets the first state. """
+        image = n.array(Image.open(filename), dtype = n.float)
+        
+        #Load images if they exist
+        background = self.diffractionDataset.pumpon_background
+        substrate_image = self.diffractionDataset.substrate
+                    
+        #Process data
+        #remove hot spots
+        for im in [image, substrate_image, background]:
+            im[im > 30000] = 0
+        
+        for im in [image, substrate_image]:
+            im -= background
+            im[im < 0] = 0
+        
+        #Substract substrate effects weighted by exposure
+        self.image = image - (2.0/5.0)*substrate_image
+    
+        self.state = 'data loaded'
         
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
@@ -480,6 +510,10 @@ class UEDpowder(QtGui.QMainWindow):
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
 
             self.work_thread.start()                                                                    #Compute stuff        
+        
+        elif self.state == 'radial cutoff':
+            self.background_fit = RadialCurve()
+            self.state = 'background substracted'
         elif self.state == 'background determined':
             #Subtract backgrounds
             self.radial_average = self.raw_radial_average - self.background_fit            #Substract inelastic background from data
@@ -522,7 +556,7 @@ class UEDpowder(QtGui.QMainWindow):
             self.state = 'background determined'
         elif self.state == 'background substracted':
             # UEDPowder will skip reaveraging images if the folder already exists
-            self.diffractionDataset.batchAverage(pump = 'pumpon', check_for_averages = True)
+            self.diffractionDataset.batchAverage(check_for_averages = True)
             #self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon')
             self.diffractionDataset.batchProcess(self.image_center, self.cutoff)
             self.instructions.append('\n Batch radial averages exported. See processed\radial_averages.hdf5 in the data directory.')
@@ -556,28 +590,6 @@ class UEDpowder(QtGui.QMainWindow):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
-        
-    def loadImage(self, filename):
-        """ Loads an image (and the associated background image) and sets the first state. """
-        image = n.array(Image.open(filename), dtype = n.float)
-        
-        #Load images if they exist
-        background = self.diffractionDataset.pumpon_background
-        substrate_image = self.diffractionDataset.substrate
-                    
-        #Process data
-        #remove hot spots
-        for im in [image, substrate_image, background]:
-            im[im > 30000] = 0
-        
-        for im in [image, substrate_image]:
-            im -= background
-            im[im < 0] = 0
-        
-        #Substract substrate effects weighted by exposure
-        self.image = image - (2.0/5.0)*substrate_image
-    
-        self.state = 'data loaded'
     
     def fileQuit(self):
         self.close()
