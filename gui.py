@@ -559,7 +559,7 @@ class UEDpowder(QtGui.QMainWindow):
             self.diffractionDataset.batchAverage(check_for_averages = True)
             #self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon')
             self.diffractionDataset.batchProcess(self.image_center, self.cutoff)
-            self.instructions.append('\n Batch radial averages exported. See processed\radial_averages.hdf5 in the data directory.')
+            self.instructions.append('\n Batch radial averages exported. See processed/radial_averages.hdf5 in the data directory.')
     
     def save(self):
         """ Determines what to do when the save button is clicked """
@@ -597,7 +597,6 @@ class UEDpowder(QtGui.QMainWindow):
     def closeEvent(self, ce):
         self.fileQuit()
    
-
 #Run
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

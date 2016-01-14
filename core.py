@@ -430,13 +430,14 @@ class DiffractionDataset(object):
             curve = self.processImage(filename, center, cutoff, inelasticBGCurve)
             results.append( (self.timeToString(time), curve) )
         
-        self.export(results, os.path.join(self.directory, 'processed', 'radial_averages.hdf5'))          
+        self.export(results, os.path.join(self.directory, 'processed'))          
             
-    def export(self, results, save_filename):
+    def export(self, results):
         """ """
         
-        #Prelim checks
-        save_filename = os.path.abspath(save_filename)
+        #save filename including current time
+        export_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
+        save_filename = export_time + '.radial.averages.hdf5'
         #assert isinstance(save_filename, str) and save_filename.endswith('.hdf5')
         
         f = h5py.File(save_filename, 'w', libver = 'latest')
