@@ -270,7 +270,7 @@ class DiffractionDataset(object):
         try:
             acquisition_date = datetime.datetime.fromtimestamp(os.path.getmtime(path)).strftime("%B %d, %Y")
         except(WindowsError):       #Can't find any file
-            acquisition_date = 'No date found'
+            acquisition_date = ''
         return acquisition_date
         
     def getSubstrateImage(self):
@@ -430,14 +430,13 @@ class DiffractionDataset(object):
             curve = self.processImage(filename, center, cutoff, inelasticBGCurve)
             results.append( (self.timeToString(time), curve) )
         
-        self.export(results, os.path.join(self.directory, 'processed'))          
+        self.export(results)          
             
     def export(self, results):
         """ """
         
-        #save filename including current time
-        export_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
-        save_filename = export_time + '.radial.averages.hdf5'
+        #save filename including acquisition time
+        save_filename = os.path.join(self.directory, 'processed', self.acquisition_date + '.radial.averages.hdf5')
         #assert isinstance(save_filename, str) and save_filename.endswith('.hdf5')
         
         f = h5py.File(save_filename, 'w', libver = 'latest')
