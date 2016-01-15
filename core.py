@@ -263,19 +263,21 @@ class DiffractionDataset(object):
         self.pumpon_background = self.averageTiffFiles('background.*.pumpon.tif')
         self.time_points = self.getTimePoints()
         self.acquisition_date = self.getAcquisitionDate()
+        self.exposure = None
+        self.fluence = None
         
     def getAcquisitionDate(self):
-        """ Returns a string containing the date of acquisition. """
-        path = os.path.join(self.directory, 'background.1.pumpon.tif')
-        try:
-            acquisition_date = datetime.datetime.fromtimestamp(os.path.getmtime(path)).strftime("%B %d, %Y")
-        except(WindowsError):       #Can't find any file
-            acquisition_date = ''
-        return acquisition_date
+        """ Returns the acquisition date from the folder name as a string of the form: '2016.01.06.15.35' """
+        return re.search('(\d+[.])+', self.directory).group()[:-1]      #Last [:-1] removes a '.' at the end
+    
+    def getFluence(self):
+        pass
+    
+    def getExposure(self):
+        pass
         
     def getSubstrateImage(self):
         """ Finds and stores a substrate image, and returns None if criterias are not matched. """
-        
         substrate_filenames = [os.path.join(self.directory, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
         for possible_substrate in substrate_filenames:
             if possible_substrate in os.listdir(self.directory):
@@ -320,8 +322,6 @@ class DiffractionDataset(object):
         ----------
         time_point : string or numerical
             string in the form of +150.00, -10.00, etc. If a float or int is provided, it will be converted to a string of the correct format.
-        pump : string
-            Determines whether to average 'pumpon' data or 'pumpoff' data
         """
         
         time_point = self.timeToString(time_point, units = False)
@@ -389,7 +389,7 @@ class DiffractionDataset(object):
         
         assert str_time.endswith('.00')
         if units:
-            return str_time + 'ns'
+            return str_time + 'ps'
         else:
             return str_time
         
