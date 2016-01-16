@@ -75,6 +75,12 @@ class ImageViewer(FigureCanvas):
         #Non-plotting attributes
         self.parent = parent
         self.last_click_position = [0,0]
+        #Setting determining the contrast of diffraction images. Pixel values above this will not be displayed, but still be used in the analysis
+        self.max_count = 30000
+        
+        self.center = None
+        self.circle = None
+        self.overlay_color = 'red'
         
         #plot setup
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -102,14 +108,16 @@ class ImageViewer(FigureCanvas):
         
         if self.parent.state == 'data loaded':
             self.parent.guess_center = n.asarray(self.last_click_position)
-            self.displayImage(self.parent.image, center = self.parent.guess_center)
+            self.center = n.asarray(self.last_click_position); self.overlay_color = 'red'
+            self.displayImage()
             self.parent.state = 'center guessed'
             
         elif self.parent.state == 'center guessed':
             ring_position = n.asarray(self.last_click_position)
             self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
             circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
-            self.displayImage(self.parent.image, circle = circle_guess ,center = self.parent.guess_center)
+            self.circle = circle_guess; self.overlay_color = 'red'
+            self.displayImage()
             self.parent.state = 'radius guessed'
         
         elif self.parent.state == 'radial averaged' or self.parent.state == 'cutoff set':
@@ -132,28 +140,38 @@ class ImageViewer(FigureCanvas):
         self.axes.cla()     #Clear axes
         self.axes.imshow(missing_image)
  
-    def displayImage(self, image, circle = None, center = None, colour = 'red'):
+    def displayImage(self):
         """ 
         This method displays a raw TIFF image from the instrument. Optional arguments can be used to overlay a circle.
         """
+        image = self.parent.image
         if image is None:
             self.initialFigure()
         else:
             self.axes.cla()     #Clear axes
-            self.axes.imshow(image, vmin = image.min(), vmax = image.max())
-            if center != None:
-                self.axes.scatter(center[0],center[1], color = colour)
+            self.axes.imshow(image, vmin = image.min(), vmax = self.max_count)
+            if self.center != None:
+                self.axes.scatter(self.center[0],self.center[1], color = self.overlay_color)
                 self.axes.set_xlim(0, image.shape[0])
                 self.axes.set_ylim(image.shape[1],0)
-            if circle != None:  #Overlay circle if provided
-                xvals, yvals = circle
-                self.axes.scatter(xvals, yvals, color = colour)
+            if self.circle != None:  #Overlay circle if provided
+                xvals, yvals = self.circle
+                self.axes.scatter(xvals, yvals, color = self.overlay_color)
                 #Restrict view to the plotted circle (to better evaluate the fit)
                 self.axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
                 self.axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
             
             self.axes.set_title('Raw TIFF image')
             self.draw()
+    
+    def setContrast(self, max_val):
+        self.max_count = max_val
+        
+    def updateContrast(self):
+        if not self.axes.images:
+            pass #image_viewer is currently displaying something else than a CCD image
+        else:
+            self.displayImage()
     
     def displayRadialPattern(self, data, **kwargs):
         """
@@ -232,10 +250,12 @@ class UEDpowder(QtGui.QMainWindow):
         self.state = 'radial averaged'
     
     def setImageCenter(self, value):
-        self.image_center = value[0:2]
-        circle = generateCircle(value[0], value[1], value[2])
+        self.image_center = value[0:2] 
+        self.image_viewer.center = value[0:2]
+        self.image_viewer.circle = generateCircle(value[0], value[1], value[2])
         self.state = 'center found'
-        self.image_viewer.displayImage(self.image, circle, self.image_center, colour = 'green')
+        self.image_viewer.overlay_color = 'green'
+        self.image_viewer.displayImage()
     # -------------------------------------------------------------------------
         
     @property
@@ -330,6 +350,12 @@ class UEDpowder(QtGui.QMainWindow):
         self.image_viewer = ImageViewer(parent = self)
         self.file_dialog = QtGui.QFileDialog()
         
+        #Set up contrast slider
+        self.contrast_slider = QtGui.QSlider(self)
+        self.contrast_slider.setMinimum(0)
+        self.contrast_slider.setMaximum(30000)
+        self.contrast_slider.setValue(25000)
+        
         # ---------------------------------------------------------------------
         #       SIGNALS
         # ---------------------------------------------------------------------
@@ -344,6 +370,8 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
         self.saveBtn.clicked.connect(self.save)
         self.loadBtn.clicked.connect(self.load)
+        self.connect(self.contrast_slider, QtCore.SIGNAL('valueChanged(int)'), self.image_viewer.setContrast)
+        self.connect(self.contrast_slider, QtCore.SIGNAL('sliderReleased()'), self.image_viewer.updateContrast)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -368,7 +396,8 @@ class UEDpowder(QtGui.QMainWindow):
         state_boxes.addLayout(state_controls)
         
         #Image viewer pane ----------------------------------------------------
-        right_pane = QtGui.QVBoxLayout()
+        right_pane = QtGui.QHBoxLayout()
+        right_pane.addWidget(self.contrast_slider)
         right_pane.addWidget(self.image_viewer)
         
         #Master Layout --------------------------------------------------------
@@ -469,7 +498,7 @@ class UEDpowder(QtGui.QMainWindow):
 
         self.diffractionDataset = DiffractionDataset(directory, resolution = (2048,2048))
         self.loadImage(filename)
-        self.image_viewer.displayImage(self.image)     #display raw image
+        self.image_viewer.displayImage()     #display raw image
         
     def loadImage(self, filename):
         """ Loads an image (and the associated background image) and sets the first state. """
@@ -525,8 +554,8 @@ class UEDpowder(QtGui.QMainWindow):
         if self.state == 'center found':
             #Go back to the data loaded state and forget the guessed for the center and radius
             self.state = 'data loaded'
-            self.image_viewer.guess_center, self.image_viewer.guess_radius = None, None
-            self.image_viewer.displayImage(self.image)
+            self.image_viewer.center, self.image_viewer.circle = None, None
+            self.image_viewer.displayImage()
         elif self.state == 'background determined':
             self.image_viewer.displayRadialPattern(self.raw_radial_average)
             self.background_guesses = list()
