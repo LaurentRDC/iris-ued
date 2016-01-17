@@ -276,7 +276,7 @@ class UEDpowder(QtGui.QMainWindow):
         #       WIDGETS
         # ---------------------------------------------------------------------
         
-        self.statusBar()    #Top status bar
+        self.statusBar().showMessage('Ready')    #Top status bar
         
         #Set up state buttons
         self.acceptBtn = QtGui.QPushButton('Accept', self)
@@ -288,20 +288,13 @@ class UEDpowder(QtGui.QMainWindow):
         self.turboBtn = QtGui.QPushButton('Turbo Mode', self)
         self.turboBtn.setIcon(QtGui.QIcon('images\close.png'))
         self.turboBtn.setCheckable(True)
-        
-        self.saveBtn = QtGui.QPushButton('Save', self)
-        self.saveBtn.setIcon(QtGui.QIcon('images\save.png'))
-        
-        self.loadBtn = QtGui.QPushButton('Load', self)
-        self.loadBtn.setIcon(QtGui.QIcon('images\locator.png'))
+
+        self.batchAverageBtn = QtGui.QPushButton('Preprocess images', self)
+        self.batchAverageBtn.setIcon(QtGui.QIcon('images\save.png'))
+        self.batchAverageBtn.setEnabled(False)
         
         #Set up message boxes
         self.initial_message = QtGui.QLabel('Step 1: Select TIFF image.')
-        
-        #Save-load box
-        save_load_box = QtGui.QVBoxLayout()
-        save_load_box.addWidget(QtGui.QLabel('Save state:'))
-        save_load_box.addWidget(self.saveBtn)
         
         #For initial state box
         initial_box = QtGui.QHBoxLayout()
@@ -368,8 +361,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeRadialCutoffBtn.clicked.connect(self.executeStateOperation)
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
-        self.saveBtn.clicked.connect(self.save)
-        self.loadBtn.clicked.connect(self.load)
+        self.batchAverageBtn.clicked.connect(self.batchAverageOperation)
         self.connect(self.contrast_slider, QtCore.SIGNAL('valueChanged(int)'), self.image_viewer.setContrast)
         self.connect(self.contrast_slider, QtCore.SIGNAL('sliderReleased()'), self.image_viewer.updateContrast)
         
@@ -381,8 +373,7 @@ class UEDpowder(QtGui.QMainWindow):
         state_controls = QtGui.QHBoxLayout()
         state_controls.addWidget(self.acceptBtn)
         state_controls.addWidget(self.rejectBtn)
-        state_controls.addWidget(self.saveBtn)
-        state_controls.addWidget(self.loadBtn)
+        state_controls.addWidget(self.batchAverageBtn)
         state_controls.addWidget(self.turboBtn)
         
         # State boxes ---------------------------------------------------------
@@ -451,30 +442,30 @@ class UEDpowder(QtGui.QMainWindow):
         """
         #Create list of buttons to be disabled and enables
         availableButtons = list()
-        unavailableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.executeRadialCutoffBtn, self.executeBatchProcessingBtn]
+        unavailableButtons = [self.imageLocatorBtn, self.executeCenterBtn, self.executeInelasticBtn, self.acceptBtn, self.rejectBtn, self.batchAverageBtn, self.executeRadialCutoffBtn, self.executeBatchProcessingBtn]
         
         if self.state == 'initial':
-            availableButtons = [self.imageLocatorBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn]
         elif self.state == 'data loaded':
-            availableButtons = [self.imageLocatorBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.batchAverageBtn]
         elif self.state == 'center guessed':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.batchAverageBtn]
         elif self.state == 'radius guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn, self.batchAverageBtn]
         elif self.state == 'center found':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.batchAverageBtn]
         elif self.state == 'radial averaged':
-            availableButtons = [self.imageLocatorBtn,  self.saveBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.batchAverageBtn]
         elif self.state == 'cutoff set':
-            availableButtons = [self.imageLocatorBtn, self.executeRadialCutoffBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.executeRadialCutoffBtn, self.batchAverageBtn]
         elif self.state == 'radial cutoff':
-            availableButtons = [self.imageLocatorBtn, self.saveBtn, self.loadBtn, self.acceptBtn]
+            availableButtons = [self.imageLocatorBtn, self.batchAverageBtn, self.acceptBtn]
         elif self.state == 'background guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.executeInelasticBtn, self.batchAverageBtn]
         elif self.state == 'background determined':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.saveBtn, self.loadBtn]
+            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.batchAverageBtn]
         elif self.state == 'background substracted':
-            availableButtons = [self.imageLocatorBtn, self.loadBtn, self.executeBatchProcessingBtn]
+            availableButtons = [self.imageLocatorBtn, self.batchAverageBtn, self.executeBatchProcessingBtn]
             
         #Act!
         for btn in unavailableButtons:
@@ -497,8 +488,13 @@ class UEDpowder(QtGui.QMainWindow):
             directory = os.path.dirname(filename)
 
         self.diffractionDataset = DiffractionDataset(directory, resolution = (2048,2048))
+        self.batchAverageBtn.setEnabled(True)
         self.loadImage(filename)
         self.image_viewer.displayImage()     #display raw image
+    
+    def batchAverageOperation(self):
+        self.work_thread = WorkThread(self.diffractionDataset.batchAverage, True) 
+        self.work_thread.start()
         
     def loadImage(self, filename):
         """ Loads an image (and the associated background image) and sets the first state. """
