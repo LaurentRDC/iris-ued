@@ -148,6 +148,7 @@ class ImageViewer(FigureCanvas):
         if image is None:
             self.initialFigure()
         else:
+            image = image.astype(n.uint16)  #This prevents MemoryError bugs for some reason...
             self.axes.cla()     #Clear axes
             self.axes.imshow(image, vmin = image.min(), vmax = self.max_count)
             if self.center != None:
