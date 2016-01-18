@@ -10,7 +10,7 @@ image_list = glob.glob('PowderGuiApp\\images\\*.png')
 
 setup(
     name = 'PowderGui', 
-    version = 'v0.5', 
+    version = 'v0.6', 
     description = 'UED Powder Diffraction Data Processing', 
     author = 'Laurent P. Rene de Cotret and Mark J. Stern',
     url = 'www.physics.mcgill.ca/siwicklab',
