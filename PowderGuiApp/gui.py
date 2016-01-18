@@ -108,6 +108,7 @@ class ImageViewer(FigureCanvas):
         
         if self.parent.state == 'data loaded':
             self.parent.guess_center = n.asarray(self.last_click_position)
+            print 'Guess center: {0}'.format(self.parent.guess_center)
             self.center = n.asarray(self.last_click_position); self.overlay_color = 'red'
             self.displayImage()
             self.parent.state = 'center guessed'
@@ -252,6 +253,7 @@ class UEDpowder(QtGui.QMainWindow):
     
     def setImageCenter(self, value):
         self.image_center = value[0:2] 
+        print 'Calculated center: {0}'.format(self.image_center)
         self.image_viewer.center = value[0:2]
         self.image_viewer.circle = generateCircle(value[0], value[1], value[2])
         self.state = 'center found'
@@ -494,6 +496,8 @@ class UEDpowder(QtGui.QMainWindow):
         self.image_viewer.displayImage()     #display raw image
     
     def batchAverageOperation(self):
+        #TODO: set up some way of notifying users that the process is done. Popup screen?
+        # http://stackoverflow.com/questions/4838890/python-pyqt-popup-window
         self.work_thread = WorkThread(self.diffractionDataset.batchAverage, True) 
         self.work_thread.start()
         
