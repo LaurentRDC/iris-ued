@@ -76,7 +76,7 @@ class ImageViewer(FigureCanvas):
         self.parent = parent
         self.last_click_position = [0,0]
         #Setting determining the contrast of diffraction images. Pixel values above this will not be displayed, but still be used in the analysis
-        self.max_count = 30000
+        self.contrast = 1
         
         self.center = None
         self.circle = None
@@ -145,13 +145,16 @@ class ImageViewer(FigureCanvas):
         """ 
         This method displays a raw TIFF image from the instrument. Optional arguments can be used to overlay a circle.
         """
-        image = self.parent.image
+        image = n.copy(self.parent.image)
         if image is None:
             self.initialFigure()
         else:
+            #Adjust contrast
+            image *= self.contrast
+            image[image > 30000] = 30000    #Ceiling
             image = image.astype(n.uint16)  #This prevents MemoryError bugs for some reason...
             self.axes.cla()     #Clear axes
-            self.axes.imshow(image, vmin = image.min(), vmax = self.max_count)
+            self.axes.imshow(image, vmin = image.min(), vmax = 30000)
             if self.center != None:
                 self.axes.scatter(self.center[0],self.center[1], color = self.overlay_color)
                 self.axes.set_xlim(0, image.shape[0])
@@ -166,8 +169,8 @@ class ImageViewer(FigureCanvas):
             self.axes.set_title('Raw TIFF image')
             self.draw()
     
-    def setContrast(self, max_val):
-        self.max_count = max_val
+    def setContrast(self, contrast):
+        self.contrast = contrast
         
     def updateContrast(self):
         if not self.axes.images:
@@ -348,9 +351,9 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Set up contrast slider
         self.contrast_slider = QtGui.QSlider(self)
-        self.contrast_slider.setMinimum(0)
-        self.contrast_slider.setMaximum(30000)
-        self.contrast_slider.setValue(25000)
+        self.contrast_slider.setMinimum(1)
+        self.contrast_slider.setMaximum(1000)
+        self.contrast_slider.setValue(1)
         
         # ---------------------------------------------------------------------
         #       SIGNALS
@@ -493,6 +496,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.diffractionDataset = DiffractionDataset(directory, resolution = (2048,2048))
         self.batchAverageBtn.setEnabled(True)
         self.loadImage(filename)
+        self.contrast_slider.setValue(1)     #reset contrast
         self.image_viewer.displayImage()     #display raw image
     
     def batchAverageOperation(self):
