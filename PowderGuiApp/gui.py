@@ -13,15 +13,12 @@ from matplotlib.backends import qt_compat
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.backends.backend_qt4agg as qt4agg
 from matplotlib.figure import Figure
-use_pyside = qt_compat.QT_API == qt_compat.QT_API_PYSIDE
 
 #GUI backends
-if use_pyside:
-    from PySide import QtGui, QtCore
-else:
-    from PyQt4 import QtGui, QtCore
+from pyqtgraph.Qt import QtCore, QtGui
+import pyqtgraph as pg
+from pyqtgraph import ImageView
 
-import pyqtgraph as graph
 
 # -----------------------------------------------------------------------------
 #           WORKING CLASS
@@ -60,7 +57,7 @@ def generateCircle(xc, yc, radius):
     yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
     return [xvals,yvals]
 
-class ImageViewer(FigureCanvas):
+class ImageViewer(ImageView):
     """
     Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.).
     This object displays any plot we want: TIFF image, radial-averaged pattern, etc.
@@ -72,32 +69,19 @@ class ImageViewer(FigureCanvas):
     
     """
 
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
+    def __init__(self, parent=None):
         
         #Non-plotting attributes
         self.parent = parent
         self.last_click_position = [0,0]
-        #Setting determining the contrast of diffraction images. Pixel values above this will not be displayed, but still be used in the analysis
-        self.contrast = 1
-        
+        #Setting determining the contrast of diffraction images. Pixel values above this will not be displayed, but still be used in the analysis        
         self.center = None
         self.circle = None
         self.overlay_color = 'red'
         
         #plot setup
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        self.axes.hold(True)
-
+        super(ImageViewer, self).__init__()
         self.initialFigure()
-        FigureCanvas.__init__(self, fig)
-        self.setParent(parent)
-
-        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
-        
-        #connect clicking events
-        self.mpl_connect('button_press_event', self.click)
     
     def click(self, event):
         """
@@ -139,9 +123,8 @@ class ImageViewer(FigureCanvas):
 
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
-        missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
-        self.axes.cla()     #Clear axes
-        self.axes.imshow(missing_image)
+        missing_image = n.zeros(shape = (2048,2048), dtype = n.float)
+        self.setImage(missing_image)
  
     def displayImage(self):
         """ 
@@ -151,12 +134,8 @@ class ImageViewer(FigureCanvas):
         if image is None:
             self.initialFigure()
         else:
-            #Adjust contrast
-            image *= self.contrast
-            image[image > 30000] = 30000    #Ceiling
-            image = image.astype(n.uint16)  #This prevents MemoryError bugs for some reason...
-            self.axes.cla()     #Clear axes
-            self.axes.imshow(image, vmin = image.min(), vmax = 30000)
+            image = image.astype(n.float)  
+            self.setImage(image)
             if self.center != None:
                 self.axes.scatter(self.center[0],self.center[1], color = self.overlay_color)
                 self.axes.set_xlim(0, image.shape[0])
@@ -167,18 +146,6 @@ class ImageViewer(FigureCanvas):
                 #Restrict view to the plotted circle (to better evaluate the fit)
                 self.axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
                 self.axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
-            
-            self.axes.set_title('Raw TIFF image')
-            self.draw()
-    
-    def setContrast(self, contrast):
-        self.contrast = contrast
-        
-    def updateContrast(self):
-        if not self.axes.images:
-            pass #image_viewer is currently displaying something else than a CCD image
-        else:
-            self.displayImage()
     
     def displayRadialPattern(self, data, **kwargs):
         """
@@ -345,18 +312,15 @@ class UEDpowder(QtGui.QMainWindow):
         self.instructions = QtGui.QTextEdit()
         self.instructions.setOverwriteMode(False)
         self.instructions.setReadOnly(True)
+        self.instructions.setMaximumWidth(500)
         instruction_box.addWidget(self.instructions)
 
-        #Set up ImageViewer
+        #Set up the ImageView
         self.image_viewer = ImageViewer(parent = self)
+        
+        #File dialog
         self.file_dialog = QtGui.QFileDialog()
-        
-        #Set up contrast slider
-        self.contrast_slider = QtGui.QSlider(self)
-        self.contrast_slider.setMinimum(1)
-        self.contrast_slider.setMaximum(1000)
-        self.contrast_slider.setValue(1)
-        
+
         # ---------------------------------------------------------------------
         #       SIGNALS
         # ---------------------------------------------------------------------
@@ -370,8 +334,6 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
         self.batchAverageBtn.clicked.connect(self.batchAverageOperation)
-        self.connect(self.contrast_slider, QtCore.SIGNAL('valueChanged(int)'), self.image_viewer.setContrast)
-        self.connect(self.contrast_slider, QtCore.SIGNAL('sliderReleased()'), self.image_viewer.updateContrast)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -396,7 +358,6 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Image viewer pane ----------------------------------------------------
         right_pane = QtGui.QHBoxLayout()
-        right_pane.addWidget(self.contrast_slider)
         right_pane.addWidget(self.image_viewer)
         
         #Master Layout --------------------------------------------------------
@@ -494,11 +455,10 @@ class UEDpowder(QtGui.QMainWindow):
             directory = os.path.dirname(os.path.dirname(filename)) #If directory is 'processed', back up one directory
         else:
             directory = os.path.dirname(filename)
-
+            
         self.diffractionDataset = DiffractionDataset(directory, resolution = (2048,2048))
         self.batchAverageBtn.setEnabled(True)
         self.loadImage(filename)
-        self.contrast_slider.setValue(1)     #reset contrast
         self.image_viewer.displayImage()     #display raw image
     
     def batchAverageOperation(self):
