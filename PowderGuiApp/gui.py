@@ -75,7 +75,6 @@ class ImageViewer(ImageView):
         self.parent = parent
         self.last_click_position = [0,0]
         #Setting determining the contrast of diffraction images. Pixel values above this will not be displayed, but still be used in the analysis        
-        self.overlay = None
         self.center = None
         self.circle = None
         self.overlay_color = 'r'
@@ -125,12 +124,14 @@ class ImageViewer(ImageView):
     def initialFigure(self):
         """ Plots a placeholder image until an image file is selected """
         missing_image = n.zeros(shape = (2048,2048), dtype = n.float)
+        self.clear()
         self.setImage(missing_image)
  
     def displayImage(self):
         """ 
         This method displays a raw TIFF image from the instrument. Optional arguments can be used to overlay a circle.
         """
+        self.clear()
         image = n.copy(self.parent.image)
         if image is None:
             self.initialFigure()
@@ -159,7 +160,7 @@ class ImageViewer(ImageView):
         ----------
         *args : lists of RadialCurve objects
         """
-        self.axes.cla()
+        self.clear()
         
         #Create a list with only one element if the data is not already in list form
         if isinstance(data, RadialCurve):
@@ -167,9 +168,8 @@ class ImageViewer(ImageView):
         
         #Plot list of objects
         for item in data:
-            item.plot(self.axes, **kwargs)
-        
-        self.draw()
+            curve = pg.PlotDataItem(x = item.xdata, y = item.ydata, symbolPen = pg.mkPen(item.color), symbolBrush = pg.mkBrush(item.color), pen = None, fillLevel = None)
+            self.addItem(curve)
 
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
