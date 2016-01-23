@@ -55,7 +55,7 @@ def generateCircle(xc, yc, radius):
     """
     xvals = xc+ radius*n.cos(n.linspace(0,2*n.pi,100))
     yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
-    return [xvals,yvals]
+    return [xvals.tolist(),yvals.tolist()]
 
 class ImageViewer(ImageView):
     """
@@ -75,27 +75,28 @@ class ImageViewer(ImageView):
         self.parent = parent
         self.last_click_position = [0,0]
         #Setting determining the contrast of diffraction images. Pixel values above this will not be displayed, but still be used in the analysis        
+        self.overlay = None
         self.center = None
         self.circle = None
-        self.overlay_color = 'red'
+        self.overlay_color = 'r'
         
         #plot setup
         super(ImageViewer, self).__init__()
         self.initialFigure()
+        self.getImageItem().mouseClickEvent = self.click
     
     def click(self, event):
         """
         Saves the position of the last click on the canvas
         """
-        if event.xdata == None or event.ydata == None:
-            self.last_click_position = [0,0]
-        else:
-            self.last_click_position = [event.xdata, event.ydata]
+        pos = event.pos()
+        self.last_click_position = [int(pos.x()), int(pos.y())]
+        print '(x, y) = ({0}, {1})'.format(pos.x(), pos.y()) 
         
         if self.parent.state == 'data loaded':
             self.parent.guess_center = n.asarray(self.last_click_position)
             print 'Guess center: {0}'.format(self.parent.guess_center)
-            self.center = n.asarray(self.last_click_position); self.overlay_color = 'red'
+            self.center = self.last_click_position; self.overlay_color = 'r'
             self.displayImage()
             self.parent.state = 'center guessed'
             
@@ -103,7 +104,7 @@ class ImageViewer(ImageView):
             ring_position = n.asarray(self.last_click_position)
             self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
             circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
-            self.circle = circle_guess; self.overlay_color = 'red'
+            self.circle = circle_guess; self.overlay_color = 'r'
             self.displayImage()
             self.parent.state = 'radius guessed'
         
@@ -133,19 +134,22 @@ class ImageViewer(ImageView):
         image = n.copy(self.parent.image)
         if image is None:
             self.initialFigure()
-        else:
-            image = image.astype(n.float)  
-            self.setImage(image)
-            if self.center != None:
-                self.axes.scatter(self.center[0],self.center[1], color = self.overlay_color)
-                self.axes.set_xlim(0, image.shape[0])
-                self.axes.set_ylim(image.shape[1],0)
-            if self.circle != None:  #Overlay circle if provided
-                xvals, yvals = self.circle
-                self.axes.scatter(xvals, yvals, color = self.overlay_color)
-                #Restrict view to the plotted circle (to better evaluate the fit)
-                self.axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
-                self.axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
+            return
+        
+        #Plot image first
+        image = image.astype(n.float)  
+        self.setImage(image)
+        
+        #Handle overlays (center or circle)
+        xvals, yvals = list(), list()
+        if self.center is not None:
+            xvals, yvals = [self.center[0]],[self.center[1]]
+        if self.circle is not None: 
+            xvals.extend(self.circle[0]) 
+            yvals.extend(self.circle[1])
+
+        overlay = pg.ScatterPlotItem(pos = zip(xvals, yvals), size = 2, pen = pg.mkPen(self.overlay_color), brush = pg.mkBrush(self.overlay_color))
+        self.addItem(overlay)
     
     def displayRadialPattern(self, data, **kwargs):
         """
@@ -229,7 +233,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.image_viewer.center = value[0:2]
         self.image_viewer.circle = generateCircle(value[0], value[1], value[2])
         self.state = 'center found'
-        self.image_viewer.overlay_color = 'green'
+        self.image_viewer.overlay_color = 'g'
         self.image_viewer.displayImage()
     # -------------------------------------------------------------------------
         
@@ -334,6 +338,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
         self.batchAverageBtn.clicked.connect(self.batchAverageOperation)
+        
         
         # ---------------------------------------------------------------------
         #       LAYOUT
