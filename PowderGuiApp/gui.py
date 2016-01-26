@@ -17,6 +17,7 @@ from matplotlib.figure import Figure
 #GUI backends
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
+from image_viewer import ImageViewer
 
 # -----------------------------------------------------------------------------
 #           WORKING CLASS
@@ -55,130 +56,44 @@ def generateCircle(xc, yc, radius):
     yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
     return [xvals.tolist(),yvals.tolist()]       
 
-class Viewer(pg.GraphicsLayoutWidget):
-    """
-    Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.).
-    This object displays any plot we want: TIFF image, radial-averaged pattern, etc.
-    
-    Non-plotting Attributes
-    ----------------------- 
-    last_click_position : list, shape (2,)
-        [x,y] coordinates of the last click. Clicking outside the data of the ImageViewer set last_click = [0,0]
-    
-    """
 
-    def __init__(self, parent=None):
         
-        #Plotting items
-        self.image = pg.ImageItem()
-        self.image_overlay = pg.ScatterPlotItem()
-        self.curve = pg.PlotCurveItem()
-        self.curve_overlay = pg.ScatterPlotItem()
-        
-        #Ui setup
-        super(Viewer, self).__init__()
-        p1 = self.addPlot()
-        p1.addItem(self.image)
-        p1.addItem(self.image_overlay)
-        
-        p2 = self.addPlot()
-        p2.addItem(self.curve)    
-        p2.addItem(self.curve_overlay)
-        
-        #Non-plotting attributes
-        self.parent = parent
-        self.last_click_position = [0,0]
-        #Setting determining the contrast of diffraction images. Pixel values above this will not be displayed, but still be used in the analysis        
-        self.center = None
-        self.circle = None
-        self.overlay_color = 'r'
-        
-        
-        #self.getImageItem().mouseClickEvent = self.click
+def click(self, event):
+    """
+    Saves the position of the last click on the canvas
+    """
+    pos = event.pos()
+    self.last_click_position = [int(pos.x()), int(pos.y())]
+    print '(x, y) = ({0}, {1})'.format(pos.x(), pos.y()) 
     
-    @property
-    def items(self):
-        return self._items
-    
-    @items.setter
-    def items(self, value):
+    if self.parent.state == 'data loaded':
+        self.parent.guess_center = n.asarray(self.last_click_position)
+        print 'Guess center: {0}'.format(self.parent.guess_center)
+        self.center = self.last_click_position; self.overlay_color = 'r'
+        self.displayImage()
+        self.parent.state = 'center guessed'
         
-        #self.clear()
-        self._items = value
-        if value is not None:
-            for item in value:
-                self.addItem(item)
-    
-    def clear(self):
-        for item in self.allChildren():
-            self.removeItem(item)
+    elif self.parent.state == 'center guessed':
+        ring_position = n.asarray(self.last_click_position)
+        self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
+        circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
+        self.circle = circle_guess; self.overlay_color = 'r'
+        self.displayImage()
+        self.parent.state = 'radius guessed'
         
-    def click(self, event):
-        """
-        Saves the position of the last click on the canvas
-        """
-        pos = event.pos()
-        self.last_click_position = [int(pos.x()), int(pos.y())]
-        print '(x, y) = ({0}, {1})'.format(pos.x(), pos.y()) 
-        
-        if self.parent.state == 'data loaded':
-            self.parent.guess_center = n.asarray(self.last_click_position)
-            print 'Guess center: {0}'.format(self.parent.guess_center)
-            self.center = self.last_click_position; self.overlay_color = 'r'
-            self.displayImage()
-            self.parent.state = 'center guessed'
+    elif self.parent.state == 'radial averaged' or self.parent.state == 'cutoff set':
+        self.parent.cutoff = self.last_click_position
+        self.axes.axvline(self.parent.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
+        self.draw()
+        self.parent.state = 'cutoff set'
             
-        elif self.parent.state == 'center guessed':
-            ring_position = n.asarray(self.last_click_position)
-            self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
-            circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
-            self.circle = circle_guess; self.overlay_color = 'r'
-            self.displayImage()
-            self.parent.state = 'radius guessed'
-            
-        elif self.parent.state == 'radial averaged' or self.parent.state == 'cutoff set':
-            self.parent.cutoff = self.last_click_position
-            self.axes.axvline(self.parent.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
-            self.draw()
-            self.parent.state = 'cutoff set'
-                
-        elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
-            self.parent.background_guesses.append(self.last_click_position)
-            self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-            self.draw()
-            #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
-            if len(self.parent.background_guesses) == 6:
-                self.parent.state = 'background guessed'
- 
-    def displayImage(self, image = None):
-        """ 
-        This method displays a raw TIFF image from the instrument. Optional arguments can be used to overlay a circle.
-        """
-        
-        if image is None:
-            image = n.zeros(shape = (2048, 2048), dtype = n.float)
-        else:
-            image = image.astype(n.float)
-        
-        self.image.setImate(image)
-    
-    def displayRadialPattern(self, data, **kwargs):
-        """
-        Plots one or more diffraction patterns.
-        
-        Parameters
-        ----------
-        *args : lists of RadialCurve objects
-        """
-        
-        #Create a list with only one element if the data is not already in list form
-        if isinstance(data, RadialCurve):
-            data = [data]
-        
-        #Plot list of objects
-        for item in data:
-            curve = pg.PlotDataItem(x = item.xdata, y = item.ydata, symbolPen = pg.mkPen(item.color), symbolBrush = pg.mkBrush(item.color), pen = None, fillLevel = None)
-            self.curve.setData(curve)
+    elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
+        self.parent.background_guesses.append(self.last_click_position)
+        self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
+        self.draw()
+        #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
+        if len(self.parent.background_guesses) == 6:
+            self.parent.state = 'background guessed'
 
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -232,10 +147,7 @@ class UEDpowder(QtGui.QMainWindow):
     # -------------------------------------------------------------------------
     def setRawRadialAverage(self, value):
         """ Handles the radial averages for both the diffraction pattern adn the substrate from a thread. """
-        self.raw_radial_average = value
-        #Change Viewer from ImageViewer to CurveViewer
-        self.viewer = self.curve_viewer
-        
+        self.raw_radial_average = value        
         self.viewer.displayRadialPattern(self.raw_radial_average)
         self.state = 'radial averaged'
     
@@ -246,7 +158,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.viewer.circle = generateCircle(value[0], value[1], value[2])
         self.state = 'center found'
         self.viewer.overlay_color = 'g'
-        self.viewer.displayImage()
+        self.viewer.displayImage(self.image)
     # -------------------------------------------------------------------------
         
     @property
@@ -332,7 +244,7 @@ class UEDpowder(QtGui.QMainWindow):
         instruction_box.addWidget(self.instructions)
 
         #Set up the ImageViewer and CurveViewer
-        self.viewer = Viewer(parent = self)
+        self.viewer = ImageViewer(parent = self)
         
         #File dialog
         self.file_dialog = QtGui.QFileDialog()
@@ -477,7 +389,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.diffractionDataset = DiffractionDataset(directory, resolution = (2048,2048))
         self.batchAverageBtn.setEnabled(True)
         self.loadImage(filename)
-        self.viewer.displayImage()     #display raw image
+        self.viewer.displayImage(self.image)     #display raw image
     
     def batchAverageOperation(self):
         #TODO: set up some way of notifying users that the process is done. Popup screen?
@@ -540,7 +452,7 @@ class UEDpowder(QtGui.QMainWindow):
             #Go back to the data loaded state and forget the guessed for the center and radius
             self.state = 'data loaded'
             self.viewer.center, self.viewer.circle = None, None
-            self.viewer.displayImage()
+            self.viewer.displayImage(self.image)
         elif self.state == 'background determined':
             self.viewer.displayRadialPattern(self.raw_radial_average)
             self.background_guesses = list()
