@@ -150,11 +150,11 @@ class ImageViewer(FigureCanvas):
             self.initialFigure()
         else:
             #Adjust contrast
-            image *= self.contrast
+            image = image * int(self.contrast)
             image[image > 30000] = 30000    #Ceiling
             image = image.astype(n.uint16)  #This prevents MemoryError bugs for some reason...
             self.axes.cla()     #Clear axes
-            self.axes.imshow(image, vmin = image.min(), vmax = 30000)
+            self.axes.imshow(image, vmin = 0, vmax = 30000)
             if self.center != None:
                 self.axes.scatter(self.center[0],self.center[1], color = self.overlay_color)
                 self.axes.set_xlim(0, image.shape[0])
