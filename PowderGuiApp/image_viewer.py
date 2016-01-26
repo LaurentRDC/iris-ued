@@ -9,8 +9,10 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         
         super(ImageViewer, self).__init__()
         self.image = pg.ImageItem()
+        self.image.setPxMode(True)
         self.curve = pg.PlotDataItem()
         self.setupUI()
+        
     def setupUI(self):
         # A plot area (ViewBox + axes) for displaying the image
         p1 = self.addPlot()
@@ -27,6 +29,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         p2.setMaximumHeight(250)
 
         # zoom to fit imageo
+        self.image.scale(0.01, 0.01)
         p1.autoRange() 
     
     def displayImage(self, image):
@@ -34,7 +37,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
             image = n.zeros(shape = (2048, 2048), dtype = n.float)
         image = image.astype(n.float)
         #TODO: Is downsampling a good idea?
-        self.image.setImage(image, autoDownsample = True)       
+        self.image.setImage(image)       
     
     def displayRadialPattern(self, curve):
         self.curve.setData(xValues = curve.xdata, yValues = curve.ydata)
