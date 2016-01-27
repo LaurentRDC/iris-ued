@@ -8,15 +8,16 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     def __init__(self, parent = None):
         
         super(ImageViewer, self).__init__()
-        self.image = pg.ImageItem()
-        self.image.setPxMode(True)
+        self.image = pg.ImageItem()        
         self.curve = pg.PlotDataItem()
         self.setupUI()
         
     def setupUI(self):
         # A plot area (ViewBox + axes) for displaying the image
-        p1 = self.addPlot()
-        p1.addItem(self.image)
+        self.image_area = self.addPlot()
+        self.image_area.getViewBox().setAspectLocked(lock = True, ratio = 1)
+        self.image_area.getViewBox().enableAutoRange()
+        self.image_area.addItem(self.image)
         
         # Contrast/color control
         hist = pg.HistogramLUTItem()
@@ -24,24 +25,18 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.addItem(hist)
         
         self.nextRow()
-        p2 = self.addPlot(colspan = 2)
-        p2.addItem(self.curve)
-        p2.setMaximumHeight(250)
-
-        # zoom to fit imageo
-        self.image.scale(0.01, 0.01)
-        p1.autoRange() 
+        self.curve_area = self.addPlot(colspan = 2)
+        self.curve_area.addItem(self.curve)
+        self.curve_area.setMaximumHeight(250)
     
     def displayImage(self, image):
         if image is None:
             image = n.zeros(shape = (2048, 2048), dtype = n.float)
-        image = image.astype(n.float)
-        #TODO: Is downsampling a good idea?
-        self.image.setImage(image)       
+        self.image.setImage(image)
     
     def displayRadialPattern(self, curve):
         self.curve.setData(xValues = curve.xdata, yValues = curve.ydata)
         
-if __name__ == '__main__':
+if __name__ == '__main__':  
     im = ImageViewer()
     im.show()
