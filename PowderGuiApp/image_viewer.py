@@ -13,8 +13,10 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     def __init__(self, parent = None):
         
         super(ImageViewer, self).__init__()
-        self.image = pg.ImageItem()        
+        self.image = pg.ImageItem()
+        self.image_overlay = pg.ScatterPlotItem()        
         self.curve = pg.PlotDataItem()
+        
         self.setupUI()
         
         #Initialize display
@@ -40,6 +42,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.image_area.getViewBox().setAspectLocked(lock = True, ratio = 1)
         self.image_area.getViewBox().enableAutoRange()
         self.image_area.addItem(self.image)
+        self.image_area.addItem(self.image_overlay)
         
         # Contrast/color control
         hist = pg.HistogramLUTItem()
@@ -49,12 +52,16 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.nextRow()
         self.curve_area = self.addPlot(colspan = 2)
         self.curve_area.addItem(self.curve)
-        self.curve_area.setMaximumHeight(250)
+        self.curve_area.setMaximumHeight(300)
     
-    def displayImage(self, image):
+    def displayImage(self, image, overlay = list(), overlay_color = 'r'):
         if image is None:
             image = n.zeros(shape = (2048, 2048), dtype = n.float)
         self.image.setImage(image)
+        
+        #Add overlays
+        brush = pg.mkBrush(color = overlay_color)
+        self.image_overlay.setData(pos = overlay, size = 10, brush = brush)
     
     def displayRadialPattern(self, curve):
         self.curve.setData(xValues = curve.xdata, yValues = curve.ydata)
@@ -62,3 +69,5 @@ class ImageViewer(pg.GraphicsLayoutWidget):
 if __name__ == '__main__':  
     im = ImageViewer()
     im.show()
+    
+    im.displayImage(n.random.normal(size = (1000,1000)), overlay = [(500,500)], overlay_color = 'r')

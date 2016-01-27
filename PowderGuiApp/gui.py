@@ -282,34 +282,32 @@ class UEDpowder(QtGui.QMainWindow):
 
         print '(x, y) = ({0}, {1})'.format(pos[0], pos[1]) 
         
-#        if self.parent.state == 'data loaded':
-#            self.parent.guess_center = n.asarray(self.last_click_position)
-#            print 'Guess center: {0}'.format(self.parent.guess_center)
-#            self.center = self.last_click_position; self.overlay_color = 'r'
-#            self.displayImage()
-#            self.parent.state = 'center guessed'
-#            
-#        elif self.parent.state == 'center guessed':
-#            ring_position = n.asarray(self.last_click_position)
-#            self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
-#            circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
-#            self.circle = circle_guess; self.overlay_color = 'r'
-#            self.displayImage()
-#            self.parent.state = 'radius guessed'
-#            
-#        elif self.parent.state == 'radial averaged' or self.parent.state == 'cutoff set':
-#            self.parent.cutoff = self.last_click_position
-#            self.axes.axvline(self.parent.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
-#            self.draw()
-#            self.parent.state = 'cutoff set'
-#                
-#        elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
-#            self.parent.background_guesses.append(self.last_click_position)
-#            self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-#            self.draw()
-#            #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
-#            if len(self.parent.background_guesses) == 6:
-#                self.parent.state = 'background guessed'
+        if self.state == 'data loaded':
+            print 'Guess center: {0}'.format(self.guess_center)
+            self.guess_center = pos 
+            self.viewer.displayImage(self.image, overlay = pos, overlay_color = 'r')
+            self.state = 'center guessed'
+            
+        elif self.state == 'center guessed':
+            ring_position = n.asarray(pos)
+            self.guess_radius = n.linalg.norm(self.guess_center - ring_position)
+            circle_guess = generateCircle(self.guess_center[0], self.guess_center[1], self.guess_radius)
+            self.viewer.displayImage(self.image, overlay = circle_guess, overlay_color = 'r')
+            self.state = 'radius guessed'
+            
+        elif self.state == 'radial averaged' or self.state == 'cutoff set':
+            self.cutoff = pos
+            self.axes.axvline(self.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
+            self.draw()
+            self.state = 'cutoff set'
+                
+        elif self.state == 'radial cutoff' or self.state == 'background guessed':
+            self.background_guesses.append(pos)
+            self.axes.axvline(pos[0],ymax = self.axes.get_ylim()[1])
+            self.draw()
+            #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
+            if len(self.background_guesses) == 6:
+                self.state = 'background guessed'
     
     def updateInstructions(self, message = None):
         """ Handles the instructions text, either a specific message or a preset message depending on the state """
@@ -491,29 +489,6 @@ class UEDpowder(QtGui.QMainWindow):
             #self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon')
             self.diffractionDataset.batchProcess(self.image_center, self.cutoff)
             self.instructions.append('\n Batch radial averages exported. See processed/radial_averages.hdf5 in the data directory.')
-    
-    def save(self):
-        """ Determines what to do when the save button is clicked """
-        from scipy.io import savemat
-        if self.state == 'radial averaged':
-            filename = self.file_dialog.getSaveFileName(self, 'Save radial averages', 'C:\\')
-    
-            mdict = {'rav_x':self.raw_radial_average.xdata, 'rav_y': self.raw_radial_average.ydata}
-            savemat(filename, mdict)
-        self.instructions.append('\n Radial averages saved.')
-            
-    def load(self, filename = None):
-        """ Determines what to do when the load button is clicked """
-        from scipy.io import loadmat
-        
-        filename = self.file_dialog.getOpenFileName(self, 'Load radial averages', 'C:\\')
-        
-        mdict = dict()
-        mdict = loadmat(filename)
-        self.raw_radial_average = RadialCurve(mdict['rav_x'][0], mdict['rav_y'][0], 'Raw' )
-        self.viewer.displayRadialPattern(self.raw_radial_average)
-        self.state = 'radial averaged'
-        self.instructions.append('\n Radial averages loaded.')
 
     def centerWindow(self):
         """ Centers the window """
