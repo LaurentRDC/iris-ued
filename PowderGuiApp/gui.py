@@ -150,9 +150,8 @@ class ImageViewer(FigureCanvas):
             self.initialFigure()
         else:
             #Adjust contrast
-            image = image * int(self.contrast)
+            image = image * float(self.contrast)
             image[image > 30000] = 30000    #Ceiling
-            image = image.astype(n.uint16)  #This prevents MemoryError bugs for some reason...
             self.axes.cla()     #Clear axes
             self.axes.imshow(image, vmin = 0, vmax = 30000)
             if self.center != None:
@@ -523,7 +522,8 @@ class UEDpowder(QtGui.QMainWindow):
             im[im < 0] = 0
         
         #Substract substrate effects weighted by exposure
-        self.image = image - (2.0/5.0)*substrate_image
+        self.image = image - substrate_image
+        self.image = self.image.astype(n.float32)
     
         self.state = 'data loaded'
         
