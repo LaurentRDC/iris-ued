@@ -1,5 +1,5 @@
 import pyqtgraph as pg
-from pyqtgraph import QtGui, QtCore
+from pyqtgraph import QtCore
 import numpy as n
 import core
 
@@ -45,6 +45,9 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         # ---------------------------------------------------------------------
         #       LAYOUT
         # ---------------------------------------------------------------------
+        
+        # Let's go with white background
+        # self.setBackgroundBrush(pg.mkBrush('w'))
         
         self.addItem(self.image_position_label)
         

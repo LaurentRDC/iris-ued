@@ -52,13 +52,12 @@ def generateCircle(xc, yc, radius):
     """
     Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
     """
-    xvals = xc+ radius*n.cos(n.linspace(0,2*n.pi,100))
-    yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
-    return [xvals.tolist(),yvals.tolist()]       
-
-
-        
-
+    xvals = xc + radius*n.cos(n.linspace(0,2*n.pi,100))
+    yvals = yc + radius*n.sin(n.linspace(0,2*n.pi,100))
+    
+    circle = zip(xvals.tolist(), yvals.tolist())
+    circle.append( (xc, yc) )
+    return circle
 
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -119,11 +118,9 @@ class UEDpowder(QtGui.QMainWindow):
     def setImageCenter(self, value):
         self.image_center = value[0:2] 
         print 'Calculated center: {0}'.format(self.image_center)
-        self.viewer.center = value[0:2]
-        self.viewer.circle = generateCircle(value[0], value[1], value[2])
+        circle = generateCircle(value[0], value[1], value[2])
         self.state = 'center found'
-        self.viewer.overlay_color = 'g'
-        self.viewer.displayImage(self.image)
+        self.viewer.displayImage(self.image, overlay = circle, overlay_color = 'g')
     # -------------------------------------------------------------------------
         
     @property
@@ -283,14 +280,12 @@ class UEDpowder(QtGui.QMainWindow):
         print '(x, y) = ({0}, {1})'.format(pos[0], pos[1]) 
         
         if self.state == 'data loaded':
-            print 'Guess center: {0}'.format(self.guess_center)
             self.guess_center = pos 
-            self.viewer.displayImage(self.image, overlay = pos, overlay_color = 'r')
+            self.viewer.displayImage(self.image, overlay = [pos], overlay_color = 'r')
             self.state = 'center guessed'
             
         elif self.state == 'center guessed':
-            ring_position = n.asarray(pos)
-            self.guess_radius = n.linalg.norm(self.guess_center - ring_position)
+            self.guess_radius = n.linalg.norm(n.asarray(self.guess_center) - n.asarray(pos))
             circle_guess = generateCircle(self.guess_center[0], self.guess_center[1], self.guess_radius)
             self.viewer.displayImage(self.image, overlay = circle_guess, overlay_color = 'r')
             self.state = 'radius guessed'
