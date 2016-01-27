@@ -1,9 +1,14 @@
 import pyqtgraph as pg
+from pyqtgraph import QtGui, QtCore
 import numpy as n
 
 pg.mkQApp()
 
 class ImageViewer(pg.GraphicsLayoutWidget):
+    
+    #New-style signal definitiona
+    image_clicked = QtCore.pyqtSignal(tuple, name = 'image_clicked')
+    curve_clicked = QtCore.pyqtSignal(tuple, name = 'curve_clicked')
     
     def __init__(self, parent = None):
         
@@ -11,6 +16,23 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.image = pg.ImageItem()        
         self.curve = pg.PlotDataItem()
         self.setupUI()
+        
+        #Initialize display
+        self.displayImage( image = None )
+        
+        #Signals
+        self.image.mouseClickEvent = self.imageClick
+        self.curve.mouseClickEvent = self.curveClick
+    
+    def imageClick(self, event):
+        pos = event.pos()
+        click_position = ( int(pos.x()), int(pos.y()) )
+        self.image_clicked.emit(click_position)
+    
+    def curveClick(self, event):
+        pos = event.pos()
+        click_position = ( int(pos.x()), int(pos.y()) )
+        self.curve_clicked.emit(click_position)
         
     def setupUI(self):
         # A plot area (ViewBox + axes) for displaying the image

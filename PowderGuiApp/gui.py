@@ -58,42 +58,7 @@ def generateCircle(xc, yc, radius):
 
 
         
-def click(self, event):
-    """
-    Saves the position of the last click on the canvas
-    """
-    pos = event.pos()
-    self.last_click_position = [int(pos.x()), int(pos.y())]
-    print '(x, y) = ({0}, {1})'.format(pos.x(), pos.y()) 
-    
-    if self.parent.state == 'data loaded':
-        self.parent.guess_center = n.asarray(self.last_click_position)
-        print 'Guess center: {0}'.format(self.parent.guess_center)
-        self.center = self.last_click_position; self.overlay_color = 'r'
-        self.displayImage()
-        self.parent.state = 'center guessed'
-        
-    elif self.parent.state == 'center guessed':
-        ring_position = n.asarray(self.last_click_position)
-        self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
-        circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
-        self.circle = circle_guess; self.overlay_color = 'r'
-        self.displayImage()
-        self.parent.state = 'radius guessed'
-        
-    elif self.parent.state == 'radial averaged' or self.parent.state == 'cutoff set':
-        self.parent.cutoff = self.last_click_position
-        self.axes.axvline(self.parent.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
-        self.draw()
-        self.parent.state = 'cutoff set'
-            
-    elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
-        self.parent.background_guesses.append(self.last_click_position)
-        self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-        self.draw()
-        #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
-        if len(self.parent.background_guesses) == 6:
-            self.parent.state = 'background guessed'
+
 
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
@@ -263,6 +228,9 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
         self.batchAverageBtn.clicked.connect(self.batchAverageOperation)
         
+        #Click events from the ImageViewer
+        self.viewer.image_clicked.connect(self.click)
+        self.viewer.curve_clicked.connect(self.click)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -305,6 +273,43 @@ class UEDpowder(QtGui.QMainWindow):
         self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()
         self.show()
+    
+    @QtCore.pyqtSlot(tuple)
+    def click(self, pos):
+        """
+        Executes actions based on click signals from the image viewer
+        """
+
+        print '(x, y) = ({0}, {1})'.format(pos[0], pos[1]) 
+        
+#        if self.parent.state == 'data loaded':
+#            self.parent.guess_center = n.asarray(self.last_click_position)
+#            print 'Guess center: {0}'.format(self.parent.guess_center)
+#            self.center = self.last_click_position; self.overlay_color = 'r'
+#            self.displayImage()
+#            self.parent.state = 'center guessed'
+#            
+#        elif self.parent.state == 'center guessed':
+#            ring_position = n.asarray(self.last_click_position)
+#            self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
+#            circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
+#            self.circle = circle_guess; self.overlay_color = 'r'
+#            self.displayImage()
+#            self.parent.state = 'radius guessed'
+#            
+#        elif self.parent.state == 'radial averaged' or self.parent.state == 'cutoff set':
+#            self.parent.cutoff = self.last_click_position
+#            self.axes.axvline(self.parent.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
+#            self.draw()
+#            self.parent.state = 'cutoff set'
+#                
+#        elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
+#            self.parent.background_guesses.append(self.last_click_position)
+#            self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
+#            self.draw()
+#            #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
+#            if len(self.parent.background_guesses) == 6:
+#                self.parent.state = 'background guessed'
     
     def updateInstructions(self, message = None):
         """ Handles the instructions text, either a specific message or a preset message depending on the state """
