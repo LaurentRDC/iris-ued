@@ -26,7 +26,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         
         #Signals
         self.image.mouseClickEvent = self.imageClick
-        self.curve.mouseClickEvent = self.curveClick
+        self.curve.scene().sigMouseClicked.connect(self.curveClick)
         self.image_area.scene().sigMouseMoved.connect(self.updateCrosshair)
     
     def imageClick(self, event):
@@ -36,9 +36,12 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     
     def curveClick(self, event):
         pos = event.pos()
-        print pos
-        click_position = ( int(pos.x()), int(pos.y()) )
-        self.curve_clicked.emit(click_position)
+        mousePoint = self.curve_area.getViewBox().mapToView(self.curve_area, pos) # Get cursor position within image
+        x_lims, y_lims = self.curve_area.getViewBox().childrenBounds()            # Plot limits
+        mx, my = mousePoint.x(), mousePoint.y()
+        if mx >= int(x_lims[0]) and mx <= int(x_lims[1]) and my >= int(y_lims[0]) and my <= int(y_lims[1]): 
+            print (mx, my)
+            self.curve_clicked.emit( (mx, my) )
         
     def setupUI(self):
         
@@ -60,9 +63,9 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.image_area.addItem(self.image_overlay)
         
         # Contrast/color control
-        hist = pg.HistogramLUTItem()
-        hist.setImageItem(self.image)
-        self.addItem(hist)
+        self.hist = pg.HistogramLUTItem()
+        self.hist.setImageItem(self.image)
+        self.addItem(self.hist)
         
         self.nextRow()
         
