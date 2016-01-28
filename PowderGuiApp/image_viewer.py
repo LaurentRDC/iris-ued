@@ -26,7 +26,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         
         #Signals
         self.image.mouseClickEvent = self.imageClick
-        self.curve.scene().sigMouseClicked.connect(self.curveClick)
+        #self.curve.scene().sigMouseClicked.connect(self.curveClick)
         self.image_area.scene().sigMouseMoved.connect(self.updateCrosshair)
     
     def imageClick(self, event):
@@ -81,10 +81,24 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.hLine = pg.InfiniteLine(angle=0, movable=False)
         self.image_area.addItem(self.vLine, ignoreBounds=True)
         self.image_area.addItem(self.hLine, ignoreBounds=True)
-    
-    def setupCrossHair(self):
-        """ """
+        
+        # ---------------------------------------------------------------------
+        #           BEAMBLOCK MASK
+        # ---------------------------------------------------------------------
+        
+        self.mask = pg.ROI(pos = [0,0],size = [50,50])
+        self.mask.addScaleHandle([1, 1], [0, 0])
+        self.mask.addScaleHandle([0, 0], [1, 1])
+        self.displayMask()
 
+    def displayMask(self):
+        self.image_area.getViewBox().addItem(self.mask)
+    
+    def hideMask(self):
+        self.image_area.getViewBox().removeItem(self.mask)
+    
+    def maskPosition(self):
+        return self.mask.parentBounds().toRect()
     
     def displayImage(self, image, overlay = list(), overlay_color = 'r'):
         if image is None:
