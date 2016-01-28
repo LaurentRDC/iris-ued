@@ -127,10 +127,13 @@ class ImageViewer(pg.GraphicsLayoutWidget):
                
         return x1, x2, y1, y2
     
-    def centerPosition(self):
+    def centerPosition(self, return_radius = False):
         corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2.0
-        return corner_x + radius, corner_y + radius
+        if return_radius:
+            return corner_x + radius, corner_y + radius, radius
+        else:
+            return corner_x + radius, corner_y + radius
         
     
     # -------------------------------------------------------------------------

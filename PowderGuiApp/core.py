@@ -464,6 +464,6 @@ if __name__ == '__main__':
     #Testing
     f = 'K:\\2016.01.26.17.09.VO2_1500_uW_pump_50_Hz\\processed\\data.timedelay.-50.00.average.pumpon.tif'
     img = t.imread(f)
-    curve = radialAverage(img, 'test', center = [1051,1055], beamblock_mode = 'angular')
+    curve = radialAverage(img, 'test', center = [1053,1066], mask_rect = [0, 1171, 880, 1223])
     
     plt.plot(curve.xdata, curve.ydata)

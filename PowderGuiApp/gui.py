@@ -10,7 +10,6 @@ from core import *
 
 #GUI backends
 from pyqtgraph.Qt import QtCore, QtGui
-import pyqtgraph as pg
 from image_viewer import ImageViewer
 
 # -----------------------------------------------------------------------------
@@ -88,6 +87,7 @@ class UEDpowder(QtGui.QMainWindow):
     # -------------------------------------------------------------------------
     #           SETTER METHODS FOR THREADING
     # -------------------------------------------------------------------------
+        
     def setRawRadialAverage(self, value):
         """ Handles the radial averages for both the diffraction pattern adn the substrate from a thread. """
         self.raw_radial_average = value        
@@ -102,6 +102,7 @@ class UEDpowder(QtGui.QMainWindow):
         self.viewer.displayMask()
         self.viewer.displayImage(self.image, overlay = circle, overlay_color = 'g')
     # -------------------------------------------------------------------------
+        
         
     @property
     def state(self):
@@ -258,13 +259,8 @@ class UEDpowder(QtGui.QMainWindow):
         """
 
         print '(x, y) = ({0}, {1})'.format(pos[0], pos[1]) 
-        
-        if self.state == 'data loaded':
-            self.guess_center = pos 
-            self.viewer.displayImage(self.image, overlay = [pos], overlay_color = 'r')
-            self.state = 'center guessed'
             
-        elif self.state == 'center guessed':
+        if self.state == 'center guessed':
             self.guess_radius = n.linalg.norm(n.asarray(self.guess_center) - n.asarray(pos))
             circle_guess = generateCircle(self.guess_center[0], self.guess_center[1], self.guess_radius)
             self.viewer.displayImage(self.image, overlay = circle_guess, overlay_color = 'r')
@@ -294,10 +290,6 @@ class UEDpowder(QtGui.QMainWindow):
                 self.instructions.append('\n Click the "Locate diffraction image" button to import a diffraction image.')
             elif self.state == 'data loaded':
                 self.instructions.append('\n Click on the image to guess a diffraction pattern center.')
-            elif self.state == 'center guessed':
-                self.instructions.append('\n Click on a diffraction ring to guess a diffraction pattern radius.')
-            elif self.state == 'radius guessed':
-                self.instructions.append('\n Click on "Find center" to fit a circle to the diffraction ring you selected.')
             elif self.state == 'center found':
                 self.instructions.append('\n "Accept" to radially average the data, or click "Reject" to guess for a center again.')
             elif self.state == 'radial averaged':
@@ -323,11 +315,7 @@ class UEDpowder(QtGui.QMainWindow):
         if self.state == 'initial':
             availableButtons = [self.imageLocatorBtn]
         elif self.state == 'data loaded':
-            availableButtons = [self.imageLocatorBtn, self.batchAverageBtn]
-        elif self.state == 'center guessed':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.batchAverageBtn]
-        elif self.state == 'radius guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn, self.batchAverageBtn]
+            availableButtons = [self.imageLocatorBtn, self.batchAverageBtn, self.executeCenterBtn]
         elif self.state == 'center found':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.batchAverageBtn]
         elif self.state == 'radial averaged':
@@ -395,17 +383,12 @@ class UEDpowder(QtGui.QMainWindow):
         self.image = image - substrate_image
     
         self.state = 'data loaded'
+        self.viewer.displayCenterFinder()
         
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
         
-        if self.state == 'center guessed':
-            #To speedup debugging, accept the guessed center as the true center and move on
-            self.image_center = self.guess_center
-            self.state = 'center found'
-            self.acceptState()
-            
-        elif self.state == 'center found':
+        if self.state == 'center found':
             mask = self.viewer.maskPosition()
             self.work_thread = WorkThread(radialAverage, self.image, 'Sample', self.image_center, mask)              #Create thread with a specific function and arguments
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
@@ -439,16 +422,13 @@ class UEDpowder(QtGui.QMainWindow):
 
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases. """
-        if self.state == 'center guessed':        
-           pass
-        elif self.state == 'radius guessed':
-            #Compute center
-            xg, yg = self.guess_center
-            self.work_thread = WorkThread(fCenter, xg, yg, self.guess_radius, self.image)
-            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setImageCenter)            
-            self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
-            self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
-            self.work_thread.start()
+            
+        if self.state == 'data loaded':
+            #Get center from fitted circle
+            self.image_center = self.viewer.centerPosition()
+            self.viewer.hideCenterFinder()
+            self.viewer.displayMask()
+            self.state = 'center found'
         elif self.state == 'cutoff set':
             #Cutoff radial patterns
             self.raw_radial_average = self.raw_radial_average.cutoff(self.cutoff)
