@@ -50,7 +50,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         # ---------------------------------------------------------------------
         
         # Let's go with white background
-        # self.setBackgroundBrush(pg.mkBrush('w'))
+        self.setBackgroundBrush(pg.mkBrush('w'))
         
         self.addItem(self.image_position_label)
         
@@ -86,16 +86,35 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         #           BEAMBLOCK MASK
         # ---------------------------------------------------------------------
         
-        self.mask = pg.ROI(pos = [0,0],size = [50,50])
+        self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
-        self.mask.boundingRect()
+        
+        # ---------------------------------------------------------------------
+        #           CENTER FINDER
+        # ---------------------------------------------------------------------
+        
+        self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
+    
+    # -------------------------------------------------------------------------
+    #           DISPLAY (and HIDE) OBJECTS in IMAGE AREA
+    # -------------------------------------------------------------------------
 
     def displayMask(self):
         self.image_area.getViewBox().addItem(self.mask)
     
+    def displayCenterFinder(self):
+        self.image_area.getViewBox().addItem(self.center_finder)
+    
+    def hideCenterFinder(self):
+        self.image_area.getViewBox().removeItem(self.center_finder)
+    
     def hideMask(self):
         self.image_area.getViewBox().removeItem(self.mask)
+    
+    # -------------------------------------------------------------------------
+    #           POSITION METHODS
+    # -------------------------------------------------------------------------
     
     def maskPosition(self):
         rect = self.mask.parentBounds().toRect()
@@ -108,6 +127,16 @@ class ImageViewer(pg.GraphicsLayoutWidget):
                
         return x1, x2, y1, y2
     
+    def centerPosition(self):
+        corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
+        radius = self.center_finder.size().x()/2.0
+        return corner_x + radius, corner_y + radius
+        
+    
+    # -------------------------------------------------------------------------
+    #           PLOTTING METHODS
+    # -------------------------------------------------------------------------
+    
     def displayImage(self, image, overlay = list(), overlay_color = 'r'):
         if image is None:
             image = n.zeros(shape = (2048, 2048), dtype = n.float)
@@ -115,11 +144,15 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         
         #Add overlays
         brush = pg.mkBrush(color = overlay_color)
-        self.image_overlay.setData(pos = overlay, size = 5, brush = brush)
+        self.image_overlay.setData(pos = overlay, size = 3, brush = brush)
     
     def displayRadialPattern(self, curve):
         pen = pg.mkPen(curve.color)
         self.curve.setData(x = curve.xdata, y = curve.ydata, pen = pen)
+    
+    # -------------------------------------------------------------------------
+    #           SIGNAL METHODS
+    # -------------------------------------------------------------------------
     
     def updateCrosshair(self, event):
         pos = event  ## using signal proxy turns original arguments into a tuple
@@ -144,8 +177,9 @@ if __name__ == '__main__':
     im = ImageViewer()
     im.show()
     im.displayMask()
+    im.displayCenterFinder()
     
-    test_image = n.random.normal(size = (1000,1000))
+    test_image = n.random.normal(size = (2048, 2048))
     test_curve = core.RadialCurve(xdata = n.arange(0, 100,0.1), ydata = n.sin(n.arange(0, 100,0.1)), color = 'r')
     
     #Test

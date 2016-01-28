@@ -44,8 +44,8 @@ def generateCircle(xc, yc, radius):
     """
     Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
     """
-    xvals = xc + radius*n.cos(n.linspace(0,2*n.pi,100))
-    yvals = yc + radius*n.sin(n.linspace(0,2*n.pi,100))
+    xvals = xc + radius*n.cos(n.linspace(0, 2*pi, 500))
+    yvals = yc + radius*n.sin(n.linspace(0, 2*pi, 500))
     
     circle = zip(xvals.tolist(), yvals.tolist())
     circle.append( (xc, yc) )
@@ -188,9 +188,9 @@ def radialAverage(image, name, center, mask_rect = None):
         [x,y] coordinates of the center (in pixels)
     name : str
         String identifier for the output RadialCurve
-    mask_rect : tuple
-        Tuple containing two points [x,y]: top left and bottom right corners of
-        the beamblock mask in pixels.
+    mask_rect : Tuple, shape (4,)
+        Tuple containing x- and y-bounds (in pixels) for the beamblock mask
+        mast_rect = (x1, x2, y1, y2)
         
     Returns
     -------
@@ -215,7 +215,7 @@ def radialAverage(image, name, center, mask_rect = None):
     if mask_rect is None:
         R[:xc, :] = -1      #All poins above center of the image are disregarded (because of beamblock)
     else:
-        ([x1, y1], [x2, y2]) = mask_rect
+        x1, x2, y1, y2 = mask_rect
         R[x1:x2, y1:y2] = -1
     
     #Average intensity values for equal radii
