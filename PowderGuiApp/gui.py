@@ -307,8 +307,7 @@ class UEDpowder(QtGui.QMainWindow):
     def updateInstructions(self, message = None):
         """ Handles the instructions text, either a specific message or a preset message depending on the state """
         
-        if message != None:
-            assert isinstance(message, str)
+        if message is not None:
             self.instructions.append(message)
         else:           #Handle state changes
             if self.state == 'initial':
