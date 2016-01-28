@@ -39,6 +39,18 @@ def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0):
 def bilor(x, center, amp1, amp2, width1, width2, const):
     """ Returns a Bilorentzian functions. """
     return amp1*Lorentzian(x, center, width1) + amp2*Lorentzian(x, center, width2) + const
+
+def generateCircle(xc, yc, radius):
+    """
+    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
+    """
+    xvals = xc + radius*n.cos(n.linspace(0,2*n.pi,100))
+    yvals = yc + radius*n.sin(n.linspace(0,2*n.pi,100))
+    
+    circle = zip(xvals.tolist(), yvals.tolist())
+    circle.append( (xc, yc) )
+    return circle
+
     
 # -----------------------------------------------------------------------------
 #           RADIAL CURVE CLASS

@@ -8,12 +8,6 @@ from PIL import Image
 #Core functions
 from core import *
 
-#plotting backends
-from matplotlib.backends import qt_compat
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.backends.backend_qt4agg as qt4agg
-from matplotlib.figure import Figure
-
 #GUI backends
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
@@ -44,21 +38,6 @@ class WorkThread(QtCore.QThread):
         self.emit(QtCore.SIGNAL('Remove Loading'), '\n Done.')
         self.emit(QtCore.SIGNAL('Computation done'), self.result)
         
-# -----------------------------------------------------------------------------
-#           IMAGE VIEWER CLASSES AND FUNCTIONS
-# -----------------------------------------------------------------------------
-    
-def generateCircle(xc, yc, radius):
-    """
-    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
-    """
-    xvals = xc + radius*n.cos(n.linspace(0,2*n.pi,100))
-    yvals = yc + radius*n.sin(n.linspace(0,2*n.pi,100))
-    
-    circle = zip(xvals.tolist(), yvals.tolist())
-    circle.append( (xc, yc) )
-    return circle
-
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
 # -----------------------------------------------------------------------------
