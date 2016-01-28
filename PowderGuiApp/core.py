@@ -176,7 +176,7 @@ def fCenter(xg, yg, rg, im, scalefactor = 20):
 #               RADIAL AVERAGING
 # -----------------------------------------------------------------------------
 
-def radialAverage(image, name, center, beamblock_mode = 'angular', mask_rect = None):
+def radialAverage(image, name, center, mask_rect = None):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -188,44 +188,39 @@ def radialAverage(image, name, center, beamblock_mode = 'angular', mask_rect = N
         [x,y] coordinates of the center (in pixels)
     name : str
         String identifier for the output RadialCurve
-    beamblock_mode : str
-        Allowed values are :
-            'angular': the image area ignored will lie within +- 45deg (or pi/4 rads) away
-            from the beamblock axis
-            'absolute': half of the 
+    mask_rect : tuple
+        Tuple containing two points [x,y]: top left and bottom right corners of
+        the beamblock mask in pixels.
         
     Returns
     -------
     RadialCurve object
     """
 
-    #Preliminaries
-    if beamblock_mode not in ['angular', 'absolute']:
-        beamblock_mode = 'absolute'
+    #preliminaries
     image = image.astype(n.float)
     xc, yc = center     #Center coordinates
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(n.arange(0,image.shape[0],1), n.arange(0, image.shape[1],1))
     R = n.around(n.sqrt( (X - xc)**2 + (Y - yc)**2 ), decimals = 0)         #Round radius down/up to the nearest pixel
-    T = n.arctan2(X, Y)                                                     #Signed angle from the x-plane (i.e. along the beamblock)
     
     #radii beyond r_max don't fit a full circle within the image
     image_edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
     r_max = n.min(n.array(image_edge_values))           #Maximal radius that fits completely in the image
     
-    #Average intensity values for equal radii
-    radial_position = n.unique(R)
-    radial_intensity = n.empty_like(radial_position)
-    
     # Replace all values in R corresponding to beamblock or other irrelevant
     # data by -1: this way, it will never count in any calculation
     R[R > r_max] = -1
-    if beamblock_mode == 'absolute':
+    if mask_rect is None:
         R[:xc, :] = -1      #All poins above center of the image are disregarded (because of beamblock)
-    elif beamblock_mode == 'angular':
-        angle = pi/4                                        # Image coordinates closer than pi/4 ~ 0.79 (or 45deg) from the beamblock axis are ignored
-        R [ n.logical_and(T < angle, T > -angle) ] = -1    
+    else:
+        ([x1, y1], [x2, y2]) = mask_rect
+        R[x1:x2, y1:y2] = -1
+    
+    #Average intensity values for equal radii
+    radial_position = n.unique(R)
+    radial_intensity = n.empty_like(radial_position) 
     
     #Radial average for realz
     for index, radius in n.ndenumerate(radial_position):

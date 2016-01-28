@@ -99,6 +99,7 @@ class UEDpowder(QtGui.QMainWindow):
         print 'Calculated center: {0}'.format(self.image_center)
         circle = generateCircle(value[0], value[1], value[2])
         self.state = 'center found'
+        self.viewer.displayMask()
         self.viewer.displayImage(self.image, overlay = circle, overlay_color = 'g')
     # -------------------------------------------------------------------------
         
@@ -405,13 +406,14 @@ class UEDpowder(QtGui.QMainWindow):
             self.acceptState()
             
         elif self.state == 'center found':
-
-            self.work_thread = WorkThread(radialAverage, self.image, 'Sample', self.image_center)              #Create thread with a specific function and arguments
+            mask = self.viewer.maskPosition()
+            self.work_thread = WorkThread(radialAverage, self.image, 'Sample', self.image_center, mask)              #Create thread with a specific function and arguments
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
 
             self.work_thread.start()                                                                    #Compute stuff        
+            self.viewer.hideMask()
         
         elif self.state == 'radial cutoff':
             self.background_fit = RadialCurve()
@@ -426,6 +428,7 @@ class UEDpowder(QtGui.QMainWindow):
         """ Master reject function that invalidates a state and reverts to an appropriate state. """
         if self.state == 'center found':
             #Go back to the data loaded state and forget the guessed for the center and radius
+            self.viewer.hideMask()
             self.state = 'data loaded'
             self.viewer.center, self.viewer.circle = None, None
             self.viewer.displayImage(self.image)

@@ -89,7 +89,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.mask = pg.ROI(pos = [0,0],size = [50,50])
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
-        self.displayMask()
+        self.mask.boundingRect()
 
     def displayMask(self):
         self.image_area.getViewBox().addItem(self.mask)
@@ -98,7 +98,15 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.image_area.getViewBox().removeItem(self.mask)
     
     def maskPosition(self):
-        return self.mask.parentBounds().toRect()
+        rect = self.mask.parentBounds().toRect()
+        
+        #If coordinate is negative, return 0
+        x1 = max(0, rect.topLeft().x() )
+        x2 = max(0, rect.x() + rect.width() )
+        y1 = max(0, rect.topLeft().y() )
+        y2 = max(0, rect.y() + rect.height() )
+               
+        return x1, x2, y1, y2
     
     def displayImage(self, image, overlay = list(), overlay_color = 'r'):
         if image is None:
@@ -135,6 +143,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
 if __name__ == '__main__':  
     im = ImageViewer()
     im.show()
+    im.displayMask()
     
     test_image = n.random.normal(size = (1000,1000))
     test_curve = core.RadialCurve(xdata = n.arange(0, 100,0.1), ydata = n.sin(n.arange(0, 100,0.1)), color = 'r')
