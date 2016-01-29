@@ -390,7 +390,7 @@ class DiffractionDataset(object):
         else:
             return str_time
         
-    def processImage(self, filename, center, cutoff, inelasticBGCurve):
+    def processImage(self, filename, center, cutoff, inelasticBGCurve, mask_rect):
         """
         Returns a processed radial curve associated with a radial diffraction pattern at a certain time point.
         
@@ -400,23 +400,16 @@ class DiffractionDataset(object):
             Either a string formatted as {'+150.00', '-10.00'} or equivalent float or integer. See self.dataAverage
         TBD
         """
-        image = t.imread(filename).astype(n.float)
-        
-        if self.substrate is not None:                           #substract substrate if it is provided
-            assert image.shape == self.substrate.shape
-            self.substrate = self.substrate.astype(n.float)
-            image -= self.substrate
-            
-        curve = radialAverage(image, 'Radial average', center)     #Radially average
+        image = t.imread(filename).astype(n.float)            
+        curve = radialAverage(image, 'Radial average', center, mask_rect)     #Radially average
         curve = curve.cutoff(cutoff)                        #cutoff curve
 
         if inelasticBGCurve is not None:                    #substract inelastic scattering background if it is provided
-            assert isinstance(inelasticBGCurve, RadialCurve) 
             return curve - inelasticBGCurve
         else:
             return curve
         
-    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None):
+    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, mask_rect = None):
         """
         Returns a list of RadialCurve objects (one for every time point)
         """
@@ -424,7 +417,7 @@ class DiffractionDataset(object):
         results = list()
         for time in tqdm(self.time_points):
             filename = os.path.join(self.directory, 'processed', 'data.timedelay.' + self.timeToString(time) + '.average.pumpon.tif')
-            curve = self.processImage(filename, center, cutoff, inelasticBGCurve)
+            curve = self.processImage(filename, center, cutoff, inelasticBGCurve, mask_rect)
             results.append( (self.timeToString(time), curve) )
         
         self.export(results)          
@@ -473,6 +466,6 @@ def plotTimeResolved(filename):
 if __name__ == '__main__':
     
     #Testing
-    directory = 'K:\\2016.01.28.18.21.VO2_17mJ'
+    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
     d = DiffractionDataset(directory)
-    
+    d.batchProcess(center = [937.4, 998.7], cutoff = [0,0], inelasticBGCurve = None, mask_rect = [926, 1049, 0, 1091])

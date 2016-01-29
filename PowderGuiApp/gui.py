@@ -364,24 +364,7 @@ class UEDpowder(QtGui.QMainWindow):
         
     def loadImage(self, filename):
         """ Loads an image (and the associated background image) and sets the first state. """
-        image = n.array(Image.open(filename), dtype = n.float)
-        
-        #Load images if they exist
-        background = self.diffractionDataset.pumpon_background
-        substrate_image = self.diffractionDataset.substrate
-                    
-        #Process data
-        #remove hot spots
-        for im in [image, substrate_image, background]:
-            im[im > 30000] = 0
-        
-        for im in [image, substrate_image]:
-            im -= background
-            im[im < 0] = 0
-        
-        #Substract substrate effects weighted by exposure
-        self.image = image
-    
+        self.image = n.array(Image.open(filename), dtype = n.float)    
         self.state = 'data loaded'
         self.viewer.displayCenterFinder()
         
@@ -390,6 +373,7 @@ class UEDpowder(QtGui.QMainWindow):
         
         if self.state == 'center found':
             mask = self.viewer.maskPosition()
+            print 'Mask dimensions: x1, x2, y1, y2 = {0}'.format(mask)
             self.work_thread = WorkThread(radialAverage, self.image, 'Sample', self.image_center, mask)              #Create thread with a specific function and arguments
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
@@ -426,6 +410,7 @@ class UEDpowder(QtGui.QMainWindow):
         if self.state == 'data loaded':
             #Get center from fitted circle
             self.image_center = self.viewer.centerPosition()
+            print 'center: {0}'.format(self.image_center)
             self.viewer.hideCenterFinder()
             self.viewer.displayMask()
             self.state = 'center found'

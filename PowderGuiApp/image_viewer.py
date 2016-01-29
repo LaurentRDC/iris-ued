@@ -125,15 +125,16 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         y1 = max(0, rect.topLeft().y() )
         y2 = max(0, rect.y() + rect.height() )
                
-        return x1, x2, y1, y2
+        return y1, y2, x1, x2       #Flip output since image viewer plots transpose...
     
     def centerPosition(self, return_radius = False):
         corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2.0
+        #Flip output since image viewer plots transpose...
         if return_radius:
-            return corner_x + radius, corner_y + radius, radius
+            return corner_y + radius, corner_x + radius, radius
         else:
-            return corner_x + radius, corner_y + radius
+            return corner_y + radius, corner_x + radius
         
     
     # -------------------------------------------------------------------------
