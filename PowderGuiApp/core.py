@@ -239,9 +239,9 @@ class DiffractionDataset(object):
         
         self.directory = directory
         self.resolution = resolution
-        self.substrate = self.getSubstrateImage()
         self.pumpon_background = self.averageTiffFiles('background.*.pumpon.tif')
         self.pumpoff_background = self.averageTiffFiles('background.*.pumpoff.tif')
+        self.substrate = self.getSubstrateImage()
         self.time_points = self.getTimePoints()
         self.acquisition_date = self.getAcquisitionDate()
         self.exposure = None
@@ -261,13 +261,24 @@ class DiffractionDataset(object):
         pass
         
     def getSubstrateImage(self):
-        """ Finds and stores a substrate image, and returns None if criterias are not matched. """
-        substrate_filenames = [os.path.join(self.directory, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
-        for possible_substrate in substrate_filenames:
-            if possible_substrate in os.listdir(self.directory):
-                print 'Substrate image found'
-                return t.imread(possible_substrate).astype(n.float)
-        return n.zeros(shape = self.resolution, dtype = n.float)         #If file not found
+        """ Finds and stores a substrate image, and returns an array of zeros if criterias are not matched. """
+        substrate_filename = 'subs.tif'
+        subs = n.zeros(shape = self.resolution, dtype = n.float)
+        if substrate_filename in os.listdir(self.directory):
+            print 'Substrate image found'
+            absolute_path = os.path.join(self.directory, substrate_filename)
+            subs = t.imread(absolute_path).astype(n.float)
+            
+            subs = subs - self.pumpoff_background
+            subs[subs < 0] = 0
+        
+        return subs
+    
+    @staticmethod
+    def castTo16Bits(array):
+        array[ array < 0] = 0
+        array[ array > (2**16) - 1] = (2**16) - 1
+        return array.astype(n.uint16)
     
     def averageTiffFiles(self, filename_template, background = None):
         """
@@ -284,8 +295,7 @@ class DiffractionDataset(object):
         """ 
         #Format background correctly
         if background is not None:
-            if background.dtype != n.float:
-                background = background.astype(n.float)
+            background = background.astype(n.float)
         
         #Get file list
         image_list = glob.glob(os.path.join(self.directory, filename_template))
@@ -296,14 +306,16 @@ class DiffractionDataset(object):
         image = n.zeros(shape = self.resolution, dtype = n.float)
         for filename in tqdm(image_list, nested = True):
             new_image = t.imread(filename).astype(n.float)
-            if background is not None:
-                new_image -= background
             image += new_image
             
-        #Average    
-        return image/float(len(image_list))
-
-    def dataAverage(self, time_point, export = False):
+        average = image/float(len(image_list))
+            
+        if background is not None:
+            average -= background
+        
+        return average
+            
+    def dataAverage(self, time_point, export = False, substract_substrate = False):
         """         
         Parameters
         ----------
@@ -317,16 +329,16 @@ class DiffractionDataset(object):
         #Average calculation
         average = self.averageTiffFiles(glob_template, self.pumpon_background)
         
+        if substract_substrate:
+            average = average - self.substrate
+        
         if export:
             output_directory = os.path.join(self.directory, 'processed')
             if not os.path.isdir(output_directory):             #Find out if output directory exists and create if necessary
                 os.makedirs(output_directory)                
             save_path = os.path.join(output_directory, 'data.timedelay.' + time_point + '.average.pumpon.tif')
             
-            #Format array to be uint16 by removing data outside the bounds
-            average[average < 0] = 0
-            average[average >= 65536] = 65536 - 1
-            t.imsave(save_path, average.astype(n.uint16))
+            t.imsave(save_path, self.castTo16Bits(average))
         
         return average
         
@@ -453,7 +465,6 @@ def plotTimeResolved(filename):
     datasets = [(f[time]['Radav ' + time], time) for time in times]
     
     #Plotting
-    import matplotlib.pyplot as plt
     for dataset in datasets:
         data, time = dataset
         plt.plot(data[0], data[1], label = str(time))
@@ -462,8 +473,6 @@ def plotTimeResolved(filename):
 if __name__ == '__main__':
     
     #Testing
-    f = 'K:\\2016.01.26.17.09.VO2_1500_uW_pump_50_Hz\\processed\\data.timedelay.-50.00.average.pumpon.tif'
-    img = t.imread(f)
-    curve = radialAverage(img, 'test', center = [1053,1066], mask_rect = [0, 1171, 880, 1223])
+    directory = 'K:\\2016.01.28.18.21.VO2_17mJ'
+    d = DiffractionDataset(directory)
     
-    plt.plot(curve.xdata, curve.ydata)

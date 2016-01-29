@@ -380,7 +380,7 @@ class UEDpowder(QtGui.QMainWindow):
             im[im < 0] = 0
         
         #Substract substrate effects weighted by exposure
-        self.image = image - substrate_image
+        self.image = image
     
         self.state = 'data loaded'
         self.viewer.displayCenterFinder()
