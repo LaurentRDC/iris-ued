@@ -8,18 +8,9 @@ from PIL import Image
 #Core functions
 from core import *
 
-#plotting backends
-from matplotlib.backends import qt_compat
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.backends.backend_qt4agg as qt4agg
-from matplotlib.figure import Figure
-use_pyside = qt_compat.QT_API == qt_compat.QT_API_PYSIDE
-
 #GUI backends
-if use_pyside:
-    from PySide import QtGui, QtCore
-else:
-    from PyQt4 import QtGui, QtCore
+from pyqtgraph.Qt import QtCore, QtGui
+from image_viewer import ImageViewer
 
 # -----------------------------------------------------------------------------
 #           WORKING CLASS
@@ -46,157 +37,6 @@ class WorkThread(QtCore.QThread):
         self.emit(QtCore.SIGNAL('Remove Loading'), '\n Done.')
         self.emit(QtCore.SIGNAL('Computation done'), self.result)
         
-# -----------------------------------------------------------------------------
-#           IMAGE VIEWER CLASSES AND FUNCTIONS
-# -----------------------------------------------------------------------------
-    
-def generateCircle(xc, yc, radius):
-    """
-    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
-    """
-    xvals = xc+ radius*n.cos(n.linspace(0,2*n.pi,100))
-    yvals = yc+ radius*n.sin(n.linspace(0,2*n.pi,100))
-    return [xvals,yvals]
-
-class ImageViewer(FigureCanvas):
-    """
-    Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.).
-    This object displays any plot we want: TIFF image, radial-averaged pattern, etc.
-    
-    Non-plotting Attributes
-    ----------------------- 
-    last_click_position : list, shape (2,)
-        [x,y] coordinates of the last click. Clicking outside the data of the ImageViewer set last_click = [0,0]
-    
-    """
-
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        
-        #Non-plotting attributes
-        self.parent = parent
-        self.last_click_position = [0,0]
-        #Setting determining the contrast of diffraction images. Pixel values above this will not be displayed, but still be used in the analysis
-        self.contrast = 1
-        
-        self.center = None
-        self.circle = None
-        self.overlay_color = 'red'
-        
-        #plot setup
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        self.axes.hold(True)
-
-        self.initialFigure()
-        FigureCanvas.__init__(self, fig)
-        self.setParent(parent)
-
-        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
-        
-        #connect clicking events
-        self.mpl_connect('button_press_event', self.click)
-    
-    def click(self, event):
-        """
-        Saves the position of the last click on the canvas
-        """
-        if event.xdata == None or event.ydata == None:
-            self.last_click_position = [0,0]
-        else:
-            self.last_click_position = [event.xdata, event.ydata]
-        
-        if self.parent.state == 'data loaded':
-            self.parent.guess_center = n.asarray(self.last_click_position)
-            print 'Guess center: {0}'.format(self.parent.guess_center)
-            self.center = n.asarray(self.last_click_position); self.overlay_color = 'red'
-            self.displayImage()
-            self.parent.state = 'center guessed'
-            
-        elif self.parent.state == 'center guessed':
-            ring_position = n.asarray(self.last_click_position)
-            self.parent.guess_radius = n.linalg.norm(self.parent.guess_center - ring_position)
-            circle_guess = generateCircle(self.parent.guess_center[0], self.parent.guess_center[1], self.parent.guess_radius)
-            self.circle = circle_guess; self.overlay_color = 'red'
-            self.displayImage()
-            self.parent.state = 'radius guessed'
-        
-        elif self.parent.state == 'radial averaged' or self.parent.state == 'cutoff set':
-            self.parent.cutoff = self.last_click_position
-            self.axes.axvline(self.parent.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
-            self.draw()
-            self.parent.state = 'cutoff set'
-                
-        elif self.parent.state == 'radial cutoff' or self.parent.state == 'background guessed':
-            self.parent.background_guesses.append(self.last_click_position)
-            self.axes.axvline(self.last_click_position[0],ymax = self.axes.get_ylim()[1])
-            self.draw()
-            #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
-            if len(self.parent.background_guesses) == 6:
-                self.parent.state = 'background guessed'
-
-    def initialFigure(self):
-        """ Plots a placeholder image until an image file is selected """
-        missing_image = n.zeros(shape = (1024,1024), dtype = n.uint8)
-        self.axes.cla()     #Clear axes
-        self.axes.imshow(missing_image)
- 
-    def displayImage(self):
-        """ 
-        This method displays a raw TIFF image from the instrument. Optional arguments can be used to overlay a circle.
-        """
-        image = n.copy(self.parent.image)
-        if image is None:
-            self.initialFigure()
-        else:
-            #Adjust contrast
-            image = image * float(self.contrast)
-            image[image > 30000] = 30000    #Ceiling
-            self.axes.cla()     #Clear axes
-            self.axes.imshow(image, vmin = 0, vmax = 30000)
-            if self.center != None:
-                self.axes.scatter(self.center[0],self.center[1], color = self.overlay_color)
-                self.axes.set_xlim(0, image.shape[0])
-                self.axes.set_ylim(image.shape[1],0)
-            if self.circle != None:  #Overlay circle if provided
-                xvals, yvals = self.circle
-                self.axes.scatter(xvals, yvals, color = self.overlay_color)
-                #Restrict view to the plotted circle (to better evaluate the fit)
-                self.axes.set_xlim(xvals.min() - 10, xvals.max() + 10)
-                self.axes.set_ylim(yvals.max() + 10, yvals.min() - 10)
-            
-            self.axes.set_title('Raw TIFF image')
-            self.draw()
-    
-    def setContrast(self, contrast):
-        self.contrast = contrast
-        
-    def updateContrast(self):
-        if not self.axes.images:
-            pass #image_viewer is currently displaying something else than a CCD image
-        else:
-            self.displayImage()
-    
-    def displayRadialPattern(self, data, **kwargs):
-        """
-        Plots one or more diffraction patterns.
-        
-        Parameters
-        ----------
-        *args : lists of RadialCurve objects
-        """
-        self.axes.cla()
-        
-        #Create a list with only one element if the data is not already in list form
-        if isinstance(data, RadialCurve):
-            data = [data]
-        
-        #Plot list of objects
-        for item in data:
-            item.plot(self.axes, **kwargs)
-        
-        self.draw()
-
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
 # -----------------------------------------------------------------------------
@@ -247,21 +87,22 @@ class UEDpowder(QtGui.QMainWindow):
     # -------------------------------------------------------------------------
     #           SETTER METHODS FOR THREADING
     # -------------------------------------------------------------------------
+        
     def setRawRadialAverage(self, value):
         """ Handles the radial averages for both the diffraction pattern adn the substrate from a thread. """
-        self.raw_radial_average = value
-        self.image_viewer.displayRadialPattern(self.raw_radial_average)
+        self.raw_radial_average = value        
+        self.viewer.displayRadialPattern(self.raw_radial_average)
         self.state = 'radial averaged'
     
     def setImageCenter(self, value):
         self.image_center = value[0:2] 
         print 'Calculated center: {0}'.format(self.image_center)
-        self.image_viewer.center = value[0:2]
-        self.image_viewer.circle = generateCircle(value[0], value[1], value[2])
+        circle = generateCircle(value[0], value[1], value[2])
         self.state = 'center found'
-        self.image_viewer.overlay_color = 'green'
-        self.image_viewer.displayImage()
+        self.viewer.displayMask()
+        self.viewer.displayImage(self.image, overlay = circle, overlay_color = 'g')
     # -------------------------------------------------------------------------
+        
         
     @property
     def state(self):
@@ -342,18 +183,15 @@ class UEDpowder(QtGui.QMainWindow):
         self.instructions = QtGui.QTextEdit()
         self.instructions.setOverwriteMode(False)
         self.instructions.setReadOnly(True)
+        self.instructions.setMaximumWidth(500)
         instruction_box.addWidget(self.instructions)
 
-        #Set up ImageViewer
-        self.image_viewer = ImageViewer(parent = self)
+        #Set up the ImageViewer and CurveViewer
+        self.viewer = ImageViewer(parent = self)
+        
+        #File dialog
         self.file_dialog = QtGui.QFileDialog()
-        
-        #Set up contrast slider
-        self.contrast_slider = QtGui.QSlider(self)
-        self.contrast_slider.setMinimum(1)
-        self.contrast_slider.setMaximum(1000)
-        self.contrast_slider.setValue(1)
-        
+
         # ---------------------------------------------------------------------
         #       SIGNALS
         # ---------------------------------------------------------------------
@@ -367,8 +205,10 @@ class UEDpowder(QtGui.QMainWindow):
         self.executeInelasticBtn.clicked.connect(self.executeStateOperation)
         self.executeBatchProcessingBtn.clicked.connect(self.executeStateOperation)
         self.batchAverageBtn.clicked.connect(self.batchAverageOperation)
-        self.connect(self.contrast_slider, QtCore.SIGNAL('valueChanged(int)'), self.image_viewer.setContrast)
-        self.connect(self.contrast_slider, QtCore.SIGNAL('sliderReleased()'), self.image_viewer.updateContrast)
+        
+        #Click events from the ImageViewer
+        self.viewer.image_clicked.connect(self.click)
+        self.viewer.curve_clicked.connect(self.click)
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -382,24 +222,24 @@ class UEDpowder(QtGui.QMainWindow):
         state_controls.addWidget(self.turboBtn)
         
         # State boxes ---------------------------------------------------------
-        state_boxes = QtGui.QVBoxLayout()
-        state_boxes.addLayout(initial_box)
-        state_boxes.addLayout(center_box)
-        state_boxes.addLayout(beamblock_box)
-        state_boxes.addLayout(inelastic_box)
-        state_boxes.addLayout(batch_process_box)
-        state_boxes.addLayout(instruction_box)
-        state_boxes.addLayout(state_controls)
+        self.state_boxes = QtGui.QVBoxLayout()
+        self.state_boxes.addLayout(initial_box)
+        self.state_boxes.addLayout(center_box)
+        self.state_boxes.addLayout(beamblock_box)
+        self.state_boxes.addLayout(inelastic_box)
+        self.state_boxes.addLayout(batch_process_box)
+        self.state_boxes.addLayout(instruction_box)
+        self.state_boxes.addLayout(state_controls)
         
         #Image viewer pane ----------------------------------------------------
-        right_pane = QtGui.QHBoxLayout()
-        right_pane.addWidget(self.contrast_slider)
-        right_pane.addWidget(self.image_viewer)
+        self.right_pane = QtGui.QHBoxLayout()
+        self.right_pane.addWidget(self.viewer)
         
         #Master Layout --------------------------------------------------------
         grid = QtGui.QHBoxLayout()
-        grid.addLayout(state_boxes)
-        grid.addLayout(right_pane)
+        
+        grid.addLayout(self.state_boxes)
+        grid.addLayout(self.right_pane)
         
         #Set master layout  ---------------------------------------------------
         self.central_widget = QtGui.QWidget()
@@ -412,21 +252,44 @@ class UEDpowder(QtGui.QMainWindow):
         self.centerWindow()
         self.show()
     
+    @QtCore.pyqtSlot(tuple)
+    def click(self, pos):
+        """
+        Executes actions based on click signals from the image viewer
+        """
+
+        print '(x, y) = ({0}, {1})'.format(pos[0], pos[1]) 
+            
+        if self.state == 'center guessed':
+            self.guess_radius = n.linalg.norm(n.asarray(self.guess_center) - n.asarray(pos))
+            circle_guess = generateCircle(self.guess_center[0], self.guess_center[1], self.guess_radius)
+            self.viewer.displayImage(self.image, overlay = circle_guess, overlay_color = 'r')
+            self.state = 'radius guessed'
+            
+        elif self.state == 'radial averaged' or self.state == 'cutoff set':
+            self.cutoff = pos
+            self.axes.axvline(self.cutoff[0],ymax = self.axes.get_ylim()[1], color = 'k')
+            self.draw()
+            self.state = 'cutoff set'
+                
+        elif self.state == 'radial cutoff' or self.state == 'background guessed':
+            self.background_guesses.append(pos)
+            self.axes.axvline(pos[0],ymax = self.axes.get_ylim()[1])
+            self.draw()
+            #After 6th guess, change state to 'background guessed', but leave the possibility of continue guessing
+            if len(self.background_guesses) == 6:
+                self.state = 'background guessed'
+    
     def updateInstructions(self, message = None):
         """ Handles the instructions text, either a specific message or a preset message depending on the state """
         
-        if message != None:
-            assert isinstance(message, str)
+        if message is not None:
             self.instructions.append(message)
         else:           #Handle state changes
             if self.state == 'initial':
                 self.instructions.append('\n Click the "Locate diffraction image" button to import a diffraction image.')
             elif self.state == 'data loaded':
                 self.instructions.append('\n Click on the image to guess a diffraction pattern center.')
-            elif self.state == 'center guessed':
-                self.instructions.append('\n Click on a diffraction ring to guess a diffraction pattern radius.')
-            elif self.state == 'radius guessed':
-                self.instructions.append('\n Click on "Find center" to fit a circle to the diffraction ring you selected.')
             elif self.state == 'center found':
                 self.instructions.append('\n "Accept" to radially average the data, or click "Reject" to guess for a center again.')
             elif self.state == 'radial averaged':
@@ -452,11 +315,7 @@ class UEDpowder(QtGui.QMainWindow):
         if self.state == 'initial':
             availableButtons = [self.imageLocatorBtn]
         elif self.state == 'data loaded':
-            availableButtons = [self.imageLocatorBtn, self.batchAverageBtn]
-        elif self.state == 'center guessed':
-            availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.batchAverageBtn]
-        elif self.state == 'radius guessed':
-            availableButtons = [self.imageLocatorBtn, self.executeCenterBtn, self.batchAverageBtn]
+            availableButtons = [self.imageLocatorBtn, self.batchAverageBtn, self.executeCenterBtn]
         elif self.state == 'center found':
             availableButtons = [self.imageLocatorBtn, self.acceptBtn, self.rejectBtn, self.batchAverageBtn]
         elif self.state == 'radial averaged':
@@ -491,12 +350,11 @@ class UEDpowder(QtGui.QMainWindow):
             directory = os.path.dirname(os.path.dirname(filename)) #If directory is 'processed', back up one directory
         else:
             directory = os.path.dirname(filename)
-
+            
         self.diffractionDataset = DiffractionDataset(directory, resolution = (2048,2048))
         self.batchAverageBtn.setEnabled(True)
         self.loadImage(filename)
-        self.contrast_slider.setValue(1)     #reset contrast
-        self.image_viewer.displayImage()     #display raw image
+        self.viewer.displayImage(self.image)     #display raw image
     
     def batchAverageOperation(self):
         #TODO: set up some way of notifying users that the process is done. Popup screen?
@@ -523,27 +381,22 @@ class UEDpowder(QtGui.QMainWindow):
         
         #Substract substrate effects weighted by exposure
         self.image = image - substrate_image
-        self.image = self.image.astype(n.float32)
     
         self.state = 'data loaded'
+        self.viewer.displayCenterFinder()
         
     def acceptState(self):
         """ Master accept function that validates a state and proceeds to the next one. """
         
-        if self.state == 'center guessed':
-            #To speedup debugging, accept the guessed center as the true center and move on
-            self.image_center = self.guess_center
-            self.state = 'center found'
-            self.acceptState()
-            
-        elif self.state == 'center found':
-
-            self.work_thread = WorkThread(radialAverage, self.image, 'Sample', self.image_center)              #Create thread with a specific function and arguments
+        if self.state == 'center found':
+            mask = self.viewer.maskPosition()
+            self.work_thread = WorkThread(radialAverage, self.image, 'Sample', self.image_center, mask)              #Create thread with a specific function and arguments
             self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setRawRadialAverage) #Connect the outcome with a setter method
             self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
             self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
 
             self.work_thread.start()                                                                    #Compute stuff        
+            self.viewer.hideMask()
         
         elif self.state == 'radial cutoff':
             self.background_fit = RadialCurve()
@@ -551,42 +404,40 @@ class UEDpowder(QtGui.QMainWindow):
         elif self.state == 'background determined':
             #Subtract backgrounds
             self.radial_average = self.raw_radial_average - self.background_fit            #Substract inelastic background from data
-            self.image_viewer.displayRadialPattern(self.radial_average)
+            self.viewer.displayRadialPattern(self.radial_average)
             self.state = 'background substracted'
             
     def rejectState(self):
         """ Master reject function that invalidates a state and reverts to an appropriate state. """
         if self.state == 'center found':
             #Go back to the data loaded state and forget the guessed for the center and radius
+            self.viewer.hideMask()
             self.state = 'data loaded'
-            self.image_viewer.center, self.image_viewer.circle = None, None
-            self.image_viewer.displayImage()
+            self.viewer.center, self.viewer.circle = None, None
+            self.viewer.displayImage(self.image)
         elif self.state == 'background determined':
-            self.image_viewer.displayRadialPattern(self.raw_radial_average)
+            self.viewer.displayRadialPattern(self.raw_radial_average)
             self.background_guesses = list()
             self.state = 'radial cutoff'
 
     def executeStateOperation(self):
         """ Placeholder function to confirm that computation may proceed in certain cases. """
-        if self.state == 'center guessed':        
-           pass
-        elif self.state == 'radius guessed':
-            #Compute center
-            xg, yg = self.guess_center
-            self.work_thread = WorkThread(fCenter, xg, yg, self.guess_radius, self.image)
-            self.connect(self.work_thread, QtCore.SIGNAL('Computation done'), self.setImageCenter)            
-            self.connect(self.work_thread, QtCore.SIGNAL('Display Loading'), self.updateInstructions)
-            self.connect(self.work_thread, QtCore.SIGNAL('Remove Loading'), self.updateInstructions)
-            self.work_thread.start()
+            
+        if self.state == 'data loaded':
+            #Get center from fitted circle
+            self.image_center = self.viewer.centerPosition()
+            self.viewer.hideCenterFinder()
+            self.viewer.displayMask()
+            self.state = 'center found'
         elif self.state == 'cutoff set':
             #Cutoff radial patterns
             self.raw_radial_average = self.raw_radial_average.cutoff(self.cutoff)
-            self.image_viewer.displayRadialPattern(self.raw_radial_average)
+            self.viewer.displayRadialPattern(self.raw_radial_average)
             self.state = 'radial cutoff'        
         elif self.state == 'background guessed':
             #Create guess data
             self.background_fit = self.raw_radial_average.inelasticBG(self.background_guesses)
-            self.image_viewer.displayRadialPattern([self.raw_radial_average, self.background_fit])
+            self.viewer.displayRadialPattern([self.raw_radial_average, self.background_fit])
             self.state = 'background determined'
         elif self.state == 'background substracted':
             # UEDPowder will skip reaveraging images if the folder already exists
@@ -594,29 +445,6 @@ class UEDpowder(QtGui.QMainWindow):
             #self.diffractionDataset.batchProcess(self.image_center, self.cutoff, self.background_fit, 'pumpon')
             self.diffractionDataset.batchProcess(self.image_center, self.cutoff)
             self.instructions.append('\n Batch radial averages exported. See processed/radial_averages.hdf5 in the data directory.')
-    
-    def save(self):
-        """ Determines what to do when the save button is clicked """
-        from scipy.io import savemat
-        if self.state == 'radial averaged':
-            filename = self.file_dialog.getSaveFileName(self, 'Save radial averages', 'C:\\')
-    
-            mdict = {'rav_x':self.raw_radial_average.xdata, 'rav_y': self.raw_radial_average.ydata}
-            savemat(filename, mdict)
-        self.instructions.append('\n Radial averages saved.')
-            
-    def load(self, filename = None):
-        """ Determines what to do when the load button is clicked """
-        from scipy.io import loadmat
-        
-        filename = self.file_dialog.getOpenFileName(self, 'Load radial averages', 'C:\\')
-        
-        mdict = dict()
-        mdict = loadmat(filename)
-        self.raw_radial_average = RadialCurve(mdict['rav_x'][0], mdict['rav_y'][0], 'Raw' )
-        self.image_viewer.displayRadialPattern(self.raw_radial_average)
-        self.state = 'radial averaged'
-        self.instructions.append('\n Radial averages loaded.')
 
     def centerWindow(self):
         """ Centers the window """
