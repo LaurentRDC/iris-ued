@@ -180,6 +180,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     #           PLOTTING METHODS
     # -------------------------------------------------------------------------
     
+    @QtCore.pyqtSlot(object, tuple, str)        
     def displayImage(self, image, overlay = list(), overlay_color = 'r'):
         if image is None:
             image = n.zeros(shape = (2048, 2048), dtype = n.float)
@@ -189,6 +190,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         brush = pg.mkBrush(color = overlay_color)
         self.image_overlay.setData(pos = overlay, size = 3, brush = brush)
     
+    @QtCore.pyqtSlot(object)
     def displayRadialPattern(self, curve):
         pen = pg.mkPen(curve.color)
         self.curve.setData(x = curve.xdata, y = curve.ydata, pen = pen)

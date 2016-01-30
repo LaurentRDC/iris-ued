@@ -244,8 +244,9 @@ class DiffractionDataset(object):
         self.substrate = self.getSubstrateImage()
         self.time_points = self.getTimePoints()
         self.acquisition_date = self.getAcquisitionDate()
-        self.exposure = None
-        self.fluence = None
+        #Optional attributes
+        self.exposure = self.getFluence()
+        self.fluence = self.getExposure()
         
     def getAcquisitionDate(self):
         """ Returns the acquisition date from the folder name as a string of the form: '2016.01.06.15.35' """
@@ -359,6 +360,20 @@ class DiffractionDataset(object):
         for time in tqdm(self.time_points):
             self.dataAverage(time, export = True)
     
+    def returnAveragedImage(self, time_point):
+        """ 
+        Returns a preprocessed image. If 'processed' folder does not exist, 
+        return array of zeros
+        """
+        #Check if processed folder exists
+        if os.path.isdir(os.path.join(self.directory, 'processed')):
+            str_time = self.timeToString(time_point)
+            rel_filename = 'data.timedelay.' + str_time + '.average.pumpon.tif'
+            abs_filename = os.path.join(self.directory, 'processed', rel_filename)
+            return t.imread(abs_filename).astype(n.float)
+        else:
+            return n.zeros(shape = self.resolution, dtype = n.float)
+    
     def getTimePoints(self):
         """ """
         #Get TIFF images
@@ -466,7 +481,7 @@ def plotTimeResolved(filename):
 if __name__ == '__main__':
     
     #Testing
-    directory = 'K:\\2016.01.28.18.21.VO2_17mJ\\processed\\2016.01.28.18.21.radial.averages.hdf5'
-    plotTimeResolved(directory)
-    #d = DiffractionDataset(directory)
+    directory = 'K:\\2016.01.28.18.21.VO2_17mJ'
+    #plotTimeResolved(directory)
+    d = DiffractionDataset(directory)
     #d.batchProcess(center = [937.4, 998.7], cutoff = [0,0], inelasticBGCurve = None, mask_rect = [926, 1049, 0, 1091])

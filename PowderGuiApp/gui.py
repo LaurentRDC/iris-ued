@@ -6,6 +6,7 @@ import numpy as n
 from PIL import Image
 
 #Core functions
+import core
 from core import *
 
 #GUI backends
@@ -105,8 +106,10 @@ class DirectoryHandler(QtGui.QWidget):
         self.directory_btn.clicked.connect(self.directoryLocator)
         self.preprocess_btn.clicked.connect(self.preprocessImages)
         
+        self.reset_signal.connect(self.reset)
+        
         #When preprocess_btn is clicked, send signal to change preprocess_label to 'in progress' state
-        self.preprocess_signal.connect(self.preprocessInProgress)
+        self.preprocess_signal.connect(self.preprocessInProgress)        
     
     def preprocessImages(self):
         self.preprocess_signal.emit(True)
@@ -129,7 +132,6 @@ class DirectoryHandler(QtGui.QWidget):
             directory = possible_directory
         
         self.reset_signal.emit(True)
-        self.reset()
         self.dataset_directory_signal.emit(directory)
     
     @QtCore.pyqtSlot(bool)
@@ -166,6 +168,10 @@ class DataHandler(QtCore.QObject):
     image_preprocessing_in_progress_signal = QtCore.pyqtSignal(bool, name = 'image_preprocessing_in_progress_signal')
     image_preprocessed_signal = QtCore.pyqtSignal(bool, name = 'image_preprocessed_signal')
     
+    #Data to be plotted by the image viewer
+    radial_average_signal = QtCore.pyqtSignal(object, name = 'radial_average_signal')
+    image_signal = QtCore.pyqtSignal(object, list, str, name = 'image_signal')     #Three arguments to match ImageViewer.displayImage arguments
+    
     has_image_center_signal = QtCore.pyqtSignal(bool, name = 'has_image_center_signal')
     has_mask_rect_signal = QtCore.pyqtSignal(bool, name = 'has_mask_rect_signal')
     has_cutoff_signal = QtCore.pyqtSignal(bool, name = 'has_cutoff_signal')
@@ -176,6 +182,9 @@ class DataHandler(QtCore.QObject):
         super(DataHandler, self).__init__()
         
         #Data attributes
+        self.image = None
+        self.radial_curve = None
+        
         self.diffraction_dataset = None
         self.image_center = list()
         self.mask_rect = list()
@@ -191,11 +200,28 @@ class DataHandler(QtCore.QObject):
         self.connectSignals()
     
     def connectSignals(self):
+        
+        #Internal signals
         self.has_image_center_signal.connect(self.hasImageCenter)
         self.has_mask_rect_signal.connect(self.hasMaskRect)
         self.has_cutoff_signal.connect(self.hasCutoff)
         self.has_inelasticBG_signal.connect(self.hasInelasticBG)
+        
+        #Check radial average conditions at every update of image_center and mask_rect
+        self.has_image_center_signal.connect(self.checkConditionsForRadialAverage)
+        self.has_mask_rect_signal.connect(self.checkConditionsForRadialAverage)
     
+    def getImage(self):
+        """ 
+        Returns an image from the directory//processed folder. Use images before 
+        time 0 if possible.
+        
+        This method assumes that the images have been preprocessed (and so 
+        directory//processed exists)
+        """
+        time = min(self.diffraction_dataset.time_points)
+        return self.diffraction_dataset.returnAveragedImage(time)
+        
     @QtCore.pyqtSlot(tuple)
     def setImageCenter(self, center):
         self.image_center = center
@@ -226,7 +252,7 @@ class DataHandler(QtCore.QObject):
     
     @QtCore.pyqtSlot(bool)
     def hasMaskRect(self, flag):
-        self.has_imask_rect = flag
+        self.has_mask_rect = flag
     
     @QtCore.pyqtSlot(bool)
     def hasCutoff(self, flag):
@@ -235,9 +261,16 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot(bool)
     def hasInelasticBG(self, flag):
         self.has_inelasticBG = flag
+    
+    #This slot takes in a boolean because of has_image_center_signal and
+    #has_mask_rect_signal
+    @QtCore.pyqtSlot(bool)      
+    def checkConditionsForRadialAverage(self, flag):
+        if self.has_image_center and self.has_mask_rect:
+            self.radialAverage()
         
     # -------------------------------------------------------------------------
-    #           DIFFRACTION DATASET 
+    #           HEAVY LIFTING 
     # -------------------------------------------------------------------------
     
     @QtCore.pyqtSlot(str)
@@ -253,6 +286,19 @@ class DataHandler(QtCore.QObject):
         #No need to connect the results_signal since batchAverage returns None
         self.work_thread.start()
     
+    def radialAverage(self):
+        self.work_thread = WorkThread(core.radialAverage, self.image, '', self.image_center, self.mask_rect)
+        #TODO: have some way of checking radial averaging progress
+        self.work_thread.results_signal.connect(self.sendRadialAverage)
+        self.work_thread.start()
+    
+    def sendImage(self):
+        self.image = self.getImage()
+        self.image_signal.emit(self.image, list(), 'r')
+        
+    @QtCore.pyqtSlot(object)
+    def sendRadialAverage(self, curve):
+        self.radial_average_signal.emit(curve)
     # -------------------------------------------------------------------------
     #           IMAGE PREPROCESSING SIGNAL HANDLING
     # -------------------------------------------------------------------------
@@ -264,6 +310,9 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot()
     def preprocessDone(self):
         self.image_preprocessed_signal.emit(True)
+        self.sendImage()
+    
+    # -------------------------------------------------------------------------
     
     @QtCore.pyqtSlot(bool)
     def reset(self, hmm_really):
@@ -554,7 +603,7 @@ class Shell(QtGui.QMainWindow):
         self.setCentralWidget(self.central_widget)
         
         #Window settings ------------------------------------------------------
-        self.setGeometry(600, 600, 350, 300)
+        self.setGeometry(500, 500, 800, 800)
         self.setWindowTitle('UED Powder Analysis Software')
         self.centerWindow()
         self.show()
@@ -588,6 +637,9 @@ class Shell(QtGui.QMainWindow):
         self.image_viewer.cutoff_signal.connect(self.data_handler.setCutoff)
         self.image_viewer.inelastic_BG_signal.connect(self.data_handler.setInelasticBG)
         
+        self.data_handler.image_signal.connect(self.image_viewer.displayImage)
+        self.data_handler.radial_average_signal.connect(self.image_viewer.displayRadialPattern)
+        
         #connect in-progress to status widget
         self.data_handler.image_preprocessing_in_progress_signal.connect(self.directory_widget.preprocessInProgress)
         self.data_handler.image_preprocessed_signal.connect(self.directory_widget.preprocessComplete)
@@ -596,8 +648,6 @@ class Shell(QtGui.QMainWindow):
         self.command_center.mask_rect_in_progress.connect(self.status_widget.maskRectInProgress)
         self.command_center.cutoff_in_progress.connect(self.status_widget.cutoffInProgress)
         self.command_center.inelasticBG_in_progress.connect(self.status_widget.inelasticBGInProgress)
-        
-
         
     def centerWindow(self):
         """ Centers the window """
@@ -1046,4 +1096,4 @@ def testShell():
     
 #Run
 if __name__ == '__main__':
-    pass
+    testShell()
