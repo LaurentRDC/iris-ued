@@ -11,6 +11,12 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     image_clicked = QtCore.pyqtSignal(tuple, name = 'image_clicked')
     curve_clicked = QtCore.pyqtSignal(tuple, name = 'curve_clicked')
     
+    #Data transfer signals
+    image_center_signal = QtCore.pyqtSignal(tuple, name = 'image_center_signal')
+    mask_rect_signal = QtCore.pyqtSignal(tuple, name = 'mask_rect_signal')
+    cutoff_signal = QtCore.pyqtSignal(tuple, name = 'cutoff_signal')
+    inelastic_BG_signal = QtCore.pyqtSignal(object, name = 'inelastic_BG_signal')
+    
     def __init__(self, parent = None):
         
         super(ImageViewer, self).__init__()
@@ -147,6 +153,28 @@ class ImageViewer(pg.GraphicsLayoutWidget):
             return corner_y + radius, corner_x + radius, radius
         else:
             return corner_y + radius, corner_x + radius
+        
+    # -------------------------------------------------------------------------
+    #           RETURN DATA SLOTS AND SIGNALS
+    # -------------------------------------------------------------------------
+    
+    @QtCore.pyqtSlot()
+    def returnImageCenter(self):
+        self.image_center_signal.emit(self.centerPosition())
+        self.hideCenterFinder()
+    
+    @QtCore.pyqtSlot()
+    def returnMaskRect(self):
+        self.mask_rect_signal.emit(self.maskPosition())
+        self.hideMask()
+    
+    @QtCore.pyqtSlot()
+    def returnCutoff(self):
+        raise NotImplemented
+    
+    @QtCore.pyqtSlot()
+    def returnInelasticBG(self):
+        raise NotImplemented
     
     # -------------------------------------------------------------------------
     #           PLOTTING METHODS

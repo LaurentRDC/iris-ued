@@ -34,7 +34,12 @@ class WorkThread(QtCore.QThread):
     """
     Object taking care of threading computations
     """
+    done_signal = QtCore.pyqtSignal(bool, name = 'done_signal')
+    in_progress_signal = QtCore.pyqtSignal(bool, name = 'in_progress_signal')
+    results_signal = QtCore.pyqtSignal(object, name = 'results_signal')
+    
     def __init__(self, function, *args, **kwargs):
+        
         QtCore.QThread.__init__(self)
         self.function = function
         self.args = args
@@ -46,10 +51,11 @@ class WorkThread(QtCore.QThread):
     
     def run(self):
         """ Compute and emit a 'done' signal."""
-        self.emit(QtCore.SIGNAL('Display Loading'), '\n Computing...')
+        
+        self.in_progress_signal.emit(True)
         self.result = self.function(*self.args, **self.kwargs)
-        self.emit(QtCore.SIGNAL('Remove Loading'), '\n Done.')
-        self.emit(QtCore.SIGNAL('Computation done'), self.result)
+        self.results_signal.emit(self.result)
+        self.done_signal.emit(True)
     
 # -----------------------------------------------------------------------------
 #           DIRECTORY HANDLER OBJECT
@@ -123,6 +129,7 @@ class DirectoryHandler(QtGui.QWidget):
             directory = possible_directory
         
         self.reset_signal.emit(True)
+        self.reset()
         self.dataset_directory_signal.emit(directory)
     
     @QtCore.pyqtSlot(bool)
@@ -134,8 +141,18 @@ class DirectoryHandler(QtGui.QWidget):
     @QtCore.pyqtSlot(bool)
     def preprocessComplete(self, complete = False):
         if complete:
-            self.preprocess_progress_label.setPalette(complete_palette)
+            palette = complete_palette
+            self.preprocess_progress_label.setText('Complete.')
         else:
+            palette = incomplete_palette
+            self.preprocess_progress_label.setText('Incomplete.')
+        self.preprocess_progress_label.setPalette(palette)
+    
+    @QtCore.pyqtSlot(bool)
+    def reset(self, hmm_really = True):
+        if hmm_really:
+            self.preprocess_btn.setChecked(False)
+            self.preprocess_progress_label.setText('Incomplete.')
             self.preprocess_progress_label.setPalette(incomplete_palette)
 
 # -----------------------------------------------------------------------------
@@ -143,6 +160,11 @@ class DirectoryHandler(QtGui.QWidget):
 # -----------------------------------------------------------------------------
 
 class DataHandler(QtCore.QObject):
+    """
+    Object tasked with all things computations and data.
+    """
+    image_preprocessing_in_progress_signal = QtCore.pyqtSignal(bool, name = 'image_preprocessing_in_progress_signal')
+    image_preprocessed_signal = QtCore.pyqtSignal(bool, name = 'image_preprocessed_signal')
     
     has_image_center_signal = QtCore.pyqtSignal(bool, name = 'has_image_center_signal')
     has_mask_rect_signal = QtCore.pyqtSignal(bool, name = 'has_mask_rect_signal')
@@ -154,14 +176,25 @@ class DataHandler(QtCore.QObject):
         super(DataHandler, self).__init__()
         
         #Data attributes
+        self.diffraction_dataset = None
         self.image_center = list()
         self.mask_rect = list()
         self.cutoff = list()
         self.inelasticBGCurve = None
+        
+        #State attributes
+        self.has_image_center = False
+        self.has_mask_rect = False
+        self.has_cutoff = False
+        self.has_inelasticBG = False
+        
+        self.connectSignals()
     
-    @QtCore.pyqtSlot()
-    def getImageCenter(self):
-        self
+    def connectSignals(self):
+        self.has_image_center_signal.connect(self.hasImageCenter)
+        self.has_mask_rect_signal.connect(self.hasMaskRect)
+        self.has_cutoff_signal.connect(self.hasCutoff)
+        self.has_inelasticBG_signal.connect(self.hasInelasticBG)
     
     @QtCore.pyqtSlot(tuple)
     def setImageCenter(self, center):
@@ -182,6 +215,55 @@ class DataHandler(QtCore.QObject):
     def setInelasticBG(self, inelasticBGCurve):
         self.inelasticBGCurve = inelasticBGCurve
         self.has_inelasticBG_signal.emit(True)
+        
+    # -------------------------------------------------------------------------
+    #           INTERNAL SELF-UPDATING SLOTS
+    # -------------------------------------------------------------------------
+    
+    @QtCore.pyqtSlot(bool)
+    def hasImageCenter(self, flag):
+        self.has_image_center = flag
+    
+    @QtCore.pyqtSlot(bool)
+    def hasMaskRect(self, flag):
+        self.has_imask_rect = flag
+    
+    @QtCore.pyqtSlot(bool)
+    def hasCutoff(self, flag):
+        self.has_cutoff = flag
+    
+    @QtCore.pyqtSlot(bool)
+    def hasInelasticBG(self, flag):
+        self.has_inelasticBG = flag
+        
+    # -------------------------------------------------------------------------
+    #           DIFFRACTION DATASET 
+    # -------------------------------------------------------------------------
+    
+    @QtCore.pyqtSlot(str)
+    def createDiffractionDataset(self, directory):
+        #TODO: Allow various resolutions
+        self.diffraction_dataset = DiffractionDataset( directory, resolution = (2048, 2048) )
+        
+    @QtCore.pyqtSlot(bool)
+    def preprocessImages(self, flag):
+        self.work_thread = WorkThread(self.diffraction_dataset.batchAverage, True) #Check if averaged has been computed before
+        self.work_thread.in_progress_signal.connect(self.preprocessInProgress)
+        self.work_thread.done_signal.connect(self.preprocessDone)
+        #No need to connect the results_signal since batchAverage returns None
+        self.work_thread.start()
+    
+    # -------------------------------------------------------------------------
+    #           IMAGE PREPROCESSING SIGNAL HANDLING
+    # -------------------------------------------------------------------------
+    
+    @QtCore.pyqtSlot(bool)
+    def preprocessInProgress(self, flag):
+        self.image_preprocessing_in_progress_signal.emit(flag)
+    
+    @QtCore.pyqtSlot()
+    def preprocessDone(self):
+        self.image_preprocessed_signal.emit(True)
     
     @QtCore.pyqtSlot(bool)
     def reset(self, hmm_really):
@@ -335,10 +417,17 @@ class StatusWidget(QtGui.QWidget):
 class CommandCenter(QtGui.QWidget):
     
     #Action signals
+    # 'get' signals are to tell the image viewer to let the user get the value
     get_image_center_signal = QtCore.pyqtSignal(name = 'get_image_center_signal')
     get_mask_rect_signal = QtCore.pyqtSignal(name = 'get_mask_rect_signal')
-    get_cutoff_signal = QtCore.pyqtSignal(name = 'get_cutoff_signal')
+    get_cutoff_signal = QtCore.pyqtSignal(name = 'get_cutoff_signal')    
     get_inelasticBG_signal = QtCore.pyqtSignal(name = 'get_inelasticBG_signal')
+    
+    # 'set' signals are to tell the image viewer to return the value
+    set_image_center_signal = QtCore.pyqtSignal(name = 'set_image_center_signal')
+    set_mask_rect_signal = QtCore.pyqtSignal(name = 'set_mask_rect_signal')
+    set_cutoff_signal = QtCore.pyqtSignal(name = 'set_cutoff_signal')
+    set_inelasticBG_signal = QtCore.pyqtSignal(name = 'set_inelasticBG_signal')
     
     #Incomplete / complete signals
     image_center_signal = QtCore.pyqtSignal(bool, name = 'image_center_signal')
@@ -360,7 +449,7 @@ class CommandCenter(QtGui.QWidget):
         
         self.initUI()
         self.initLayout()
-        self.initSignals()
+        self.connectSignals()
     
     def initUI(self):
         
@@ -384,30 +473,44 @@ class CommandCenter(QtGui.QWidget):
         self.layout.addWidget(self.confirm_btn)
         self.setLayout(self.layout)
         
-    def initSignals(self):
-        complete_signals = [self.image_center_signal, self.mask_rect_signal, self.cutoff_signal, self.inelasticBG_signal]
-        in_progress_signals = [self.image_center_in_progress, self.mask_rect_in_progress, self.cutoff_in_progress, self.inelasticBG_in_progress]
+    def connectSignals(self):
         
-        self.image_center_btn.clicked.connect(self.getImageCenter)
-        self.mask_rect_btn.clicked.connect(self.getMaskRect)
-        self.cutoff_btn.clicked.connect(self.getCutoff)
-        self.inelastic_btn.clicked.connect(self.getInelasticBG)
+        self.image_center_btn.toggled.connect(self.handleImageCenter)
+        self.mask_rect_btn.toggled.connect(self.handleMaskRect)
+        self.cutoff_btn.toggled.connect(self.handleCutoff)
+        self.inelastic_btn.toggled.connect(self.handleInelasticBG)
     
-    def getImageCenter(self):
-        self.get_image_center_signal.emit()
-        self.image_center_in_progress.emit(True)
+    @QtCore.pyqtSlot(bool)
+    def handleImageCenter(self, is_checked):
+        if is_checked:
+            self.get_image_center_signal.emit()
+        else:
+            self.set_image_center_signal.emit()
+        self.image_center_in_progress.emit(is_checked)
     
-    def getMaskRect(self):
-        self.get_mask_rect_signal.emit()
-        self.mask_rect_in_progress.emit(True)
+    @QtCore.pyqtSlot(bool)
+    def handleMaskRect(self, is_checked):
+        if is_checked:
+            self.get_mask_rect_signal.emit()
+        else:
+            self.set_mask_rect_signal.emit()
+        self.mask_rect_in_progress.emit(is_checked)
     
-    def getCutoff(self):
-        self.get_cutoff_signal.emit()
-        self.cutoff_in_progress.emit(True)
+    @QtCore.pyqtSlot(bool)
+    def handleCutoff(self, is_checked):
+        if is_checked:
+            self.get_cutoff_signal.emit()
+        else:
+            self.set_cutoff_signal.emit()
+        self.cutoff_in_progress.emit(is_checked)
     
-    def getInelasticBG(self):
-        self.get_inelasticBG_signal.emit()
-        self.inelasticBG_in_progress.emit(True)
+    @QtCore.pyqtSlot(bool)
+    def handleInelasticBG(self, is_checked):
+        if is_checked:
+            self.get_inelasticBG_signal.emit()
+        else:
+            self.set_inelasticBG_signal.emit()
+        self.inelasticBG_in_progress.emit(is_checked)
 
 class Shell(QtGui.QMainWindow):
     
@@ -458,6 +561,10 @@ class Shell(QtGui.QMainWindow):
     
     def connectSignals(self):
         
+        #Connect directory_handler to data handler
+        self.directory_widget.dataset_directory_signal.connect(self.data_handler.createDiffractionDataset)
+        self.directory_widget.preprocess_signal.connect(self.data_handler.preprocessImages)
+        
         #Connect data handler to status widget
         self.data_handler.has_image_center_signal.connect(self.status_widget.imageCenterToggle)
         self.data_handler.has_mask_rect_signal.connect(self.status_widget.maskRectToggle)
@@ -470,12 +577,27 @@ class Shell(QtGui.QMainWindow):
         self.command_center.get_cutoff_signal.connect(self.image_viewer.displayCutoff)
         self.command_center.get_inelasticBG_signal.connect(self.image_viewer.displayInelasticBG)
         
+        self.command_center.set_image_center_signal.connect(self.image_viewer.returnImageCenter)
+        self.command_center.set_mask_rect_signal.connect(self.image_viewer.returnMaskRect)
+        self.command_center.set_cutoff_signal.connect(self.image_viewer.returnCutoff)
+        self.command_center.set_inelasticBG_signal.connect(self.image_viewer.returnInelasticBG)
+        
+        #Connect data transfer from image viewer to data handler
+        self.image_viewer.image_center_signal.connect(self.data_handler.setImageCenter)
+        self.image_viewer.mask_rect_signal.connect(self.data_handler.setMaskRect)
+        self.image_viewer.cutoff_signal.connect(self.data_handler.setCutoff)
+        self.image_viewer.inelastic_BG_signal.connect(self.data_handler.setInelasticBG)
+        
         #connect in-progress to status widget
+        self.data_handler.image_preprocessing_in_progress_signal.connect(self.directory_widget.preprocessInProgress)
+        self.data_handler.image_preprocessed_signal.connect(self.directory_widget.preprocessComplete)
+        
         self.command_center.image_center_in_progress.connect(self.status_widget.imageCenterInProgress)
         self.command_center.mask_rect_in_progress.connect(self.status_widget.maskRectInProgress)
         self.command_center.cutoff_in_progress.connect(self.status_widget.cutoffInProgress)
         self.command_center.inelasticBG_in_progress.connect(self.status_widget.inelasticBGInProgress)
         
+
         
     def centerWindow(self):
         """ Centers the window """
