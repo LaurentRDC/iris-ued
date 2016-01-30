@@ -97,20 +97,32 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
     
     # -------------------------------------------------------------------------
-    #           DISPLAY (and HIDE) OBJECTS in IMAGE AREA
+    #           DISPLAY (and HIDE) OBJECTS
     # -------------------------------------------------------------------------
-
+    
+    @QtCore.pyqtSlot()
     def displayMask(self):
         self.image_area.getViewBox().addItem(self.mask)
     
+    @QtCore.pyqtSlot()
     def displayCenterFinder(self):
         self.image_area.getViewBox().addItem(self.center_finder)
+    
+    @QtCore.pyqtSlot()
+    def displayCutoff(self):
+        print 'Not Implemented'
+    
+    @QtCore.pyqtSlot()
+    def displayInelasticBG(self):
+        print 'Not Implemented'
     
     def hideCenterFinder(self):
         self.image_area.getViewBox().removeItem(self.center_finder)
     
     def hideMask(self):
         self.image_area.getViewBox().removeItem(self.mask)
+    
+    
     
     # -------------------------------------------------------------------------
     #           POSITION METHODS
@@ -135,7 +147,6 @@ class ImageViewer(pg.GraphicsLayoutWidget):
             return corner_y + radius, corner_x + radius, radius
         else:
             return corner_y + radius, corner_x + radius
-        
     
     # -------------------------------------------------------------------------
     #           PLOTTING METHODS

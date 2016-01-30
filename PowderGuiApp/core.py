@@ -466,6 +466,7 @@ def plotTimeResolved(filename):
 if __name__ == '__main__':
     
     #Testing
-    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
-    d = DiffractionDataset(directory)
-    d.batchProcess(center = [937.4, 998.7], cutoff = [0,0], inelasticBGCurve = None, mask_rect = [926, 1049, 0, 1091])
+    directory = 'K:\\2016.01.28.18.21.VO2_17mJ\\processed\\2016.01.28.18.21.radial.averages.hdf5'
+    plotTimeResolved(directory)
+    #d = DiffractionDataset(directory)
+    #d.batchProcess(center = [937.4, 998.7], cutoff = [0,0], inelasticBGCurve = None, mask_rect = [926, 1049, 0, 1091])

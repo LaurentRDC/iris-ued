@@ -13,6 +13,20 @@ from pyqtgraph.Qt import QtCore, QtGui
 from image_viewer import ImageViewer
 
 # -----------------------------------------------------------------------------
+#           COLOR PALETTE FOR PROGRESS
+# -----------------------------------------------------------------------------
+
+#Palette parameters
+complete_palette = QtGui.QPalette()
+complete_palette.setColor(QtGui.QPalette.Foreground, QtCore.Qt.darkGreen)
+
+incomplete_palette = QtGui.QPalette()
+incomplete_palette.setColor(QtGui.QPalette.Foreground, QtCore.Qt.red)
+
+in_progress_palette = QtGui.QPalette()
+in_progress_palette.setColor(QtGui.QPalette.Foreground, QtCore.Qt.darkYellow)
+
+# -----------------------------------------------------------------------------
 #           WORKING CLASS
 # -----------------------------------------------------------------------------
 
@@ -36,7 +50,440 @@ class WorkThread(QtCore.QThread):
         self.result = self.function(*self.args, **self.kwargs)
         self.emit(QtCore.SIGNAL('Remove Loading'), '\n Done.')
         self.emit(QtCore.SIGNAL('Computation done'), self.result)
+    
+# -----------------------------------------------------------------------------
+#           DIRECTORY HANDLER OBJECT
+# -----------------------------------------------------------------------------
+
+class DirectoryHandler(QtGui.QWidget):
+    
+    dataset_directory_signal = QtCore.pyqtSignal(str, name = 'dataset_directory_signal')
+    preprocess_signal = QtCore.pyqtSignal(bool, name = 'preprocess_signal')
+    reset_signal = QtCore.pyqtSignal(bool, name = 'reset_signal')
+    
+    def __init__(self, parent = None):
         
+        super(DirectoryHandler, self).__init__()
+        
+        self.initUI()
+        self.initLayout()
+        self.connectSignals()    
+    
+    def initUI(self):
+        
+        self.file_dialog = QtGui.QFileDialog(parent = self)
+        
+        self.directory_btn = QtGui.QPushButton('Select directory', parent = self)
+        self.preprocess_btn = QtGui.QPushButton('Preprocess images', parent = self)
+        self.preprocess_progress_label = QtGui.QLabel('Incomplete', parent = self)
+        
+        self.preprocess_btn.setChecked(False)
+        self.preprocess_progress_label.setPalette(incomplete_palette)
+    
+    def initLayout(self):
+        
+        self.file_dialog_row = QtGui.QHBoxLayout()
+        self.file_dialog_row.addWidget(self.directory_btn)
+        
+        self.preprocess_row = QtGui.QHBoxLayout()
+        self.preprocess_row.addWidget(self.preprocess_btn)
+        self.preprocess_row.addWidget(self.preprocess_progress_label)
+        
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addLayout(self.file_dialog_row)
+        self.layout.addLayout(self.preprocess_row)
+        
+        self.setLayout(self.layout)
+    
+    def connectSignals(self):
+        self.directory_btn.clicked.connect(self.directoryLocator)
+        self.preprocess_btn.clicked.connect(self.preprocessImages)
+        
+        #When preprocess_btn is clicked, send signal to change preprocess_label to 'in progress' state
+        self.preprocess_signal.connect(self.preprocessInProgress)
+    
+    def preprocessImages(self):
+        self.preprocess_signal.emit(True)
+        
+    def directoryLocator(self):
+        """ 
+        Activates a file dialog that selects the data directory to be processed. If the folder
+        selected is one with processed images (then the directory name is C:\\...\\processed\\),
+        return data 'root' directory.
+        """
+        
+        possible_directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
+        possible_directory = os.path.abspath(possible_directory)
+        
+        #Check whether the directory name ends in 'processed'. If so, return previous directory
+        last_directory = possible_directory.split('\\')[-1]
+        if last_directory == 'processed':
+            directory = os.path.dirname(possible_directory) #If directory is 'processed', back up one directory
+        else:
+            directory = possible_directory
+        
+        self.reset_signal.emit(True)
+        self.dataset_directory_signal.emit(directory)
+    
+    @QtCore.pyqtSlot(bool)
+    def preprocessInProgress(self, in_progress = False):
+        if in_progress:
+            self.preprocess_progress_label.setText('In progress...')
+            self.preprocess_progress_label.setPalette(in_progress_palette)
+    
+    @QtCore.pyqtSlot(bool)
+    def preprocessComplete(self, complete = False):
+        if complete:
+            self.preprocess_progress_label.setPalette(complete_palette)
+        else:
+            self.preprocess_progress_label.setPalette(incomplete_palette)
+
+# -----------------------------------------------------------------------------
+#           DATA HANDLER OBJECT
+# -----------------------------------------------------------------------------
+
+class DataHandler(QtCore.QObject):
+    
+    has_image_center_signal = QtCore.pyqtSignal(bool, name = 'has_image_center_signal')
+    has_mask_rect_signal = QtCore.pyqtSignal(bool, name = 'has_mask_rect_signal')
+    has_cutoff_signal = QtCore.pyqtSignal(bool, name = 'has_cutoff_signal')
+    has_inelasticBG_signal = QtCore.pyqtSignal(bool, name = 'has_inelasticBG_signal')
+    
+    def __init__(self, parent = None):
+        
+        super(DataHandler, self).__init__()
+        
+        #Data attributes
+        self.image_center = list()
+        self.mask_rect = list()
+        self.cutoff = list()
+        self.inelasticBGCurve = None
+    
+    @QtCore.pyqtSlot()
+    def getImageCenter(self):
+        self
+    
+    @QtCore.pyqtSlot(tuple)
+    def setImageCenter(self, center):
+        self.image_center = center
+        self.has_image_center_signal.emit(True)
+    
+    @QtCore.pyqtSlot(tuple)
+    def setMaskRect(self, mask_rect):
+        self.mask_rect = mask_rect
+        self.has_mask_rect_signal.emit(True)
+    
+    @QtCore.pyqtSlot(tuple)
+    def setCutoff(self, cutoff):
+        self.cutoff = cutoff
+        self.has_cutoff_signal.emit(True)
+    
+    @QtCore.pyqtSlot(object)
+    def setInelasticBG(self, inelasticBGCurve):
+        self.inelasticBGCurve = inelasticBGCurve
+        self.has_inelasticBG_signal.emit(True)
+    
+    @QtCore.pyqtSlot(bool)
+    def reset(self, hmm_really):
+        """ 
+        Reset all attributes and emit signals to the effect
+        that all attributes are 'empty'
+        """
+        if hmm_really:
+            self.image_center = list()
+            self.mask_rect = list()
+            self.cutoff = list()
+            self.inelasticBGCurve = None
+            
+            self.has_image_center_signal.emit(False)
+            self.has_mask_rect_signal.emit(False)
+            self.has_cutoff_signal.emit(False)
+            self.has_inelasticBG_signal.emit(False)
+        
+# -----------------------------------------------------------------------------
+#           STATUS WIDGET 
+# -----------------------------------------------------------------------------
+
+class StatusWidget(QtGui.QWidget):
+    
+    def __init__(self, parent = None):
+        
+        super(StatusWidget, self).__init__()
+        self.labels = list()
+        self.statuses = list()
+        
+        #Components attributes
+        self.initUI()
+        
+        #Finish layout
+        self.initLayout()
+        self.initStatuses()
+    
+    def initUI(self):
+        """ Creates UI components. """
+        self.image_center_status = QtGui.QLabel(parent = self)
+        self.image_center_label = QtGui.QLabel('Image center: ', parent = self)
+        
+        self.mask_rect_status = QtGui.QLabel(parent = self)
+        self.mask_rect_label = QtGui.QLabel('Beamblock mask: ', parent = self)
+        
+        self.cutoff_status = QtGui.QLabel(parent = self)
+        self.cutoff_label = QtGui.QLabel('Cutoff: ', parent = self)
+        
+        self.inelasticBG_status = QtGui.QLabel(parent = self)
+        self.inelasticBG_label = QtGui.QLabel('Inelastic BG: ', parent = self)
+        
+        self.labels = [self.image_center_label, self.mask_rect_label, self.cutoff_label, self.inelasticBG_label]
+        self.statuses = [self.image_center_status, self.mask_rect_status, self.cutoff_status, self.inelasticBG_status]
+    
+    def initLayout(self):
+        """ Lays out components on the widget. """
+        self.layout = QtGui.QVBoxLayout()        
+        for label, status in zip(self.labels, self.statuses):
+            layout = QtGui.QHBoxLayout()
+            layout.addWidget(label)
+            layout.addWidget(status)
+            self.layout.addLayout(layout)
+        
+        self.setLayout(self.layout)
+    
+    def initStatuses(self):
+        for status in self.statuses:
+            status.setText('Incomplete')
+            status.setPalette(incomplete_palette)
+    
+    # -------------------------------------------------------------------------
+    #           CHANGE STATUS METHODS
+    # -------------------------------------------------------------------------
+    
+    @QtCore.pyqtSlot(bool)
+    def imageCenterToggle(self, complete = False):
+        if complete:
+            palette = complete_palette
+            label = 'Complete.'
+        else:
+            palette = incomplete_palette
+            label = 'Incomplete.'
+        
+        self.image_center_status.setText(label)
+        self.image_center_status.setPalette(palette)
+    
+    @QtCore.pyqtSlot(bool)
+    def imageCenterInProgress(self, in_progress = False):
+        if in_progress:
+            self.image_center_status.setText('In progress...')
+            self.image_center_status.setPalette(in_progress_palette)
+    
+    @QtCore.pyqtSlot(bool)
+    def maskRectToggle(self, complete = False):
+        if complete:
+            palette = complete_palette
+            label = 'Complete.'
+        else:
+            palette = incomplete_palette
+            label = 'Incomplete.'
+        
+        self.mask_rect_status.setText(label)
+        self.mask_rect_status.setPalette(palette)
+    
+    @QtCore.pyqtSlot(bool)
+    def maskRectInProgress(self, in_progress = False):
+        if in_progress:
+            self.mask_rect_status.setText('In progress...')
+            self.mask_rect_status.setPalette(in_progress_palette)
+
+    @QtCore.pyqtSlot(bool)
+    def cutoffToggle(self, complete = False):
+        if complete:
+            palette = complete_palette
+            label = 'Complete.'
+        else:
+            palette = incomplete_palette
+            label = 'Incomplete.'
+        
+        self.cutoff_status.setText(label)
+        self.cutoff_status.setPalette(palette)
+    
+    @QtCore.pyqtSlot(bool)
+    def cutoffInProgress(self, in_progress = False):
+        if in_progress:
+            self.cutoff_status.setText('In progress...')
+            self.cutoff_status.setPalette(in_progress_palette)
+    
+    @QtCore.pyqtSlot(bool)
+    def inelasticBGToggle(self, complete = False):
+        if complete:
+            palette = complete_palette
+            label = 'Complete.'
+        else:
+            palette = incomplete_palette
+            label = 'Incomplete.'
+        
+        self.inelasticBG_status.setText(label)
+        self.inelasticBG_status.setPalette(palette)
+    
+    @QtCore.pyqtSlot(bool)
+    def inelasticBGInProgress(self, in_progress = False):
+        if in_progress:
+            self.inelasticBG_status.setText('In progress...')
+            self.inelasticBG_status.setPalette(in_progress_palette)
+    
+# -----------------------------------------------------------------------------
+#           COMMAND CENTER WIDGET
+# -----------------------------------------------------------------------------
+
+class CommandCenter(QtGui.QWidget):
+    
+    #Action signals
+    get_image_center_signal = QtCore.pyqtSignal(name = 'get_image_center_signal')
+    get_mask_rect_signal = QtCore.pyqtSignal(name = 'get_mask_rect_signal')
+    get_cutoff_signal = QtCore.pyqtSignal(name = 'get_cutoff_signal')
+    get_inelasticBG_signal = QtCore.pyqtSignal(name = 'get_inelasticBG_signal')
+    
+    #Incomplete / complete signals
+    image_center_signal = QtCore.pyqtSignal(bool, name = 'image_center_signal')
+    mask_rect_signal = QtCore.pyqtSignal(bool, name = 'mask_rect_signal')
+    cutoff_signal = QtCore.pyqtSignal(bool, name = 'cutoff_signal')
+    inelasticBG_signal = QtCore.pyqtSignal(bool, name = 'inelasticBG_signal')
+    
+    #In progress signals
+    image_center_in_progress = QtCore.pyqtSignal(bool, name = 'image_center_in_progress')
+    mask_rect_in_progress = QtCore.pyqtSignal(bool, name = 'mask_rect_in_progress')
+    cutoff_in_progress = QtCore.pyqtSignal(bool, name = 'cutoff_in_progress')
+    inelasticBG_in_progress = QtCore.pyqtSignal(bool, name = 'inelasticBG_in_progress')
+    
+    def __init__(self, parent = None):
+        
+        super(CommandCenter, self).__init__()
+        
+        self.buttons = list()
+        
+        self.initUI()
+        self.initLayout()
+        self.initSignals()
+    
+    def initUI(self):
+        
+        #Buttons
+        self.image_center_btn = QtGui.QPushButton('Find image center', parent = self)
+        self.mask_rect_btn = QtGui.QPushButton('Set beamblock mask', parent = self)
+        self.cutoff_btn = QtGui.QPushButton('Set cutoff', parent = self)
+        self.inelastic_btn = QtGui.QPushButton('Fit inelastic BG', parent = self)
+        
+        self.operation_buttons = [self.image_center_btn, self.mask_rect_btn, self.cutoff_btn, self.inelastic_btn]
+        for btn in self.operation_buttons:
+            btn.setCheckable(True)
+        
+        self.confirm_btn = QtGui.QPushButton('Apply', parent = self)
+        
+    def initLayout(self):
+        self.layout = QtGui.QVBoxLayout()
+        for operation_btn in self.operation_buttons:
+            self.layout.addWidget(operation_btn)
+        
+        self.layout.addWidget(self.confirm_btn)
+        self.setLayout(self.layout)
+        
+    def initSignals(self):
+        complete_signals = [self.image_center_signal, self.mask_rect_signal, self.cutoff_signal, self.inelasticBG_signal]
+        in_progress_signals = [self.image_center_in_progress, self.mask_rect_in_progress, self.cutoff_in_progress, self.inelasticBG_in_progress]
+        
+        self.image_center_btn.clicked.connect(self.getImageCenter)
+        self.mask_rect_btn.clicked.connect(self.getMaskRect)
+        self.cutoff_btn.clicked.connect(self.getCutoff)
+        self.inelastic_btn.clicked.connect(self.getInelasticBG)
+    
+    def getImageCenter(self):
+        self.get_image_center_signal.emit()
+        self.image_center_in_progress.emit(True)
+    
+    def getMaskRect(self):
+        self.get_mask_rect_signal.emit()
+        self.mask_rect_in_progress.emit(True)
+    
+    def getCutoff(self):
+        self.get_cutoff_signal.emit()
+        self.cutoff_in_progress.emit(True)
+    
+    def getInelasticBG(self):
+        self.get_inelasticBG_signal.emit()
+        self.inelasticBG_in_progress.emit(True)
+
+class Shell(QtGui.QMainWindow):
+    
+    def __init__(self):
+        """ 
+        This object acts as the glue between other components. 
+        Most importantly, it connects signals between components
+        """
+        
+        super(Shell, self).__init__()
+        
+        self.initUI()
+        self.initLayout()
+        self.connectSignals()
+    
+    def initUI(self):
+        
+        self.directory_widget = DirectoryHandler(parent = self)
+        self.status_widget = StatusWidget(parent = self)
+        self.command_center = CommandCenter(parent = self)
+        self.data_handler = DataHandler(parent = self)
+        self.image_viewer = ImageViewer(parent = self)
+    
+    def initLayout(self):
+                
+        self.command_pane = QtGui.QVBoxLayout()
+        self.command_pane.addWidget(self.directory_widget)
+        self.command_pane.addWidget(self.status_widget)
+        self.command_pane.addWidget(self.command_center)
+        
+        self.viewer_pane = QtGui.QHBoxLayout()
+        self.viewer_pane.addWidget(self.image_viewer)
+        
+        self.layout = QtGui.QHBoxLayout()
+        self.layout.addLayout(self.command_pane)
+        self.layout.addLayout(self.viewer_pane)
+        
+        #Create window
+        self.central_widget = QtGui.QWidget()
+        self.central_widget.setLayout(self.layout)
+        self.setCentralWidget(self.central_widget)
+        
+        #Window settings ------------------------------------------------------
+        self.setGeometry(600, 600, 350, 300)
+        self.setWindowTitle('UED Powder Analysis Software')
+        self.centerWindow()
+        self.show()
+    
+    def connectSignals(self):
+        
+        #Connect data handler to status widget
+        self.data_handler.has_image_center_signal.connect(self.status_widget.imageCenterToggle)
+        self.data_handler.has_mask_rect_signal.connect(self.status_widget.maskRectToggle)
+        self.data_handler.has_cutoff_signal.connect(self.status_widget.cutoffToggle)
+        self.data_handler.has_inelasticBG_signal.connect(self.status_widget.inelasticBGToggle)
+        
+        #Connect commands from the command center to image viewer
+        self.command_center.get_image_center_signal.connect(self.image_viewer.displayCenterFinder)
+        self.command_center.get_mask_rect_signal.connect(self.image_viewer.displayMask)
+        self.command_center.get_cutoff_signal.connect(self.image_viewer.displayCutoff)
+        self.command_center.get_inelasticBG_signal.connect(self.image_viewer.displayInelasticBG)
+        
+        #connect in-progress to status widget
+        self.command_center.image_center_in_progress.connect(self.status_widget.imageCenterInProgress)
+        self.command_center.mask_rect_in_progress.connect(self.status_widget.maskRectInProgress)
+        self.command_center.cutoff_in_progress.connect(self.status_widget.cutoffInProgress)
+        self.command_center.inelasticBG_in_progress.connect(self.status_widget.inelasticBGInProgress)
+        
+        
+    def centerWindow(self):
+        """ Centers the window """
+        qr = self.frameGeometry()
+        cp = QtGui.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+    
 # -----------------------------------------------------------------------------
 #           MAIN WINDOW CLASS
 # -----------------------------------------------------------------------------
@@ -443,10 +890,38 @@ class UEDpowder(QtGui.QMainWindow):
 
     def closeEvent(self, ce):
         self.fileQuit()
-   
-#Run
-if __name__ == '__main__':
+    
+
+def run():
     app = QtGui.QApplication(sys.argv)
     analysisWindow = UEDpowder()
     analysisWindow.showMaximized()
     sys.exit(app.exec_())
+
+def testDirectoryHandler():
+    app = QtGui.QApplication(sys.argv)
+    test = DirectoryHandler()
+    test.show()
+    sys.exit(app.exec_())
+    
+def testStatus():
+    app = QtGui.QApplication(sys.argv)
+    test = StatusWidget()
+    test.show()
+    sys.exit(app.exec_())
+
+def testCommandCenter():
+    app = QtGui.QApplication(sys.argv)
+    test = CommandCenter()
+    test.show()
+    sys.exit(app.exec_())
+
+def testShell():
+    app = QtGui.QApplication(sys.argv)
+    test = Shell()
+    test.show()
+    sys.exit(app.exec_())
+    
+#Run
+if __name__ == '__main__':
+    pass
