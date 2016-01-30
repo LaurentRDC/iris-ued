@@ -39,6 +39,18 @@ def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0):
 def bilor(x, center, amp1, amp2, width1, width2, const):
     """ Returns a Bilorentzian functions. """
     return amp1*Lorentzian(x, center, width1) + amp2*Lorentzian(x, center, width2) + const
+
+def generateCircle(xc, yc, radius):
+    """
+    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
+    """
+    xvals = xc + radius*n.cos(n.linspace(0, 2*pi, 500))
+    yvals = yc + radius*n.sin(n.linspace(0, 2*pi, 500))
+    
+    circle = zip(xvals.tolist(), yvals.tolist())
+    circle.append( (xc, yc) )
+    return circle
+
     
 # -----------------------------------------------------------------------------
 #           RADIAL CURVE CLASS
@@ -73,6 +85,9 @@ class RadialCurve(object):
         """ Definition of the subtraction operator. """ 
         #Interpolate values so that substraction makes sense
         return RadialCurve(self.xdata, self.ydata - n.interp(self.xdata, pattern.xdata, pattern.ydata), name = self.name, color = self.color)
+    
+    def __copy__(self):
+        return RadialCurve(self.xdata, self.ydata, self.name, self.color)
 
     def cutoff(self, cutoff = [0,0]):
         """ Cuts off a part of the pattern"""
@@ -87,7 +102,9 @@ class RadialCurve(object):
         ----------
         patterns : list of lists of the form [xdata, ydata, name]
         
-        points : list of lists of the form [x,y]
+        points : list of tuples
+            List of tuples of the form (x,y). y-values are ignored, and the 
+            interpolated y-values at the provided x-values is used.
         
         fit : string
             Function to use as fit. Allowed values are 'biexp' and 'bilor'
@@ -164,7 +181,7 @@ def fCenter(xg, yg, rg, im, scalefactor = 20):
 #               RADIAL AVERAGING
 # -----------------------------------------------------------------------------
 
-def radialAverage(image, name, center, beamblock_mode = 'angular', mask_rect = None):
+def radialAverage(image, name, center, mask_rect = None):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -176,44 +193,39 @@ def radialAverage(image, name, center, beamblock_mode = 'angular', mask_rect = N
         [x,y] coordinates of the center (in pixels)
     name : str
         String identifier for the output RadialCurve
-    beamblock_mode : str
-        Allowed values are :
-            'angular': the image area ignored will lie within +- 45deg (or pi/4 rads) away
-            from the beamblock axis
-            'absolute': half of the 
+    mask_rect : Tuple, shape (4,)
+        Tuple containing x- and y-bounds (in pixels) for the beamblock mask
+        mast_rect = (x1, x2, y1, y2)
         
     Returns
     -------
     RadialCurve object
     """
 
-    #Preliminaries
-    if beamblock_mode not in ['angular', 'absolute']:
-        beamblock_mode = 'absolute'
+    #preliminaries
     image = image.astype(n.float)
     xc, yc = center     #Center coordinates
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(n.arange(0,image.shape[0],1), n.arange(0, image.shape[1],1))
     R = n.around(n.sqrt( (X - xc)**2 + (Y - yc)**2 ), decimals = 0)         #Round radius down/up to the nearest pixel
-    T = n.arctan2(X, Y)                                                     #Signed angle from the x-plane (i.e. along the beamblock)
     
     #radii beyond r_max don't fit a full circle within the image
     image_edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
     r_max = n.min(n.array(image_edge_values))           #Maximal radius that fits completely in the image
     
-    #Average intensity values for equal radii
-    radial_position = n.unique(R)
-    radial_intensity = n.empty_like(radial_position)
-    
     # Replace all values in R corresponding to beamblock or other irrelevant
     # data by -1: this way, it will never count in any calculation
     R[R > r_max] = -1
-    if beamblock_mode == 'absolute':
+    if mask_rect is None:
         R[:xc, :] = -1      #All poins above center of the image are disregarded (because of beamblock)
-    elif beamblock_mode == 'angular':
-        angle = pi/4                                        # Image coordinates closer than pi/4 ~ 0.79 (or 45deg) from the beamblock axis are ignored
-        R [ n.logical_and(T < angle, T > -angle) ] = -1    
+    else:
+        x1, x2, y1, y2 = mask_rect
+        R[x1:x2, y1:y2] = -1
+    
+    #Average intensity values for equal radii
+    radial_position = n.unique(R)
+    radial_intensity = n.empty_like(radial_position) 
     
     #Radial average for realz
     for index, radius in n.ndenumerate(radial_position):
@@ -232,13 +244,14 @@ class DiffractionDataset(object):
         
         self.directory = directory
         self.resolution = resolution
-        self.substrate = self.getSubstrateImage()
         self.pumpon_background = self.averageTiffFiles('background.*.pumpon.tif')
         self.pumpoff_background = self.averageTiffFiles('background.*.pumpoff.tif')
+        self.substrate = self.getSubstrateImage()
         self.time_points = self.getTimePoints()
         self.acquisition_date = self.getAcquisitionDate()
-        self.exposure = None
-        self.fluence = None
+        #Optional attributes
+        self.exposure = self.getFluence()
+        self.fluence = self.getExposure()
         
     def getAcquisitionDate(self):
         """ Returns the acquisition date from the folder name as a string of the form: '2016.01.06.15.35' """
@@ -254,13 +267,24 @@ class DiffractionDataset(object):
         pass
         
     def getSubstrateImage(self):
-        """ Finds and stores a substrate image, and returns None if criterias are not matched. """
-        substrate_filenames = [os.path.join(self.directory, possible_filename) for possible_filename in ['subs.tif', 'substrate.tif']]
-        for possible_substrate in substrate_filenames:
-            if possible_substrate in os.listdir(self.directory):
-                print 'Substrate image found'
-                return t.imread(possible_substrate).astype(n.float)
-        return n.zeros(shape = self.resolution, dtype = n.float)         #If file not found
+        """ Finds and stores a substrate image, and returns an array of zeros if criterias are not matched. """
+        substrate_filename = 'subs.tif'
+        subs = n.zeros(shape = self.resolution, dtype = n.float)
+        if substrate_filename in os.listdir(self.directory):
+            print 'Substrate image found'
+            absolute_path = os.path.join(self.directory, substrate_filename)
+            subs = t.imread(absolute_path).astype(n.float)
+            
+            subs = subs - self.pumpoff_background
+            subs[subs < 0] = 0
+        
+        return subs
+    
+    @staticmethod
+    def castTo16Bits(array):
+        array[ array < 0] = 0
+        array[ array > (2**16) - 1] = (2**16) - 1
+        return array.astype(n.uint16)
     
     def averageTiffFiles(self, filename_template, background = None):
         """
@@ -277,8 +301,7 @@ class DiffractionDataset(object):
         """ 
         #Format background correctly
         if background is not None:
-            if background.dtype != n.float:
-                background = background.astype(n.float)
+            background = background.astype(n.float)
         
         #Get file list
         image_list = glob.glob(os.path.join(self.directory, filename_template))
@@ -289,14 +312,16 @@ class DiffractionDataset(object):
         image = n.zeros(shape = self.resolution, dtype = n.float)
         for filename in tqdm(image_list, nested = True):
             new_image = t.imread(filename).astype(n.float)
-            if background is not None:
-                new_image -= background
             image += new_image
             
-        #Average    
-        return image/float(len(image_list))
-
-    def dataAverage(self, time_point, export = False):
+        average = image/float(len(image_list))
+            
+        if background is not None:
+            average -= background
+        
+        return average
+            
+    def dataAverage(self, time_point, export = False, substract_substrate = False):
         """         
         Parameters
         ----------
@@ -310,16 +335,16 @@ class DiffractionDataset(object):
         #Average calculation
         average = self.averageTiffFiles(glob_template, self.pumpon_background)
         
+        if substract_substrate:
+            average = average - self.substrate
+        
         if export:
             output_directory = os.path.join(self.directory, 'processed')
             if not os.path.isdir(output_directory):             #Find out if output directory exists and create if necessary
                 os.makedirs(output_directory)                
             save_path = os.path.join(output_directory, 'data.timedelay.' + time_point + '.average.pumpon.tif')
             
-            #Format array to be uint16 by removing data outside the bounds
-            average[average < 0] = 0
-            average[average >= 65536] = 65536 - 1
-            t.imsave(save_path, average.astype(n.uint16))
+            t.imsave(save_path, self.castTo16Bits(average))
         
         return average
         
@@ -339,6 +364,20 @@ class DiffractionDataset(object):
         #Average images        
         for time in tqdm(self.time_points):
             self.dataAverage(time, export = True)
+    
+    def returnAveragedImage(self, time_point):
+        """ 
+        Returns a preprocessed image. If 'processed' folder does not exist, 
+        return array of zeros
+        """
+        #Check if processed folder exists
+        if os.path.isdir(os.path.join(self.directory, 'processed')):
+            str_time = self.timeToString(time_point)
+            rel_filename = 'data.timedelay.' + str_time + '.average.pumpon.tif'
+            abs_filename = os.path.join(self.directory, 'processed', rel_filename)
+            return t.imread(abs_filename).astype(n.float)
+        else:
+            return n.zeros(shape = self.resolution, dtype = n.float)
     
     def getTimePoints(self):
         """ """
@@ -371,7 +410,7 @@ class DiffractionDataset(object):
         else:
             return str_time
         
-    def processImage(self, filename, center, cutoff, inelasticBGCurve):
+    def processImage(self, filename, center, cutoff, inelasticBGCurve, mask_rect):
         """
         Returns a processed radial curve associated with a radial diffraction pattern at a certain time point.
         
@@ -381,23 +420,16 @@ class DiffractionDataset(object):
             Either a string formatted as {'+150.00', '-10.00'} or equivalent float or integer. See self.dataAverage
         TBD
         """
-        image = t.imread(filename).astype(n.float)
-        
-        if self.substrate is not None:                           #substract substrate if it is provided
-            assert image.shape == self.substrate.shape
-            self.substrate = self.substrate.astype(n.float)
-            image -= self.substrate
-            
-        curve = radialAverage(image, 'Radial average', center)     #Radially average
+        image = t.imread(filename).astype(n.float)            
+        curve = radialAverage(image, 'Radial average', center, mask_rect)     #Radially average
         curve = curve.cutoff(cutoff)                        #cutoff curve
 
         if inelasticBGCurve is not None:                    #substract inelastic scattering background if it is provided
-            assert isinstance(inelasticBGCurve, RadialCurve) 
             return curve - inelasticBGCurve
         else:
             return curve
         
-    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None):
+    def batchProcess(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, mask_rect = None):
         """
         Returns a list of RadialCurve objects (one for every time point)
         """
@@ -405,7 +437,7 @@ class DiffractionDataset(object):
         results = list()
         for time in tqdm(self.time_points):
             filename = os.path.join(self.directory, 'processed', 'data.timedelay.' + self.timeToString(time) + '.average.pumpon.tif')
-            curve = self.processImage(filename, center, cutoff, inelasticBGCurve)
+            curve = self.processImage(filename, center, cutoff, inelasticBGCurve, mask_rect)
             results.append( (self.timeToString(time), curve) )
         
         self.export(results)          
@@ -446,7 +478,6 @@ def plotTimeResolved(filename):
     datasets = [(f[time]['Radav ' + time], time) for time in times]
     
     #Plotting
-    import matplotlib.pyplot as plt
     for dataset in datasets:
         data, time = dataset
         plt.plot(data[0], data[1], label = str(time))
@@ -455,8 +486,7 @@ def plotTimeResolved(filename):
 if __name__ == '__main__':
     
     #Testing
-    f = 'K:\\2016.01.26.17.09.VO2_1500_uW_pump_50_Hz\\processed\\data.timedelay.-50.00.average.pumpon.tif'
-    img = t.imread(f)
-    curve = radialAverage(img, 'test', center = [1051,1055], beamblock_mode = 'angular')
-    
-    plt.plot(curve.xdata, curve.ydata)
+    directory = 'K:\\2016.01.28.18.21.VO2_17mJ'
+    #plotTimeResolved(directory)
+    d = DiffractionDataset(directory)
+    #d.batchProcess(center = [937.4, 998.7], cutoff = [0,0], inelasticBGCurve = None, mask_rect = [926, 1049, 0, 1091])
