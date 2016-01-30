@@ -183,13 +183,16 @@ class DataHandler(QtCore.QObject):
         
         #Data attributes
         self.image = None
-        self.radial_curve = None
+        self.radial_curve = None            #Keep an unmodified copy as a reference 
+        self.background_curve = None
+        self.modified_radial_curve = None   #Modified from raw radial curve
+        self.curve_shown = 0                #0 -> raw radial curve is shown. 1 -> modified curve
         
         self.diffraction_dataset = None
-        self.image_center = list()
-        self.mask_rect = list()
-        self.cutoff = list()
-        self.inelasticBGCurve = None
+        self.image_center = tuple()
+        self.mask_rect = tuple()
+        self.cutoff = tuple()
+        self.inelasticBGIntersects = list()
         
         #State attributes
         self.has_image_center = False
@@ -210,6 +213,8 @@ class DataHandler(QtCore.QObject):
         #Check radial average conditions at every update of image_center and mask_rect
         self.has_image_center_signal.connect(self.checkConditionsForRadialAverage)
         self.has_mask_rect_signal.connect(self.checkConditionsForRadialAverage)
+        self.has_cutoff_signal.connect(self.modifyRadialCurve)
+        self.has_inelasticBG_signal.connect(self.modifyRadialCurve)
     
     def getImage(self):
         """ 
@@ -235,12 +240,20 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot(tuple)
     def setCutoff(self, cutoff):
         self.cutoff = cutoff
+        self.modified_radial_curve = self.radial_curve.cutoff(cutoff)
         self.has_cutoff_signal.emit(True)
     
-    @QtCore.pyqtSlot(object)
-    def setInelasticBG(self, inelasticBGCurve):
-        self.inelasticBGCurve = inelasticBGCurve
+    @QtCore.pyqtSlot(list)
+    def setInelasticBG(self, intersects):
+        self.inelasticBGIntersects = intersects
+        self.background_curve = self.radial_curve.inelasticBG(intersects)
         self.has_inelasticBG_signal.emit(True)
+    
+    # -------------------------------------------------------------------------
+    @QtCore.pyqtSlot(int)
+    def whichCurveToPlot(self, index):
+        curve_dict = {0: self.radial_curve, 1: self.modified_radial_curve}
+        self.sendRadialAverage(curve_dict[index])
         
     # -------------------------------------------------------------------------
     #           INTERNAL SELF-UPDATING SLOTS
@@ -268,7 +281,13 @@ class DataHandler(QtCore.QObject):
     def checkConditionsForRadialAverage(self, flag):
         if self.has_image_center and self.has_mask_rect:
             self.radialAverage()
-        
+    
+    #This slot takes in a boolean because of has_cutoff_signal and
+    #has_inelasticBG_signal
+    @QtCore.pyqtSlot(bool)
+    def modifyRadialCurve(self, flag):
+        print 'modifying curve'
+            
     # -------------------------------------------------------------------------
     #           HEAVY LIFTING 
     # -------------------------------------------------------------------------
@@ -289,9 +308,19 @@ class DataHandler(QtCore.QObject):
     def radialAverage(self):
         self.work_thread = WorkThread(core.radialAverage, self.image, '', self.image_center, self.mask_rect)
         #TODO: have some way of checking radial averaging progress
-        self.work_thread.results_signal.connect(self.sendRadialAverage)
+        self.work_thread.results_signal.connect(self.setRadialCurve)
         self.work_thread.start()
-    
+        
+    @QtCore.pyqtSlot(object)
+    def setRadialCurve(self, curve):
+        #Set radial curve and reset all other stuff
+        self.radial_curve = curve
+        self.modified_radial_curve = curve
+        self.background_curve = None
+        
+        #Plot
+        self.sendRadialAverage(self.radial_curve)
+        
     def sendImage(self):
         self.image = self.getImage()
         self.image_signal.emit(self.image, list(), 'r')
@@ -490,6 +519,11 @@ class CommandCenter(QtGui.QWidget):
     cutoff_in_progress = QtCore.pyqtSignal(bool, name = 'cutoff_in_progress')
     inelasticBG_in_progress = QtCore.pyqtSignal(bool, name = 'inelasticBG_in_progress')
     
+    #Switch between displaying raw radial curve or modified
+    #   use: 0 = see raw radial curve
+    #        1  = see modified radial curve
+    switch_curve_signal = QtCore.pyqtSignal(int, name = 'switch_curve_signal')
+    
     def __init__(self, parent = None):
         
         super(CommandCenter, self).__init__()
@@ -508,18 +542,22 @@ class CommandCenter(QtGui.QWidget):
         self.cutoff_btn = QtGui.QPushButton('Set cutoff', parent = self)
         self.inelastic_btn = QtGui.QPushButton('Fit inelastic BG', parent = self)
         
+        #Curve view slider
+        self.curve_picker = QtGui.QComboBox(parent = self)
+        self.curve_picker.addItem('Raw radial average')
+        self.curve_picker.addItem('Modified curve')
+        
         self.operation_buttons = [self.image_center_btn, self.mask_rect_btn, self.cutoff_btn, self.inelastic_btn]
         for btn in self.operation_buttons:
             btn.setCheckable(True)
         
-        self.confirm_btn = QtGui.QPushButton('Apply', parent = self)
-        
     def initLayout(self):
         self.layout = QtGui.QVBoxLayout()
+        self.layout.addWidget(self.curve_picker)
+        
         for operation_btn in self.operation_buttons:
             self.layout.addWidget(operation_btn)
-        
-        self.layout.addWidget(self.confirm_btn)
+
         self.setLayout(self.layout)
         
     def connectSignals(self):
@@ -528,6 +566,14 @@ class CommandCenter(QtGui.QWidget):
         self.mask_rect_btn.toggled.connect(self.handleMaskRect)
         self.cutoff_btn.toggled.connect(self.handleCutoff)
         self.inelastic_btn.toggled.connect(self.handleInelasticBG)
+        
+        self.curve_picker.activated.connect(self.curvePicked)
+    
+    @QtCore.pyqtSlot(str)
+    def curvePicked(self, item_index):        
+        self.switch_curve_signal.emit(item_index)
+    
+    # -------------------------------------------------------------------------
     
     @QtCore.pyqtSlot(bool)
     def handleImageCenter(self, is_checked):
@@ -610,6 +656,8 @@ class Shell(QtGui.QMainWindow):
     
     def connectSignals(self):
         
+        #Connect curve picker to data_handler
+        self.command_center.switch_curve_signal.connect(self.data_handler.whichCurveToPlot)
         #Connect directory_handler to data handler
         self.directory_widget.dataset_directory_signal.connect(self.data_handler.createDiffractionDataset)
         self.directory_widget.preprocess_signal.connect(self.data_handler.preprocessImages)

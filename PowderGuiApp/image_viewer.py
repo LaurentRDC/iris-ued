@@ -15,7 +15,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     image_center_signal = QtCore.pyqtSignal(tuple, name = 'image_center_signal')
     mask_rect_signal = QtCore.pyqtSignal(tuple, name = 'mask_rect_signal')
     cutoff_signal = QtCore.pyqtSignal(tuple, name = 'cutoff_signal')
-    inelastic_BG_signal = QtCore.pyqtSignal(object, name = 'inelastic_BG_signal')
+    inelastic_BG_signal = QtCore.pyqtSignal(list, name = 'inelastic_BG_signal')
     
     def __init__(self, parent = None):
         
@@ -106,7 +106,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.cutoff_line = pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('r'))
         
         #TODO: determine the number of lines necessary
-        self.inelasticBG_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(5)]
+        self.inelasticBG_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(6)]
     
     # -------------------------------------------------------------------------
     #           DISPLAY (and HIDE) OBJECTS
@@ -145,7 +145,9 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     def hideCutoff(self):
         self.curve_area.getViewBox().removeItem(self.cutoff_line)
     
-    
+    def hideInelasticBG(self):
+        for line in self.inelasticBG_lines:
+            self.curve_area.getViewBox().removeItem(line)
     
     # -------------------------------------------------------------------------
     #           POSITION METHODS
@@ -197,11 +199,13 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     
     @QtCore.pyqtSlot()
     def returnCutoff(self):
-        raise NotImplemented
-    
+        self.cutoff_signal.emit(self.cutoffPosition())
+        self.hideCutoff()
+        
     @QtCore.pyqtSlot()
     def returnInelasticBG(self):
-        raise NotImplemented
+        self.inelastic_BG_signal.emit(self.inelasticBGPosition())
+        self.hideInelasticBG()
     
     # -------------------------------------------------------------------------
     #           PLOTTING METHODS

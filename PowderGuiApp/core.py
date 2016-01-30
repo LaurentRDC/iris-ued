@@ -85,6 +85,9 @@ class RadialCurve(object):
         """ Definition of the subtraction operator. """ 
         #Interpolate values so that substraction makes sense
         return RadialCurve(self.xdata, self.ydata - n.interp(self.xdata, pattern.xdata, pattern.ydata), name = self.name, color = self.color)
+    
+    def __copy__(self):
+        return RadialCurve(self.xdata, self.ydata, self.name, self.color)
 
     def cutoff(self, cutoff = [0,0]):
         """ Cuts off a part of the pattern"""
@@ -99,7 +102,9 @@ class RadialCurve(object):
         ----------
         patterns : list of lists of the form [xdata, ydata, name]
         
-        points : list of lists of the form [x,y]
+        points : list of tuples
+            List of tuples of the form (x,y). y-values are ignored, and the 
+            interpolated y-values at the provided x-values is used.
         
         fit : string
             Function to use as fit. Allowed values are 'biexp' and 'bilor'
