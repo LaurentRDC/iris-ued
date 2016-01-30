@@ -20,19 +20,23 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     def __init__(self, parent = None):
         
         super(ImageViewer, self).__init__()
-        self.image_position_label = pg.LabelItem()
+        
+        #Dat amanipulation attributes
+        self.center_finder = None
+        self.mask = None
+        self.cutoff_line = None
+        self.inelasticBG_lines = list()
+        
         self.image = pg.ImageItem()
-        self.image_overlay = pg.ScatterPlotItem()        
+        self.image_overlay = pg.ScatterPlotItem()
         self.curve = pg.PlotDataItem()
         
-        self.setupUI()
-        
         #Initialize display
+        self.initUI()
         self.displayImage( image = None )
         
         #Signals
         self.image.mouseClickEvent = self.imageClick
-        #self.curve.scene().sigMouseClicked.connect(self.curveClick)
         self.image_area.scene().sigMouseMoved.connect(self.updateCrosshair)
     
     def imageClick(self, event):
@@ -49,7 +53,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
             print (mx, my)
             self.curve_clicked.emit( (mx, my) )
         
-    def setupUI(self):
+    def initUI(self):
         
         # ---------------------------------------------------------------------
         #       LAYOUT
@@ -58,6 +62,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         # Let's go with white background
         self.setBackgroundBrush(pg.mkBrush('w'))
         
+        self.image_position_label = pg.LabelItem()
         self.addItem(self.image_position_label)
         
         self.nextRow()
@@ -89,18 +94,19 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.image_area.addItem(self.hLine, ignoreBounds=True)
         
         # ---------------------------------------------------------------------
-        #           BEAMBLOCK MASK
+        #           DATA INTERACTION ITEMS MASK
         # ---------------------------------------------------------------------
         
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
         
-        # ---------------------------------------------------------------------
-        #           CENTER FINDER
-        # ---------------------------------------------------------------------
-        
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
+        
+        self.cutoff_line = pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('r'))
+        
+        #TODO: determine the number of lines necessary
+        self.inelasticBG_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(5)]
     
     # -------------------------------------------------------------------------
     #           DISPLAY (and HIDE) OBJECTS
@@ -113,20 +119,31 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     @QtCore.pyqtSlot()
     def displayCenterFinder(self):
         self.image_area.getViewBox().addItem(self.center_finder)
-    
+        
     @QtCore.pyqtSlot()
     def displayCutoff(self):
-        print 'Not Implemented'
+        self.curve_area.getViewBox().addItem(self.cutoff_line)
     
     @QtCore.pyqtSlot()
     def displayInelasticBG(self):
-        print 'Not Implemented'
+        #Determine curve range
+        xmin, xmax = self.curve.dataBounds(ax = 0)
+        dist_between_lines = float(xmax - xmin)/len(self.inelasticBG_lines)
+        #Distribute lines equidistantly
+        pos = xmin
+        for line in self.inelasticBG_lines:
+            line.setValue(pos)
+            self.curve_area.getViewBox().addItem(line)
+            pos += dist_between_lines
     
     def hideCenterFinder(self):
         self.image_area.getViewBox().removeItem(self.center_finder)
     
     def hideMask(self):
         self.image_area.getViewBox().removeItem(self.mask)
+    
+    def hideCutoff(self):
+        self.curve_area.getViewBox().removeItem(self.cutoff_line)
     
     
     
@@ -153,7 +170,17 @@ class ImageViewer(pg.GraphicsLayoutWidget):
             return corner_y + radius, corner_x + radius, radius
         else:
             return corner_y + radius, corner_x + radius
-        
+    
+    def cutoffPosition(self):
+        x = self.cutoff_line.value()
+        return (x, 0)
+    
+    def inelasticBGPosition(self):
+        intersects = list()
+        for line in self.inelasticBG_lines:
+            x = line.value()
+            intersects.append( (x, 0) )
+        return intersects
     # -------------------------------------------------------------------------
     #           RETURN DATA SLOTS AND SIGNALS
     # -------------------------------------------------------------------------
@@ -230,3 +257,4 @@ if __name__ == '__main__':
     #Test
     im.displayImage(image = test_image, overlay = [(500,500)], overlay_color = 'r')
     im.displayRadialPattern(test_curve)
+    im.displayInelasticBG()
