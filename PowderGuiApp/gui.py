@@ -213,8 +213,6 @@ class DataHandler(QtCore.QObject):
         #Check radial average conditions at every update of image_center and mask_rect
         self.has_image_center_signal.connect(self.checkConditionsForRadialAverage)
         self.has_mask_rect_signal.connect(self.checkConditionsForRadialAverage)
-        self.has_cutoff_signal.connect(self.modifyRadialCurve)
-        self.has_inelasticBG_signal.connect(self.modifyRadialCurve)
     
     def getImage(self):
         """ 
@@ -247,6 +245,7 @@ class DataHandler(QtCore.QObject):
     def setInelasticBG(self, intersects):
         self.inelasticBGIntersects = intersects
         self.background_curve = self.radial_curve.inelasticBG(intersects)
+        self.modified_radial_curve = self.modified_radial_curve - self.background_curve
         self.has_inelasticBG_signal.emit(True)
     
     # -------------------------------------------------------------------------
@@ -281,12 +280,6 @@ class DataHandler(QtCore.QObject):
     def checkConditionsForRadialAverage(self, flag):
         if self.has_image_center and self.has_mask_rect:
             self.radialAverage()
-    
-    #This slot takes in a boolean because of has_cutoff_signal and
-    #has_inelasticBG_signal
-    @QtCore.pyqtSlot(bool)
-    def modifyRadialCurve(self, flag):
-        print 'modifying curve'
             
     # -------------------------------------------------------------------------
     #           HEAVY LIFTING 
@@ -320,6 +313,19 @@ class DataHandler(QtCore.QObject):
         
         #Plot
         self.sendRadialAverage(self.radial_curve)
+    
+    @QtCore.pyqtSlot()
+    def resetRadialCurve(self):
+        self.modified_radial_curve = self.radial_curve.__copy__()
+        self.background_curve = None
+        
+        self.cutoff = tuple()
+        self.inelasticBGIntersects = list()
+        
+        self.has_cutoff_signal.emit(False)
+        self.has_inelasticBG_signal.emit(False)
+        
+        self.resetRadialCurve(self.radial_curve)
         
     def sendImage(self):
         self.image = self.getImage()
@@ -523,6 +529,7 @@ class CommandCenter(QtGui.QWidget):
     #   use: 0 = see raw radial curve
     #        1  = see modified radial curve
     switch_curve_signal = QtCore.pyqtSignal(int, name = 'switch_curve_signal')
+    reset_curve_modifications = QtCore.pyqtSignal(name = 'reset_curve_modifications')
     
     def __init__(self, parent = None):
         
@@ -541,6 +548,7 @@ class CommandCenter(QtGui.QWidget):
         self.mask_rect_btn = QtGui.QPushButton('Set beamblock mask', parent = self)
         self.cutoff_btn = QtGui.QPushButton('Set cutoff', parent = self)
         self.inelastic_btn = QtGui.QPushButton('Fit inelastic BG', parent = self)
+        self.reset_curve_mod_btn = QtGui.QPushButton('Reset curve modifications', parent = self)
         
         #Curve view slider
         self.curve_picker = QtGui.QComboBox(parent = self)
@@ -557,6 +565,7 @@ class CommandCenter(QtGui.QWidget):
         
         for operation_btn in self.operation_buttons:
             self.layout.addWidget(operation_btn)
+        self.layout.addWidget(self.reset_curve_mod_btn)
 
         self.setLayout(self.layout)
         
@@ -568,10 +577,15 @@ class CommandCenter(QtGui.QWidget):
         self.inelastic_btn.toggled.connect(self.handleInelasticBG)
         
         self.curve_picker.activated.connect(self.curvePicked)
+        self.reset_curve_mod_btn.clicked.connect(self.resetCurveModifications)
     
     @QtCore.pyqtSlot(str)
     def curvePicked(self, item_index):        
         self.switch_curve_signal.emit(item_index)
+    
+    @QtCore.pyqtSlot()
+    def resetCurveModifications(self):
+        self.reset_curve_modifications.emit()
     
     # -------------------------------------------------------------------------
     
@@ -656,8 +670,10 @@ class Shell(QtGui.QMainWindow):
     
     def connectSignals(self):
         
-        #Connect curve picker to data_handler
+        #Connect curve picker and reset mod button to data_handler
         self.command_center.switch_curve_signal.connect(self.data_handler.whichCurveToPlot)
+        self.command_center.reset_curve_modifications.connect(self.data_handler.resetRadialCurve)
+        
         #Connect directory_handler to data handler
         self.directory_widget.dataset_directory_signal.connect(self.data_handler.createDiffractionDataset)
         self.directory_widget.preprocess_signal.connect(self.data_handler.preprocessImages)
