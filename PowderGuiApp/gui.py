@@ -168,6 +168,9 @@ class DataHandler(QtCore.QObject):
     image_preprocessing_in_progress_signal = QtCore.pyqtSignal(bool, name = 'image_preprocessing_in_progress_signal')
     image_preprocessed_signal = QtCore.pyqtSignal(bool, name = 'image_preprocessed_signal')
     
+    #Export green light
+    export_ready_signal = QtCore.pyqtSignal(bool, name = 'export_ready_signal')
+    
     #Data to be plotted by the image viewer
     radial_average_signal = QtCore.pyqtSignal(object, name = 'radial_average_signal')
     image_signal = QtCore.pyqtSignal(object, list, str, name = 'image_signal')     #Three arguments to match ImageViewer.displayImage arguments
@@ -192,7 +195,7 @@ class DataHandler(QtCore.QObject):
         self.image_center = tuple()
         self.mask_rect = tuple()
         self.cutoff = tuple()
-        self.inelasticBGIntersects = list()
+        self._inelasticBGIntersects = list()
         
         #State attributes
         self.has_image_center = False
@@ -201,6 +204,19 @@ class DataHandler(QtCore.QObject):
         self.has_inelasticBG = False
         
         self.connectSignals()
+    
+    #Property to make sure that an inelastic BG curve is set every time intersects are set
+    @property
+    def inelasticBGIntersects(self):
+        return self._inelasticBGIntersects
+    
+    @inelasticBGIntersects.setter
+    def inelasticBGIntersects(self, list_of_points):
+        self._inelasticBGIntersects = list_of_points
+        if not list_of_points: #List is empty
+            self.background_curve = None
+        elif self.radial_curve is not None:
+            self.background_curve = self.radial_curve.inelasticBG(points = list_of_points)
     
     def connectSignals(self):
         
@@ -213,6 +229,12 @@ class DataHandler(QtCore.QObject):
         #Check radial average conditions at every update of image_center and mask_rect
         self.has_image_center_signal.connect(self.checkConditionsForRadialAverage)
         self.has_mask_rect_signal.connect(self.checkConditionsForRadialAverage)
+        
+        #Check if ready to export
+        self.has_image_center_signal.connect(self.checkConditionForExport)
+        self.has_mask_rect_signal.connect(self.checkConditionForExport)
+        self.has_cutoff_signal.connect(self.checkConditionForExport)
+        self.has_inelasticBG_signal.connect(self.checkConditionForExport)
     
     def getImage(self):
         """ 
@@ -244,7 +266,7 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot(list)
     def setInelasticBG(self, intersects):
         self.inelasticBGIntersects = intersects
-        self.background_curve = self.radial_curve.inelasticBG(intersects)
+        # self.background_curve will be computed directly through the property
         self.modified_radial_curve = self.modified_radial_curve - self.background_curve
         self.has_inelasticBG_signal.emit(True)
     
@@ -280,7 +302,14 @@ class DataHandler(QtCore.QObject):
     def checkConditionsForRadialAverage(self, flag):
         if self.has_image_center and self.has_mask_rect:
             self.radialAverage()
-            
+    
+    #This slot takes in a boolean because of has_image_center_signal and
+    #has_mask_rect_signal, etc...
+    @QtCore.pyqtSlot(bool)
+    def checkConditionForExport(self, flag):
+        if (self.has_image_center and self.has_mask_rect and self.has_cutoff and self.has_inelasticBG):
+            self.export_ready_signal.emit(True)
+        
     # -------------------------------------------------------------------------
     #           HEAVY LIFTING 
     # -------------------------------------------------------------------------
@@ -303,13 +332,23 @@ class DataHandler(QtCore.QObject):
         #TODO: have some way of checking radial averaging progress
         self.work_thread.results_signal.connect(self.setRadialCurve)
         self.work_thread.start()
-        
+    
+    @QtCore.pyqtSlot()
+    def processDataset(self):
+        if (self.has_image_center and self.has_mask_rect and self.has_cutoff and self.has_inelasticBG):
+            self.work_thread = WorkThread(self.diffraction_dataset.batchProcess, center = self.image_center, cutoff = self.cutoff, inelasticBGCurve = self.background_curve, mask_rect = self.mask_rect)
+            self.work_thread.start()
+            #TODO: What to do after processing?
+    # -------------------------------------------------------------------------
+    #           IMAGE PREPROCESSING SIGNAL HANDLING
+    # -------------------------------------------------------------------------
+
     @QtCore.pyqtSlot(object)
     def setRadialCurve(self, curve):
         #Set radial curve and reset all other stuff
         self.radial_curve = curve
         self.modified_radial_curve = curve
-        self.background_curve = None
+        self.inelasticBGIntersects = list()
         
         #Plot
         self.sendRadialAverage(self.radial_curve)
@@ -317,7 +356,6 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot()
     def resetRadialCurve(self):
         self.modified_radial_curve = self.radial_curve.__copy__()
-        self.background_curve = None
         
         self.cutoff = tuple()
         self.inelasticBGIntersects = list()
@@ -325,7 +363,7 @@ class DataHandler(QtCore.QObject):
         self.has_cutoff_signal.emit(False)
         self.has_inelasticBG_signal.emit(False)
         
-        self.resetRadialCurve(self.radial_curve)
+        self.resetRadialCurve()
         
     def sendImage(self):
         self.image = self.getImage()
@@ -334,9 +372,6 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot(object)
     def sendRadialAverage(self, curve):
         self.radial_average_signal.emit(curve)
-    # -------------------------------------------------------------------------
-    #           IMAGE PREPROCESSING SIGNAL HANDLING
-    # -------------------------------------------------------------------------
     
     @QtCore.pyqtSlot(bool)
     def preprocessInProgress(self, flag):
@@ -399,8 +434,11 @@ class StatusWidget(QtGui.QWidget):
         self.inelasticBG_status = QtGui.QLabel(parent = self)
         self.inelasticBG_label = QtGui.QLabel('Inelastic BG: ', parent = self)
         
-        self.labels = [self.image_center_label, self.mask_rect_label, self.cutoff_label, self.inelasticBG_label]
-        self.statuses = [self.image_center_status, self.mask_rect_status, self.cutoff_status, self.inelasticBG_status]
+        self.ready_to_export_status = QtGui.QLabel(parent = self)
+        self.ready_to_export_label = QtGui.QLabel('Ready to export:', parent = self)
+        
+        self.labels = [self.image_center_label, self.mask_rect_label, self.cutoff_label, self.inelasticBG_label, self.ready_to_export_label]
+        self.statuses = [self.image_center_status, self.mask_rect_status, self.cutoff_status, self.inelasticBG_status, self.ready_to_export_status]
     
     def initLayout(self):
         """ Lays out components on the widget. """
@@ -414,10 +452,9 @@ class StatusWidget(QtGui.QWidget):
         self.setLayout(self.layout)
     
     def initStatuses(self):
-        for status in self.statuses:
-            status.setText('Incomplete')
-            status.setPalette(incomplete_palette)
-    
+        toggle_methods = [self.imageCenterToggle, self.maskRectToggle, self.cutoffToggle, self.inelasticBGToggle, self.readyToExportToggle]
+        for method in toggle_methods:
+            method(complete = False)
     # -------------------------------------------------------------------------
     #           CHANGE STATUS METHODS
     # -------------------------------------------------------------------------
@@ -494,6 +531,18 @@ class StatusWidget(QtGui.QWidget):
             self.inelasticBG_status.setText('In progress...')
             self.inelasticBG_status.setPalette(in_progress_palette)
     
+    @QtCore.pyqtSlot(bool)
+    def readyToExportToggle(self, complete = False):
+        if complete:
+            palette = complete_palette
+            label = 'Ready'
+        else:
+            palette = incomplete_palette
+            label = 'Not ready.'
+            
+        self.ready_to_export_status.setText(label)
+        self.ready_to_export_status.setPalette(palette)
+    
 # -----------------------------------------------------------------------------
 #           COMMAND CENTER WIDGET
 # -----------------------------------------------------------------------------
@@ -529,7 +578,10 @@ class CommandCenter(QtGui.QWidget):
     #   use: 0 = see raw radial curve
     #        1  = see modified radial curve
     switch_curve_signal = QtCore.pyqtSignal(int, name = 'switch_curve_signal')
-    reset_curve_modifications = QtCore.pyqtSignal(name = 'reset_curve_modifications')
+    reset_curve_modifications_signal = QtCore.pyqtSignal(name = 'reset_curve_modifications')
+    
+    #Final export
+    process_dataset_signal = QtCore.pyqtSignal(name = 'process_dataset_signal')
     
     def __init__(self, parent = None):
         
@@ -549,6 +601,7 @@ class CommandCenter(QtGui.QWidget):
         self.cutoff_btn = QtGui.QPushButton('Set cutoff', parent = self)
         self.inelastic_btn = QtGui.QPushButton('Fit inelastic BG', parent = self)
         self.reset_curve_mod_btn = QtGui.QPushButton('Reset curve modifications', parent = self)
+        self.process_dataset_btn = QtGui.QPushButton('Process dataset', parent = self)
         
         #Curve view slider
         self.curve_picker = QtGui.QComboBox(parent = self)
@@ -563,9 +616,11 @@ class CommandCenter(QtGui.QWidget):
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.curve_picker)
         
+        #Buttons
         for operation_btn in self.operation_buttons:
             self.layout.addWidget(operation_btn)
         self.layout.addWidget(self.reset_curve_mod_btn)
+        self.layout.addWidget(self.process_dataset_btn)
 
         self.setLayout(self.layout)
         
@@ -578,6 +633,9 @@ class CommandCenter(QtGui.QWidget):
         
         self.curve_picker.activated.connect(self.curvePicked)
         self.reset_curve_mod_btn.clicked.connect(self.resetCurveModifications)
+        self.process_dataset_btn.clicked.connect(self.processDataset)
+        
+    # -------------------------------------------------------------------------
     
     @QtCore.pyqtSlot(str)
     def curvePicked(self, item_index):        
@@ -585,7 +643,11 @@ class CommandCenter(QtGui.QWidget):
     
     @QtCore.pyqtSlot()
     def resetCurveModifications(self):
-        self.reset_curve_modifications.emit()
+        self.reset_curve_modifications_signal.emit()
+    
+    @QtCore.pyqtSlot()
+    def processDataset(self):
+        self.process_dataset_signal.emit()
     
     # -------------------------------------------------------------------------
     
@@ -670,9 +732,10 @@ class Shell(QtGui.QMainWindow):
     
     def connectSignals(self):
         
-        #Connect curve picker and reset mod button to data_handler
+        #Connect curve picker, reset and final export buttons to data_handler
         self.command_center.switch_curve_signal.connect(self.data_handler.whichCurveToPlot)
-        self.command_center.reset_curve_modifications.connect(self.data_handler.resetRadialCurve)
+        self.command_center.reset_curve_modifications_signal.connect(self.data_handler.resetRadialCurve)
+        self.command_center.process_dataset_signal.connect(self.data_handler.processDataset)
         
         #Connect directory_handler to data handler
         self.directory_widget.dataset_directory_signal.connect(self.data_handler.createDiffractionDataset)
@@ -683,6 +746,7 @@ class Shell(QtGui.QMainWindow):
         self.data_handler.has_mask_rect_signal.connect(self.status_widget.maskRectToggle)
         self.data_handler.has_cutoff_signal.connect(self.status_widget.cutoffToggle)
         self.data_handler.has_inelasticBG_signal.connect(self.status_widget.inelasticBGToggle)
+        self.data_handler.export_ready_signal.connect(self.status_widget.readyToExportToggle)
         
         #Connect commands from the command center to image viewer
         self.command_center.get_image_center_signal.connect(self.image_viewer.displayCenterFinder)
