@@ -173,7 +173,7 @@ class DataHandler(QtCore.QObject):
     
     #Data to be plotted by the image viewer
     radial_average_signal = QtCore.pyqtSignal(object, name = 'radial_average_signal')
-    image_signal = QtCore.pyqtSignal(object, list, str, name = 'image_signal')     #Three arguments to match ImageViewer.displayImage arguments
+    image_signal = QtCore.pyqtSignal(object, name = 'image_signal')     #Three arguments to match ImageViewer.displayImage arguments
     
     has_image_center_signal = QtCore.pyqtSignal(bool, name = 'has_image_center_signal')
     has_mask_rect_signal = QtCore.pyqtSignal(bool, name = 'has_mask_rect_signal')
@@ -367,7 +367,7 @@ class DataHandler(QtCore.QObject):
         
     def sendImage(self):
         self.image = self.getImage()
-        self.image_signal.emit(self.image, list(), 'r')
+        self.image_signal.emit(self.image)
         
     @QtCore.pyqtSlot(object)
     def sendRadialAverage(self, curve):
