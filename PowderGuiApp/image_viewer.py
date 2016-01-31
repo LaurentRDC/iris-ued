@@ -30,28 +30,14 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.image = pg.ImageItem()
         self.image_overlay = pg.ScatterPlotItem()
         self.curve = pg.PlotDataItem()
+        self.curve_overlay = pg.PlotDataItem()  #Will be used to display a second curve if necessary
         
         #Initialize display
         self.initUI()
         self.displayImage( image = None )
         
         #Signals
-        self.image.mouseClickEvent = self.imageClick
         self.image_area.scene().sigMouseMoved.connect(self.updateCrosshair)
-    
-    def imageClick(self, event):
-        pos = event.pos()
-        click_position = ( int(pos.x()), int(pos.y()) )
-        self.image_clicked.emit(click_position)
-    
-    def curveClick(self, event):
-        pos = event.pos()
-        mousePoint = self.curve_area.getViewBox().mapToView(self.curve_area, pos) # Get cursor position within image
-        x_lims, y_lims = self.curve_area.getViewBox().childrenBounds()            # Plot limits
-        mx, my = mousePoint.x(), mousePoint.y()
-        if mx >= int(x_lims[0]) and mx <= int(x_lims[1]) and my >= int(y_lims[0]) and my <= int(y_lims[1]): 
-            print (mx, my)
-            self.curve_clicked.emit( (mx, my) )
         
     def initUI(self):
         
@@ -82,6 +68,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         
         self.curve_area = self.addPlot(colspan = 2)
         self.curve_area.addItem(self.curve)
+        self.curve_area.addItem(self.curve_overlay)
         self.curve_area.setMaximumHeight(300)
         
         # ---------------------------------------------------------------------
@@ -223,8 +210,21 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     
     @QtCore.pyqtSlot(object)
     def displayRadialPattern(self, curve):
-        pen = pg.mkPen(curve.color)
-        self.curve.setData(x = curve.xdata, y = curve.ydata, pen = pen)
+        #Distribute inputs
+        if isinstance(curve, list):
+            main_curve = curve[0]
+            overlay_curve = curve[1]
+        else:
+            main_curve = curve
+            overlay_curve = None
+        
+        #Display  curves
+        self.curve.setData(x = main_curve.xdata, y = main_curve.ydata, pen = pg.mkPen(main_curve.color))
+        
+        if overlay_curve is not None:
+            self.curve_overlay.setData(x = overlay_curve.xdata, y = overlay_curve.ydata, pen = pg.mkPen(overlay_curve.color))
+        else:
+            self.curve_overlay.setData(x = [], y = [])      #Reset plot
     
     # -------------------------------------------------------------------------
     #           SIGNAL METHODS
@@ -257,6 +257,9 @@ if __name__ == '__main__':
     
     test_image = n.random.normal(size = (2048, 2048))
     test_curve = core.RadialCurve(xdata = n.arange(0, 100,0.1), ydata = n.sin(n.arange(0, 100,0.1)), color = 'r')
+    test_background = core.RadialCurve(xdata = n.arange(0,100, 0.1), ydata = n.cos(10*n.arange(0, 100, 0.1)), color = 'b')
+    
+    two_curve_test = [test_curve, test_background]
     
     #Test
     im.displayImage(image = test_image, overlay = [(500,500)], overlay_color = 'r')

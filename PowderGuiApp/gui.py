@@ -442,13 +442,18 @@ class StatusWidget(QtGui.QWidget):
     
     def initLayout(self):
         """ Lays out components on the widget. """
-        self.layout = QtGui.QVBoxLayout()        
+        self.layout = QtGui.QHBoxLayout()
+        labels_layout = QtGui.QVBoxLayout()
+        statuses_layout = QtGui.QVBoxLayout()        
         for label, status in zip(self.labels, self.statuses):
-            layout = QtGui.QHBoxLayout()
-            layout.addWidget(label)
-            layout.addWidget(status)
-            self.layout.addLayout(layout)
+            label.setAlignment(QtCore.Qt.AlignHCenter)
+            status.setAlignment(QtCore.Qt.AlignHCenter)
+            
+            labels_layout.addWidget(label)
+            statuses_layout.addWidget(status)
         
+        self.layout.addLayout(labels_layout)
+        self.layout.addLayout(statuses_layout)
         self.setLayout(self.layout)
     
     def initStatuses(self):
@@ -803,7 +808,6 @@ def testDirectoryHandler():
 def testStatus():
     app = QtGui.QApplication(sys.argv)
     test = StatusWidget()
-    test.setStyleSheet()
     test.show()
     sys.exit(app.exec_())
 
