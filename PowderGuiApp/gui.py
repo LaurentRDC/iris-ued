@@ -2,8 +2,6 @@
 
 import sys
 import os.path
-import numpy as n
-from PIL import Image
 
 #Core functions
 import core
@@ -273,7 +271,7 @@ class DataHandler(QtCore.QObject):
     # -------------------------------------------------------------------------
     @QtCore.pyqtSlot(int)
     def whichCurveToPlot(self, index):
-        curve_dict = {0: self.radial_curve, 1: self.modified_radial_curve}
+        curve_dict = {0: [self.radial_curve, self.background_curve], 1: self.modified_radial_curve}
         self.sendRadialAverage(curve_dict[index])
         
     # -------------------------------------------------------------------------
@@ -316,7 +314,7 @@ class DataHandler(QtCore.QObject):
     
     @QtCore.pyqtSlot(str)
     def createDiffractionDataset(self, directory):
-        #TODO: Allow various resolutions
+        #TODO: Allow various resolutions. Setting page?
         self.diffraction_dataset = DiffractionDataset( directory, resolution = (2048, 2048) )
         
     @QtCore.pyqtSlot(bool)
@@ -339,6 +337,7 @@ class DataHandler(QtCore.QObject):
             self.work_thread = WorkThread(self.diffraction_dataset.batchProcess, center = self.image_center, cutoff = self.cutoff, inelasticBGCurve = self.background_curve, mask_rect = self.mask_rect)
             self.work_thread.start()
             #TODO: What to do after processing?
+            
     # -------------------------------------------------------------------------
     #           IMAGE PREPROCESSING SIGNAL HANDLING
     # -------------------------------------------------------------------------
@@ -351,7 +350,7 @@ class DataHandler(QtCore.QObject):
         self.inelasticBGIntersects = list()
         
         #Plot
-        self.sendRadialAverage(self.radial_curve)
+        self.sendRadialAverage([self.radial_curve, self.background_curve])
     
     @QtCore.pyqtSlot()
     def resetRadialCurve(self):

@@ -72,7 +72,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.curve_area = self.addPlot(colspan = 2)
         self.curve_area.addItem(self.curve)
         self.curve_area.addItem(self.curve_overlay)
-        self.curve_area.setMaximumHeight(300)
+        self.curve_area.setMaximumHeight(400)
         
         # ---------------------------------------------------------------------
         #           CROSSHAIR
