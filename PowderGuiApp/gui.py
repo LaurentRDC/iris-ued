@@ -10,7 +10,7 @@ from core import *
 #GUI backends
 from pyqtgraph.Qt import QtCore, QtGui
 from image_viewer import ImageViewer
-from settings import SettingsDialog
+from settings_dialog import SettingsDialog
 
 # -----------------------------------------------------------------------------
 #           COLOR PALETTE FOR PROGRESS
