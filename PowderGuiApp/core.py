@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
+
 #Basics
-from __future__ import division
 import numpy as n
 from numpy import pi
 import scipy.optimize as opt
@@ -32,7 +32,7 @@ def pseudoVoigt(x, height, xc, width_g, width_l, constant = 0):
     """ Returns a pseudo Voigt profile centered at xc with weighting factor 1/2. """
     return height*(0.5*Gaussian(x, xc, width_g) + 0.5*Lorentzian(x, xc, width_l)) + constant
     
-def biexp(x, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0):
+def biexp(x, a, b, c, d, e, f):
     """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x) + e"""
     return a*n.exp(-b*(x-f)) + c*n.exp(-d*(x-f)) + e
 
@@ -127,7 +127,7 @@ class RadialCurve(object):
         try:
             optimal_parameters, parameters_covariance = opt.curve_fit(function, x, y, p0 = guesses[fit]) 
         except(RuntimeError):
-            print 'Runtime error'
+            print('Runtime error')
             optimal_parameters = guesses[fit]
     
         #Create inelastic background function 
@@ -271,7 +271,7 @@ class DiffractionDataset(object):
         substrate_filename = 'subs.tif'
         subs = n.zeros(shape = self.resolution, dtype = n.float)
         if substrate_filename in os.listdir(self.directory):
-            print 'Substrate image found'
+            print('Substrate image found')
             absolute_path = os.path.join(self.directory, substrate_filename)
             subs = t.imread(absolute_path).astype(n.float)
             

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-import ConfigParser
+import configparser as ConfigParser
 from pyqtgraph.Qt import QtCore, QtGui
 
 settings_filename = os.path.join( os.path.dirname(__file__), 'settings.cfg' )
