@@ -246,9 +246,11 @@ class DiffractionDataset(object):
         self.resolution = resolution
         self.pumpon_background = self.averageTiffFiles('background.*.pumpon.tif')
         self.pumpoff_background = self.averageTiffFiles('background.*.pumpoff.tif')
+        self.pumpoff_image = self.averageTiffFiles('data.nscan.*.pumpoff.tif', background = self.pumpoff_background)
         self.substrate = self.getSubstrateImage()
         self.time_points = self.getTimePoints()
         self.acquisition_date = self.getAcquisitionDate()
+        
         #Optional attributes
         self.exposure = self.getFluence()
         self.fluence = self.getExposure()
@@ -385,6 +387,11 @@ class DiffractionDataset(object):
         #Average images        
         for time in tqdm(self.time_points):
             self.dataAverage(time, export = True)
+        
+        #Average pump off image as well
+        output_directory = os.path.join(self.directory, 'processed')            
+        save_path = os.path.join(output_directory, 'data.average.pumpoff.tif')
+        t.imsave(save_path, self.castTo16Bits(self.pumpoff_image))
     
     def returnAveragedImage(self, time_point):
         """ 
@@ -448,6 +455,11 @@ class DiffractionDataset(object):
             filename = os.path.join(self.directory, 'processed', 'data.timedelay.' + self.timeToString(time) + '.average.pumpon.tif')
             curve = self.processImage(filename, center, cutoff, inelasticBGCurve, mask_rect)
             results.append( (self.timeToString(time), curve) )
+            
+        #Process pump off image as well
+        filename = os.path.join(self.directory, 'processed', 'data.average.pumpoff.tif')
+        curve = self.processImage(filename, center, cutoff, inelasticBGCurve, mask_rect)
+        results.append( ('pumpoff', curve) )
         
         self.export(results)          
             
