@@ -320,11 +320,15 @@ class DataHandler(QtCore.QObject):
         
     @QtCore.pyqtSlot(bool)
     def preprocessImages(self, flag):
-        self.work_thread = WorkThread(self.diffraction_dataset.batchAverage, True) #Check if averaged has been computed before
-        self.work_thread.in_progress_signal.connect(self.preprocessInProgress)
-        self.work_thread.done_signal.connect(self.preprocessDone)
-        #No need to connect the results_signal since batchAverage returns None
-        self.work_thread.start()
+        # Check if data has been processed already
+        if 'processed' in os.listdir(self.diffraction_dataset.directory):
+            self.preprocessDone()
+        else:
+            self.work_thread = WorkThread(self.diffraction_dataset.batchAverage, True) #Check if averaged has been computed before
+            self.work_thread.in_progress_signal.connect(self.preprocessInProgress)
+            self.work_thread.done_signal.connect(self.preprocessDone)
+            #No need to connect the results_signal since batchAverage returns None
+            self.work_thread.start()
     
     def radialAverage(self):
         self.work_thread = WorkThread(core.radialAverage, self.image, '', self.image_center, self.mask_rect)

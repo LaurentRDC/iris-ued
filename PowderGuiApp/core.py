@@ -260,6 +260,26 @@ class DiffractionDataset(object):
         except(AttributeError):     #directory name does not match time pattern
             return '0.0.0.0.0'
     
+    def getTimePoints(self, directory = None):
+        """ Returns a list of time points in the dataset. """
+        #By default, look in dataset directory
+        if directory is None:
+            directory = self.directory
+        
+        #If directory has a 'processed' folder, recursively use this folder instead.
+        if 'processed' in os.listdir(directory):
+            return self.getTimePoints(directory = os.path.join(self.directory, 'processed'))
+            
+        #Get TIFF images
+        image_list = [f for f in os.listdir(directory) 
+                if os.path.isfile(os.path.join(directory, f)) 
+                and f.startswith('data.timedelay.') 
+                and f.endswith('pumpon.tif')]
+        
+        #get time points
+        time_data = [float( re.search('[+-]\d+[.]\d+', f).group() ) for f in image_list]
+        return list(set(time_data))     #Conversion to set then back to list to remove repeated values
+    
     def getFluence(self):
         pass
     
@@ -307,7 +327,8 @@ class DiffractionDataset(object):
         image_list = glob.glob(os.path.join(self.directory, filename_template))
         
         if not image_list:      #List is empty
-            raise ValueError('filename_template does not match any file in the dataset directory')
+            print('filename_template does not match any file in the dataset directory')
+            return None
         
         image = n.zeros(shape = self.resolution, dtype = n.float)
         for filename in tqdm(image_list, nested = True):
@@ -378,18 +399,6 @@ class DiffractionDataset(object):
             return t.imread(abs_filename).astype(n.float)
         else:
             return n.zeros(shape = self.resolution, dtype = n.float)
-    
-    def getTimePoints(self):
-        """ """
-        #Get TIFF images
-        image_list = [f for f in os.listdir(self.directory) 
-                if os.path.isfile(os.path.join(self.directory, f)) 
-                and f.startswith('data.timedelay.') 
-                and f.endswith('pumpon.tif')]
-        
-        #get time points
-        time_data = [float( re.search('[+-]\d+[.]\d+', f).group() ) for f in image_list]
-        return list(set(time_data))     #Conversion to set then back to list to remove repeated values
     
     @staticmethod
     def timeToString(time, units = False):
@@ -486,7 +495,6 @@ def plotTimeResolved(filename):
 if __name__ == '__main__':
     
     #Testing
-    directory = 'K:\\2016.01.28.18.21.VO2_17mJ'
+    directory = 'C:\\Users\\Laurent\\OneDrive\\McGill\\MSc Thesis\\2016.03.04.16.09.V02_30uJ'
     #plotTimeResolved(directory)
     d = DiffractionDataset(directory)
-    #d.batchProcess(center = [937.4, 998.7], cutoff = [0,0], inelasticBGCurve = None, mask_rect = [926, 1049, 0, 1091])
