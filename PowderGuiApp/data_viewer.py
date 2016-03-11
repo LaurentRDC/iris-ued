@@ -1,11 +1,13 @@
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore
+import os.path
+from pyqtgraph.Qt import QtCore,QtGui,uic
 import numpy as n
 import core
 
+
 pg.mkQApp()
 
-class ImageViewer(pg.GraphicsLayoutWidget):
+class DataViewer(QtGui.QMainWindow):
     """
     Widget for displaying diffraction data. This widget has two sections:
     an image area and a curve area.
@@ -21,18 +23,11 @@ class ImageViewer(pg.GraphicsLayoutWidget):
     
     def __init__(self, parent = None):
         
-        super(ImageViewer, self).__init__()
-        
-        #Dat amanipulation attributes
-        self.center_finder = None
-        self.mask = None
-        self.cutoff_line = None
-        self.inelasticBG_lines = list()
-        
-        
-        self.curve = pg.PlotDataItem()
-        self.curve_overlay = pg.PlotDataItem()  #Will be used to display a second curve if necessary
-        
+        super(DataViewer, self).__init__()              
+
+        self.plot_view = pg.PlotWidget()
+        self.test_curve = core.RadialCurve(xdata = n.arange(0, 100,0.1), ydata = n.sin(n.arange(0, 100,0.1)), color = 'b')
+       
         #Initialize display
         self.initUI()
         
@@ -44,150 +39,35 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         # ---------------------------------------------------------------------
         #       LAYOUT
         # ---------------------------------------------------------------------
-        self.setBackgroundBrush(pg.mkBrush('b'))
-        self.test_label = self.addLabel('Hello World')
+        uic.loadUi('testlayout3.ui', self)        
+     
+    # -------------------------------------------------------------------------
+    #           FILE IO
+    # -------------------------------------------------------------------------
+
+    def menuOpen(self):
+        """ 
+        Activates a file dialog that selects the data directory to be processed. If the folder
+        selected is one with processed images (then the directory name is C:\\...\\processed\\),
+        return data 'root' directory.
+        """
         
-        self.nextCol()
-        # Let's go with white background
-        self.setBackgroundBrush(pg.mkBrush('w'))
+        possible_directory = QtGui.QFileDialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
+        possible_directory = os.path.abspath(possible_directory)
         
-        self.nextRow()
-        
-        self.curve_area = self.addPlot(colspan = 2)
-        self.curve_area.addItem(self.curve)
-        self.curve_area.addItem(self.curve_overlay)
-        self.curve_area.setMaximumHeight(400)
-        
-        # ---------------------------------------------------------------------
-        #           DATA INTERACTION ITEMS MASK
-        # ---------------------------------------------------------------------
-        
-        self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
-        self.mask.addScaleHandle([1, 1], [0, 0])
-        self.mask.addScaleHandle([0, 0], [1, 1])
-        
-        self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
-        self.cutoff_line = pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('r'))
-        self.inelasticBG_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(6)]
-    
+        #Check whether the directory name ends in 'processed'. If so, return previous directory
+        last_directory = possible_directory.split('\\')[-1]
+        if last_directory == 'processed':
+            directory = os.path.dirname(possible_directory) #If directory is 'processed', back up one directory
+        else:
+            directory = possible_directory
+       
     # -------------------------------------------------------------------------
     #           DISPLAY (and HIDE) OBJECTS
     # -------------------------------------------------------------------------
     
         
-    @QtCore.pyqtSlot()
-    def displayCutoff(self):
-        self.curve_area.getViewBox().addItem(self.cutoff_line)
-    
-    @QtCore.pyqtSlot()
-    def displayInelasticBG(self):
-        #Determine curve range
-        xmin, xmax = self.curve.dataBounds(ax = 0)
-        dist_between_lines = float(xmax - xmin)/len(self.inelasticBG_lines)
-        #Distribute lines equidistantly
-        pos = xmin
-        for line in self.inelasticBG_lines:
-            line.setValue(pos)
-            self.curve_area.getViewBox().addItem(line)
-            pos += dist_between_lines
-    
-    def hideCutoff(self):
-        self.curve_area.getViewBox().removeItem(self.cutoff_line)
-    
-    def hideInelasticBG(self):
-        for line in self.inelasticBG_lines:
-            self.curve_area.getViewBox().removeItem(line)
-    
-    # -------------------------------------------------------------------------
-    #           POSITION METHODS
-    # -------------------------------------------------------------------------
-    
-    def maskPosition(self):
-        """
-        Returns the x,y limits of the rectangular beam block mask. Due to the 
-        inversion of plotting axes, y-axis in the image_viewer is actually
-        the x-xis when analyzing data.
-        
-        Returns
-        -------
-        xmin, xmax, ymin, ymax : tuple
-            The limits determining the shape of the rectangular beamblock mask
-        """
-        rect = self.mask.parentBounds().toRect()
-        
-        #If coordinate is negative, return 0
-        x1 = max(0, rect.topLeft().x() )
-        x2 = max(0, rect.x() + rect.width() )
-        y1 = max(0, rect.topLeft().y() )
-        y2 = max(0, rect.y() + rect.height() )
-               
-        return y1, y2, x1, x2       #Flip output since image viewer plots transpose...
-    
-    def centerPosition(self, return_radius = False):
-        """
-        Returns
-        -------
-        x, y : tuple
-            center coordinates of the centerFinder object.
-        """
-        corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
-        radius = self.center_finder.size().x()/2.0
-        
-        #Flip output since image viewer plots transpose...
-        if return_radius:
-            return corner_y + radius, corner_x + radius, radius
-        else:
-            return corner_y + radius, corner_x + radius
-    
-    def cutoffPosition(self):
-        """
-        Returns
-        -------
-        x,y : tuple
-            (x,y)-coordinate of the cutoff line with respect to the plotted data.
-            Only the x-value is meaningful.
-        """
-        x = self.cutoff_line.value()
-        return (x, 0)
-    
-    def inelasticBGPosition(self):
-        """
-        Returns
-        -------
-        intersects : list of tuples
-            list of (x,y) tuples representing the intersects of the inelastic BG fit
-            lines. Only the x-coordinates are meaningful.
-        """
-        intersects = list()
-        for line in self.inelasticBG_lines:
-            x = line.value()
-            intersects.append( (x, 0) )
-        return intersects
-    # -------------------------------------------------------------------------
-    #           RETURN DATA SLOTS
-    #   These slots are used to emit data. 
-    # -------------------------------------------------------------------------
-    
-    @QtCore.pyqtSlot()
-    def returnImageCenter(self):
-        self.image_center_signal.emit(self.centerPosition())
-        self.hideCenterFinder()
-    
-    @QtCore.pyqtSlot()
-    def returnMaskRect(self):
-        self.mask_rect_signal.emit(self.maskPosition())
-        self.hideMask()
-    
-    @QtCore.pyqtSlot()
-    def returnCutoff(self):
-        self.cutoff_signal.emit(self.cutoffPosition())
-        self.hideCutoff()
-        
-    @QtCore.pyqtSlot()
-    def returnInelasticBG(self):
-        self.inelastic_BG_signal.emit(self.inelasticBGPosition())
-        self.hideInelasticBG()
-    
+
     # -------------------------------------------------------------------------
     #           PLOTTING METHODS
     # -------------------------------------------------------------------------
@@ -195,7 +75,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
 
     
     @QtCore.pyqtSlot(object)
-    def displayRadialPattern(self, curve):
+    def displayRadialPattern(self):
         """ 
         Displays one or two curves (overlayed) in to curve area.
         
@@ -206,20 +86,8 @@ class ImageViewer(pg.GraphicsLayoutWidget):
             will be plotted.
         """
         #Distribute inputs
-        if isinstance(curve, list):
-            main_curve = curve[0]
-            overlay_curve = curve[1]
-        else:
-            main_curve = curve
-            overlay_curve = None
-        
-        #Display  curves
-        self.curve.setData(x = main_curve.xdata, y = main_curve.ydata, pen = pg.mkPen(main_curve.color))
-        
-        if overlay_curve is not None:
-            self.curve_overlay.setData(x = overlay_curve.xdata, y = overlay_curve.ydata, pen = pg.mkPen(overlay_curve.color))
-        else:
-            self.curve_overlay.setData(x = [], y = [])      #Reset plot
+        self.plot_view.plot(self.test_curve.xdata,self.test_curve.ydata)
+        #Reset plot
     
     # -------------------------------------------------------------------------
     #           SIGNAL METHODS
@@ -245,14 +113,5 @@ class ImageViewer(pg.GraphicsLayoutWidget):
             self.hLine.setPos(mousePoint.y())
         
 if __name__ == '__main__':  
-    im = ImageViewer()
+    im = DataViewer()
     im.show()
-    
-    test_curve = core.RadialCurve(xdata = n.arange(0, 100,0.1), ydata = n.sin(n.arange(0, 100,0.1)), color = 'r')
-    test_background = core.RadialCurve(xdata = n.arange(0,100, 0.1), ydata = n.cos(10*n.arange(0, 100, 0.1)), color = 'b')
-    
-    two_curve_test = [test_curve, test_background]
-    
-    #Test
-    im.displayRadialPattern(test_curve)
-    im.displayInelasticBG()
