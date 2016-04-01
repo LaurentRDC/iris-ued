@@ -40,7 +40,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.displayImage( image = None )
         
         #Signals
-        #TODO: a way to disable crosshair
+        #TODO: a way to disable crosshair?
         self.image_area.scene().sigMouseMoved.connect(self.updateCrosshair)
         
     def initUI(self):

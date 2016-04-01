@@ -506,7 +506,6 @@ def plotTimeResolved(filename):
 
 if __name__ == '__main__':
     
-    #Testing
-    directory = 'C:\\Users\\Laurent\\OneDrive\\McGill\\MSc Thesis\\2016.03.04.16.09.V02_30uJ'
-    #plotTimeResolved(directory)
-    d = DiffractionDataset(directory)
+    image_filename = 'C:\\Users\\Laurent\\OneDrive\\McGill\\MSc Thesis\\2016.03.04.16.09.V02_30uJ\\processed\\data.timedelay.+0.00.average.pumpon.tif'
+    image = t.imread(image_filename).astype(n.float)
+    radav = radialAverage(image, name = '', center = [1135, 928])
