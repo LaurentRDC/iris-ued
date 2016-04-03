@@ -80,7 +80,8 @@ class Curve(object):
     def cutoff(self, cutoff = [0,0]):
         """ Cuts off a part of the pattern"""
         cutoff_index = n.argmin(n.abs(self.xdata - cutoff[0]))
-        return Curve(self.xdata[cutoff_index::], self.ydata[cutoff_index::], name = 'Cutoff ' + self.name, color = self.color)
+        self.xdata = self.xdata[cutoff_index::] 
+        self.ydata = self.ydata[cutoff_index::]
 
     def inelastic_background(self, points = list(), fit = 'biexp'):
         """

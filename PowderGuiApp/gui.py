@@ -4,13 +4,11 @@ import sys
 import os.path
 
 #Core functions
-import core
-from core import *
+from dataset import DiffractionDataset
 
 #GUI backends
 from pyqtgraph.Qt import QtCore, QtGui
 from image_viewer import ImageViewer
-from settings_dialog import SettingsDialog
 
 # -----------------------------------------------------------------------------
 #           COLOR PALETTE FOR PROGRESS
@@ -77,41 +75,22 @@ class DirectoryHandler(QtGui.QWidget):
     
     def initUI(self):
         
-        self.file_dialog = QtGui.QFileDialog(parent = self)
-        
+        self.file_dialog = QtGui.QFileDialog(parent = self)        
         self.directory_btn = QtGui.QPushButton('Select directory', parent = self)
-        self.preprocess_btn = QtGui.QPushButton('Preprocess images', parent = self)
-        self.preprocess_progress_label = QtGui.QLabel('Incomplete', parent = self)
-        
-        self.preprocess_btn.setChecked(False)
-        self.preprocess_progress_label.setPalette(incomplete_palette)
-    
+
     def initLayout(self):
         
         self.file_dialog_row = QtGui.QHBoxLayout()
         self.file_dialog_row.addWidget(self.directory_btn)
         
-        self.preprocess_row = QtGui.QHBoxLayout()
-        self.preprocess_row.addWidget(self.preprocess_btn)
-        self.preprocess_row.addWidget(self.preprocess_progress_label)
-        
         self.layout = QtGui.QVBoxLayout()
         self.layout.addLayout(self.file_dialog_row)
-        self.layout.addLayout(self.preprocess_row)
         
         self.setLayout(self.layout)
     
     def connectSignals(self):
-        self.directory_btn.clicked.connect(self.directoryLocator)
-        self.preprocess_btn.clicked.connect(self.preprocessImages)
-        
-        self.reset_signal.connect(self.reset)
-        
-        #When preprocess_btn is clicked, send signal to change preprocess_label to 'in progress' state
-        self.preprocess_signal.connect(self.preprocessInProgress)        
-    
-    def preprocessImages(self):
-        self.preprocess_signal.emit(True)
+        self.directory_btn.clicked.connect(self.directoryLocator)        
+        self.reset_signal.connect(self.reset)    
         
     def directoryLocator(self):
         """ 
@@ -134,27 +113,8 @@ class DirectoryHandler(QtGui.QWidget):
         self.dataset_directory_signal.emit(directory)
     
     @QtCore.pyqtSlot(bool)
-    def preprocessInProgress(self, in_progress = False):
-        if in_progress:
-            self.preprocess_progress_label.setText('In progress...')
-            self.preprocess_progress_label.setPalette(in_progress_palette)
-    
-    @QtCore.pyqtSlot(bool)
-    def preprocessComplete(self, complete = False):
-        if complete:
-            palette = complete_palette
-            self.preprocess_progress_label.setText('Complete.')
-        else:
-            palette = incomplete_palette
-            self.preprocess_progress_label.setText('Incomplete.')
-        self.preprocess_progress_label.setPalette(palette)
-    
-    @QtCore.pyqtSlot(bool)
     def reset(self, hmm_really = True):
-        if hmm_really:
-            self.preprocess_btn.setChecked(False)
-            self.preprocess_progress_label.setText('Incomplete.')
-            self.preprocess_progress_label.setPalette(incomplete_palette)
+        pass
 
 # -----------------------------------------------------------------------------
 #           DATA HANDLER OBJECT
@@ -185,6 +145,7 @@ class DataHandler(QtCore.QObject):
         
         #Data attributes
         self.image = None
+        self.time = 0
         self.radial_curve = None            #Keep an unmodified copy as a reference 
         self.background_curve = None
         self.modified_radial_curve = None   #Modified from raw radial curve
@@ -243,8 +204,7 @@ class DataHandler(QtCore.QObject):
         This method assumes that the images have been preprocessed (and so 
         directory//processed exists)
         """
-        time = min(self.diffraction_dataset.time_points)
-        return self.diffraction_dataset.returnAveragedImage(time)
+        return self.diffraction_dataset.image(0)
         
     @QtCore.pyqtSlot(tuple)
     def setImageCenter(self, center):
@@ -316,22 +276,11 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot(str)
     def createDiffractionDataset(self, directory):
         #TODO: Allow various resolutions. Setting page?
-        self.diffraction_dataset = DiffractionDataset( directory, resolution = (2048, 2048) )
-        
-    @QtCore.pyqtSlot(bool)
-    def preprocessImages(self, flag):
-        # Check if data has been processed already
-        if 'processed' in os.listdir(self.diffraction_dataset.directory):
-            self.preprocessDone()
-        else:
-            self.work_thread = WorkThread(self.diffraction_dataset.batchAverage, True) #Check if averaged has been computed before
-            self.work_thread.in_progress_signal.connect(self.preprocessInProgress)
-            self.work_thread.done_signal.connect(self.preprocessDone)
-            #No need to connect the results_signal since batchAverage returns None
-            self.work_thread.start()
+        self.diffraction_dataset = DiffractionDataset( directory )
+        self.sendImage()
     
     def radialAverage(self):
-        self.work_thread = WorkThread(core.radialAverage, self.image, '', self.image_center, self.mask_rect)
+        self.work_thread = WorkThread(self.diffraction_dataset.radial_average, self.time, self.image_center, self.mask_rect)
         #TODO: have some way of checking radial averaging progress
         self.work_thread.results_signal.connect(self.setRadialCurve)
         self.work_thread.start()
@@ -339,7 +288,7 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot()
     def processDataset(self):
         if (self.has_image_center and self.has_mask_rect and self.has_cutoff and self.has_inelasticBG):
-            self.work_thread = WorkThread(self.diffraction_dataset.batchProcess, center = self.image_center, cutoff = self.cutoff, inelasticBGCurve = self.background_curve, mask_rect = self.mask_rect)
+            self.work_thread = WorkThread(self.diffraction_dataset.process, center = self.image_center, cutoff = self.cutoff, inelastic_background = self.background_curve, mask_rect = self.mask_rect)
             self.work_thread.start()
             #TODO: What to do after processing?
             
@@ -376,15 +325,6 @@ class DataHandler(QtCore.QObject):
     @QtCore.pyqtSlot(object)
     def sendRadialAverage(self, curve):
         self.radial_average_signal.emit(curve)
-    
-    @QtCore.pyqtSlot(bool)
-    def preprocessInProgress(self, flag):
-        self.image_preprocessing_in_progress_signal.emit(flag)
-    
-    @QtCore.pyqtSlot()
-    def preprocessDone(self):
-        self.image_preprocessed_signal.emit(True)
-        self.sendImage()
     
     # -------------------------------------------------------------------------
     
@@ -748,7 +688,6 @@ class Shell(QtGui.QMainWindow):
         
         #Connect directory_handler to data handler
         self.directory_widget.dataset_directory_signal.connect(self.data_handler.createDiffractionDataset)
-        self.directory_widget.preprocess_signal.connect(self.data_handler.preprocessImages)
         
         #Connect data handler to status widget
         self.data_handler.has_image_center_signal.connect(self.status_widget.imageCenterToggle)
@@ -776,10 +715,6 @@ class Shell(QtGui.QMainWindow):
         
         self.data_handler.image_signal.connect(self.image_viewer.displayImage)
         self.data_handler.radial_average_signal.connect(self.image_viewer.displayRadialPattern)
-        
-        #connect in-progress to status widget
-        self.data_handler.image_preprocessing_in_progress_signal.connect(self.directory_widget.preprocessInProgress)
-        self.data_handler.image_preprocessed_signal.connect(self.directory_widget.preprocessComplete)
         
         self.command_center.image_center_in_progress.connect(self.status_widget.imageCenterInProgress)
         self.command_center.mask_rect_in_progress.connect(self.status_widget.maskRectInProgress)
@@ -829,4 +764,4 @@ def run():
     
 #Run
 if __name__ == '__main__':
-    pass
+    run()
