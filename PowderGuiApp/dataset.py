@@ -206,12 +206,12 @@ class DiffractionDataset(object):
         directory : str
             Absolute path to the dataset directory
         """
+        # Check that the directory is a 'processed' directory.
+        if not directory.endswith('processed') and 'processed' in os.listdir(directory):
+            directory = os.path.join(directory, 'processed')
+            
         self.directory = directory
-        self.processed_directory = os.path.join(directory, 'processed')
-        self.radial_average_filename = os.path.join(self.processed_directory, 'radial_averages')
-        
-        # Private attributes
-        self._exp_params_filename = os.path.join(self.processed_directory, 'experimental_parameters.txt') 
+        self._exp_params_filename = os.path.join(self.directory, 'experimental_parameters.txt') 
     
     def image(self, time):
         """
@@ -224,7 +224,7 @@ class DiffractionDataset(object):
         """
         time = str(float(time))
         try:
-            return read(os.path.join(self.processed_directory, 'data_timedelay_{0}_average_pumpon.tif'.format(time)))
+            return read(os.path.join(self.directory, 'data_timedelay_{0}_average_pumpon.tif'.format(time)))
         except IOError:
             print('Available time points : {0}'.format(repr(self.time_points)))
     
@@ -254,9 +254,13 @@ class DiffractionDataset(object):
         return Curve(xdata, intensity, name = time)
     
     @property
+    def radial_average_filename(self):
+        return os.path.join(self.directory, 'radial_averages')
+        
+    @property
     def time_filenames(self):
-        return [f for f in os.listdir(self.processed_directory) 
-                if os.path.isfile(os.path.join(self.processed_directory, f)) 
+        return [f for f in os.listdir(self.directory) 
+                if os.path.isfile(os.path.join(self.directory, f)) 
                 and f.startswith('data_timedelay_') 
                 and f.endswith('_pumpon.tif')]
     
@@ -271,7 +275,7 @@ class DiffractionDataset(object):
     @property
     def resolution(self):
         # Get the shape of the first image in self.time_filenames
-        fn = os.path.join(self.processed_directory, self.time_filenames[0])
+        fn = os.path.join(self.directory, self.time_filenames[0])
         return read(fn).shape
     
     # -------------------------------------------------------------------------
@@ -326,16 +330,16 @@ class DiffractionDataset(object):
     
     @property
     def pumpoff_background(self):
-        return read(os.path.join(self.processed_directory, 'background.average.pumpoff.tif'))
+        return read(os.path.join(self.directory, 'background.average.pumpoff.tif'))
     
     @property
     def pumpon_background(self):
-        return read(os.path.join(self.processed_directory, 'background.average.pumpon.tif'))
+        return read(os.path.join(self.directory, 'background.average.pumpon.tif'))
     
     @property
     def substrate(self):
         try:
-            return read(os.path.join(self.processed_directory, 'substrate.tif'))
+            return read(os.path.join(self.directory, 'substrate.tif'))
         except IOError: #File does not exist
             return n.zeros(shape = self.resolution, dtype = n.float)
     

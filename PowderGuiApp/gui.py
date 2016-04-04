@@ -62,7 +62,6 @@ class WorkThread(QtCore.QThread):
 class DirectoryHandler(QtGui.QWidget):
     
     dataset_directory_signal = QtCore.pyqtSignal(str, name = 'dataset_directory_signal')
-    preprocess_signal = QtCore.pyqtSignal(bool, name = 'preprocess_signal')
     reset_signal = QtCore.pyqtSignal(bool, name = 'reset_signal')
     
     def __init__(self, parent = None):
@@ -99,15 +98,15 @@ class DirectoryHandler(QtGui.QWidget):
         return data 'root' directory.
         """
         
-        possible_directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
-        possible_directory = os.path.abspath(possible_directory)
+        directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
+        directory = os.path.abspath(directory)
         
-        #Check whether the directory name ends in 'processed'. If so, return previous directory
-        last_directory = possible_directory.split('\\')[-1]
-        if last_directory == 'processed':
-            directory = os.path.dirname(possible_directory) #If directory is 'processed', back up one directory
-        else:
-            directory = possible_directory
+#        #Check whether the directory name ends in 'processed'. If so, return previous directory
+#        last_directory = possible_directory.split('\\')[-1]
+#        if last_directory == 'processed':
+#            directory = os.path.dirname(possible_directory) #If directory is 'processed', back up one directory
+#        else:
+#            directory = possible_directory
         
         self.reset_signal.emit(True)
         self.dataset_directory_signal.emit(directory)

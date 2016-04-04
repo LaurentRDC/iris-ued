@@ -45,11 +45,7 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         
     def initUI(self):
         
-        # ---------------------------------------------------------------------
-        #       LAYOUT
-        # ---------------------------------------------------------------------
-        
-        # Let's go with white background
+        # LAYOUT
         self.setBackgroundBrush(pg.mkBrush('w'))
         
         self.image_position_label = pg.LabelItem()
@@ -75,19 +71,14 @@ class ImageViewer(pg.GraphicsLayoutWidget):
         self.curve_area.addItem(self.curve_overlay)
         self.curve_area.setMaximumHeight(400)
         
-        # ---------------------------------------------------------------------
         #           CROSSHAIR
-        # ---------------------------------------------------------------------
-        
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
         self.hLine = pg.InfiniteLine(angle=0, movable=False)
         self.image_area.addItem(self.vLine, ignoreBounds=True)
         self.image_area.addItem(self.hLine, ignoreBounds=True)
         
-        # ---------------------------------------------------------------------
+
         #           DATA INTERACTION ITEMS MASK
-        # ---------------------------------------------------------------------
-        
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
