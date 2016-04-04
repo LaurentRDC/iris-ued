@@ -276,75 +276,51 @@ class DiffractionDataset(object):
     
     # -------------------------------------------------------------------------
     # Properties read from the experimental parameters file
-    @property
-    def fluence(self):
+    
+    def _read_experimental_parameter(self, key):
+        """
+        Reads an experimental parameter from the DiffractionDataset's
+        experimental parameter file.
+        
+        Parameters
+        ----------
+        key : str
+            Name of the parameter
+        """
         with open(self._exp_params_filename, 'r') as exp_params:
             for line in exp_params:
-                if line.startswith('Fluence'): 
+                if line.startswith(key): 
                     value = line.split('=')[-1]
                     break
         
         value = value.replace(' ','')
-        try:
-            return float(value)
-        except: #Value might be an invalid number. E.g. 'BLANK'
-            return 0.0
+        value = value.replace('s','')                   # For exposure values with units
+        if key == 'Acquisition date': 
+            return value.strip('\n')
+        else:
+            try:
+                return float(value)
+            except: #Value might be an invalid number. E.g. 'BLANK'
+                return 0.0
+    @property
+    def fluence(self):
+        return self._read_experimental_parameter('Fluence')
     
     @property
     def current(self):
-        with open(self._exp_params_filename, 'r') as exp_params:
-            for line in exp_params:
-                if line.startswith('Current'): 
-                    value = line.split('=')[-1]
-                    break
-        
-        value = value.replace(' ','')
-        try:
-            return float(value)
-        except: #Value might be an invalid number. E.g. 'BLANK'
-            return 0.0
+        return self._read_experimental_parameter('Current')
     
     @property
     def exposure(self):
-        with open(self._exp_params_filename, 'r') as exp_params:
-            for line in exp_params:
-                if line.startswith('Exposure'): 
-                    value = line.split('=')[-1]
-                    break
-        
-        value = value.replace(' ','')
-        value = value.replace('s','')
-        try:
-            return float(value)
-        except: #Value might be an invalid number. E.g. 'BLANK'
-            return 0.0
+        return self._read_experimental_parameter('Exposure')
     
     @property
     def energy(self):
-        with open(self._exp_params_filename, 'r') as exp_params:
-            for line in exp_params:
-                if line.startswith('Energy'): 
-                    value = line.split('=')[-1]
-                    break
-        
-        value = value.replace(' ','')
-        try:
-            return float(value)
-        except: #Value might be an invalid number. E.g. 'BLANK'
-            return 0.0
+        return self._read_experimental_parameter('Energy')
         
     @property    
     def acquisition_date(self):
-        with open(self._exp_params_filename, 'r') as exp_params:
-            for line in exp_params:
-                if line.startswith('Acquisition date'): 
-                    value = line.split('=')[-1]
-                    break
-    
-        value = value.replace(' ','')
-        # For some reason, the Acquisition date line in the parameter file
-        # sometime contains a '\n'.
-        return value.strip('\n')
+        return self._read_experimental_parameter('Acquisition date')
     
     # -------------------------------------------------------------------------
     
@@ -409,9 +385,20 @@ class DiffractionDataset(object):
         
     def process(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, mask_rect = None):
         """
-        Returns a list of RadialCurve objects (one for every time point)
-        """
+        Processes and exports time delay data.
         
+        Parameters
+        ----------
+        center : array-like, shape (2,)
+            [x,y] coordinates of the center (in pixels)
+        cutoff : array-like, shape (2,)
+            Values of radius at which to cutoff the curve.
+        inelastic_background : curve.Curve object, optional
+            Curve of the inelastic_background
+        mask_rect : Tuple, shape (4,), optional
+            Tuple containing x- and y-bounds (in pixels) for the beamblock mask
+            mast_rect = (x1, x2, y1, y2)
+        """
         results = list()
         for time in tqdm(self.time_points):
             curve = self.process_image(time, center, cutoff, inelasticBGCurve, mask_rect)
