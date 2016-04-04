@@ -294,12 +294,6 @@ if __name__ == '__main__':
     im.displayCenterFinder()
     
     test_image = n.random.normal(size = (2048, 2048))
-    test_curve = core.RadialCurve(xdata = n.arange(0, 100,0.1), ydata = n.sin(n.arange(0, 100,0.1)), color = 'r')
-    test_background = core.RadialCurve(xdata = n.arange(0,100, 0.1), ydata = n.cos(10*n.arange(0, 100, 0.1)), color = 'b')
-    
-    two_curve_test = [test_curve, test_background]
-    
+        
     #Test
     im.displayImage(image = test_image, overlay = [(500,500)], overlay_color = 'r')
-    im.displayRadialPattern(test_curve)
-    im.displayInelasticBG()

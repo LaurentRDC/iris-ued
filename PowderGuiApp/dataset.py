@@ -19,6 +19,55 @@ import h5py
 from PIL import Image
 from tqdm import tqdm
 
+def electron_wavelength(kV, units = 'meters'):
+    """ 
+    Returns the relativistic wavelength of an electron.
+        
+    Parameters
+    ----------
+    kV : float
+        Voltage in kilovolts of the instrument
+    units : str, optional
+        Acceptable units are 'meters' or 'm', and 'angstroms' or 'A'.
+    """
+    m = 9.109*10**(-31)     #in kg
+    e = 1.602*10**(-19)     #in C
+    c = 299792458*(10**10)  #in m/s
+    h = 6.63*10**(-34)      #in J*s
+    V = kV * 1000
+    
+    #from: en.wikipedia.org/wiki/Electron_diffraction#Wavelength_of_electrons
+    wavelength_meters = n.sqrt((h**2*c**2)/(e*V*(2*m*c**2+e*V)))
+    if units == 'meters' or units == 'm':
+        return wavelength_meters
+    elif units == 'angstroms' or units.lower() == 'a':
+        return wavelength_meters*(10**10)
+    else:
+        raise ValueError('Invalid units')
+
+def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2235):
+    """
+    Returns the scattering length s = G/4pi for an array of radius data in pixels.
+    
+    Parameters
+    ----------
+    radius : array-like, shape (N,)
+        Radius from center of diffraction pattern, in units of pixels.
+    pixel_width : numerical
+        CCD pixel width in meters.
+    energy : numerical
+        Electron energy in keV.
+        
+    Notes
+    -----
+    Default values for pixel width and camera distance correspond to experimental
+    values for the Siwick diffractometer as of April 2016.
+    """
+    
+    radius = n.array(radius) * pixel_width
+    diffraction_half_angle = n.arctan(radius/camera_distance)/2
+    return n.sin(diffraction_half_angle)/electron_wavelength(energy, units = 'angstroms')
+        
 def cast_to_16_bits(array):
     """ 
     Returns an array in int16 format. Array values below 0 are cast to 0,
@@ -180,6 +229,10 @@ class DiffractionDataset(object):
     image
         Access time-delay averaged diffraction patterns
     
+    image_series
+        Access to the ensemble of time-delay averaged diffraction patterns
+        in a single ndarray.
+    
     radial_pattern
         Access time-delay processed powder diffraction patterns
         
@@ -211,7 +264,6 @@ class DiffractionDataset(object):
             directory = os.path.join(directory, 'processed')
             
         self.directory = directory
-        self._exp_params_filename = os.path.join(self.directory, 'experimental_parameters.txt') 
     
     def image(self, time):
         """
@@ -228,6 +280,15 @@ class DiffractionDataset(object):
         except IOError:
             print('Available time points : {0}'.format(repr(self.time_points)))
     
+    def image_series(self):
+        """
+        Returns a stack of time delay images, with time as the third axis.
+        """
+        images = list()
+        for time in self.time_points:
+            images.append(self.image(time))
+        return n.array(images)
+        
     def radial_pattern(self, time):
         """
         Returns the image of the processed pictures.
@@ -253,9 +314,39 @@ class DiffractionDataset(object):
         intensity = file['/{0}/intensity'.format(time)]
         return Curve(xdata, intensity, name = time)
     
+    def peak_dynamics(self, index, index2 = None):
+        """
+        Returns a curve corresponding to the time-dynamics of a location in the 
+        diffraction patterns. Think of it as looking at the time-evolution
+        of a diffraction peak.
+        
+        Parameters
+        ----------
+        index : int
+            Index of the xdata
+        index2 : int, optional
+            If not None (default), the peak value is integrated between index and
+            index 2.
+        """
+
+        time_values = n.array(list(map(float, self.time_points)))
+        
+        intensity = list()
+        for time_point in self.time_points:
+            if index2 is not None:
+                intensity.append(self.radial_pattern(time_point).ydata[index:index2].sum())
+            else:
+                intensity.append(self.radial_pattern(time_point).ydata[index])
+        
+        return time_values, n.array(intensity, dtype = n.float)        
+        
     @property
     def radial_average_filename(self):
         return os.path.join(self.directory, 'radial_averages')
+    
+    @property
+    def _exp_params_filename(self):
+        return os.path.join(self.directory, 'experimental_parameters.txt')
         
     @property
     def time_filenames(self):
@@ -338,10 +429,7 @@ class DiffractionDataset(object):
     
     @property
     def substrate(self):
-        try:
-            return read(os.path.join(self.directory, 'substrate.tif'))
-        except IOError: #File does not exist
-            return n.zeros(shape = self.resolution, dtype = n.float)
+        return read(os.path.join(self.directory, 'substrate.tif'))
     
     def radial_average(self, time, center, mask_rect = None):
         """
@@ -358,8 +446,11 @@ class DiffractionDataset(object):
             Tuple containing x- and y-bounds (in pixels) for the beamblock mask
             mast_rect = (x1, x2, y1, y2)
         """
-        xdata, ydata = radial_average(self.image(time), center, mask_rect)
-        return Curve(xdata, ydata, name = str(time), color = 'b')
+        xdata, intensity = radial_average(self.image(time), center, mask_rect)
+        
+        # Change x-data from pixels to scattering length
+        s = scattering_length(xdata, self.energy)
+        return Curve(s, intensity, name = str(time), color = 'b')
         
     def process_image(self, time, center, cutoff, inelastic_background = None, mask_rect = None):
         """
@@ -413,7 +504,8 @@ class DiffractionDataset(object):
     def _export(self, results):
         """ 
         Export radially-averaged processed powder diffraction patterns in HDF5
-        format and legacy MATLAB format.
+        format and legacy MATLAB format. If the files already exist, they will be
+        overwritten.
         
         Parameters
         ----------
@@ -431,6 +523,10 @@ class DiffractionDataset(object):
             Absolute filename of the exported data
         results : list
             List of tuples containing a time delay (str) and a curve (curve.Curve)
+        
+        Notes
+        -----
+        scipy.io.savemat overwrites existing files.
         """
         from scipy.io import savemat
         
@@ -448,10 +544,14 @@ class DiffractionDataset(object):
             Absolute filename of the exported data
         results : list
             List of tuples containing a time delay (str) and a curve (curve.Curve)
+        
+        Notes
+        -----
+        This function will overwrite existing radial averages.
         """
         from h5py import File
         
-        with File(filename, 'w', libver = 'latest') as f:
+        with File(filename, 'w', libver = 'latest') as f:       # Overwrite if it already exists
     
             # Attributes
             f.attrs['acquisition date'] = self.acquisition_date

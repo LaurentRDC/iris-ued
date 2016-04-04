@@ -76,6 +76,16 @@ class Curve(object):
     
     def __copy__(self):
         return Curve(self.xdata, self.ydata, self.name, self.color)
+    
+    def plot(self):
+        """
+        Diagnostic tool.
+        """
+        import matplotlib.pyplot as plt
+        
+        plt.figure()
+        plt.title(self.name)
+        plt.plot(self.xdata, self.ydata, self.color)
 
     def cutoff(self, cutoff = [0,0]):
         """ Cuts off a part of the pattern"""
