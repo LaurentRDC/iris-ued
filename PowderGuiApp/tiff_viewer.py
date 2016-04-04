@@ -6,7 +6,8 @@ Created on Mon Apr  4 15:18:35 2016
 """
 
 #Core functions
-from dataset import DiffractionDataset
+from dataset import DiffractionDataset, read
+import os
 
 #GUI backends
 import pyqtgraph as pg
@@ -25,14 +26,29 @@ class TIFFViewer(QtGui.QMainWindow):
         super(TIFFViewer, self).__init__()
         
         self.dataset = None
+        
         self.viewer = pg.ImageView(parent = self)
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
         
+        self.file_dialog = QtGui.QFileDialog(parent = self)        
+        self.menubar = self.menuBar()
+        
+        
+        
         self._init_ui()
-        self.display_data()
     
     def _init_ui(self):
+        
+        #Menubar
+        directory_action = QtGui.QAction(QtGui.QIcon('\\images\\locator.png'), '&Dataset', self)
+        directory_action.triggered.connect(self.directory_locator)
+        picture_action = QtGui.QAction(QtGui.QIcon('\\images\\diffraction.png'), '&Picture', self)
+        picture_action.triggered.connect(self.picture_locator)
+        
+        file_menu = self.menubar.addMenu('&File')
+        file_menu.addAction(directory_action)
+        file_menu.addAction(picture_action)
         
         # Masks
         self.mask.addScaleHandle([1, 1], [0, 0])
@@ -54,6 +70,23 @@ class TIFFViewer(QtGui.QMainWindow):
         self.setWindowTitle('UED Powder Analysis Software')
         self.center_window()
         self.show()
+        
+    def directory_locator(self):
+        """ 
+        Activates a file dialog that selects the data directory to be processed. If the folder
+        selected is one with processed images (then the directory name is C:\\...\\processed\\),
+        return data 'root' directory.
+        """
+        
+        directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
+        directory = os.path.abspath(directory)
+        self.dataset = DiffractionDataset(directory)
+        self.display_data(dataset = self.dataset)
+    
+    def picture_locator(self):
+        filename = self.file_dialog.getOpenFileName(self, 'Open diffraction picture', 'C:\\')
+        filename = os.path.abspath(filename)
+        self.display_data(image = read(filename))
     
     def display_mask(self):
         self.viewer.addItem(self.mask)
@@ -125,13 +158,9 @@ class TIFFViewer(QtGui.QMainWindow):
 
 def run():
     import sys
-    directory = 'K:\\2016.03.01.16.57.VO2_1500uW_Pump_50Hz - Copy'
-    d = DiffractionDataset(directory)
     
-    app = QtGui.QApplication(sys.argv)
-    
+    app = QtGui.QApplication(sys.argv)    
     gui = TIFFViewer()
-    gui.display_data(dataset = d)
     gui.showMaximized()
     
     sys.exit(app.exec_())
