@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt #For testing only
 from curve import Curve
 import os.path
 import h5py
-from PIL import Image
 from tqdm import tqdm
+from PIL import Image #TODO: use tifffile if possible
 
 def electron_wavelength(kV, units = 'meters'):
     """ 
@@ -239,11 +239,8 @@ class DiffractionDataset(object):
     radial_average
         Radial average of a time delay picture.
     
-    process_image
-        Process a timedelay image into radially-averaged powder patterns.
-        
-    process
-        Process all timedelay data into radially-averaged powder patterns.
+    radial_average_series
+        Radial average of all time delay pictures, saved in HDF5 and MATLAB formats
         
     Special methods
     ---------------
@@ -265,7 +262,7 @@ class DiffractionDataset(object):
             
         self.directory = directory
     
-    def image(self, time):
+    def image(self, time, reduced_memory = False):
         """
         Returns the image of the processed pictures.
         
@@ -273,20 +270,43 @@ class DiffractionDataset(object):
         ----------
         time : str, numerical
             Time delay value of the image.
+        reduced_memory : bool, optional
+            If False (default), the image array is returned as array of floats.
+            If True, image is returned as an array of int16.
+            
+        Notes
+        -----
+        reduced_memory = True is good for displaying, but not for computations.
         """
         time = str(float(time))
         try:
-            return read(os.path.join(self.directory, 'data_timedelay_{0}_average_pumpon.tif'.format(time)))
+            image = read(os.path.join(self.directory, 'data_timedelay_{0}_average_pumpon.tif'.format(time)))
         except IOError:
             print('Available time points : {0}'.format(repr(self.time_points)))
+        
+        if reduced_memory:
+            return cast_to_16_bits(image)
+        else:
+            return image
     
-    def image_series(self):
+    def image_series(self, reduced_memory = False):
         """
         Returns a stack of time delay images, with time as the third axis.
+        
+        Parameters
+        ----------
+        reduced_memory : bool, optional
+            If False (default), the image series array is returned as array of floats.
+            If True, image series is returned as an array of int16.
+        
+        Notes
+        -----
+        reduced_memory = True is good for displaying, but not for computations.
         """
         images = list()
         for time in self.time_points:
-            images.append(self.image(time))
+            images.append(self.image(time, reduced_memory))
+            
         return n.array(images)
         
     def radial_pattern(self, time):
@@ -313,6 +333,12 @@ class DiffractionDataset(object):
         xdata = file['/{0}/xdata'.format(time)]
         intensity = file['/{0}/intensity'.format(time)]
         return Curve(xdata, intensity, name = time)
+    
+    def radial_pattern_series(self):
+        """
+        
+        """
+        raise NotImplemented
     
     def peak_dynamics(self, index, index2 = None):
         """
@@ -451,55 +477,24 @@ class DiffractionDataset(object):
         # Change x-data from pixels to scattering length
         s = scattering_length(xdata, self.energy)
         return Curve(s, intensity, name = str(time), color = 'b')
-        
-    def process_image(self, time, center, cutoff, inelastic_background = None, mask_rect = None):
+    
+    def radial_average_series(self, center, mask_rect = None):
         """
-        Returns a processed radial curve associated with a radial diffraction pattern at a certain time point.
-        
-        Parameters
-        ----------
-        time : str, int, float
-            Time delay value.
-        center : array-like, shape (2,)
-            [x,y] coordinates of the center (in pixels)
-        cutoff : array-like, shape (2,)
-            Values of radius at which to cutoff the curve.
-        inelastic_background : curve.Curve object, optional
-            Curve of the inelastic_background
-        mask_rect : Tuple, shape (4,), optional
-            Tuple containing x- and y-bounds (in pixels) for the beamblock mask
-            mast_rect = (x1, x2, y1, y2)
-        """
-        curve = self.radial_average(time, center, mask_rect)
-        curve.cutoff(cutoff)
-        
-        if isinstance(inelastic_background, Curve):
-            return curve - inelastic_background
-        else:
-            return curve
-        
-    def process(self, center = [0,0], cutoff = [0,0], inelasticBGCurve = None, mask_rect = None):
-        """
-        Processes and exports time delay data.
+        Radially averages and exports time delay data.
         
         Parameters
         ----------
         center : array-like, shape (2,)
             [x,y] coordinates of the center (in pixels)
-        cutoff : array-like, shape (2,)
-            Values of radius at which to cutoff the curve.
-        inelastic_background : curve.Curve object, optional
-            Curve of the inelastic_background
         mask_rect : Tuple, shape (4,), optional
             Tuple containing x- and y-bounds (in pixels) for the beamblock mask
             mast_rect = (x1, x2, y1, y2)
         """
         results = list()
         for time in tqdm(self.time_points):
-            curve = self.process_image(time, center, cutoff, inelasticBGCurve, mask_rect)
+            curve = self.radial_average(time, center, mask_rect)
             results.append( (time, curve) )
-        
-        self._export(results)          
+        self._export(results)
         
     def _export(self, results):
         """ 

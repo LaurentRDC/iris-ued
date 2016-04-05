@@ -6,7 +6,7 @@ Created on Mon Apr  4 15:18:35 2016
 """
 
 #Core functions
-from dataset import DiffractionDataset, read
+from dataset import DiffractionDataset, read, cast_to_16_bits
 import os
 
 #GUI backends
@@ -14,46 +14,64 @@ import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 import numpy as n
 
-pg.mkQApp()
+image_folder = os.path.join(os.path.dirname(__file__), 'images')
 
-class TIFFViewer(QtGui.QMainWindow):
+class WorkThread(QtCore.QThread):
+    """
+    Object taking care of threading computations
+    """
+    done_signal = QtCore.pyqtSignal(bool, name = 'done_signal')
+    in_progress_signal = QtCore.pyqtSignal(bool, name = 'in_progress_signal')
+    results_signal = QtCore.pyqtSignal(object, name = 'results_signal')
+    
+    def __init__(self, function, *args, **kwargs):
+        
+        QtCore.QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.result = None
+    
+    def __del__(self):
+        self.wait()
+    
+    def run(self):
+        """ Compute and emit a 'done' signal."""
+        
+        self.in_progress_signal.emit(True)
+        self.result = self.function(*self.args, **self.kwargs)
+        self.results_signal.emit(self.result)
+        self.done_signal.emit(True)
+
+class Explorer(QtGui.QMainWindow):
     """
     Time-delay data viewer for averaged data.
     """
     
     def __init__(self):
         
-        super(TIFFViewer, self).__init__()
+        super(Explorer, self).__init__()
         
+        self.worker = None
         self.dataset = None
         
         self.viewer = pg.ImageView(parent = self)
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
-        self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
-        
-        self.file_dialog = QtGui.QFileDialog(parent = self)        
-        self.menubar = self.menuBar()
-        
-        
+        self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))       
         
         self._init_ui()
     
     def _init_ui(self):
         
-        #Menubar
-        directory_action = QtGui.QAction(QtGui.QIcon('\\images\\locator.png'), '&Dataset', self)
-        directory_action.triggered.connect(self.directory_locator)
-        picture_action = QtGui.QAction(QtGui.QIcon('\\images\\diffraction.png'), '&Picture', self)
-        picture_action.triggered.connect(self.picture_locator)
-        
-        file_menu = self.menubar.addMenu('&File')
-        file_menu.addAction(directory_action)
-        file_menu.addAction(picture_action)
+        # UI components
+        self.file_dialog = QtGui.QFileDialog(parent = self)        
+        self._create_menubar()
         
         # Masks
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
-               
+              
+        # Label for crosshair
         self.image_position_label = pg.LabelItem()
         self.viewer.addItem(self.image_position_label)
         
@@ -70,6 +88,30 @@ class TIFFViewer(QtGui.QMainWindow):
         self.setWindowTitle('UED Powder Analysis Software')
         self.center_window()
         self.show()
+    
+    def _create_menubar(self):
+        self.menubar = self.menuBar()
+        
+        # Actions
+        directory_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&Dataset', self)
+        directory_action.triggered.connect(self.directory_locator)
+        
+        picture_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'diffraction.png')), '&Picture', self)
+        picture_action.triggered.connect(self.picture_locator)
+        
+        show_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Show beamblock mask and center finder', self)
+        show_radav_tools.triggered.connect(self.display_radav_tools)
+        
+        set_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Set beamblock mask and center finder', self)
+        set_radav_tools.triggered.connect(self.compute_radial_average)
+        
+        file_menu = self.menubar.addMenu('&File')
+        file_menu.addAction(directory_action)
+        file_menu.addAction(picture_action)
+        
+        powder_menu = self.menubar.addMenu('&Powder')
+        powder_menu.addAction(show_radav_tools)
+        powder_menu.addAction(set_radav_tools)
         
     def directory_locator(self):
         """ 
@@ -84,22 +126,44 @@ class TIFFViewer(QtGui.QMainWindow):
         self.display_data(dataset = self.dataset)
     
     def picture_locator(self):
+        """ Open a file dialog to select an image to view """
         filename = self.file_dialog.getOpenFileName(self, 'Open diffraction picture', 'C:\\')
         filename = os.path.abspath(filename)
-        self.display_data(image = read(filename))
+        self.display_data(image = cast_to_16_bits(read(filename)))
     
-    def display_mask(self):
+    def display_radav_tools(self):
+        """ Display diffraction center finder and beam block mask on the viewer. """
+        self._display_center_finder()
+        self._display_mask()
+    
+    def hide_radav_tools(self):
+        """ Hide diffraction center finder and beam block mask from the viewer. """
+        self._hide_center_finder()
+        self._hide_mask()
+    
+    def _display_mask(self):
         self.viewer.addItem(self.mask)
     
-    def hide_mask(self):
+    def _hide_mask(self):
         self.viewer.removeItem(self.mask)
     
-    def display_center_finder(self):
+    def _display_center_finder(self):
         self.viewer.addItem(self.center_finder)
     
-    def hide_center_finder(self):
+    def _hide_center_finder(self):
         self.viewer.removeItem(self.center_finder)
     
+    def compute_radial_average(self):
+        if self.dataset is not None:
+            mask_rectangle = self.mask_position
+            center = self.center_position
+            self.hide_radav_tools()
+            
+            #Thread the computation
+            self.worker = WorkThread(self.dataset.radial_average_series, center, mask_rectangle)
+            self.worker.start()
+    
+    @property
     def mask_position(self):
         """
         Returns the x,y limits of the rectangular beam block mask. Due to the 
@@ -119,8 +183,9 @@ class TIFFViewer(QtGui.QMainWindow):
         y1 = max(0, rect.topLeft().y() )
         y2 = max(0, rect.y() + rect.height() )
                
-        return y1, y2, x1, x2       #Flip output since image viewer plots transpose...
+        return y1, y2, x1, x2       #Flip output since image viewer plots transpose
     
+    @property
     def center_position(self):
         """
         Returns
@@ -144,13 +209,13 @@ class TIFFViewer(QtGui.QMainWindow):
     
     def _display_dataset(self, dataset):
         time = n.array(list(map(float, dataset.time_points)))
-        self.viewer.setImage(dataset.image_series(), xvals = time, axes = {'x':0, 'y':1, 't':2})
+        # By using reduced_memory = True, RAM usage drops by 75%
+        self.viewer.setImage(dataset.image_series(reduced_memory = True), xvals = time, axes = {'x':0, 'y':1, 't':2})
     
     def _display_image(self, image):
         self.viewer.setImage(image)
     
     def center_window(self):
-        """ Centers the window """
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
@@ -160,7 +225,7 @@ def run():
     import sys
     
     app = QtGui.QApplication(sys.argv)    
-    gui = TIFFViewer()
+    gui = Explorer()
     gui.showMaximized()
     
     sys.exit(app.exec_())
