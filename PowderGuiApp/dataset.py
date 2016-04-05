@@ -165,23 +165,22 @@ def radial_average(image, center, mask_rect = None):
     image_edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
     r_max = image_edge_values.min()           #Maximal radius that fits completely in the image
     
-    # Replace all values in R corresponding to beamblock or other irrelevant
-    # data by -1: this way, it will never count in any calculation
-    # because the smallest radii is 0, not -1
-    R[R > r_max] = 0
+    # Replace all values in the image corresponding to beamblock or other irrelevant
+    # data by 0: this way, it will never count in any calculation because image
+    # values are used as weights in numpy.bincount
+    image[R > r_max] = 0
     if mask_rect is None:
-        R[:xc, :] = 0      #All poins above center of the image are disregarded (because of beamblock)
+        image[:xc, :] = 0      #All poins above center of the image are disregarded (because of beamblock)
     else:
         x1, x2, y1, y2 = mask_rect
-        R[x1:x2, y1:y2] = 0
+        image[x1:x2, y1:y2] = 0
     
     #Radial average
     px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
     r_bin = n.bincount(R.ravel().astype(n.int))  
     radial_intensity = px_bin/r_bin
-        
-    #Return normalized radial average except the radius 0
-    return (n.unique(R.ravel().astype(n.int))[1:], radial_intensity[1:])
+    
+    return (n.unique(R.ravel().astype(n.int)), radial_intensity)
 
 class DiffractionDataset(object):
     """ 
@@ -508,8 +507,8 @@ class DiffractionDataset(object):
         results : list
             List of tuples containing a time delay (str) and a curve (curve.Curve)
         """
-        self._export_mat(self.radial_average_filename + '.mat', results)
         self._export_hdf5(self.radial_average_filename + '.hdf5', results)
+        self._export_mat(self.radial_average_filename + '.mat', results)
         
     def _export_mat(self, filename, results):
         """
@@ -588,6 +587,6 @@ def plotTimeResolved(filename):
 
 if __name__ == '__main__':
     
-    directory = 'K:\\2016.03.01.16.57.VO2_1500uW_Pump_50Hz - Copy'
+    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
     d = DiffractionDataset(directory)
-    d.radial_average_series([1000,1000], None)
+    d.radial_average_series([1024,1024], None)
