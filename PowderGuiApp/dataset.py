@@ -85,7 +85,7 @@ def cast_to_16_bits(array):
     array = n.asarray(array)
     array[ array < 0] = 0
     array[ array > (2**16) - 1] = (2**16) - 1
-    return array.astype(n.int16)
+    return n.around(array, decimals = 0).astype(n.int16)
     
 def read(filename):
     """ 
@@ -231,12 +231,18 @@ class DiffractionDataset(object):
     
     radial_pattern
         Access time-delay processed powder diffraction patterns
+    
+    radial_pattern_series
+        Access to the ensemble of time-delay radially-averaged diffraction patterns.
         
     radial_average
         Radial average of a time delay picture.
     
     radial_average_series
         Radial average of all time delay pictures, saved in HDF5 and MATLAB formats
+    
+    intensity_noise
+        RMS intensity of diffraction pictures before photoexcitation
         
     Special methods
     ---------------
@@ -340,7 +346,7 @@ class DiffractionDataset(object):
         
         return curves
     
-    def peak_dynamics(self, index, index2 = None):
+    def peak_dynamics(self, edge, edge2 = None):
         """
         Returns a curve corresponding to the time-dynamics of a location in the 
         diffraction patterns. Think of it as looking at the time-evolution
@@ -348,23 +354,24 @@ class DiffractionDataset(object):
         
         Parameters
         ----------
-        index : int
-            Index of the xdata
-        index2 : int, optional
-            If not None (default), the peak value is integrated between index and
-            index 2.
+        index : float
+            Edge value in terms of xdata
+        index2 : float, optional
+            If not None (default), the peak value is integrated between edge and
+            edge2.
         """
+        curves = self.radial_pattern_series()        
+        scattering_length = curves[0].xdata
+        intensity_series = n.vstack( tuple( [curve.ydata for curve in curves] ))
 
         time_values = n.array(list(map(float, self.time_points)))
+        index = n.argmin(n.abs(scattering_length - edge))
         
-        intensity = list()
-        for time_point in self.time_points:
-            if index2 is not None:
-                intensity.append(self.radial_pattern(time_point).ydata[index:index2].sum())
-            else:
-                intensity.append(self.radial_pattern(time_point).ydata[index])
-        
-        return time_values, n.array(intensity, dtype = n.float)        
+        if edge2 is None:
+            return time_values, intensity_series[:, index]
+        else:
+            index2 = n.argmin(n.abs(scattering_length - edge2))
+            return time_values, intensity_series[:, index:index2].sum(axis = 1)
         
     @property
     def radial_average_filename(self):
@@ -442,7 +449,7 @@ class DiffractionDataset(object):
     @property    
     def acquisition_date(self):
         return self._read_experimental_parameter('Acquisition date')
-    
+        
     # -------------------------------------------------------------------------
     
     @property
@@ -456,6 +463,19 @@ class DiffractionDataset(object):
     @property
     def substrate(self):
         return read(os.path.join(self.directory, 'substrate.tif'))
+    
+    def intensity_noise(self):
+        """
+        RMS intensity noise for pictures before photoexcitation.
+        """
+        b4_time0 = n.dstack( tuple([self.image(time) for time in self.time_points if float(time) <= 0.0]) )
+        return n.std(b4_time0, axis = -1)
+    
+    def snr(self):
+        b4_time0 = n.dstack( tuple([self.image(time) for time in self.time_points if float(time) <= 0.0]) )
+        std = n.std(b4_time0, axis = -1)
+        avg = n.mean(b4_time0, axis = -1)
+        return std/avg
     
     def radial_average(self, time, center, mask_rect = None):
         """
@@ -589,4 +609,3 @@ if __name__ == '__main__':
     
     directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
     d = DiffractionDataset(directory)
-    d.radial_average_series([1024,1024], None)
