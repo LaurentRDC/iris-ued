@@ -159,7 +159,7 @@ def radial_average(image, center, mask_rect = None):
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
-    R = n.around(n.sqrt( (X - xc)**2 + (Y - yc)**2 ), decimals = 0)         #Round radius down/up to the nearest pixel
+    R = n.sqrt( (X - xc)**2 + (Y - yc)**2 )
     
     #radii beyond r_max don't fit a full circle within the image
     image_edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
@@ -168,23 +168,20 @@ def radial_average(image, center, mask_rect = None):
     # Replace all values in R corresponding to beamblock or other irrelevant
     # data by -1: this way, it will never count in any calculation
     # because the smallest radii is 0, not -1
-    R[R > r_max] = -1
+    R[R > r_max] = 0
     if mask_rect is None:
-        R[:xc, :] = -1      #All poins above center of the image are disregarded (because of beamblock)
+        R[:xc, :] = 0      #All poins above center of the image are disregarded (because of beamblock)
     else:
         x1, x2, y1, y2 = mask_rect
-        R[x1:x2, y1:y2] = -1
+        R[x1:x2, y1:y2] = 0
     
-    #Average intensity values for equal radii
-    radial_position = n.unique(R)
-    radial_intensity = n.empty_like(radial_position) 
-    
-    #Radial average for realz
-    for index, radius in n.ndenumerate(radial_position):
-        radial_intensity[index] = n.mean(image[R == radius])
+    #Radial average
+    px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
+    r_bin = n.bincount(R.ravel().astype(n.int))  
+    radial_intensity = px_bin/r_bin
         
-    #Return normalized radial average
-    return (radial_position, radial_intensity)
+    #Return normalized radial average except the radius 0
+    return (n.unique(R.ravel().astype(n.int))[1:], radial_intensity[1:])
 
 class DiffractionDataset(object):
     """ 
@@ -291,7 +288,7 @@ class DiffractionDataset(object):
     
     def image_series(self, reduced_memory = False):
         """
-        Returns a stack of time delay images, with time as the third axis.
+        Returns a stack of time delay images, with time as the first axis.
         
         Parameters
         ----------
@@ -589,3 +586,4 @@ if __name__ == '__main__':
     
     directory = 'K:\\2016.03.01.16.57.VO2_1500uW_Pump_50Hz - Copy'
     d = DiffractionDataset(directory)
+    d.radial_average_series([1000,1000], None)
