@@ -335,7 +335,11 @@ class DiffractionDataset(object):
         """
         
         """
-        raise NotImplemented
+        curves = list()
+        for time in self.time_points:
+            curves.append(self.radial_pattern(time))
+        
+        return curves
     
     def peak_dynamics(self, index, index2 = None):
         """

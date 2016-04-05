@@ -55,7 +55,8 @@ class Explorer(QtGui.QMainWindow):
         self.worker = None
         self.dataset = None
         
-        self.viewer = pg.ImageView(parent = self)
+        self.image_viewer = pg.ImageView(parent = self)
+        self.plot_viewer = pg.PlotWidget(parent = self)
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))       
         
@@ -66,6 +67,7 @@ class Explorer(QtGui.QMainWindow):
         # UI components
         self.file_dialog = QtGui.QFileDialog(parent = self)        
         self._create_menubar()
+        self.splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
         
         # Masks
         self.mask.addScaleHandle([1, 1], [0, 0])
@@ -73,11 +75,14 @@ class Explorer(QtGui.QMainWindow):
               
         # Label for crosshair
         self.image_position_label = pg.LabelItem()
-        self.viewer.addItem(self.image_position_label)
+        self.image_viewer.addItem(self.image_position_label)
         
         #Create window        
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(self.viewer)
+        self.splitter.addWidget(self.image_viewer)
+        self.splitter.addWidget(self.plot_viewer)
+        self.layout = QtGui.QGridLayout()
+        self.layout.addWidget(self.splitter, 0, 0)
+        self.plot_viewer.hide()
         
         self.central_widget = QtGui.QWidget()
         self.central_widget.setLayout(self.layout)
@@ -105,6 +110,12 @@ class Explorer(QtGui.QMainWindow):
         set_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Set beamblock mask and center finder', self)
         set_radav_tools.triggered.connect(self.compute_radial_average)
         
+        toggle_plot_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Toggle radial patterns', self)
+        toggle_plot_viewer.triggered.connect(self.toggle_plot_viewer)
+        
+        display_radav = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Plot radial patterns', self)
+        display_radav.triggered.connect(lambda: self.display_radial_averages(self.dataset))
+        
         file_menu = self.menubar.addMenu('&File')
         file_menu.addAction(directory_action)
         file_menu.addAction(picture_action)
@@ -112,6 +123,8 @@ class Explorer(QtGui.QMainWindow):
         powder_menu = self.menubar.addMenu('&Powder')
         powder_menu.addAction(show_radav_tools)
         powder_menu.addAction(set_radav_tools)
+        powder_menu.addAction(toggle_plot_viewer)
+        powder_menu.addAction(display_radav)
         
     def directory_locator(self):
         """ 
@@ -141,17 +154,29 @@ class Explorer(QtGui.QMainWindow):
         self._hide_center_finder()
         self._hide_mask()
     
+    def toggle_plot_viewer(self):
+        if self.plot_viewer.isHidden():
+            self._show_plot_viewer()
+        else:
+            self._hide_plot_viewer()
+            
+    def _show_plot_viewer(self):
+        self.plot_viewer.show()
+    
+    def _hide_plot_viewer(self):
+        self.plot_viewer.hide()
+    
     def _display_mask(self):
-        self.viewer.addItem(self.mask)
+        self.image_viewer.addItem(self.mask)
     
     def _hide_mask(self):
-        self.viewer.removeItem(self.mask)
+        self.image_viewer.removeItem(self.mask)
     
     def _display_center_finder(self):
-        self.viewer.addItem(self.center_finder)
+        self.image_viewer.addItem(self.center_finder)
     
     def _hide_center_finder(self):
-        self.viewer.removeItem(self.center_finder)
+        self.image_viewer.removeItem(self.center_finder)
     
     def compute_radial_average(self):
         if self.dataset is not None:
@@ -210,10 +235,21 @@ class Explorer(QtGui.QMainWindow):
     def _display_dataset(self, dataset):
         time = n.array(list(map(float, dataset.time_points)))
         # By using reduced_memory = True, RAM usage drops by 75%
-        self.viewer.setImage(dataset.image_series(reduced_memory = True), xvals = time, axes = {'x':0, 'y':1, 't':2})
+        self.image_viewer.setImage(dataset.image_series(reduced_memory = True), xvals = time, axes = {'x':0, 'y':1, 't':2})
+    
+    def display_radial_averages(self, dataset):
+        """ """
+        self.plot_viewer.clear()
+        try:
+            curves = dataset.radial_pattern_series()
+        except OSError:     # HDF5 file with radial averages is not found
+            return
+            
+        for curve in curves:
+            self.plot_viewer.plot(curve.xdata, curve.ydata)
     
     def _display_image(self, image):
-        self.viewer.setImage(image)
+        self.image_viewer.setImage(image)
     
     def center_window(self):
         qr = self.frameGeometry()
