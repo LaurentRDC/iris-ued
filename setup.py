@@ -6,18 +6,17 @@ import glob
 #
 # > python setup.py bdist_wininst --install-script post_installation_script.py
 
-image_list = glob.glob('PowderGuiApp\\images\\*.png')
+image_list = glob.glob('App\\images\\*.png')
 
 setup(
-    name = 'PowderGui', 
-    version = 'v0.9',
+    name = 'Iris', 
+    version = 'v1.0',
     packages = find_packages(),
-    description = 'UED Powder Diffraction Data Processing', 
+    description = 'UED data exploration', 
     author = 'Laurent P. Rene de Cotret',
     url = 'www.physics.mcgill.ca/siwicklab',
-    download_url = 'http://1drv.ms/1OVX2ac',
     scripts = ['post_installation_script.py'],
-    py_modules = ['PowderGuiApp.core', 'PowderGuiApp.gui', 'PowderGuiApp.image_viewer'], 
+    py_modules = ['App.dataset', 'App.curve', 'App.iris', 'App.tifffile.tifffile'], 
     install_requires = ['tqdm', 'numpy', 'pyqt4', 'pyqtgraph', 'scipy', 'h5py'],
     data_files = [('PowderGuiApp\\images', image_list)]
     )
