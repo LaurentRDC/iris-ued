@@ -1,0 +1,13 @@
+post_installation_script.py
+setup.py
+App/__init__.py
+App/curve.py
+App/dataset.py
+App/iris.py
+App/tifffile/__init__.py
+App/tifffile/tifffile.py
+Iris.egg-info/PKG-INFO
+Iris.egg-info/SOURCES.txt
+Iris.egg-info/dependency_links.txt
+Iris.egg-info/requires.txt
+Iris.egg-info/top_level.txt
