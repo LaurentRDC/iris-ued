@@ -17,7 +17,7 @@ from curve import Curve
 import os.path
 import h5py
 from tqdm import tqdm
-from PIL import Image #TODO: use tifffile if possible
+from tifffile import imread, imsave
 
 def electron_wavelength(kV, units = 'meters'):
     """ 
@@ -106,8 +106,7 @@ def read(filename):
     PIL.Image.open 
         For supported file types.
     """
-    im = Image.open(filename)
-    return n.array(im).astype(n.float)
+    return imread(filename).astype(n.float)
     
 def save(array, filename):
     """ 
@@ -129,8 +128,7 @@ def save(array, filename):
         For casting rules.
     """
     array = cast_to_16_bits(array)
-    im = Image.fromarray(array)
-    im.save(filename)
+    imsave(filename, array)
 
 def radial_average(image, center, mask_rect = None):
     """
@@ -378,10 +376,13 @@ class DiffractionDataset(object):
         index = n.argmin(n.abs(scattering_length - edge))
         
         if edge2 is None:
-            return time_values, intensity_series[:, index]
+            intensities = intensity_series[:, index]
         else:
             index2 = n.argmin(n.abs(scattering_length - edge2))
-            return time_values, intensity_series[:, index:index2].sum(axis = 1)
+            intensities = intensity_series[:, index:index2].mean(axis = 1)
+        
+        # Normalize intensities
+        return time_values, intensities/intensities.max()
         
     @property
     def _radial_average_filename(self):

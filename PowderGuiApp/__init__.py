@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from gui import run
+from iris import run
 
-#Run shell
+#Run Iris
 run()

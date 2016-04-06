@@ -17,9 +17,60 @@ import numpy as n
 
 image_folder = os.path.join(os.path.dirname(__file__), 'images')
 
+def spectrum_colors(num_colors):
+    """
+    Generates a set of QColor 0bjects corresponding to the visible spectrum.
+    
+    Parameters
+    ----------
+    num_colors : int
+        number of colors to return
+    
+    Returns
+    -------
+    colors : list of QColors
+    """
+    # Hue values from 0 to 1
+    hue_values = [i/num_colors for i in range(num_colors)]
+    
+    # Scale so that the maximum is 'purple':
+    hue_values = [0.8*hue for hue in hue_values]
+    
+    colors = list()
+    for h in reversed(hue_values):
+        colors.append(pg.hsvColor(hue = h, sat = 0.7, val = 0.9))
+    return colors
+
 class WorkThread(QtCore.QThread):
     """
-    Object taking care of threading computations
+    Object taking care of threading computations.
+    
+    Signals
+    -------
+    done_signal
+        Emitted when the function evaluation is over.
+    in_progress_signal
+        Emitted when the function evaluation starts.
+    results_signal
+        Emitted when the function evaluation is over. Carries the results
+        of the computation.
+        
+    Attributes
+    ----------
+    function : callable
+        Function to be called
+    args : tuple
+        Positional arguments of function
+    kwargs : dict
+        Keyword arguments of function
+    results : object
+        Results of the computation
+    
+    Examples
+    --------
+    >>> function = lambda x : x ** 10
+    >>> worker = WorkThread(function, 10)
+    >>> worker.start()      # Computation starts only when this method is called
     """
     done_signal = QtCore.pyqtSignal(bool, name = 'done_signal')
     in_progress_signal = QtCore.pyqtSignal(bool, name = 'in_progress_signal')
@@ -37,12 +88,10 @@ class WorkThread(QtCore.QThread):
         self.wait()
     
     def run(self):
-        """ Compute and emit a 'done' signal."""
-        
         self.in_progress_signal.emit(True)
         self.result = self.function(*self.args, **self.kwargs)
+        self.done_signal.emit(True)        
         self.results_signal.emit(self.result)
-        self.done_signal.emit(True)
 
 class InProgressWidget(QtGui.QWidget):
     """
@@ -50,9 +99,7 @@ class InProgressWidget(QtGui.QWidget):
     """
     def __init__(self, parent = None):
         
-        super(InProgressWidget, self).__init__(parent)
-        self.counter = 0
-        
+        super(InProgressWidget, self).__init__(parent)        
         self._init_ui()
     
     def _init_ui(self):
@@ -74,13 +121,15 @@ class InProgressWidget(QtGui.QWidget):
         painter.setPen(QtGui.QPen(QtCore.Qt.NoPen))
         
         # Loop over dots in the 'wheel'
-        # If a dot
+        # At any time, a single ellipse is colored bright
+        # Other ellipses are darker
         for i in range(self._num_points):
-            if  i == self.counter % self._num_points :
+            if  i == self.counter % self._num_points :  # Color this ellipse bright
                 painter.setBrush(QtGui.QBrush(QtGui.QColor(229, 33, 33)))
-            else:
+            else:   # Color this ellipse dark
                painter.setBrush(QtGui.QBrush(QtGui.QColor(114, 15, 15)))
-
+              
+            # Draw the ellipse with the right color
             painter.drawEllipse(
                 self.width()/2 + 30 * math.cos(2 * math.pi * i / self._num_points),
                 self.height()/2 + 30 * math.sin(2 * math.pi * i / self._num_points),
@@ -89,12 +138,14 @@ class InProgressWidget(QtGui.QWidget):
         painter.end()
     
     def showEvent(self, event):
-        self.timer = self.startTimer(35)
+        """ Starts an updating timer, called every 50 ms. """
+        self.timer = self.startTimer(50)
         self.counter = 0
     
     def timerEvent(self, event):
+        """ At every timer step, this method is called. """
         self.counter += 1
-        self.update()
+        self.update()       # Calls a paintEvent
 
 class ImageViewer(pg.ImageView):
     """
@@ -120,8 +171,7 @@ class ImageViewer(pg.ImageView):
         Toggle the appearance of the radial-averaging tools 'mask' and 'center_finder'
     """
     
-    def __init__(self):
-        
+    def __init__(self, parent):        
         super(ImageViewer, self).__init__()
         
         # Radial-averaging tools
@@ -135,9 +185,11 @@ class ImageViewer(pg.ImageView):
         
     def _init_ui(self):
         
+        # Add handles to the beam block mask
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
         
+        # Hide the in-progress widget for now.
         self.in_progress_widget.hide()
     
     def _connect_signals(self):
@@ -182,7 +234,8 @@ class ImageViewer(pg.ImageView):
         image : ndarray, optional
             ndarray of a diffraction image.
         dataset : DiffractionDataset object, optional
-            Will plot a time-series of images, with time slider below.
+            Will plot a time-series of images, with time slider below. 
+            The computation of a time-series takes a few tens of seconds.
         """
         if isinstance(dataset, DiffractionDataset):
             # Create a thread to compute the image series array
@@ -199,34 +252,52 @@ class ImageViewer(pg.ImageView):
         elif image is not None:
             self._display_image(image)
         else:
-            self._display_image(image = n.zeros((2048, 2048)))
+            #Default image is Gaussian noise
+            self._display_image(image = n.random.rand(2048, 2048))
     
-    def toggle_radav_tools(self):
+    @QtCore.pyqtSlot(bool)
+    def toggle_radav_tools(self, show):
         """ Hides the radial-averaging tools if currently displayed, and vice-versa. """
-        if self.mask_shown and self.center_finder_shown:
-            self.removeItem(self.mask)
-            self.removeItem(self.center_finder)
-        else:
+        if show:
             self.addItem(self.mask)
             self.addItem(self.center_finder)
+        else:
+            self.removeItem(self.mask)
+            self.removeItem(self.center_finder)
         
     def _display_image(self, image):
         """ Displays an image (as an array-like) in the viewer area."""
         self.setImage(n.array(image))
     
+    @QtCore.pyqtSlot(object)
     def _display_image_series(self, results):
         """ Display a dataset.DiffractionDataset image series as a 3D array """
-        time, array = results
-        # By using reduced_memory = True, RAM usage drops by 75%
-        self.setImage(array, xvals = time, axes = {'t':0, 'x':1, 'y':2})
+        time_points, array = results
+        self.setImage(array, xvals = time_points, axes = {'t':0, 'x':1, 'y':2})
     
 class RadialPlotWidget(QtGui.QWidget):
+    """
+    Widgets displaying two pyqtgraph.PlotWidget widgets. The first one is for radially-averaged
+    diffraction patterns, while the other is for time-dynamics of specific regions of
+    the radially-averaged diffractiona patterns.
     
-    def __init__(self):
+    Attributes
+    ----------
+    radial_pattern_viewer : pyqtgraph.PlotWidget
+        PlotWidget on which is shown all the radially-averaged curves.
+    peak_dynamics_viewer : pyqtgraph.PlotWidget
+        PlotWidget on which is shown the time dynamics of specific radial regions.
+    peak_dynamics_region : pyqtgraph.LinearRegionItem
+        Item which bounds the averaging region show on the peak_dynamics_viewer
+    progress_widget_radial_pattern : iris.InProgressWidget
+        Progress widget that appears during radial-averaging operations.
+    """
+    def __init__(self, parent):
         
         super(RadialPlotWidget, self).__init__()
         
-        self.dataset = None
+        self.parent = parent
+        
         pattern_labels = {'left': 'Intensity (counts)', 'bottom': ('Scattering length',  '(1/A)')}
         dynamics_labels = {'left': 'Intensity (counts)', 'bottom': ('time', 'ps')}
         self.radial_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', labels = pattern_labels, autoDownsample = True)
@@ -270,6 +341,14 @@ class RadialPlotWidget(QtGui.QWidget):
         self.progress_widget_radial_patterns.resize(self.radial_pattern_viewer.size())
         event.accept()
     
+    def showEvent(self, event):
+        self.parent.toggle_plot_viewer.setChecked(True)
+        event.accept()
+    
+    def hideEvent(self, event):
+        self.parent.toggle_plot_viewer.setChecked(False)
+        event.accept()
+        
     @property
     def peak_dynamics_region_shown(self):
         return self.peak_dynamics_region.getViewBox() is not None
@@ -293,24 +372,43 @@ class RadialPlotWidget(QtGui.QWidget):
             self._display_peak_dynamics_setup()
 
     def display_radial_averages(self, dataset):
-        """ """
-        self.dataset = dataset
+        """ 
+        Display the radial averages of a dataset, if available. 
+        
+        Parameters
+        ----------
+        dataset : dataset.DiffractionDataset
+            Dataset for which the radial averages have been computed. If the radial
+            averages are not available, the function returns without plotting anything.
+        """
+        if self.isHidden:
+            self.show()
+            
+        self.dataset = dataset # store dataset so that the updating of peak dynamics is faster
+        
         self.radial_pattern_viewer.clear()
+        self.peak_dynamics_viewer.clear()
+        
         try:
             curves = dataset.radial_pattern_series()
-        except OSError:     # HDF5 file with radial averages is not found
+        except:     # HDF5 file with radial averages is not found
             return
-            
-        for curve in curves:
-            self.radial_pattern_viewer.plot(curve.xdata, curve.ydata)
+        
+        # Get timedelay colors and plot
+        colors = spectrum_colors(len(curves))
+        for color, curve in zip(colors, curves):
+            self.radial_pattern_viewer.plot(curve.xdata, curve.ydata, pen = None, symbol = 'o',
+                                            symbolPen = pg.mkPen(color), symbolBrush = pg.mkBrush(color), symbolSize = 3)
+        
+        self._display_peak_dynamics_setup()
 
     def _display_peak_dynamics_setup(self):
-        self.radial_pattern_viewer.addItem(self.peak_dynamics_region, ignoreBounds = True)
+        self.radial_pattern_viewer.addItem(self.peak_dynamics_region, ignoreBounds = False)
         
     def _hide_peak_dynamics_setup(self):
         self.radial_pattern_viewer.removeItem(self.peak_dynamics_region)        
         
-class Explorer(QtGui.QMainWindow):
+class Iris(QtGui.QMainWindow):
     """
     Time-delay data viewer for averaged data.
     """
@@ -318,13 +416,13 @@ class Explorer(QtGui.QMainWindow):
     
     def __init__(self):
         
-        super(Explorer, self).__init__()
+        super(Iris, self).__init__()
         
         self.worker = None
         self.dataset = None
         
-        self.image_viewer = ImageViewer()
-        self.plot_viewer = RadialPlotWidget()    
+        self.image_viewer = ImageViewer(parent = self)
+        self.plot_viewer = RadialPlotWidget(parent = self)    
         
         self._init_ui()
         self._connect_signals()
@@ -349,7 +447,7 @@ class Explorer(QtGui.QMainWindow):
         
         #Window settings ------------------------------------------------------
         self.setGeometry(500, 500, 800, 800)
-        self.setWindowTitle('UED Powder Analysis Software')
+        self.setWindowTitle('Iris : UED data exploration')
         self.center_window()
         self.show()
     
@@ -363,33 +461,29 @@ class Explorer(QtGui.QMainWindow):
         picture_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'diffraction.png')), '&Picture', self)
         picture_action.triggered.connect(self.picture_locator)
         
-        toggle_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial-averaging tools', self)
-        toggle_radav_tools.triggered.connect(self.image_viewer.toggle_radav_tools)
-
-        set_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Set beamblock mask and center finder', self)
-        set_radav_tools.triggered.connect(self.compute_radial_average)
+        set_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute radial averages with beamblock mask and center finder', self)
+        set_radav_tools.triggered.connect(self.compute_radial_average)    
+        set_radav_tools.setEnabled(False)
         
-        toggle_plot_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial patterns', self)
-        toggle_plot_viewer.triggered.connect(self.toggle_plot_viewer)
+        self.toggle_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial-averaging tools', self)
+        self.toggle_radav_tools.setCheckable(True)
+        self.toggle_radav_tools.toggled.connect(self.image_viewer.toggle_radav_tools)
+        self.toggle_radav_tools.toggled.connect(set_radav_tools.setEnabled)
         
-        display_radav = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Plot radial patterns', self)
-        display_radav.triggered.connect(lambda: self.plot_viewer.display_radial_averages(self.dataset))  # Use lambda function because we need to pass an argument
-        
-        toggle_peak_dynamics = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'science.png')), '&Toggle peak dynamics measurement', self)
-        toggle_peak_dynamics.triggered.connect(self.plot_viewer.toggle_peak_dynamics_setup)  # Use lambda function because we need to pass an argument
+        self.toggle_plot_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial patterns', self)
+        self.toggle_plot_viewer.setCheckable(True)
+        self.toggle_plot_viewer.toggled.connect(self.show_plot_viewer)
         
         file_menu = self.menubar.addMenu('&File')
         file_menu.addAction(directory_action)
+        file_menu.addSeparator()
         file_menu.addAction(picture_action)
         
-        view_menu = self.menubar.addMenu('&View')
-        view_menu.addAction(toggle_plot_viewer)
-        view_menu.addAction(toggle_peak_dynamics)
-        
         powder_menu = self.menubar.addMenu('&Powder')
-        powder_menu.addAction(toggle_radav_tools)
+        powder_menu.addAction(self.toggle_radav_tools)
         powder_menu.addAction(set_radav_tools)
-        powder_menu.addAction(display_radav)
+        powder_menu.addSeparator()
+        powder_menu.addAction(self.toggle_plot_viewer)
     
     def _connect_signals(self):
         pass
@@ -405,6 +499,9 @@ class Explorer(QtGui.QMainWindow):
         directory = os.path.abspath(directory)
         self.dataset = DiffractionDataset(directory)
         self.image_viewer.display_data(dataset = self.dataset)
+        
+        # Plot radial averages if they exist. If error, no plot.
+        self.plot_viewer.display_radial_averages(dataset = self.dataset)
     
     def picture_locator(self):
         """ Open a file dialog to select an image to view """
@@ -412,28 +509,23 @@ class Explorer(QtGui.QMainWindow):
         filename = os.path.abspath(filename)
         self.image_viewer.display_data(image = cast_to_16_bits(read(filename)))
     
-    def toggle_plot_viewer(self):
-        """  """
-        if self.plot_viewer.isHidden():
-            self._show_plot_viewer()
+    @QtCore.pyqtSlot(bool)
+    def show_plot_viewer(self, show):
+        """ If True, plot_viewer will be shown. """
+        if show:
+            self.plot_viewer.show()
+            # TODO: Move vertical splitter between image_viewer and plot_viewer in the
+            # middle of the window
         else:
-            self._hide_plot_viewer()
-    
-    def _show_plot_viewer(self):
-        self.plot_viewer.show()
-    
-    def _hide_plot_viewer(self):
-        self.plot_viewer.hide()
+            self.plot_viewer.hide()
     
     def compute_radial_average(self):
         if self.dataset is not None:
-            mask_rectangle = self.image_viewer.mask_position
-            center = self.image_viewer.center_position
             self.image_viewer.toggle_radav_tools()
             self.plot_viewer.show()
             
             #Thread the computation
-            self.worker = WorkThread(self.dataset.radial_average_series, center, mask_rectangle)
+            self.worker = WorkThread(self.dataset.radial_average_series, self.image_viewer.center_position, self.image_viewer.mask_position)
             self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
             self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
             self.worker.done_signal.connect(lambda: self.plot_viewer.display_radial_averages(self.dataset))
@@ -449,7 +541,7 @@ def run():
     import sys
     
     app = QtGui.QApplication(sys.argv)    
-    gui = Explorer()
+    gui = Iris()
     gui.showMaximized()
     
     sys.exit(app.exec_())
