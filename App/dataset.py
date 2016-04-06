@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt #For testing only
 from curve import Curve
 import os.path
 import h5py
+from glob import glob
 from tqdm import tqdm
 from tifffile import imread, imsave
 
@@ -237,6 +238,10 @@ class DiffractionDataset(object):
     
     intensity_noise
         RMS intensity of diffraction pictures before photoexcitation
+    
+    stability_diagnostic
+        Plots the overall diffracted intensity of the pumpoff pictures, which
+        are taken before every delay scans.
         
     Special methods
     ---------------
@@ -255,7 +260,8 @@ class DiffractionDataset(object):
         # Check that the directory is a 'processed' directory.
         if not directory.endswith('processed') and 'processed' in os.listdir(directory):
             directory = os.path.join(directory, 'processed')
-            
+        
+        self.raw_directory = os.path.dirname(directory)
         self.directory = directory
     
     def image(self, time, reduced_memory = False):
@@ -389,15 +395,27 @@ class DiffractionDataset(object):
         return os.path.join(self.directory, 'radial_averages.hdf5')
     
     @property
+    def _pumpoff_directory(self):
+        return os.path.join(self.directory, 'pumpoff pictures')
+    
+    @property
     def radial_average_computed(self):
         return self._radial_average_filename in os.listdir(self.directory)
     
     @property
     def _exp_params_filename(self):
         return os.path.join(self.directory, 'experimental_parameters.txt')
-        
+    
+    @property
+    def _pumpoff_filenames(self):
+        return [os.path.join(self._pumpoff_directory, f) 
+                for f in os.listdir(self._pumpoff_directory)
+                if os.path.isfile(os.path.join(self._pumpoff_directory, f)) 
+                and f.endswith('pumpoff.tif')]
+                
     @property
     def _time_filenames(self):
+        #TODO: make _time_filenames return a list of absolute paths, not relative
         return [f for f in os.listdir(self.directory) 
                 if os.path.isfile(os.path.join(self.directory, f)) 
                 and f.startswith('data_timedelay_') 
@@ -485,6 +503,19 @@ class DiffractionDataset(object):
         """
         b4_time0 = n.dstack( tuple([self.image(time) for time in self.time_points if float(time) <= 0.0]) )
         return n.std(b4_time0, axis = -1)
+    
+    def _pumpoff_intensity_stability(self):
+        """ Plots the total intensity of the pumpoff pictures. """
+        overall_intensity = list()
+        for fn in self._pumpoff_filenames:
+            overall_intensity.append( imread(os.path.join(self._pumpoff_directory, fn)).sum() )
+        return n.array(overall_intensity)/overall_intensity[0]
+        
+    def stability_diagnostic(self, time = '+0.00'):
+        """ Plots the overall intensity of time-delay picture over nscan."""
+        template = 'data.timedelay.' + time + '.nscan.*.pumpon.tif'
+        filenames = [fn for fn in glob(os.path.join(self.raw_directory, template))]
+        return n.array([read(filename).sum() for filename in filenames])
     
     def radial_average(self, time, center, mask_rect = None):
         """

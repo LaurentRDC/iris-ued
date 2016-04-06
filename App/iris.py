@@ -521,7 +521,7 @@ class Iris(QtGui.QMainWindow):
     
     def compute_radial_average(self):
         if self.dataset is not None:
-            self.image_viewer.toggle_radav_tools()
+            self.image_viewer.toggle_radav_tools(False)
             self.plot_viewer.show()
             
             #Thread the computation
