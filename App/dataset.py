@@ -101,11 +101,6 @@ def read(filename):
     -------
     out : ndarray, dtype numpy.float
         Numpy array from the image.
-    
-    See also
-    --------
-    PIL.Image.open 
-        For supported file types.
     """
     return imread(filename).astype(n.float)
     
@@ -121,10 +116,7 @@ def save(array, filename):
         Absolute path to the file.
     
     See also
-    --------
-    PIL.Image.open 
-        For supported file types.
-        
+    --------        
     cast_to_16_bits
         For casting rules.
     """
@@ -149,7 +141,7 @@ def radial_average(image, center, mask_rect = None):
         
     Returns
     -------
-    RadialCurve object
+    curve.Curve object
     """
     
     #preliminaries
@@ -350,7 +342,6 @@ class DiffractionDataset(object):
         curves = list()
         for time in self.time_points:
             curves.append(self.radial_pattern(time))
-        
         return curves
     
     def peak_dynamics(self, edge, edge2 = None):
@@ -487,11 +478,11 @@ class DiffractionDataset(object):
     
     @property
     def _pumpoff_background(self):
-        return read(os.path.join(self.directory, 'background.average.pumpoff.tif'))
+        return read(os.path.join(self.directory, 'background_average_pumpoff.tif'))
     
     @property
     def _pumpon_background(self):
-        return read(os.path.join(self.directory, 'background.average.pumpon.tif'))
+        return read(os.path.join(self.directory, 'background_average_pumpon.tif'))
     
     @property
     def _substrate(self):
@@ -609,6 +600,6 @@ def plotTimeResolved(filename):
         plt.legend()
 
 if __name__ == '__main__':
-    
-    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
+    directory = 'D:\\2016.04.05.18.32.posttuningtest'
+    fn = os.path.join(directory, 'data.timedelay.+22.00.nscan.01.pumpon.tif')
     d = DiffractionDataset(directory)

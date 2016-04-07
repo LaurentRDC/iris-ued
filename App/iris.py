@@ -267,6 +267,7 @@ class ImageViewer(pg.ImageView):
         
     def _display_image(self, image):
         """ Displays an image (as an array-like) in the viewer area."""
+        
         self.setImage(n.array(image))
     
     @QtCore.pyqtSlot(object)
@@ -299,7 +300,7 @@ class RadialPlotWidget(QtGui.QWidget):
         self.parent = parent
         
         pattern_labels = {'left': 'Intensity (counts)', 'bottom': ('Scattering length',  '(1/A)')}
-        dynamics_labels = {'left': 'Intensity (counts)', 'bottom': ('time', 'ps')}
+        dynamics_labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')}
         self.radial_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', labels = pattern_labels, autoDownsample = True)
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', labels = dynamics_labels)
         self.peak_dynamics_region = pg.LinearRegionItem()
@@ -359,8 +360,9 @@ class RadialPlotWidget(QtGui.QWidget):
         #Get region
         min_x, max_x = self.peak_dynamics_region.getRegion()
         time, intensity = self.dataset.peak_dynamics(min_x, max_x)
+        colors = spectrum_colors(len(time))
         self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
-                                       symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 3)
+                                       symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 3)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.enableAutoRange()
@@ -486,6 +488,7 @@ class Iris(QtGui.QMainWindow):
         powder_menu.addAction(self.toggle_plot_viewer)
     
     def _connect_signals(self):
+        # Nothing to see here yet
         pass
         
     def directory_locator(self):
@@ -498,15 +501,23 @@ class Iris(QtGui.QMainWindow):
         directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
         directory = os.path.abspath(directory)
         self.dataset = DiffractionDataset(directory)
-        self.image_viewer.display_data(dataset = self.dataset)
         
-        # Plot radial averages if they exist. If error, no plot.
+        # In case the file dialog is closed without having chosen a file
+        # skip any error
+        try:        
+            self.image_viewer.display_data(dataset = self.dataset)
+        except:
+            return
+        
+        # Plot radial averages if they exist. If error, no plot. This is handled
+        # by the plot viewer
         self.plot_viewer.display_radial_averages(dataset = self.dataset)
     
     def picture_locator(self):
         """ Open a file dialog to select an image to view """
         filename = self.file_dialog.getOpenFileName(self, 'Open diffraction picture', 'C:\\')
         filename = os.path.abspath(filename)
+        self.toggle_plot_viewer.setChecked(False)
         self.image_viewer.display_data(image = cast_to_16_bits(read(filename)))
     
     @QtCore.pyqtSlot(bool)
@@ -521,7 +532,7 @@ class Iris(QtGui.QMainWindow):
     
     def compute_radial_average(self):
         if self.dataset is not None:
-            self.image_viewer.toggle_radav_tools(False)
+            self.toggle_radav_tools.setChecked(False)
             self.plot_viewer.show()
             
             #Thread the computation
