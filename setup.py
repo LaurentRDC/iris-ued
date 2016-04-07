@@ -11,7 +11,7 @@ image_list = glob.glob('App\\images\\*.png')
 setup(
     name = 'Iris - UED data exploration', 
     version = 'v1.1',
-    packages = ['tifffile','pyqtgraph', 'tqdm'],
+    packages = ['App.tifffile','App.pyqtgraph', 'App.tqdm'],
     description = 'UED data exploration', 
     author = 'Laurent P. Rene de Cotret',
     url = 'www.physics.mcgill.ca/siwicklab',
