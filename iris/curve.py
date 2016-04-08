@@ -2,7 +2,6 @@
 
 #Basics
 import numpy as n
-from numpy import pi
 import scipy.optimize as opt
 
 # -----------------------------------------------------------------------------
@@ -14,24 +13,26 @@ def lorentzian(x, xc = 0, width_l = 0.1):
     core = ((width_l/2)**2)/( (x-xc)**2 + (width_l/2)**2 )
     return core
     
-def biexp(x, a, b, c, d, e, f):
-    """ Returns a biexponential of the form a*exp(-b*x) + c*exp(-d*x) + e"""
-    return a*n.exp(-b*(x-f)) + c*n.exp(-d*(x-f)) + e
+def biexp(x, a, b, c, d, center, const):
+    """ Returns a biexponential of the form a*n.exp(-b*(x-e)) + c*n.exp(-d*(x-e)) + f"""
+    return a*n.exp(-b*(x-center)) + c*n.exp(-d*(x-center)) + const
+
+def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, floor):
+    """
+    Returns a biexponential function evaluated over an array.
+    
+    Notes
+    -----
+    In case of fitting, there are 7 free parameters, and thus at least 7 points
+    must be provided.
+    """
+    exp1 = amplitude1*n.exp(decay1*(x - offset1))
+    exp2 = amplitude2*n.exp(decay2*(x - offset2))
+    return exp1 + exp2 + floor
 
 def bilor(x, center, amp1, amp2, width1, width2, const):
     """ Returns a Bilorentzian functions. """
     return amp1*lorentzian(x, center, width1) + amp2*lorentzian(x, center, width2) + const
-
-def generate_circle(xc, yc, radius):
-    """
-    Generates scatter value for a cicle centered at [xc,yc] of radius 'radius'.
-    """
-    xvals = xc + radius*n.cos(n.linspace(0, 2*pi, 500))
-    yvals = yc + radius*n.sin(n.linspace(0, 2*pi, 500))
-    
-    circle = zip(xvals.tolist(), yvals.tolist())
-    circle.append( (xc, yc) )
-    return circle
         
 # -----------------------------------------------------------------------------
 #           RADIAL CURVE CLASS
@@ -60,74 +61,75 @@ class Curve(object):
     inelastic_background
         Fits a biexponential inelastic background to the curve
     """
-    def __init__(self, xdata = n.zeros(shape = (100,)), ydata = n.zeros(shape = (100,)), name = '', color = 'b'):
+    def __init__(self, xdata, ydata, name = '', color = 'b'):
         
-        self.xdata = n.asarray(xdata)
-        self.ydata = n.asarray(ydata)
+        self.xdata = n.asarray(xdata, dtype = n.float)
+        self.ydata = n.asarray(ydata, dtype = n.float)
         self.name = name
         
         #Plotting attributes
         self.color = color
     
     def __sub__(self, pattern):
-        """ Definition of the subtraction operator. """ 
         #Interpolate values so that substraction makes sense
         return Curve(self.xdata, self.ydata - n.interp(self.xdata, pattern.xdata, pattern.ydata), name = self.name, color = self.color)
+    
+    def __add__(self, pattern):
+        #Interpolate values so that addition makes sense
+        return Curve(self.xdata, self.ydata + n.interp(self.xdata, pattern.xdata, pattern.ydata), name = self.name, color = self.color)
     
     def __copy__(self):
         return Curve(self.xdata, self.ydata, self.name, self.color)
     
     def plot(self):
-        """
-        Diagnostic tool.
-        """
+        """ Diagnostic tool. """
         import matplotlib.pyplot as plt
         
         plt.figure()
         plt.title(self.name)
         plt.plot(self.xdata, self.ydata, self.color)
 
-    def cutoff(self, cutoff = [0,0]):
+    def cutoff(self, cutoff):
         """ Cuts off a part of the pattern"""
-        cutoff_index = n.argmin(n.abs(self.xdata - cutoff[0]))
+        if isinstance(cutoff, list):
+            cutoff = cutoff[0]
+        
+        cutoff_index = n.argmin(n.abs(self.xdata - cutoff))
         self.xdata = self.xdata[cutoff_index::] 
         self.ydata = self.ydata[cutoff_index::]
 
-    def inelastic_background(self, points = list(), fit = 'biexp'):
+    def inelastic_background(self, xpoints = list()):
         """
         Inelastic scattering background fit.
         
         Parameters
         ----------
-        points : list of tuples
-            List of tuples of the form (x,y). y-values are ignored, and the 
-            interpolated y-values at the provided x-values is used.
+        points : array-like
+            x-values of the points to fit to.
         fit : str {'biexp', 'bilor'}
             Function to use as fit. Default is biexponential.
-        """
-        #Preliminaries
-        function = bilor if fit == 'bilor' else biexp
+        """        
+        # Preliminaries
+        assert len(xpoints) >= 7    # The biexponential implementation has 7 free parameters
+        xpoints = n.array(xpoints, dtype = n.float) 
         
-        #Create x arrays for the points 
-        points = n.array(points, dtype = n.float) 
-        x = points[:,0]
+        #Create initial guesses
+        # amp1, amp2, decay1, decay2, offset1, offset2, floor
+        # TODO: find better guesses?
+        guesses = (self.ydata.max(), self.ydata.max(), 0, 0, 0, 0, 0)
         
-        #Create guess 
-        guesses = {'biexp': (self.ydata.max()/2, 1/50.0, self.ydata.max()/2, 1/150.0, self.ydata.min(), self.xdata.min()), 
-                   'bilor':  (self.xdata.min(), self.ydata.max()/1.5, self.ydata.max()/2.0, 50.0, 150.0, self.ydata.min())}
+        # Value bounds
+        # amp1, amp2, decay1, decay2, offset1, offset2, floor
+        min_bounds = n.array( [ 0.0, 0.0, -n.inf,-n.inf,-n.inf,-n.inf, 0.0 ] )
+        max_bounds = n.array( [n.inf,n.inf,n.inf, n.inf, n.inf, n.inf, self.ydata.max()] )
+        bounds = (min_bounds, max_bounds)
         
-        #Interpolate the values of the patterns at the x points
-        y = n.interp(x, self.xdata, self.ydata)
-        
-        #Fit with guesses if optimization does not converge
-        try:
-            optimal_parameters, parameters_covariance = opt.curve_fit(function, x, y, p0 = guesses[fit]) 
-        except(RuntimeError):
-            print('Runtime error')
-            optimal_parameters = guesses[fit]
+        # Interpolate the values of the patterns at the x points
+        # Fit with guesses if optimization does not converge
+        ypoints = n.interp(xpoints, self.xdata, self.ydata)
+        optimal_parameters, parameters_covariance = opt.curve_fit(biexponential, xpoints, ypoints, p0 = guesses, bounds = bounds) 
     
-        #Create inelastic background function 
-        a,b,c,d,e,f = optimal_parameters
-        new_fit = function(self.xdata, a, b, c, d, e, f)
-        
+        # Create inelastic background function 
+        amp1, amp2, dec1, dec2, off1, off2, floor = optimal_parameters
+        new_fit = biexponential(self.xdata, amp1, amp2, dec1, dec2, off1, off2, floor)
         return Curve(self.xdata, new_fit, 'IBG {0}'.format(self.name), 'red')

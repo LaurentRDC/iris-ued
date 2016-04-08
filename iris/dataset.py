@@ -17,7 +17,6 @@ from curve import Curve
 import os.path
 import h5py
 from glob import glob
-from tqdm import tqdm
 from tifffile import imread, imsave
 
 def electron_wavelength(kV, units = 'meters'):
@@ -123,7 +122,7 @@ def save(array, filename):
     array = cast_to_16_bits(array)
     imsave(filename, array)
 
-def radial_average(image, center, mask_rect = None):
+def radial_average(image, center, mask_rect):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -155,16 +154,16 @@ def radial_average(image, center, mask_rect = None):
     #radii beyond r_max don't fit a full circle within the image
     image_edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
     r_max = image_edge_values.min()           #Maximal radius that fits completely in the image
-    
+
     # Replace all values in the image corresponding to beamblock or other irrelevant
     # data by 0: this way, it will never count in any calculation because image
     # values are used as weights in numpy.bincount
     image[R > r_max] = 0
-    if mask_rect is None:
-        image[:xc, :] = 0      #All poins above center of the image are disregarded (because of beamblock)
-    else:
-        x1, x2, y1, y2 = mask_rect
-        image[x1:x2, y1:y2] = 0
+    x1, x2, y1, y2 = mask_rect
+    image[x1:x2, y1:y2] = 0
+    
+    # Find the smallest circle that completely fits inside the mask rectangle
+    r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
     
     #Radial average
     px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
@@ -174,8 +173,9 @@ def radial_average(image, center, mask_rect = None):
     # Only return values with radius below r_max
     radius = n.unique(R.ravel().astype(n.int))
     r_max_index = n.argmin(n.abs(r_max - radius))
+    r_min_index = n.argmin(n.abs(r_min - radius))
     
-    return (radius[:r_max_index], radial_intensity[:r_max_index])
+    return (radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index])
 
 class DiffractionDataset(object):
     """ 
@@ -309,7 +309,7 @@ class DiffractionDataset(object):
         
     def radial_pattern(self, time):
         """
-        Returns the image of the processed pictures.
+        Returns the radially-averaged pattern.
         
         Parameters
         ----------
@@ -344,6 +344,44 @@ class DiffractionDataset(object):
             curves.append(self.radial_pattern(time))
         return curves
     
+    def inelastic_background(self, time):
+        """
+        Returns the inelastic scattering background of the radially-averaged pattern.
+        
+        Parameters
+        ----------
+        time : str, numerical
+            Time delay value of the image.
+        
+        Notes
+        -----
+        This function depends on the existence of an HDF5 file containing radial
+        averages.
+        """
+        from h5py import File
+        
+        time = str(float(time))
+        file = File(self._radial_average_filename, 'r')
+        
+        # Rebuild Curve object from saved data
+        # see self._export_background_curves for the HDF5 group naming
+        xdata = self._access_dataset(file, time, 'xdata')
+        ydata = self._access_dataset(file, time, 'inelastic background')
+        return Curve(xdata, ydata, name = time)
+    
+    def inelastic_background_series(self):
+        """
+        Returns a list of time-delay inelastic scattering background data.
+        
+        Returns
+        -------
+        curves : list of curve.Curve objects
+        """
+        curves = list()
+        for time in self.time_points:
+            curves.append(self.inelastic_background(time))
+        return curves
+        
     def peak_dynamics(self, edge, edge2 = None):
         """
         Returns a curve corresponding to the time-dynamics of a location in the 
@@ -542,12 +580,86 @@ class DiffractionDataset(object):
             mast_rect = (x1, x2, y1, y2)
         """
         results = list()
-        for time in tqdm(self.time_points):
+        for time in self.time_points:
             curve = self.radial_average(time, center, mask_rect)
             results.append( (time, curve) )
-        self._export(results)
+        self._export_curves(results)
+    
+    def inelastic_background_fit(self, positions):
+        """
+        Fits a biexponential function to the inelastic scattering background. The
+        fit is applied to the average radial diffraction pattern before time 0.
+        
+        Parameters
+        ----------
+        positions : list of floats
+            x-data positions of where radial averages should be fit to.
+        """        
+        curves_before_photoexcitation = [self.radial_pattern(time) for time in self.time_points if float(time) < 0.0]
+        average_ydata = sum([curve.ydata for curve in curves_before_photoexcitation])/len(curves_before_photoexcitation)
+        average_curve = Curve(curves_before_photoexcitation[0].xdata, average_ydata)
+        
+        background_curve = average_curve.inelastic_background(positions)
+        self._export_background_curves(background_curve)
+    
 
-    def _export(self, results):
+    # -------------------------------------------------------------------------
+    
+    
+    @staticmethod
+    def _access_time_group(opened_file, timedelay):
+        """
+        Returns the HDF5 group associated with a certain time. If the group doesn't exist,
+        it will be created.
+        
+        Parameters
+        ----------
+        opened_file : h5py.File object
+            Opened file.
+        timedelay : str or numerical
+            Pump-probe time-delay.
+        """
+        
+        timedelay = str(float(timedelay))
+        return opened_file.require_group('/{0}'.format(timedelay))
+    
+    def _access_dataset(self, opened_file, timedelay, dataset_name, data = None):
+        """
+        Returns a dataset as a numpy array, or write a numpy array into the dataset.
+        
+        Parameters
+        ----------
+        opened_file : h5py.File object
+            Opened file.
+        timedelay : str or numerical
+            Pump-probe time-delay.
+        dataset_name : str
+            Name of the dataset to be created
+        data : ndarray or None
+            If not None, data will be written in the dataset.
+        
+        Returns
+        -------
+        out : ndarray or None, optional
+            If data is None, out is an ndarray
+        """
+        # group.require_dataset cannot be used as the dataset shape is not known in advance
+        group = self._access_time_group(opened_file, timedelay)
+        
+        if data is None: # Retrieve data in the form of an ndarray
+            return n.array(group[dataset_name])
+            
+        else:
+            # Write data to the dataset_name. If dataset_name does not exist,
+            # create it
+            try:
+                group[dataset_name] = n.array(data)
+            except KeyError:    # Dataset does not exist
+                group.create_dataset(dataset_name, dtype = n.float, data = data)
+            except:             # File might not be writeable
+                return
+                
+    def _export_curves(self, results):
         """
         Parameters
         ----------
@@ -573,33 +685,36 @@ class DiffractionDataset(object):
             #Iteratively create a group for each timepoint
             for item in results:
                 timedelay, curve = item
-                
-                #Create group and attribute
-                group = f.create_group(timedelay)
+                group = self._access_time_group(f, timedelay)
                 group.attrs['time delay'] = timedelay
                 
                 #Add some data to the file
-                group.create_dataset(name = 'xdata', data = curve.xdata)
-                group.create_dataset(name = 'intensity', data = curve.ydata)
-
-# -----------------------------------------------------------------------------
-#           TESTING FUNCTION FOR PLOTTING DYNAMIC DATA 
-# -----------------------------------------------------------------------------
-
-def plotTimeResolved(filename):    
+                self._access_dataset(f, timedelay, dataset_name = 'xdata', data = curve.xdata)
+                self._access_dataset(f, timedelay, dataset_name = 'intensity', data = curve.ydata)
     
-    f = h5py.File(filename, 'r')
-    times = f.keys()
-    times.sort()
-    datasets = [(f[time]['Radav ' + time], time) for time in times]
-    
-    #Plotting
-    for dataset in datasets:
-        data, time = dataset
-        plt.plot(data[0], data[1], label = str(time))
-        plt.legend()
+    def _export_background_curves(self, background_curve):
+        """
+        Exports the background curves. If background curves have been computed,
+        a radial-average file already exists.
+        
+        Parameters
+        ----------
+        background_curve : curve.Curve object
+            inelastic scattering background curve
+        
+        Notes
+        -----
+        This function will overwrite existing inelastic scattering background curves.
+        """
+        from h5py import File
+        
+        with File(self._radial_average_filename, 'r+', libver = 'latest') as f:       # Overwrite if it already exists
+        
+            #Iteratively visit groups for each timepoint
+            for timedelay in self.time_points:
+                self._access_dataset(f, timedelay, dataset_name = 'inelastic background', data = background_curve.ydata)
+
 
 if __name__ == '__main__':
-    directory = 'D:\\2016.04.05.18.32.posttuningtest'
-    fn = os.path.join(directory, 'data.timedelay.+22.00.nscan.01.pumpon.tif')
+    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
     d = DiffractionDataset(directory)

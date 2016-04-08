@@ -94,9 +94,7 @@ class WorkThread(QtCore.QThread):
         self.results_signal.emit(self.result)
 
 class InProgressWidget(QtGui.QWidget):
-    """
-    Spinning wheel with transparent background to overlay over other widgets.
-    """
+    """ Spinning wheel with transparent background to overlay over other widgets. """
     def __init__(self, parent = None):
         
         super(InProgressWidget, self).__init__(parent)        
@@ -161,6 +159,7 @@ class ImageViewer(pg.ImageView):
         Center of the ring Region-of-interest
     mask_position : tuple of ints, shape (4,)
         Returns the x,y limits of the rectangular beam block mask.
+    dataset
     
     Methods
     -------
@@ -173,6 +172,7 @@ class ImageViewer(pg.ImageView):
     
     def __init__(self, parent):        
         super(ImageViewer, self).__init__()
+        self.parent = parent
         
         # Radial-averaging tools
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
@@ -201,6 +201,10 @@ class ImageViewer(pg.ImageView):
         event.accept()
     
     @property
+    def dataset(self):
+        return self.parent.dataset
+        
+    @property
     def mask_shown(self):
         return self.mask.getViewBox() is not None
     
@@ -210,6 +214,8 @@ class ImageViewer(pg.ImageView):
             
     @property
     def mask_position(self):
+        if not self.mask_shown: return None
+            
         rect = self.mask.parentBounds().toRect()
         #If coordinate is negative, return 0
         x1 = max(0, rect.topLeft().x() )
@@ -220,12 +226,15 @@ class ImageViewer(pg.ImageView):
     
     @property
     def center_position(self):
+        if not self.center_finder_shown: return None
+            
         corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2.0
         #Flip output since image viewer plots transpose...
         return corner_y + radius, corner_x + radius
     
-    def display_data(self, image = None, dataset = None):
+    @QtCore.pyqtSlot(object)
+    def display_data(self, image = None):
         """
         Displays images or entire dataset.
         
@@ -236,11 +245,13 @@ class ImageViewer(pg.ImageView):
         dataset : DiffractionDataset object, optional
             Will plot a time-series of images, with time slider below. 
             The computation of a time-series takes a few tens of seconds.
-        """
-        if isinstance(dataset, DiffractionDataset):
+        """            
+        if image is not None:
+            self.setImage(image)
+        elif isinstance(self.dataset, DiffractionDataset):
             # Create a thread to compute the image series array
             # This prevents the GUI from freezing.
-            self.worker = WorkThread(dataset.image_series, True)
+            self.worker = WorkThread(self.dataset.image_series, True)
             self.worker.results_signal.connect(self._display_image_series)
             
             # Show a progress widget
@@ -248,13 +259,16 @@ class ImageViewer(pg.ImageView):
             self.worker.done_signal.connect(self.in_progress_widget.hide)
             
             self.worker.start()
-            
-        elif image is not None:
-            self._display_image(image)
         else:
             #Default image is Gaussian noise
-            self._display_image(image = n.random.rand(2048, 2048))
+            self.setImage(n.random.rand(2048, 2048))
     
+    @QtCore.pyqtSlot(object)
+    def _display_image_series(self, results):
+        """ Display a dataset.DiffractionDataset image series as a 3D array """
+        time_points, array = results
+        self.setImage(array, xvals = time_points, axes = {'t':0, 'x':1, 'y':2})
+        
     @QtCore.pyqtSlot(bool)
     def toggle_radav_tools(self, show):
         """ Hides the radial-averaging tools if currently displayed, and vice-versa. """
@@ -264,17 +278,9 @@ class ImageViewer(pg.ImageView):
         else:
             self.removeItem(self.mask)
             self.removeItem(self.center_finder)
-        
-    def _display_image(self, image):
-        """ Displays an image (as an array-like) in the viewer area."""
-        
-        self.setImage(n.array(image))
     
-    @QtCore.pyqtSlot(object)
-    def _display_image_series(self, results):
-        """ Display a dataset.DiffractionDataset image series as a 3D array """
-        time_points, array = results
-        self.setImage(array, xvals = time_points, axes = {'t':0, 'x':1, 'y':2})
+    
+    
     
 class RadialPlotWidget(QtGui.QWidget):
     """
@@ -292,18 +298,23 @@ class RadialPlotWidget(QtGui.QWidget):
         Item which bounds the averaging region show on the peak_dynamics_viewer
     progress_widget_radial_pattern : iris.InProgressWidget
         Progress widget that appears during radial-averaging operations.
+    dataset : dataset.DiffractionDataset object or None
+        
     """
     def __init__(self, parent):
         
         super(RadialPlotWidget, self).__init__()
         
         self.parent = parent
-        
-        pattern_labels = {'left': 'Intensity (counts)', 'bottom': ('Scattering length',  '(1/A)')}
-        dynamics_labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')}
-        self.radial_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', labels = pattern_labels, autoDownsample = True)
-        self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', labels = dynamics_labels)
+                
+        self.radial_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
+                                                   labels = {'left': 'Intensity (counts)', 'bottom': ('Scattering length',  '(1/A)')})
+        self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
+                                                  labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
         self.peak_dynamics_region = pg.LinearRegionItem()
+        
+        # Need 7 lines because biexponential fit has 7 free parameters
+        self.inelastic_background_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(10)]
         
         # In progress widgets
         self.progress_widget_radial_patterns = InProgressWidget(parent = self.radial_pattern_viewer)
@@ -312,6 +323,13 @@ class RadialPlotWidget(QtGui.QWidget):
         self._connect_signals()
     
     def _init_ui(self):
+        
+        # Display buttons
+        self.show_inelastic_background_btn = QtGui.QPushButton(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), 'Show inelastic background', parent = self)
+        self.subtract_inelastic_background_btn = QtGui.QPushButton(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), 'Subtract inelastic background', parent = self)
+        
+        self.show_inelastic_background_btn.setCheckable(True)
+        self.subtract_inelastic_background_btn.setCheckable(True)
         
         # Hide progress widgets
         self.progress_widget_radial_patterns.hide()
@@ -324,8 +342,15 @@ class RadialPlotWidget(QtGui.QWidget):
         self.splitter.addWidget(self.radial_pattern_viewer)
         self.splitter.addWidget(self.peak_dynamics_viewer)
         
-        self.layout = QtGui.QGridLayout()
-        self.layout.addWidget(self.splitter, 0, 0)
+        # Buttons
+        self.plot_buttons = QtGui.QHBoxLayout()
+        self.plot_buttons.addWidget(self.show_inelastic_background_btn)
+        self.plot_buttons.addWidget(self.subtract_inelastic_background_btn)
+        
+        # TODO: insert buttons
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addLayout(self.plot_buttons)
+        self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
         
         self._hide_peak_dynamics_setup()
@@ -333,9 +358,12 @@ class RadialPlotWidget(QtGui.QWidget):
     def _connect_signals(self):
         # Changing peak dynamics in real-time is too slow for now
         self.peak_dynamics_region.sigRegionChangeFinished.connect(self.update_peak_dynamics_plot)
-        
         #If the splitter handle is moved, resize the progress widget
         self.splitter.splitterMoved.connect(lambda: self.progress_widget_radial_patterns.resize(self.radial_pattern_viewer.size()))
+        
+        # Update plots if buttons are pressed
+        self.show_inelastic_background_btn.toggled.connect(self.display_radial_averages)
+        self.subtract_inelastic_background_btn.toggled.connect(self.display_radial_averages)
     
     def resizeEvent(self, event):
         # Resize the in_progress_widget when the widget is resized
@@ -349,10 +377,33 @@ class RadialPlotWidget(QtGui.QWidget):
     def hideEvent(self, event):
         self.parent.toggle_plot_viewer.setChecked(False)
         event.accept()
+    
+    @property
+    def dataset(self):
+        return self.parent.dataset
         
     @property
     def peak_dynamics_region_shown(self):
         return self.peak_dynamics_region.getViewBox() is not None
+    
+    @property
+    def inelastic_lines_shown(self):
+        return self.inelastic_background_lines[0].getViewBox() is not None
+    
+    @property
+    def inelastic_background_lines_positions(self):
+        intersects = list()
+        for line in self.inelastic_background_lines:
+            intersects.append( line.value() )
+        return intersects
+    
+    @property
+    def show_inelastic_background(self):
+        return self.show_inelastic_background_btn.isChecked()
+    
+    @property
+    def subtract_inelastic_background(self):
+        return self.subtract_inelastic_background_btn.isChecked()
     
     def update_peak_dynamics_plot(self):
         self.peak_dynamics_viewer.clear()
@@ -366,14 +417,28 @@ class RadialPlotWidget(QtGui.QWidget):
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.enableAutoRange()
-        
-    def toggle_peak_dynamics_setup(self):
-        if self.peak_dynamics_region_shown:
-            self._hide_peak_dynamics_setup()
-        else:
+    
+    @QtCore.pyqtSlot(bool)
+    def untoggle_peak_dynamics_setup(self, show):
+        if not show:
             self._display_peak_dynamics_setup()
-
-    def display_radial_averages(self, dataset):
+        else:
+            self._hide_peak_dynamics_setup()
+            
+    @QtCore.pyqtSlot(bool)
+    def toggle_peak_dynamics_setup(self, show):
+        if show:
+            self._display_peak_dynamics_setup()
+        else:
+            self._hide_peak_dynamics_setup()
+    
+    def toggle_inelastic_background_setup(self):
+        if self.inelastic_lines_shown:
+            self._hide_inelastic_background_setup()
+        else:
+            self._display_inelastic_background_setup()
+        
+    def display_radial_averages(self):
         """ 
         Display the radial averages of a dataset, if available. 
         
@@ -385,16 +450,29 @@ class RadialPlotWidget(QtGui.QWidget):
         """
         if self.isHidden:
             self.show()
-            
-        self.dataset = dataset # store dataset so that the updating of peak dynamics is faster
         
         self.radial_pattern_viewer.clear()
+        self.radial_pattern_viewer.enableAutoRange()
         self.peak_dynamics_viewer.clear()
+        self.peak_dynamics_viewer.enableAutoRange()
         
         try:
-            curves = dataset.radial_pattern_series()
+            curves = self.dataset.radial_pattern_series()
         except:     # HDF5 file with radial averages is not found
             return
+        
+        if self.show_inelastic_background or self.subtract_inelastic_background:
+            try:
+                background_curve = self.dataset.inelastic_background(time = 0.0)
+            except KeyError:  #Background curve hasn't been determined
+                background_curve = None
+            
+        # Subtract inelastic background scattering
+        if self.subtract_inelastic_background and background_curve is not None:
+            curves = [curve - background_curve for curve in curves]
+            
+        if self.show_inelastic_background and background_curve is not None:
+            curves.append(background_curve)
         
         # Get timedelay colors and plot
         colors = spectrum_colors(len(curves))
@@ -403,12 +481,36 @@ class RadialPlotWidget(QtGui.QWidget):
                                             symbolPen = pg.mkPen(color), symbolBrush = pg.mkBrush(color), symbolSize = 3)
         
         self._display_peak_dynamics_setup()
+        self.update_peak_dynamics_plot()
 
     def _display_peak_dynamics_setup(self):
         self.radial_pattern_viewer.addItem(self.peak_dynamics_region, ignoreBounds = False)
+    
+    def _display_inelastic_background_setup(self):
+        #Determine curve range
+        try:
+            xmin, xmax = self.radial_pattern_viewer.getPlotItem().listDataItems()[0].dataBounds(ax = 0)
+        except:
+            return
+        
+        # If no lines are plotted, xmin and xmax will be None
+        if xmin is None or xmax is None:
+            return
+
+        #Distribute lines equidistantly            
+        dist_between_lines = float(xmax - xmin)/len(self.inelastic_background_lines)
+        pos = xmin
+        for line in self.inelastic_background_lines:
+            line.setValue(pos)
+            self.radial_pattern_viewer.addItem(line)
+            pos += dist_between_lines
         
     def _hide_peak_dynamics_setup(self):
-        self.radial_pattern_viewer.removeItem(self.peak_dynamics_region)        
+        self.radial_pattern_viewer.removeItem(self.peak_dynamics_region)
+    
+    def _hide_inelastic_background_setup(self):
+        for line in self.inelastic_background_lines:
+            self.radial_pattern_viewer.removeItem(line)
         
 class Iris(QtGui.QMainWindow):
     """
@@ -420,7 +522,6 @@ class Iris(QtGui.QMainWindow):
         
         super(Iris, self).__init__()
         
-        self.worker = None
         self.dataset = None
         
         self.image_viewer = ImageViewer(parent = self)
@@ -457,6 +558,8 @@ class Iris(QtGui.QMainWindow):
         self.menubar = self.menuBar()
         
         # Actions
+        # Some actions are object attributes so that they can be accessed from 
+        # elsewhere
         directory_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&Dataset', self)
         directory_action.triggered.connect(self.directory_locator)
         
@@ -475,6 +578,16 @@ class Iris(QtGui.QMainWindow):
         self.toggle_plot_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial patterns', self)
         self.toggle_plot_viewer.setCheckable(True)
         self.toggle_plot_viewer.toggled.connect(self.show_plot_viewer)
+                
+        set_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the inelastic scattering background', self)
+        set_inelastic_background.triggered.connect(self.compute_inelastic_background)
+        set_inelastic_background.setEnabled(False)
+        
+        self.toggle_inelastic_background_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
+        self.toggle_inelastic_background_tools.setCheckable(True)
+        self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.toggle_inelastic_background_setup)
+        self.toggle_inelastic_background_tools.toggled.connect(set_inelastic_background.setEnabled)
+        self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.untoggle_peak_dynamics_setup)
         
         file_menu = self.menubar.addMenu('&File')
         file_menu.addAction(directory_action)
@@ -482,10 +595,13 @@ class Iris(QtGui.QMainWindow):
         file_menu.addAction(picture_action)
         
         powder_menu = self.menubar.addMenu('&Powder')
+        powder_menu.addAction(self.toggle_plot_viewer)
+        powder_menu.addSeparator()
         powder_menu.addAction(self.toggle_radav_tools)
         powder_menu.addAction(set_radav_tools)
         powder_menu.addSeparator()
-        powder_menu.addAction(self.toggle_plot_viewer)
+        powder_menu.addAction(self.toggle_inelastic_background_tools)
+        powder_menu.addAction(set_inelastic_background)
     
     def _connect_signals(self):
         # Nothing to see here yet
@@ -500,18 +616,12 @@ class Iris(QtGui.QMainWindow):
         
         directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
         directory = os.path.abspath(directory)
-        self.dataset = DiffractionDataset(directory)
-        
-        # In case the file dialog is closed without having chosen a file
-        # skip any error
-        try:        
-            self.image_viewer.display_data(dataset = self.dataset)
-        except:
-            return
+        self.dataset = DiffractionDataset(directory)        
+        self.image_viewer.display_data()
         
         # Plot radial averages if they exist. If error, no plot. This is handled
         # by the plot viewer
-        self.plot_viewer.display_radial_averages(dataset = self.dataset)
+        self.plot_viewer.display_radial_averages()
     
     def picture_locator(self):
         """ Open a file dialog to select an image to view """
@@ -525,22 +635,33 @@ class Iris(QtGui.QMainWindow):
         """ If True, plot_viewer will be shown. """
         if show:
             self.plot_viewer.show()
-            # TODO: Move vertical splitter between image_viewer and plot_viewer in the
-            # middle of the window
         else:
             self.plot_viewer.hide()
     
     def compute_radial_average(self):
         if self.dataset is not None:
-            self.toggle_radav_tools.setChecked(False)
             self.plot_viewer.show()
             
             #Thread the computation
             self.worker = WorkThread(self.dataset.radial_average_series, self.image_viewer.center_position, self.image_viewer.mask_position)
             self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
             self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
-            self.worker.done_signal.connect(lambda: self.plot_viewer.display_radial_averages(self.dataset))
+            self.worker.done_signal.connect(self.plot_viewer.display_radial_averages)
             self.worker.start()
+            # Only hide the tools after computation has started
+            self.toggle_radav_tools.setChecked(False)
+    
+    def compute_inelastic_background(self):
+        if self.dataset is not None:
+            self.toggle_inelastic_background_tools.setChecked(False)
+            
+            #Thread the computation
+            self.worker = WorkThread(self.dataset.inelastic_background_fit, self.plot_viewer.inelastic_background_lines_positions)
+            self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
+            self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
+            self.worker.done_signal.connect(self.plot_viewer.display_radial_averages)
+            self.worker.start()
+            
     
     def center_window(self):
         qr = self.frameGeometry()
