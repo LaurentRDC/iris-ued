@@ -2,20 +2,8 @@
 
 #Basics
 import numpy as n
+from scipy.signal import find_peaks_cwt, ricker
 import scipy.optimize as opt
-
-# -----------------------------------------------------------------------------
-#           HELPER FUNCTIONS
-# -----------------------------------------------------------------------------
-
-def lorentzian(x, xc = 0, width_l = 0.1):
-    """ Returns a lorentzian with maximal height of 1 (not area of 1)."""
-    core = ((width_l/2)**2)/( (x-xc)**2 + (width_l/2)**2 )
-    return core
-    
-def biexp(x, a, b, c, d, center, const):
-    """ Returns a biexponential of the form a*n.exp(-b*(x-e)) + c*n.exp(-d*(x-e)) + f"""
-    return a*n.exp(-b*(x-center)) + c*n.exp(-d*(x-center)) + const
 
 def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, floor):
     """
@@ -26,13 +14,9 @@ def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, f
     In case of fitting, there are 7 free parameters, and thus at least 7 points
     must be provided.
     """
-    exp1 = amplitude1*n.exp(decay1*(x - offset1))
-    exp2 = amplitude2*n.exp(decay2*(x - offset2))
+    exp1 = amplitude1*n.exp(-decay1*(x - offset2))
+    exp2 = amplitude2*n.exp(-decay2*(x - offset1))
     return exp1 + exp2 + floor
-
-def bilor(x, center, amp1, amp2, width1, width2, const):
-    """ Returns a Bilorentzian functions. """
-    return amp1*lorentzian(x, center, width1) + amp2*lorentzian(x, center, width2) + const
         
 # -----------------------------------------------------------------------------
 #           RADIAL CURVE CLASS
@@ -97,39 +81,100 @@ class Curve(object):
         cutoff_index = n.argmin(n.abs(self.xdata - cutoff))
         self.xdata = self.xdata[cutoff_index::] 
         self.ydata = self.ydata[cutoff_index::]
-
-    def inelastic_background(self, xpoints = list()):
+    
+    def inelastic_background(self, xpoints):
         """
-        Inelastic scattering background fit.
+        Better inelastic scattering background fit.
         
         Parameters
         ----------
-        points : array-like
+        points : array-like, optional
             x-values of the points to fit to.
-        fit : str {'biexp', 'bilor'}
-            Function to use as fit. Default is biexponential.
-        """        
+        """
         # Preliminaries
-        assert len(xpoints) >= 7    # The biexponential implementation has 7 free parameters
-        xpoints = n.array(xpoints, dtype = n.float) 
+        xpoints = n.array(xpoints, dtype = n.float)
+        
+        def positivity_constraint(params):
+            """
+            This function returns a positive value if the background is less than
+            the data, everywhere.
+            """
+            return self.ydata - biexponential(self.xdata, *params)
+        
+        def matching_background(params):
+            """
+            This function is 0 if the background passes through all required xpoints
+            """
+            background = biexponential(xpoints, *params)
+            ypoints = n.interp(xpoints, self.xdata, self.ydata)     # interpolation of the data at the background xpoints
+            return n.sum( (ypoints - background) ** 2 )
+        
+        constraints = {'type': 'ineq', 'fun' : positivity_constraint}
         
         #Create initial guesses
         # amp1, amp2, decay1, decay2, offset1, offset2, floor
         # TODO: find better guesses?
-        guesses = (self.ydata.max(), self.ydata.max(), 0, 0, 0, 0, 0)
+        guesses = (self.ydata.max(), self.ydata.max()/2, 10, 1, 0, 0, self.ydata.min())
         
-        # Value bounds
-        # amp1, amp2, decay1, decay2, offset1, offset2, floor
-        min_bounds = n.array( [ 0.0, 0.0, -n.inf,-n.inf,-n.inf,-n.inf, 0.0 ] )
-        max_bounds = n.array( [n.inf,n.inf,n.inf, n.inf, n.inf, n.inf, self.ydata.max()] )
-        bounds = (min_bounds, max_bounds)
+        results = opt.minimize(matching_background, x0 = guesses, method = 'COBYLA', constraints = constraints, options = {'disp' : True, 'maxiter' : 300000})
         
-        # Interpolate the values of the patterns at the x points
-        # Fit with guesses if optimization does not converge
-        ypoints = n.interp(xpoints, self.xdata, self.ydata)
-        optimal_parameters, parameters_covariance = opt.curve_fit(biexponential, xpoints, ypoints, p0 = guesses, bounds = bounds) 
-    
         # Create inelastic background function 
-        amp1, amp2, dec1, dec2, off1, off2, floor = optimal_parameters
+        amp1, amp2, dec1, dec2, off1, off2, floor = results.x
         new_fit = biexponential(self.xdata, amp1, amp2, dec1, dec2, off1, off2, floor)
         return Curve(self.xdata, new_fit, 'IBG {0}'.format(self.name), 'red')
+            
+    
+    def auto_inelastic_background(self):
+        """
+        Fits the inelastic background by first finding the location of diffraction 
+        peaks, and automatically selecting points between peaks as background
+        intensities.
+        
+        Returns
+        -------
+        out : Curve object
+        """
+        # Determine peak locations
+        peak_indices = self._find_peaks()
+        
+        # Find indices between peaks
+        between_peaks_indices = [(peak_indices[i] - peak_indices[i - 1])/2 for i in range(1, len(peak_indices))]
+        between_peaks_indices.append(0)     # To fit the inelastic background with the bound
+        xpoints = [self.xdata[int(i)] for i in between_peaks_indices]
+        
+        return self.inelastic_background(xpoints)
+    
+    def _find_peaks(self):
+        """
+        Finds the indices associated with peaks in ydata
+        
+        Returns
+        -------
+        peak_indices : list of ints
+            Indices of the peaks in ydata.
+        
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> plt.plot(curve.ydata)
+        >>> 
+        >>> peak_indices = curve._find_peaks()
+        >>> for i in peak_indices:
+        ...    plt.axvline(i) for i in peak_indices
+        ...
+        >>>
+        
+        See also
+        --------
+        scipy.signal.find_peaks_cwt
+        """
+        widths = n.arange(1, len(self.ydata)/10)    # Max width determined with testing
+        return find_peaks_cwt(self.ydata, widths = widths, wavelet = ricker, min_length = len(widths)/15)
+
+if __name__ == '__main__':
+    # Test curve
+    import matplotlib.pyplot as plt
+    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
+    from dataset import DiffractionDataset
+    d = DiffractionDataset(directory)
+    test = d.radial_pattern(0.0)

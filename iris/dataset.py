@@ -601,10 +601,8 @@ class DiffractionDataset(object):
         
         background_curve = average_curve.inelastic_background(positions)
         self._export_background_curves(background_curve)
-    
 
     # -------------------------------------------------------------------------
-    
     
     @staticmethod
     def _access_time_group(opened_file, timedelay):
@@ -640,7 +638,7 @@ class DiffractionDataset(object):
         
         Returns
         -------
-        out : ndarray or None, optional
+        out : ndarray or None
             If data is None, out is an ndarray
         """
         # group.require_dataset cannot be used as the dataset shape is not known in advance
