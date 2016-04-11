@@ -583,6 +583,9 @@ class Iris(QtGui.QMainWindow):
         set_inelastic_background.triggered.connect(self.compute_inelastic_background)
         set_inelastic_background.setEnabled(False)
         
+        set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Automatically compute the inelastic scattering background', self)
+        set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
+        
         self.toggle_inelastic_background_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
         self.toggle_inelastic_background_tools.setCheckable(True)
         self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.toggle_inelastic_background_setup)
@@ -602,6 +605,7 @@ class Iris(QtGui.QMainWindow):
         powder_menu.addSeparator()
         powder_menu.addAction(self.toggle_inelastic_background_tools)
         powder_menu.addAction(set_inelastic_background)
+        powder_menu.addAction(set_auto_inelastic_background)
     
     def _connect_signals(self):
         # Nothing to see here yet
@@ -651,12 +655,20 @@ class Iris(QtGui.QMainWindow):
             # Only hide the tools after computation has started
             self.toggle_radav_tools.setChecked(False)
     
-    def compute_inelastic_background(self):
+    def compute_inelastic_background(self, mode = None):
+        """
+        Compute inelastic scattering background. if mode == 'auto', positions are
+        automatically determined using the continuous wavelet transform
+        """
         if self.dataset is not None:
             self.toggle_inelastic_background_tools.setChecked(False)
             
             #Thread the computation
-            self.worker = WorkThread(self.dataset.inelastic_background_fit, self.plot_viewer.inelastic_background_lines_positions)
+            if mode == 'auto':
+                self.worker = WorkThread(self.dataset.inelastic_background_fit, None)
+            else:
+                self.worker = WorkThread(self.dataset.inelastic_background_fit, self.plot_viewer.inelastic_background_lines_positions)
+                
             self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
             self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
             self.worker.done_signal.connect(self.plot_viewer.display_radial_averages)

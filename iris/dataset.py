@@ -585,21 +585,32 @@ class DiffractionDataset(object):
             results.append( (time, curve) )
         self._export_curves(results)
     
-    def inelastic_background_fit(self, positions):
+    def inelastic_background_fit(self, positions = None):
         """
         Fits a biexponential function to the inelastic scattering background. The
         fit is applied to the average radial diffraction pattern before time 0.
         
         Parameters
         ----------
-        positions : list of floats
-            x-data positions of where radial averages should be fit to.
+        positions : list of floats, optional
+            x-data positions of where radial averages should be fit to. If a list
+            is not provided, the positions will be automatically determined.
+        
+        See also
+        --------
+        curve.Curve.auto_inelastic_background
+            Automatically determine the inelastic bakground using the continuous
+            wavelet transform with Ricker mother wavelet.
         """        
         curves_before_photoexcitation = [self.radial_pattern(time) for time in self.time_points if float(time) < 0.0]
         average_ydata = sum([curve.ydata for curve in curves_before_photoexcitation])/len(curves_before_photoexcitation)
         average_curve = Curve(curves_before_photoexcitation[0].xdata, average_ydata)
         
-        background_curve = average_curve.inelastic_background(positions)
+        if positions is None:
+            background_curve = average_curve.auto_inelastic_background()
+        else:
+            background_curve = average_curve.inelastic_background(positions)
+            
         self._export_background_curves(background_curve)
 
     # -------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #Basics
+import matplotlib.pyplot as plt
 import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
 import scipy.optimize as opt
@@ -66,9 +67,7 @@ class Curve(object):
         return Curve(self.xdata, self.ydata, self.name, self.color)
     
     def plot(self):
-        """ Diagnostic tool. """
-        import matplotlib.pyplot as plt
-        
+        """ Diagnostic tool. """        
         plt.figure()
         plt.title(self.name)
         plt.plot(self.xdata, self.ydata, self.color)
@@ -101,35 +100,37 @@ class Curve(object):
             """
             return self.ydata - biexponential(self.xdata, *params)
         
-        def matching_background(params):
+        def residuals(params):
             """
             This function is 0 if the background passes through all required xpoints
             """
             background = biexponential(xpoints, *params)
             ypoints = n.interp(xpoints, self.xdata, self.ydata)     # interpolation of the data at the background xpoints
             return n.sum( (ypoints - background) ** 2 )
-        
-        constraints = {'type': 'ineq', 'fun' : positivity_constraint}
+            
+        constraints = {'type' : 'ineq', 'fun' : positivity_constraint}
         
         #Create initial guesses
         # amp1, amp2, decay1, decay2, offset1, offset2, floor
         # TODO: find better guesses?
-        guesses = (self.ydata.max(), self.ydata.max()/2, 10, 1, 0, 0, self.ydata.min())
+        guesses = (1,1,1,1,1,1,1)
         
-        results = opt.minimize(matching_background, x0 = guesses, method = 'COBYLA', constraints = constraints, options = {'disp' : True, 'maxiter' : 300000})
+        # Bounds detemined by logic and empiricism
+        bounds = [(0, 1e3*self.ydata.max()), (0, 1e3*self.ydata.max()), (-100, 100),(-100, 100), (-1e4, 1e4), (-1e4, 1e4), (-1e4, 1e4)]
+        
+        results = opt.minimize(residuals, x0 = guesses, bounds = bounds, method = 'SLSQP', constraints = constraints, options = {'disp' : True, 'maxiter' : 1000, 'ftol' : 1e-8})
         
         # Create inelastic background function 
         amp1, amp2, dec1, dec2, off1, off2, floor = results.x
         new_fit = biexponential(self.xdata, amp1, amp2, dec1, dec2, off1, off2, floor)
         return Curve(self.xdata, new_fit, 'IBG {0}'.format(self.name), 'red')
-            
     
     def auto_inelastic_background(self):
         """
         Fits the inelastic background by first finding the location of diffraction 
         peaks, and automatically selecting points between peaks as background
         intensities.
-        
+            
         Returns
         -------
         out : Curve object
@@ -140,6 +141,7 @@ class Curve(object):
         # Find indices between peaks
         between_peaks_indices = [(peak_indices[i] - peak_indices[i - 1])/2 for i in range(1, len(peak_indices))]
         between_peaks_indices.append(0)     # To fit the inelastic background with the bound
+        between_peaks_indices.append(len(self.ydata) - 1)
         xpoints = [self.xdata[int(i)] for i in between_peaks_indices]
         
         return self.inelastic_background(xpoints)
@@ -173,8 +175,10 @@ class Curve(object):
 
 if __name__ == '__main__':
     # Test curve
-    import matplotlib.pyplot as plt
     directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
     from dataset import DiffractionDataset
     d = DiffractionDataset(directory)
     test = d.radial_pattern(0.0)
+    background = test.auto_inelastic_background()
+    plt.plot(test.ydata)
+    plt.plot(background.ydata)
