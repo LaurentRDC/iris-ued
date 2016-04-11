@@ -583,7 +583,7 @@ class Iris(QtGui.QMainWindow):
         set_inelastic_background.triggered.connect(self.compute_inelastic_background)
         set_inelastic_background.setEnabled(False)
         
-        set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Automatically compute the inelastic scattering background', self)
+        set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '& (beta) Automatically compute the inelastic scattering background', self)
         set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
         
         self.toggle_inelastic_background_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
@@ -672,6 +672,9 @@ class Iris(QtGui.QMainWindow):
             self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
             self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
             self.worker.done_signal.connect(self.plot_viewer.display_radial_averages)
+            # Show the inelastic background
+            self.worker.done_signal.connect(lambda: self.plot_viewer.show_inelastic_background_btn.setChecked(True))
+            self.worker.done_signal.connect(lambda: self.plot_viewer.subtract_inelastic_background_btn.setChecked(False))
             self.worker.start()
             
     
