@@ -10,14 +10,35 @@ parameters, etc.
 """
 
 import numpy as n
-import matplotlib.pyplot as plt #For testing only
 
 #Batch processing libraries
 from curve import Curve
 import os.path
-import h5py
 from glob import glob
 from tifffile import imread, imsave
+
+class cached_property(object):
+    """
+    Decorator that minimizes computations of class attributes by caching
+    the attribute values if it ever accessed. Attrbutes are calculated once.
+    
+    This descriptor should be used for computationally-costly attributes that
+    don't change much.
+    """
+    _missing = object()
+    
+    def __init__(self, attribute, name = None):      
+        self.attribute = attribute
+        self.__name__ = name or attribute.__name__
+    
+    def __get__(self, instance, owner = None):
+        if instance is None:
+            return self
+        value = instance.__dict__.get(self.__name__, self._missing)
+        if value is self._missing:
+            value = self.attribute(instance)
+            instance.__dict__[self.__name__] = value
+        return value
 
 def electron_wavelength(kV, units = 'meters'):
     """ 
@@ -300,7 +321,7 @@ class DiffractionDataset(object):
             Array of time-delay values
         series : ndarray, ndim 3
             Array where the first axis is time. 
-        """        
+        """
         images = list()
         for time in self.time_points:
             images.append(self.image(time, reduced_memory))
@@ -331,9 +352,15 @@ class DiffractionDataset(object):
         intensity = file['/{0}/intensity'.format(time)]
         return Curve(xdata, intensity, name = time)
     
-    def radial_pattern_series(self):
+    def radial_pattern_series(self, background_subtracted = False):
         """
         Returns a list of time-delay radially-averaged data.
+        
+        Parameters
+        ----------
+        background_subtracted : bool
+            If True, radial patterns will be background-subtracted before being 
+            returned. False by default.
         
         Returns
         -------
@@ -341,16 +368,23 @@ class DiffractionDataset(object):
         """
         curves = list()
         for time in self.time_points:
-            curves.append(self.radial_pattern(time))
+            if background_subtracted:
+                curves.append(self.radial_pattern(time) - self.inelastic_background(time))
+            else:
+                curves.append(self.radial_pattern(time))
         return curves
     
-    def inelastic_background(self, time):
+    def inelastic_background(self, time = 0.0):
         """
         Returns the inelastic scattering background of the radially-averaged pattern.
         
+        The inelastic background is computed for the average of radial patterns
+        before photoexcitation; however, the background curve is saved in each 
+        HDF5 time group for flexibility. 
+        
         Parameters
         ----------
-        time : str, numerical
+        time : str, numerical, optional
             Time delay value of the image.
         
         Notes
@@ -381,8 +415,11 @@ class DiffractionDataset(object):
         for time in self.time_points:
             curves.append(self.inelastic_background(time))
         return curves
+    
+    def peak_dynamics(self, rect):
+        pass
         
-    def peak_dynamics(self, edge, edge2 = None):
+    def radial_peak_dynamics(self, edge, edge2 = None):
         """
         Returns a curve corresponding to the time-dynamics of a location in the 
         diffraction patterns. Think of it as looking at the time-evolution
@@ -585,7 +622,7 @@ class DiffractionDataset(object):
             results.append( (time, curve) )
         self._export_curves(results)
     
-    def inelastic_background_fit(self, positions = None):
+    def inelastic_background_fit(self, positions):
         """
         Fits a biexponential function to the inelastic scattering background. The
         fit is applied to the average radial diffraction pattern before time 0.
@@ -659,14 +696,8 @@ class DiffractionDataset(object):
             return n.array(group[dataset_name])
             
         else:
-            # Write data to the dataset_name. If dataset_name does not exist,
-            # create it
-            try:
-                group[dataset_name] = n.array(data)
-            except KeyError:    # Dataset does not exist
-                group.create_dataset(dataset_name, dtype = n.float, data = data)
-            except:             # File might not be writeable
-                return
+            del group[dataset_name] 
+            group.create_dataset(dataset_name, dtype = n.float, data = data)
                 
     def _export_curves(self, results):
         """

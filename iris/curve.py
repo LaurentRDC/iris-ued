@@ -39,12 +39,13 @@ class Curve(object):
         Plotting color.
     
     Methods
-    -------
-    cutoff
-        Cuts off a part of the curve.
-    
+    -------    
     inelastic_background
-        Fits a biexponential inelastic background to the curve
+        Fits a biexponential inelastic scattering background to the curve
+        
+    auto_inelastic_background
+        Fits a biexponential inelastic scattering background to the curve.
+        Background values are automatically determined from peak locations.
     """
     def __init__(self, xdata, ydata, name = '', color = 'b'):
         
@@ -66,20 +67,15 @@ class Curve(object):
     def __copy__(self):
         return Curve(self.xdata, self.ydata, self.name, self.color)
     
-    def plot(self):
+    def plot(self, show_peaks = True):
         """ Diagnostic tool. """        
         plt.figure()
         plt.title(self.name)
         plt.plot(self.xdata, self.ydata, self.color)
-
-    def cutoff(self, cutoff):
-        """ Cuts off a part of the pattern"""
-        if isinstance(cutoff, list):
-            cutoff = cutoff[0]
         
-        cutoff_index = n.argmin(n.abs(self.xdata - cutoff))
-        self.xdata = self.xdata[cutoff_index::] 
-        self.ydata = self.ydata[cutoff_index::]
+        if show_peaks:
+            for peak_index in self._find_peaks():
+                plt.axvline(self.xdata[peak_index], color = 'r')
     
     def inelastic_background(self, xpoints):
         """
@@ -135,16 +131,37 @@ class Curve(object):
         -------
         out : Curve object
         """
-        # Determine peak locations
-        peak_indices = self._find_peaks()
-        
         # Find indices between peaks
-        between_peaks_indices = [(peak_indices[i] - peak_indices[i - 1])/2 for i in range(1, len(peak_indices))]
-        between_peaks_indices.append(0)     # To fit the inelastic background with the bound
-        between_peaks_indices.append(len(self.ydata) - 1)
-        xpoints = [self.xdata[int(i)] for i in between_peaks_indices]
-        
+        xpoints = [self.xdata[int(i)] for i in self._between_peaks()]
         return self.inelastic_background(xpoints)
+    
+    def _between_peaks(self):
+        """
+        Finds the indices associated with local minima between peaks in ydata
+        
+        Returns
+        -------
+        indices : list of ints
+            Indices of the throughs in ydata.
+        
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> plt.plot(curve.ydata)
+        >>> 
+        >>> indices = curve._find_peaks()
+        >>> for i in indices:
+        ...    plt.axvline(i)
+        ...
+        >>>
+        
+        See also
+        --------
+        scipy.signal.find_peaks_cwt
+        """
+        widths = n.arange(1, len(self.ydata)/10)    # Max width determined with testing
+        return find_peaks_cwt(-self.ydata, widths = widths, wavelet = ricker, 
+                              min_length = len(widths)/20, min_snr = 1.0)
     
     def _find_peaks(self):
         """
@@ -162,7 +179,7 @@ class Curve(object):
         >>> 
         >>> peak_indices = curve._find_peaks()
         >>> for i in peak_indices:
-        ...    plt.axvline(i) for i in peak_indices
+        ...    plt.axvline(i)
         ...
         >>>
         
@@ -171,7 +188,8 @@ class Curve(object):
         scipy.signal.find_peaks_cwt
         """
         widths = n.arange(1, len(self.ydata)/10)    # Max width determined with testing
-        return find_peaks_cwt(self.ydata, widths = widths, wavelet = ricker, min_length = len(widths)/15)
+        return find_peaks_cwt(self.ydata, widths = widths, wavelet = ricker, 
+                              min_length = len(widths)/20, min_snr = 1.5)
 
 if __name__ == '__main__':
     # Test curve
@@ -179,6 +197,4 @@ if __name__ == '__main__':
     from dataset import DiffractionDataset
     d = DiffractionDataset(directory)
     test = d.radial_pattern(0.0)
-    background = test.auto_inelastic_background()
-    plt.plot(test.ydata)
-    plt.plot(background.ydata)
+    test.plot()

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from setuptools import setup, find_packages
+from distutils.core import setup
+import py2exe
 import glob
 
 #To create a Windows installer for this, run:

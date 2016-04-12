@@ -7,8 +7,8 @@ Created on Mon Apr  4 15:18:35 2016
 
 #Core functions
 from dataset import DiffractionDataset, read, cast_to_16_bits
+from progress_widget import InProgressWidget
 import os
-import math
 
 #GUI backends
 import pyqtgraph as pg
@@ -28,7 +28,7 @@ def spectrum_colors(num_colors):
     
     Returns
     -------
-    colors : list of QColors
+    colors : list of QColors. Can be used with PyQt and PyQtGraph
     """
     # Hue values from 0 to 1
     hue_values = [i/num_colors for i in range(num_colors)]
@@ -69,7 +69,9 @@ class WorkThread(QtCore.QThread):
     Examples
     --------
     >>> function = lambda x : x ** 10
-    >>> worker = WorkThread(function, 10)
+    >>> result_function = lambda x: print(x)
+    >>> worker = WorkThread(function, 2)  # Will calculate 2 ** 10
+    >>> worker.done_signal.connect(result_function)
     >>> worker.start()      # Computation starts only when this method is called
     """
     done_signal = QtCore.pyqtSignal(bool, name = 'done_signal')
@@ -89,61 +91,9 @@ class WorkThread(QtCore.QThread):
     
     def run(self):
         self.in_progress_signal.emit(True)
-        self.result = self.function(*self.args, **self.kwargs)
+        self.result = self.function(*self.args, **self.kwargs)  # Computation is here      
         self.done_signal.emit(True)        
         self.results_signal.emit(self.result)
-
-class InProgressWidget(QtGui.QWidget):
-    """ Spinning wheel with transparent background to overlay over other widgets. """
-    def __init__(self, parent = None):
-        
-        super(InProgressWidget, self).__init__(parent)        
-        self._init_ui()
-    
-    def _init_ui(self):
-        
-        # Number of dots to display as part of the 'spinning wheel'
-        self._num_points = 12
-        
-        # Set background color to be transparent
-        palette = QtGui.QPalette(self.palette())
-        palette.setColor(palette.Background, QtCore.Qt.transparent)
-        self.setPalette(palette)
-    
-    def paintEvent(self, event):
-        painter = QtGui.QPainter()
-        painter.begin(self)
-        
-        #Overlay color is half-transparent white
-        painter.fillRect(event.rect(), QtGui.QBrush(QtGui.QColor(255, 255, 255, 127)))
-        painter.setPen(QtGui.QPen(QtCore.Qt.NoPen))
-        
-        # Loop over dots in the 'wheel'
-        # At any time, a single ellipse is colored bright
-        # Other ellipses are darker
-        for i in range(self._num_points):
-            if  i == self.counter % self._num_points :  # Color this ellipse bright
-                painter.setBrush(QtGui.QBrush(QtGui.QColor(229, 33, 33)))
-            else:   # Color this ellipse dark
-               painter.setBrush(QtGui.QBrush(QtGui.QColor(114, 15, 15)))
-              
-            # Draw the ellipse with the right color
-            painter.drawEllipse(
-                self.width()/2 + 30 * math.cos(2 * math.pi * i / self._num_points),
-                self.height()/2 + 30 * math.sin(2 * math.pi * i / self._num_points),
-                10, 10)
-
-        painter.end()
-    
-    def showEvent(self, event):
-        """ Starts an updating timer, called every 50 ms. """
-        self.timer = self.startTimer(50)
-        self.counter = 0
-    
-    def timerEvent(self, event):
-        """ At every timer step, this method is called. """
-        self.counter += 1
-        self.update()       # Calls a paintEvent
 
 class ImageViewer(pg.ImageView):
     """
@@ -155,12 +105,15 @@ class ImageViewer(pg.ImageView):
         If False, the beam-block mask is not currently displayed.
     center_finder_shown : bool
         If False, the center-finder widget is not currently displayed.
+    peak_dynamics_region_shown : bool
+        If False, the peak_dynamics_region widget is not currently displayed.
     center_position : tuple of ints, shape (2,)
         Center of the ring Region-of-interest
     mask_position : tuple of ints, shape (4,)
         Returns the x,y limits of the rectangular beam block mask.
     dataset
-    
+        DiffractionDataset instance from the parent widget.
+        
     Methods
     -------
     display_data
@@ -168,6 +121,9 @@ class ImageViewer(pg.ImageView):
     
     toggle_radav_tools
         Toggle the appearance of the radial-averaging tools 'mask' and 'center_finder'
+        
+    toggle_peak_dynamics_region
+        Toggle the appearance of the peak_dynamics_region widget
     """
     
     def __init__(self, parent):        
@@ -178,8 +134,13 @@ class ImageViewer(pg.ImageView):
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
         
+        # Single crystal peak dynamics tool
+        self.peak_dynamics_region = pg.CircleROI(pos = [800,800], size = [200,200], pen = pg.mkPen('b'))
+        
+        # Miscellaneous
         self.in_progress_widget = InProgressWidget(parent = self)
         
+        # Build widget
         self._init_ui()
         self._connect_signals()
         
@@ -200,9 +161,15 @@ class ImageViewer(pg.ImageView):
         self.in_progress_widget.resize(event.size())
         event.accept()
     
+    # Attribute ---------------------------------------------------------------
+    
     @property
     def dataset(self):
         return self.parent.dataset
+        
+    @property
+    def peak_dynamics_region_shown(self):
+        return self.peak_dynamics_region.getViewBox() is not None
         
     @property
     def mask_shown(self):
@@ -232,6 +199,8 @@ class ImageViewer(pg.ImageView):
         radius = self.center_finder.size().x()/2.0
         #Flip output since image viewer plots transpose...
         return corner_y + radius, corner_x + radius
+    
+    # Methods -----------------------------------------------------------------
     
     @QtCore.pyqtSlot(object)
     def display_data(self, image = None):
@@ -266,8 +235,15 @@ class ImageViewer(pg.ImageView):
     @QtCore.pyqtSlot(object)
     def _display_image_series(self, results):
         """ Display a dataset.DiffractionDataset image series as a 3D array """
-        time_points, array = results
-        self.setImage(array, xvals = time_points, axes = {'t':0, 'x':1, 'y':2})
+        self.time_points, self.data = results
+        self.setImage(self.data, xvals = self.time_points, axes = {'t':0, 'x':1, 'y':2})
+    
+    @QtCore.pyqtSlot(bool)
+    def toggle_peak_dynamics_region(self, show):
+        if show:
+            self.addItem(self.peak_dynamics_region)
+        else:
+            self.removeItem(self.peak_dynamics_region)
         
     @QtCore.pyqtSlot(bool)
     def toggle_radav_tools(self, show):
@@ -278,11 +254,65 @@ class ImageViewer(pg.ImageView):
         else:
             self.removeItem(self.mask)
             self.removeItem(self.center_finder)
+
+
+
+
+class SingleCrystalToolsWidget(QtGui.QWidget):
+    """ 
+    Widget displaying tools for single-crystal diffraction analysis.
+    
+    Attributes
+    ----------
+    parent : QWidget
+        Iris QWidget in which this instance is contained. While technically this
+        instance could be in a QSplitter, 'parent' refers to the Iris QWidget 
+        specifically.
+    dataset : DiffractionDataset
+        Object from the parent widget.
+        
+    Methods
+    -------
+    """
+    def __init__(self, parent):
+        super(SingleCrystalToolsWidget, self).__init__()
+        self.parent = parent
+        self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
+                                                  labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
+    
+    def _init_ui(self):
+        pass
+    
+    def _connect_signals(self):
+        pass
+
+    def update_peak_dynamics(self):
+        self.peak_dynamics_viewer.clear()
+        
+        #Get region
+        min_x, max_x = self.peak_dynamics_region.getRegion()
+        time, intensity = self.dataset.peak_dynamics(min_x, max_x)
+        colors = spectrum_colors(len(time))
+        self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
+                                       symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 3)
+        
+        # If the use has zoomed on the previous frame, auto range might be disabled.
+        self.peak_dynamics_viewer.enableAutoRange()
+
+    def showEvent(self, event):
+        self.parent.toggle_sc_viewer.setChecked(True)
+        event.accept()
+    
+    def hideEvent(self, event):
+        self.parent.toggle_plot_viewer.setChecked(False)
+        event.accept()
+    
+    @property
+    def dataset(self):
+        return self.parent.dataset
     
     
-    
-    
-class RadialPlotWidget(QtGui.QWidget):
+class PowderToolsWidget(QtGui.QWidget):
     """
     Widgets displaying two pyqtgraph.PlotWidget widgets. The first one is for radially-averaged
     diffraction patterns, while the other is for time-dynamics of specific regions of
@@ -290,28 +320,33 @@ class RadialPlotWidget(QtGui.QWidget):
     
     Attributes
     ----------
-    radial_pattern_viewer : pyqtgraph.PlotWidget
-        PlotWidget on which is shown all the radially-averaged curves.
-    peak_dynamics_viewer : pyqtgraph.PlotWidget
-        PlotWidget on which is shown the time dynamics of specific radial regions.
-    peak_dynamics_region : pyqtgraph.LinearRegionItem
-        Item which bounds the averaging region show on the peak_dynamics_viewer
-    progress_widget_radial_pattern : iris.InProgressWidget
-        Progress widget that appears during radial-averaging operations.
-    dataset : dataset.DiffractionDataset object or None
-        
+    parent : QWidget
+        Iris QWidget in which this instance is contained. While technically this
+        instance could be in a QSplitter, 'parent' refers to the Iris QWidget 
+        specifically.
+    radial_pattern_viewer : PlotWidget
+    
+    peak_dynamics_viewer : PlotWidget
+    
+    Methods
+    -------
     """
     def __init__(self, parent):
         
-        super(RadialPlotWidget, self).__init__()
+        super(PowderToolsWidget, self).__init__()
         
         self.parent = parent
                 
         self.radial_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
-                                                   labels = {'left': 'Intensity (counts)', 'bottom': ('Scattering length',  '(1/A)')})
+                                                   labels = {'left': 'Intensity (counts)', 'bottom': 'Scattering length (1/A)'})
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
         self.peak_dynamics_region = pg.LinearRegionItem()
+        
+        # Background curve is an item so that it can be easily added and removed to a plot.
+        # Otherwise, using plot(...) does not permit removing the curve without
+        # clearing the entire radial_plot_viewer
+        self.background_curve_item = None
         
         # Need 7 lines because biexponential fit has 7 free parameters
         self.inelastic_background_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(10)]
@@ -362,7 +397,7 @@ class RadialPlotWidget(QtGui.QWidget):
         self.splitter.splitterMoved.connect(lambda: self.progress_widget_radial_patterns.resize(self.radial_pattern_viewer.size()))
         
         # Update plots if buttons are pressed
-        self.show_inelastic_background_btn.toggled.connect(self.display_radial_averages)
+        self.show_inelastic_background_btn.toggled.connect(self.set_background_curve)
         self.subtract_inelastic_background_btn.toggled.connect(self.display_radial_averages)
     
     def resizeEvent(self, event):
@@ -410,13 +445,33 @@ class RadialPlotWidget(QtGui.QWidget):
         
         #Get region
         min_x, max_x = self.peak_dynamics_region.getRegion()
-        time, intensity = self.dataset.peak_dynamics(min_x, max_x)
+        time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x)
         colors = spectrum_colors(len(time))
         self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
-                                       symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 3)
+                                       symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.enableAutoRange()
+    
+    @QtCore.pyqtSlot(bool)
+    def set_background_curve(self, set_curve):
+        if set_curve:
+            try:
+                background_curve = self.dataset.inelastic_background(time = 0.0)
+            except KeyError:  #Background curve hasn't been determined
+                background_curve = None
+        else:
+            background_curve = None
+        
+        #Update plot
+        if background_curve is not None:
+            self.background_curve_item = pg.PlotDataItem(background_curve.xdata, background_curve.ydata, pen = None, symbol = 'o',
+                                            symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 2)
+            self.radial_pattern_viewer.addItem(self.background_curve_item)
+        else:
+            # Redraw the plot. This will clear all curves first, including the last
+            # background curve
+            self.radial_pattern_viewer.removeItem(self.background_curve_item)
     
     @QtCore.pyqtSlot(bool)
     def untoggle_peak_dynamics_setup(self, show):
@@ -457,22 +512,9 @@ class RadialPlotWidget(QtGui.QWidget):
         self.peak_dynamics_viewer.enableAutoRange()
         
         try:
-            curves = self.dataset.radial_pattern_series()
+            curves = self.dataset.radial_pattern_series(self.subtract_inelastic_background)
         except:     # HDF5 file with radial averages is not found
             return
-        
-        if self.show_inelastic_background or self.subtract_inelastic_background:
-            try:
-                background_curve = self.dataset.inelastic_background(time = 0.0)
-            except KeyError:  #Background curve hasn't been determined
-                background_curve = None
-            
-        # Subtract inelastic background scattering
-        if self.subtract_inelastic_background and background_curve is not None:
-            curves = [curve - background_curve for curve in curves]
-            
-        if self.show_inelastic_background and background_curve is not None:
-            curves.append(background_curve)
         
         # Get timedelay colors and plot
         colors = spectrum_colors(len(curves))
@@ -515,6 +557,21 @@ class RadialPlotWidget(QtGui.QWidget):
 class Iris(QtGui.QMainWindow):
     """
     Time-delay data viewer for averaged data.
+    
+    Components
+    ----------
+    image_viewer : ImageViewer widget
+        Main dataset interface, through which is shown a time-series of averaged
+        TIFFs.
+    plot_viewer : PowderToolsWidget
+        Plots and tools to analyze polycrystalline diffraction dataset
+    sc_viewer : SingleCrystalToolsWidget
+        Plots and tools to analyze single-crystal (sc) diffraction dataset
+    
+    Attributes
+    ----------
+    dataset : DiffractionDataset
+        Dataset object
     """
     dataset_to_plot = QtCore.pyqtSignal(object, name = 'dataset_to_plot')
     
@@ -525,23 +582,29 @@ class Iris(QtGui.QMainWindow):
         self.dataset = None
         
         self.image_viewer = ImageViewer(parent = self)
-        self.plot_viewer = RadialPlotWidget(parent = self)    
+        self.plot_viewer = PowderToolsWidget(parent = self)
+        self.sc_viewer = SingleCrystalToolsWidget(parent = self)
         
+        self._init_actions()
         self._init_ui()
         self._connect_signals()
     
     def _init_ui(self):
         
         # UI components
-        self.file_dialog = QtGui.QFileDialog(parent = self)        
-        self._create_menubar()
+        self.file_dialog = QtGui.QFileDialog(parent = self)      
+        self.menubar = self.menuBar()
+        self._create_menu()
         self.splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         
-        #Create window        
+        #Create window
+        self.splitter.addWidget(self.sc_viewer)
         self.splitter.addWidget(self.image_viewer)
         self.splitter.addWidget(self.plot_viewer)
         self.layout = QtGui.QGridLayout()
         self.layout.addWidget(self.splitter, 0, 0)
+        
+        self.sc_viewer.hide()
         self.plot_viewer.hide()
         
         self.central_widget = QtGui.QWidget()
@@ -554,62 +617,74 @@ class Iris(QtGui.QMainWindow):
         self.center_window()
         self.show()
     
-    def _create_menubar(self):
-        self.menubar = self.menuBar()
+    def _init_actions(self):
         
-        # Actions
-        # Some actions are object attributes so that they can be accessed from 
-        # elsewhere
-        directory_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&Dataset', self)
-        directory_action.triggered.connect(self.directory_locator)
+        # General -------------------------------------------------------------
+        self.directory_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&Dataset', self)
+        self.directory_action.triggered.connect(self.directory_locator)
         
-        picture_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'diffraction.png')), '&Picture', self)
-        picture_action.triggered.connect(self.picture_locator)
+        self.picture_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'diffraction.png')), '&Picture', self)
+        self.picture_action.triggered.connect(self.picture_locator)
         
-        set_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute radial averages with beamblock mask and center finder', self)
-        set_radav_tools.triggered.connect(self.compute_radial_average)    
-        set_radav_tools.setEnabled(False)
+        # Single-crystal ------------------------------------------------------
+        self.toggle_sc_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Show/hide single-crystal tools', self)
+        self.toggle_sc_viewer.setCheckable(True)
+        self.toggle_sc_viewer.toggled.connect(self.image_viewer.toggle_peak_dynamics_region)
+        self.toggle_sc_viewer.toggled.connect(self.show_sc_viewer)
+        
+        # Polycrystaline ------------------------------------------------------
+        self.set_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute radial averages with beamblock mask and center finder', self)
+        self.set_radav_tools.triggered.connect(self.compute_radial_average)    
+        self.set_radav_tools.setEnabled(False)
         
         self.toggle_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial-averaging tools', self)
         self.toggle_radav_tools.setCheckable(True)
         self.toggle_radav_tools.toggled.connect(self.image_viewer.toggle_radav_tools)
-        self.toggle_radav_tools.toggled.connect(set_radav_tools.setEnabled)
+        self.toggle_radav_tools.toggled.connect(self.set_radav_tools.setEnabled)
         
         self.toggle_plot_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial patterns', self)
         self.toggle_plot_viewer.setCheckable(True)
         self.toggle_plot_viewer.toggled.connect(self.show_plot_viewer)
                 
-        set_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the inelastic scattering background', self)
-        set_inelastic_background.triggered.connect(self.compute_inelastic_background)
-        set_inelastic_background.setEnabled(False)
+        self.set_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the inelastic scattering background', self)
+        self.set_inelastic_background.triggered.connect(self.compute_inelastic_background)
+        self.set_inelastic_background.setEnabled(False)
         
-        set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '& (beta) Automatically compute the inelastic scattering background', self)
-        set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
+        self.set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '& (beta) Automatically compute the inelastic scattering background', self)
+        self.set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
         
         self.toggle_inelastic_background_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
         self.toggle_inelastic_background_tools.setCheckable(True)
         self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.toggle_inelastic_background_setup)
-        self.toggle_inelastic_background_tools.toggled.connect(set_inelastic_background.setEnabled)
+        self.toggle_inelastic_background_tools.toggled.connect(self.set_inelastic_background.setEnabled)
         self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.untoggle_peak_dynamics_setup)
+    
+    def _create_menu(self):
+        """ Menu and actions for single crystal tools. """
         
         file_menu = self.menubar.addMenu('&File')
-        file_menu.addAction(directory_action)
+        file_menu.addAction(self.directory_action)
         file_menu.addSeparator()
-        file_menu.addAction(picture_action)
+        file_menu.addAction(self.picture_action)
         
-        powder_menu = self.menubar.addMenu('&Powder')
+        powder_menu = self.menubar.addMenu('&Polycrystalline tools')
         powder_menu.addAction(self.toggle_plot_viewer)
         powder_menu.addSeparator()
         powder_menu.addAction(self.toggle_radav_tools)
-        powder_menu.addAction(set_radav_tools)
+        powder_menu.addAction(self.set_radav_tools)
         powder_menu.addSeparator()
         powder_menu.addAction(self.toggle_inelastic_background_tools)
-        powder_menu.addAction(set_inelastic_background)
-        powder_menu.addAction(set_auto_inelastic_background)
-    
+        powder_menu.addAction(self.set_inelastic_background)
+        powder_menu.addAction(self.set_auto_inelastic_background)
+        
+        sc_menu = self.menubar.addMenu('&Single-crystal tools')
+        sc_menu.addAction(self.toggle_sc_viewer)
+
     def _connect_signals(self):
         # Nothing to see here yet
         pass
+    
+    # File handling -----------------------------------------------------------
         
     def directory_locator(self):
         """ 
@@ -634,13 +709,23 @@ class Iris(QtGui.QMainWindow):
         self.toggle_plot_viewer.setChecked(False)
         self.image_viewer.display_data(image = cast_to_16_bits(read(filename)))
     
+    # Display/show slots  -----------------------------------------------------
+    
     @QtCore.pyqtSlot(bool)
     def show_plot_viewer(self, show):
-        """ If True, plot_viewer will be shown. """
         if show:
             self.plot_viewer.show()
         else:
             self.plot_viewer.hide()
+    
+    @QtCore.pyqtSlot(bool)
+    def show_sc_viewer(self, show):
+        if show:
+            self.sc_viewer.show()
+        else:
+            self.sc_viewer.hide()
+    
+    # Computations ------------------------------------------------------------
     
     def compute_radial_average(self):
         if self.dataset is not None:
@@ -677,7 +762,8 @@ class Iris(QtGui.QMainWindow):
             self.worker.done_signal.connect(lambda: self.plot_viewer.subtract_inelastic_background_btn.setChecked(False))
             self.worker.start()
             
-    
+    # Misc --------------------------------------------------------------------
+            
     def center_window(self):
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()
