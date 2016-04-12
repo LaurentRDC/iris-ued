@@ -1,6 +1,4 @@
-tqdm
 numpy
 pyqt4
-pyqtgraph
 scipy
 h5py
