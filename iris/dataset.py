@@ -433,7 +433,22 @@ class DiffractionDataset(object):
         filenames = [fn for fn in glob(os.path.join(self.raw_directory, template))]
         return n.array([read(filename).sum() for filename in filenames])
         
-        
+
+class SingleCrystalDiffractionDataset(DiffractionDataset):
+    """
+    Diffraction dataset of single-crystal diffraction data.
+    
+    Attributes
+    ----------
+    
+    Methods
+    -------
+    
+    Notes
+    -----
+    """
+    def __init__(self, directory):
+        super(SingleCrystalDiffractionDataset, self).__init__(directory)
         
 
 class PowderDiffractionDataset(DiffractionDataset):
@@ -442,7 +457,8 @@ class PowderDiffractionDataset(DiffractionDataset):
     
     Attributes
     ----------
-    
+    radial_average_computed : bool 
+        If True, radial average HDF5 file is available.
     
     Methods
     -------
