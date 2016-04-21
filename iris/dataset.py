@@ -568,7 +568,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     def peak_dynamics(self, rect):
         pass
         
-    def radial_peak_dynamics(self, edge, edge2 = None):
+    def radial_peak_dynamics(self, edge, edge2 = None, subtract_background = False):
         """
         Returns a curve corresponding to the time-dynamics of a location in the 
         diffraction patterns. Think of it as looking at the time-evolution
@@ -581,6 +581,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         edge2 : float, optional
             If not None (default), the peak value is integrated between edge and
             edge2.
+        subtract_background : bool, optional
+            If True, inelastic scattering background is subtracted from the intensity data 
+            before integration. Default is False.
         
         Returns
         -------
@@ -592,15 +595,20 @@ class PowderDiffractionDataset(DiffractionDataset):
         curves = self.radial_pattern_series()    
         scattering_length = curves[0].xdata
         intensity_series = n.vstack( tuple( [curve.ydata for curve in curves] ))
+        
+        if subtract_background:
+            background_series = n.vstack( tuple(bg_curve.ydata for bg_curve in self.inelastic_background_series()))
+        else:
+            background_series = n.zeros_like(intensity_series)
 
         time_values = n.array(list(map(float, self.time_points)))
         index = n.argmin(n.abs(scattering_length - edge))
         
         if edge2 is None:
-            intensities = intensity_series[:, index]
+            intensities = intensity_series[:, index] - background_series[:, index]
         else:
             index2 = n.argmin(n.abs(scattering_length - edge2))
-            intensities = intensity_series[:, index:index2].mean(axis = 1)
+            intensities = (intensity_series[:, index:index2] - background_series[:, index:index2]).mean(axis = 1)
         
         # Normalize intensities
         return time_values, intensities/intensities.max()
@@ -796,5 +804,5 @@ class PowderDiffractionDataset(DiffractionDataset):
 
 
 if __name__ == '__main__':
-    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
+    directory = 'D:\\2016.04.20.15.15.VO2_4mW'
     d = PowderDiffractionDataset(directory)

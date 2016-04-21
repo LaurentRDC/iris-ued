@@ -256,8 +256,6 @@ class ImageViewer(pg.ImageView):
             self.removeItem(self.center_finder)
 
 
-
-
 class SingleCrystalToolsWidget(QtGui.QWidget):
     """ 
     Widget displaying tools for single-crystal diffraction analysis.
@@ -402,6 +400,7 @@ class PowderToolsWidget(QtGui.QWidget):
         # Update plots if buttons are pressed
         self.show_inelastic_background_btn.toggled.connect(self.set_background_curve)
         self.subtract_inelastic_background_btn.toggled.connect(self.display_radial_averages)
+        self.subtract_inelastic_background_btn.toggled.connect(self.update_peak_dynamics_plot)
     
     def resizeEvent(self, event):
         # Resize the in_progress_widget when the widget is resized
@@ -448,7 +447,7 @@ class PowderToolsWidget(QtGui.QWidget):
         
         #Get region
         min_x, max_x = self.peak_dynamics_region.getRegion()
-        time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x)
+        time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background)
         colors = spectrum_colors(len(time))
         self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)

@@ -109,12 +109,13 @@ class Curve(object):
         #Create initial guesses
         # amp1, amp2, decay1, decay2, offset1, offset2, floor
         # TODO: find better guesses?
-        guesses = (1,1,1,1,1,1,1)
+        guesses = (10,10,-1,-1,0,0,self.ydata.min())
         
         # Bounds detemined by logic and empiricism
         bounds = [(0, 1e3*self.ydata.max()), (0, 1e3*self.ydata.max()), (-100, 100),(-100, 100), (-1e4, 1e4), (-1e4, 1e4), (-1e4, 1e4)]
         
-        results = opt.minimize(residuals, x0 = guesses, bounds = bounds, method = 'SLSQP', constraints = constraints, options = {'disp' : True, 'maxiter' : 1000, 'ftol' : 1e-8})
+        # method = 'SLSQP', 
+        results = opt.minimize(residuals, x0 = guesses, bounds = bounds, constraints = constraints, method = 'SLSQP', options = {'disp' : True, 'maxiter' : 1000})
         
         # Create inelastic background function 
         amp1, amp2, dec1, dec2, off1, off2, floor = results.x
@@ -193,8 +194,10 @@ class Curve(object):
 
 if __name__ == '__main__':
     # Test curve
-    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
-    from dataset import DiffractionDataset
-    d = DiffractionDataset(directory)
+    directory = 'D:\\2016.04.20.15.15.VO2_4mW'
+    from dataset import PowderDiffractionDataset
+    d = PowderDiffractionDataset(directory)
     test = d.radial_pattern(0.0)
     test.plot()
+    bg = test.auto_inelastic_background()
+    bg.plot()
