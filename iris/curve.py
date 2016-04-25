@@ -108,7 +108,6 @@ class Curve(object):
         
         #Create initial guesses
         # amp1, amp2, decay1, decay2, offset1, offset2, floor
-        # TODO: find better guesses?
         guesses = (10,10,-1,-1,0,0,self.ydata.min())
         
         # Bounds detemined by logic and empiricism

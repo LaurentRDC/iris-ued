@@ -10,7 +10,7 @@ parameters, etc.
 """
 
 import numpy as n
-
+from h5py import File
 #Batch processing libraries
 from curve import Curve
 import os.path
@@ -449,6 +449,7 @@ class SingleCrystalDiffractionDataset(DiffractionDataset):
     """
     def __init__(self, directory):
         super(SingleCrystalDiffractionDataset, self).__init__(directory)
+        # TODO: all of this class
         
 
 class PowderDiffractionDataset(DiffractionDataset):
@@ -541,7 +542,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         This function depends on the existence of an HDF5 file containing radial
         averages.
         """
-        from h5py import File
         
         time = str(float(time))
         file = File(self._radial_average_filename, 'r')
@@ -723,8 +723,8 @@ class PowderDiffractionDataset(DiffractionDataset):
             Pump-probe time-delay.
         dataset_name : str
             Name of the dataset to be created
-        data : ndarray or None
-            If not None, data will be written in the dataset.
+        data : ndarray or None, optional
+            If not None (default), data will be written in the dataset.
         
         Returns
         -------
@@ -757,9 +757,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         Notes
         -----
         This function will overwrite existing radial averages.
-        """
-        from h5py import File
-        
+        """        
         with File(self._radial_average_filename, 'w', libver = 'latest') as f:       # Overwrite if it already exists
     
             # Attributes
@@ -794,8 +792,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         -----
         This function will overwrite existing inelastic scattering background curves.
         """
-        from h5py import File
-        
         with File(self._radial_average_filename, 'r+', libver = 'latest') as f:       # Overwrite if it already exists
         
             #Iteratively visit groups for each timepoint
@@ -804,5 +800,5 @@ class PowderDiffractionDataset(DiffractionDataset):
 
 
 if __name__ == '__main__':
-    directory = 'D:\\2016.04.20.15.15.VO2_4mW'
+    directory = 'D:\\2016.04.22.09.47.VO2_0.36mW'
     d = PowderDiffractionDataset(directory)
