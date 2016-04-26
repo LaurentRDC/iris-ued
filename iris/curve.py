@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
 import scipy.optimize as opt
+from scipy import interpolate
+import wavelet
 
 def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, floor):
     """
@@ -121,11 +123,16 @@ class Curve(object):
         new_fit = biexponential(self.xdata, amp1, amp2, dec1, dec2, off1, off2, floor)
         return Curve(self.xdata, new_fit, 'IBG {0}'.format(self.name), 'red')
     
-    def auto_inelastic_background(self):
+    def auto_inelastic_background(self, mode = 'fit'):
         """
         Fits the inelastic background by first finding the location of diffraction 
         peaks, and automatically selecting points between peaks as background
         intensities.
+        
+        Parameters
+        ----------
+        mode : str {'fit' (default), 'spline', 'wavelet'}, optional
+            Background fit mode.
             
         Returns
         -------
@@ -133,7 +140,36 @@ class Curve(object):
         """
         # Find indices between peaks
         xpoints = [self.xdata[int(i)] for i in self._between_peaks()]
-        return self.inelastic_background(xpoints)
+        if mode == 'fit':
+            return self.inelastic_background(xpoints)
+        elif mode == 'spline':
+            return self._spline_background(xpoints)
+        elif mode == 'wavelet':
+            return self._wavelet_background(xpoints)
+    
+    def _spline_background(self, xpoints):
+        """
+        Background fitting using a cubic spline interpolation.
+        
+        Parameters
+        ----------
+        points : array-like, optional
+            x-values of the points to fit to.
+        """
+        # find the bacground values to interpolate from
+        ypoints = n.interp(xpoints, self.xdata, self.ydata)
+        
+        tck = interpolate.splrep(xpoints, ypoints, s = 0)
+        background = interpolate.splev(self.xdata, tck, der = 0)
+        return Curve(self.xdata, background, 'IBG {0}'.format(self.name), 'red')
+    
+    def _wavelet_background(self, xpoints):
+        """
+        Perform background fitting using the discrete wavelet transform.
+        """
+        background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
+        bg = wavelet.baseline(signal = self.ydata, niter = 10000, level = 5, wavelet = 'bior6.8', background_regions = background_indices)
+        return Curve(self.xdata, bg, 'IBG {0}'.format(self.name), 'red')
     
     def _between_peaks(self):
         """
@@ -197,6 +233,5 @@ if __name__ == '__main__':
     from dataset import PowderDiffractionDataset
     d = PowderDiffractionDataset(directory)
     test = d.radial_pattern(0.0)
-    test.plot()
-    bg = test.auto_inelastic_background()
-    bg.plot()
+    background = test.auto_inelastic_background(mode = 'wavelet')
+    plt.plot(test.ydata, 'b', background.ydata, 'r')
