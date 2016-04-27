@@ -13,9 +13,20 @@ References
     Wavelet Transforms. Galloway, Le Ru and Etchegoin
 """
 import numpy as n
-from numpy import convolve
 import pywt
-
+from numpy import convolve
+    
+def _zero_pad_to_length(array, length):
+    """
+    Extends a 1D array to a specific length
+    """
+    array = n.asarray(array)
+    if len(array) >= length:
+        return array
+    else:
+        new_array = n.zeros( shape = (length,), dtype = array.dtype )
+        new_array[:len(array)] = array
+        return new_array
 
 def downsample(array, factor = 2, mode = 'discard'):
     """
@@ -35,15 +46,19 @@ def downsample(array, factor = 2, mode = 'discard'):
     -------
     out : ndarray
     """
+    # Extend arrays not divisible by the factor via zero padding
+    # Recursively extend the array until it works...
+    if (len(array) % factor):
+        new_array = n.zeros( shape = (len(array) + 1,) )
+        new_array[:len(array)] = array
+        return downsample(new_array, factor, mode)
+        
     array = n.asarray(array)
     if mode == 'discard':
         return array[::factor]
         
     elif mode == 'average':
-        if (len(array) % factor):
-            print('Array shape not a multiple of factor. Discard mode is used.')
-            return downsample(array, factor, mode = 'discard')
-        array.shape = (len(array)/factor, factor)
+        array.shape = (int(len(array)/factor), factor)
         return n.mean(array, axis = 1)
     
     else:
@@ -80,7 +95,7 @@ def upsample(array, factor = 2, length = None):
             zero_padded[:len(output)] = output
             return zero_padded
     
-def multi_level_dwt(signal, level, wavelet):
+def dwt(signal, level, wavelet):
     """
     Computes the multi-level discrete wavelet transform.
     
@@ -92,16 +107,22 @@ def multi_level_dwt(signal, level, wavelet):
         Level of decomposition. A higher level means that the approximation will be coarser.
     wavelet : str or PyWavelet.Wavelet object
         Wavelet. See PyWavelet documentation for details.
+    
+    Returns
+    -------
+    coeff_list : list of ndarrays
+        Signal coefficients. The order is given so that coeff_list = [c_A_n, c_D_n, ..., c_D_1]
     """
     if isinstance(wavelet, str):
         wavelet = pywt.Wavelet(wavelet)
     
     # deconstruction coefficients
-    lpk, hpk, _, _ = wavelet.filter_bank 
+    lpk, hpk, _, _ = wavelet.filter_bank
+    assert len(lpk) == len(hpk)
     
     # Loop preparation
-    result = [[]]*(level+1)
-    signal_temp = signal[:]
+    result = list()
+    signal_temp = n.copy(signal)
     
     for i in range(level):
         # Filter signals
@@ -109,70 +130,79 @@ def multi_level_dwt(signal, level, wavelet):
         high_pass_signal = convolve(signal_temp, hpk, mode = 'same')
 
         # Downsample both output by half. See Nyquist theorem
-        low_pass_downsampled = downsample(low_pass_signal, factor = 2, mode = 'discard')
-        high_pass_downsampled = downsample(high_pass_signal, factor = 2, mode = 'discard')
+        # Downsampling using average mode results in better reconstruction
+        low_pass_downsampled = downsample(low_pass_signal, factor = 2, mode = 'average')
+        high_pass_downsampled = downsample(high_pass_signal, factor = 2, mode = 'average')
+        
+        # Force downsampled signals to have the same length
+        if len(low_pass_downsampled) != len(high_pass_downsampled):
+            length = max(len(low_pass_downsampled), len(high_pass_downsampled))
+            low_pass_downsampled = _zero_pad_to_length(low_pass_downsampled, length)
+            high_pass_downsampled = _zero_pad_to_length(high_pass_downsampled, length)
         
         # Store the high pass signal (also known as detail coefficients)
         # Further decompose the low-pass (or approximate) signal
-        result[level-i] = high_pass_downsampled
-        signal_temp = low_pass_downsampled[:]
+        result.append( high_pass_downsampled )
+        signal_temp = n.copy(low_pass_downsampled)
     
-    result[0] = low_pass_downsampled
+    result.append( low_pass_downsampled )
+    result.reverse()        #For compatibility with MATLAB Wavelet toolbox and PyWavelet
     return result
 
-def multi_level_idwt(coefficients, level, wavelet):
+def idwt(coefficients, wavelet, approximate = False):
     """
     Computes the multi-level inverse discrete wavelet transform.
     
     Parameters
     ----------
-    coefficients : list
+    coeff_list : list
         Discrete signal to be approximated.
-    level : int
-        Level of decomposition. A higher level means that the approximation will be coarser.
     wavelet : str or PyWavelet.Wavelet object
         Wavelet. See PyWavelet documentation for details.
+    approximate : bool, optional
+        If True, only approximate coefficients of the maximum level are used
+        in the reconstruction. Default is False.
     """
+    # shortcut for using wavelets
     if isinstance(wavelet, str):
         wavelet = pywt.Wavelet(wavelet)
         
     # Reconstruction coefficient    
     _, _, lpk, hpk = wavelet.filter_bank
+    assert len(lpk) == len(hpk)
     
-    # Reconstruct level by level
-    iter_coeff = coefficients[:]
-    for i in range(level):
-        low_pass_coeff = iter_coeff[0]
-        high_pass_coeff = iter_coeff[1]
+    reconstructed, detail_coeffs = coefficients[0], coefficients[1:]
+    for detail_coeff in detail_coeffs:
         
-        # Verify new length
-        if len(low_pass_coeff) > len(high_pass_coeff):
-            length = 2*len(high_pass_coeff)
-        else:
-            length = 2*len(low_pass_coeff)
-
-        # Upsampling by 2
-        low_pass_upsampled = upsample(low_pass_coeff, factor = 2, length = length)
-        high_pass_upsampled = upsample(high_pass_coeff, factor = 2, length = length)
-
+        # Due to downsampling and upsampling, reconstructed arrays might change length.
+        # Zero pad arrays to make them the same length
+        if len(reconstructed) < len(detail_coeff):
+            reconstructed = _zero_pad_to_length(reconstructed, len(detail_coeff))
+        elif len(reconstructed) > len(detail_coeff):
+            detail_coeff = _zero_pad_to_length(detail_coeff, len(reconstructed))
+        assert len(reconstructed) == len(detail_coeff)
+        
+        # If approximate reconstruction, set the detail coefficients to 0
+        if approximate:
+            detail_coeff = n.zeros( shape = (len(detail_coeff),) )
+            
+        # Upsample by 2
+        low_pass_upsampled = upsample(reconstructed, factor = 2)
+        high_pass_upsampled = upsample(detail_coeff, factor = 2)
+        
         # Convolve with reconstruction coefficient
-        lpc = convolve(low_pass_upsampled, lpk, mode = 'same')
-        hpc = convolve(high_pass_upsampled, hpk, mode = 'same')
-
-        # Add both signal reconstruction for this level
-        signal = lpc + hpc
+        low_pass_convolved = convolve(low_pass_upsampled, lpk, mode = 'same')
+        high_pass_convolved = convolve(high_pass_upsampled, hpk, mode = 'same')
         
-        if len(iter_coeff) > 2:
-            iter_coeff = [signal] + iter_coeff[2:]
-        else:
-            iter_coeff = [signal]
+        # Prepare next iteration
+        reconstructed = low_pass_convolved + high_pass_convolved
+    
+    return reconstructed
 
-    return iter_coeff[0]
-
-def approx_reconstruction(signal, level, wavelet):
+def approx_rec(signal, level, wavelet):
     """
-    Computes the multi-level discrete wavelet transform of a signal, and reconstructs
-    the signal using only the approximate (low-pass) coefficients.
+    Performs the multi-level discrete wavelet transform and reconstructs the signal
+    using only approximate coefficients of the appropriate level
     
     Parameters
     ----------
@@ -183,15 +213,10 @@ def approx_reconstruction(signal, level, wavelet):
     wavelet : str or PyWavelet.Wavelet object
         Wavelet. See PyWavelet documentation for details.
     """
-    coefficients = multi_level_dwt(signal = signal, level = level, wavelet = wavelet)
+    coeffs = dwt(signal, level, wavelet)
+    reconstructed = idwt(coeffs, wavelet, approximate = True)
     
-    # Separate the approximate coefficients from the detail coefficients
-    approx_coefficients = coefficients[0]
-    detail_coefficients = coefficients[1:]
-    
-    # Set detail coefficients to zero
-    detail_coefficients = n.zeros_like(n.array(detail_coefficients))
-    print(detail_coefficients)
+    return _zero_pad_to_length(reconstructed, len(signal))
     
 def baseline(signal, niter = 10, level = None, wavelet = 'db10', background_regions = []):
     """
@@ -212,8 +237,10 @@ def baseline(signal, niter = 10, level = None, wavelet = 'db10', background_regi
     # Initial starting point
     background = n.array(signal)
     
+    # TODO: make sure background and signal always have the same shape
+    # Idea: make approx_rec output be the same shape as input
     for i in range(niter):
-        approximation = approx_reconstruction(background, level = level, wavelet = wavelet)
+        background = approx_rec(signal = background, level = level, wavelet = wavelet)
         
         # Modify the background so it cannot be more than the signal itself
         # Set the background to be equal to the signal in the places where it
@@ -230,10 +257,13 @@ def baseline(signal, niter = 10, level = None, wavelet = 'db10', background_regi
     
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    base = n.arange(0,10, 0.1)
+    base = n.arange(0,10.5, 0.01)
     signal = n.sin(base)# + n.random.normal(loc = 0, scale = 0.1, size = base.shape)
-    bg = multi_level_dwt(signal, level = 1, wavelet = 'db10')
-    rec = multi_level_idwt(bg, level = 1, wavelet = 'db10')
+    bg = dwt(signal, level = 3, wavelet = 'db10')
+    rec = idwt(bg, wavelet = 'db10')
+    
+    #pyrec = pywt.waverec(bg, 'db10')
+    
     plt.plot(signal)
     plt.plot(rec)
-    approx_reconstruction(signal, level = 2, wavelet = 'db10')
+    #approx_reconstruction(signal, level = 2, wavelet = 'db10')

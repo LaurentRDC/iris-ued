@@ -168,7 +168,7 @@ class Curve(object):
         Perform background fitting using the discrete wavelet transform.
         """
         background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
-        bg = wavelet.baseline(signal = self.ydata, niter = 10000, level = 5, wavelet = 'bior6.8', background_regions = background_indices)
+        bg = wavelet.baseline(signal = self.ydata, niter = 10, level = 5, wavelet = 'db10', background_regions = background_indices)
         return Curve(self.xdata, bg, 'IBG {0}'.format(self.name), 'red')
     
     def _between_peaks(self):
