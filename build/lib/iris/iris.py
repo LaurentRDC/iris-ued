@@ -6,7 +6,7 @@ Created on Mon Apr  4 15:18:35 2016
 """
 
 #Core functions
-from dataset import DiffractionDataset, read, cast_to_16_bits
+from dataset import DiffractionDataset, PowderDiffractionDataset, read, cast_to_16_bits
 from progress_widget import InProgressWidget
 import os
 
@@ -256,8 +256,6 @@ class ImageViewer(pg.ImageView):
             self.removeItem(self.center_finder)
 
 
-
-
 class SingleCrystalToolsWidget(QtGui.QWidget):
     """ 
     Widget displaying tools for single-crystal diffraction analysis.
@@ -324,6 +322,9 @@ class PowderToolsWidget(QtGui.QWidget):
         Iris QWidget in which this instance is contained. While technically this
         instance could be in a QSplitter, 'parent' refers to the Iris QWidget 
         specifically.
+    
+    Components
+    ----------
     radial_pattern_viewer : PlotWidget
     
     peak_dynamics_viewer : PlotWidget
@@ -399,6 +400,7 @@ class PowderToolsWidget(QtGui.QWidget):
         # Update plots if buttons are pressed
         self.show_inelastic_background_btn.toggled.connect(self.set_background_curve)
         self.subtract_inelastic_background_btn.toggled.connect(self.display_radial_averages)
+        self.subtract_inelastic_background_btn.toggled.connect(self.update_peak_dynamics_plot)
     
     def resizeEvent(self, event):
         # Resize the in_progress_widget when the widget is resized
@@ -445,7 +447,7 @@ class PowderToolsWidget(QtGui.QWidget):
         
         #Get region
         min_x, max_x = self.peak_dynamics_region.getRegion()
-        time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x)
+        time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background)
         colors = spectrum_colors(len(time))
         self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
@@ -496,12 +498,8 @@ class PowderToolsWidget(QtGui.QWidget):
     def display_radial_averages(self):
         """ 
         Display the radial averages of a dataset, if available. 
-        
-        Parameters
-        ----------
-        dataset : dataset.DiffractionDataset
-            Dataset for which the radial averages have been computed. If the radial
-            averages are not available, the function returns without plotting anything.
+        If the radial averages are not available, the function returns without 
+        plotting anything.
         """
         if self.isHidden:
             self.show()
@@ -597,6 +595,9 @@ class Iris(QtGui.QMainWindow):
         self._create_menu()
         self.splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         
+        #Taskbar icon
+        self.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
+        
         #Create window
         self.splitter.addWidget(self.sc_viewer)
         self.splitter.addWidget(self.image_viewer)
@@ -613,15 +614,18 @@ class Iris(QtGui.QMainWindow):
         
         #Window settings ------------------------------------------------------
         self.setGeometry(500, 500, 800, 800)
-        self.setWindowTitle('Iris : UED data exploration')
+        self.setWindowTitle('Iris - UED data exploration')
         self.center_window()
         self.show()
     
     def _init_actions(self):
         
         # General -------------------------------------------------------------
-        self.directory_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&Dataset', self)
-        self.directory_action.triggered.connect(self.directory_locator)
+        self.powder_directory_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&Powder dataset', self)
+        self.powder_directory_action.triggered.connect(self.powder_directory_locator)
+        
+        self.single_crystal_directory_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&(beta) Single-crystal dataset', self)
+        self.single_crystal_directory_action.triggered.connect(self.single_crystal_directory_locator)
         
         self.picture_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'diffraction.png')), '&Picture', self)
         self.picture_action.triggered.connect(self.picture_locator)
@@ -650,7 +654,7 @@ class Iris(QtGui.QMainWindow):
         self.set_inelastic_background.triggered.connect(self.compute_inelastic_background)
         self.set_inelastic_background.setEnabled(False)
         
-        self.set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '& (beta) Automatically compute the inelastic scattering background', self)
+        self.set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Automatically compute the inelastic scattering background', self)
         self.set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
         
         self.toggle_inelastic_background_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
@@ -658,12 +662,16 @@ class Iris(QtGui.QMainWindow):
         self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.toggle_inelastic_background_setup)
         self.toggle_inelastic_background_tools.toggled.connect(self.set_inelastic_background.setEnabled)
         self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.untoggle_peak_dynamics_setup)
+        
+        self.export_to_matlab = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, '')), '&Export master HDF5 file to MATLAB format', self)
+        self.export_to_matlab.triggered.connect(self.matlab_export)
     
     def _create_menu(self):
         """ Menu and actions for single crystal tools. """
         
         file_menu = self.menubar.addMenu('&File')
-        file_menu.addAction(self.directory_action)
+        file_menu.addAction(self.powder_directory_action)
+        file_menu.addAction(self.single_crystal_directory_action)
         file_menu.addSeparator()
         file_menu.addAction(self.picture_action)
         
@@ -676,6 +684,8 @@ class Iris(QtGui.QMainWindow):
         powder_menu.addAction(self.toggle_inelastic_background_tools)
         powder_menu.addAction(self.set_inelastic_background)
         powder_menu.addAction(self.set_auto_inelastic_background)
+        powder_menu.addSeparator()
+        powder_menu.addAction(self.export_to_matlab)
         
         sc_menu = self.menubar.addMenu('&Single-crystal tools')
         sc_menu.addAction(self.toggle_sc_viewer)
@@ -686,7 +696,7 @@ class Iris(QtGui.QMainWindow):
     
     # File handling -----------------------------------------------------------
         
-    def directory_locator(self):
+    def powder_directory_locator(self):
         """ 
         Activates a file dialog that selects the data directory to be processed. If the folder
         selected is one with processed images (then the directory name is C:\\...\\processed\\),
@@ -695,19 +705,33 @@ class Iris(QtGui.QMainWindow):
         
         directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
         directory = os.path.abspath(directory)
-        self.dataset = DiffractionDataset(directory)        
+        self.dataset = PowderDiffractionDataset(directory)        
         self.image_viewer.display_data()
         
         # Plot radial averages if they exist. If error, no plot. This is handled
         # by the plot viewer
         self.plot_viewer.display_radial_averages()
     
+    def single_crystal_directory_locator(self):
+        """ 
+        Activates a file dialog that selects the data directory to be processed. If the folder
+        selected is one with processed images (then the directory name is C:\\...\\processed\\),
+        return data 'root' directory.
+        """
+        pass
+
     def picture_locator(self):
         """ Open a file dialog to select an image to view """
         filename = self.file_dialog.getOpenFileName(self, 'Open diffraction picture', 'C:\\')
         filename = os.path.abspath(filename)
         self.toggle_plot_viewer.setChecked(False)
         self.image_viewer.display_data(image = cast_to_16_bits(read(filename)))
+    
+    def matlab_export(self):
+        """ Export master HDF5 file to MATLAB for old geezers in the group. """
+        filename = self.file_dialog.getSaveFileName(self, 'Save MATLAB file', self.dataset.directory, filter = '*.mat')
+        filename = os.path.abspath(filename)
+        self.dataset.export_to_matlab(filename)
     
     # Display/show slots  -----------------------------------------------------
     
@@ -773,7 +797,8 @@ class Iris(QtGui.QMainWindow):
 def run():
     import sys
     
-    app = QtGui.QApplication(sys.argv)    
+    app = QtGui.QApplication(sys.argv)
+    app.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
     gui = Iris()
     gui.showMaximized()
     
