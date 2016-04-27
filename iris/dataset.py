@@ -474,6 +474,9 @@ class PowderDiffractionDataset(DiffractionDataset):
     
     radial_average_series
         Radial average of all time delay pictures, saved in HDF5 and MATLAB formats
+    
+    export_to_matlab
+        Export the master HDF5 file to .mat format compatible with MATLAB and Octave
     """
     def __init__(self, directory):
         super(PowderDiffractionDataset, self).__init__(directory)
@@ -666,31 +669,21 @@ class PowderDiffractionDataset(DiffractionDataset):
     
     def inelastic_background_fit(self, positions):
         """
-        Fits a biexponential function to the inelastic scattering background. The
-        fit is applied to the average radial diffraction pattern before time 0.
+        Fits an inelastic scattering background to the data. The fits are applied 
+        to each time point independently. Results are then exported to the master
+        HDF5 file.
         
         Parameters
         ----------
-        positions : list of floats, optional
-            x-data positions of where radial averages should be fit to. If a list
-            is not provided, the positions will be automatically determined.
-        
-        See also
-        --------
-        curve.Curve.auto_inelastic_background
-            Automatically determine the inelastic bakground using the continuous
-            wavelet transform with Ricker mother wavelet.
-        """        
-        curves_before_photoexcitation = [self.radial_pattern(time) for time in self.time_points if float(time) < 0.0]
-        average_ydata = sum([curve.ydata for curve in curves_before_photoexcitation])/len(curves_before_photoexcitation)
-        average_curve = Curve(curves_before_photoexcitation[0].xdata, average_ydata)
-        
-        if positions is None:
-            background_curve = average_curve.auto_inelastic_background()
-        else:
-            background_curve = average_curve.inelastic_background(positions)
+        positions : list of floats or None
+            x-data positions of where radial averages should be fit to. If None, 
+            the positions will be automatically determined.
+        """
+        background_curves = list()
+        for time in self.time_points:
+            background_curves.append( (time, self.radial_pattern(time).inelastic_background(positions)) )
             
-        self._export_background_curves(background_curve)
+        self._export_background_curves(background_curves)
 
     # -------------------------------------------------------------------------
     
@@ -768,8 +761,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             f.attrs['exposure'] = self.exposure
             f.attrs['current'] = self.current
             #Iteratively create a group for each timepoint
-            for item in results:
-                timedelay, curve = item
+            for (timedelay, curve) in results:
                 group = self._access_time_group(f, timedelay)
                 group.attrs['time delay'] = timedelay
                 
@@ -777,15 +769,15 @@ class PowderDiffractionDataset(DiffractionDataset):
                 self._access_dataset(f, timedelay, dataset_name = 'xdata', data = curve.xdata)
                 self._access_dataset(f, timedelay, dataset_name = 'intensity', data = curve.ydata)
     
-    def _export_background_curves(self, background_curve):
+    def _export_background_curves(self, results):
         """
         Exports the background curves. If background curves have been computed,
         a radial-average file already exists.
         
         Parameters
         ----------
-        background_curve : curve.Curve object
-            inelastic scattering background curve
+        results : list
+            List of tuples containing a time delay (str) and a background curve (curve.Curve)
         
         Notes
         -----
@@ -794,9 +786,32 @@ class PowderDiffractionDataset(DiffractionDataset):
         with File(self._radial_average_filename, 'r+', libver = 'latest') as f:       # Overwrite if it already exists
         
             #Iteratively visit groups for each timepoint
-            for timedelay in self.time_points:
+            for timedelay, background_curve in results:
                 self._access_dataset(f, timedelay, dataset_name = 'inelastic background', data = background_curve.ydata)
 
+    def export_to_matlab(self, filename):
+        """
+        Method that translates the master HDF5 file to MATLAB *.mat format.
+        
+        Parameters
+        ----------
+        filename : str or file-handle
+        """
+        from scipy.io import savemat
+        
+        # Build dictionary
+        matlab_dict = {}
+        for time in self.time_points:
+            # Give structs names in femtoseconds to avoid punctuation
+            # Also avoid having the name start with a number
+            name = 'time_delay_' + str(int(float(time)*1000)) + 'fs'
+            
+            matlab_dict[name] = {'time': time + 'ps',
+                                 'intensity': self.radial_pattern(time).ydata,
+                                 'scattering_length': self.radial_pattern(time).xdata,
+                                 'inelastic_background': self.inelastic_background(time).ydata}
+        
+        savemat(filename, matlab_dict, oned_as = 'row')
 
 if __name__ == '__main__':
     directory = 'D:\\2016.04.22.09.47.VO2_0.36mW'

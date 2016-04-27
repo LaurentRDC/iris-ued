@@ -79,13 +79,56 @@ class Curve(object):
             for peak_index in self._find_peaks():
                 plt.axvline(self.xdata[peak_index], color = 'r')
     
-    def inelastic_background(self, xpoints):
+    def inelastic_background(self, xpoints, mode = 'wavelet'):
         """
-        Better inelastic scattering background fit.
+        Master method for inelastic background determination.
+        
+        Parameters
+        ---------
+        xpoints : list or None
+            List of x-values at which the curve is entirely background. If None, 
+            these points will be automatically determined using the continuous 
+            wavelet transform.
+        mode : str {'wavelet' (default), 'fit'}, optional
+            Algorithm to use in background determination.
+        
+        Returns
+        -------
+        background : Curve object
+            Background curve.
+        """
+        if xpoints is None:          # Find x-values between peaks
+            xpoints = [self.xdata[int(i)] for i in self._between_peaks()]
+        
+        if mode == 'wavelet':
+            return self._wavelet_background(xpoints)
+        elif mode == 'fit':
+            return self._biexponential_background(xpoints)
+        else:
+            raise ValueError('Mode not recognized.')
+            
+    def _wavelet_background(self, xpoints):
+        """
+        Perform background fitting using the discrete wavelet transform.
         
         Parameters
         ----------
-        points : array-like, optional
+        xpoints : array-like, optional
+            x-values of the points to fit to.
+        """
+        background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
+        background_values = wavelet.baseline(signal = self.ydata, max_iter = 1000, level = 7, wavelet = 'db10', background_regions = background_indices)
+        
+        return Curve(self.xdata, background_values, 'IBG {0}'.format(self.name), 'red')
+        
+    
+    def _biexponential_background(self, xpoints):
+        """
+        Enelastic scattering background fit using a biexponential.
+        
+        Parameters
+        ----------
+        xpoints : array-like, optional
             x-values of the points to fit to.
         """
         # Preliminaries
@@ -123,42 +166,6 @@ class Curve(object):
         new_fit = biexponential(self.xdata, amp1, amp2, dec1, dec2, off1, off2, floor)
         return Curve(self.xdata, new_fit, 'IBG {0}'.format(self.name), 'red')
     
-    def auto_inelastic_background(self, mode = 'wavelet'):
-        """
-        Fits the inelastic background by first finding the location of diffraction 
-        peaks, and automatically selecting points between peaks as background
-        intensities.
-        
-        Parameters
-        ----------
-        mode : str {'fit', 'wavelet' (default)}, optional
-            Background fit mode. 'fit' mode is provided as a fallback if the
-            'wavelet' mode is not functioning properly.
-        
-        See also
-        --------
-        iris.wavelet.baseline
-            baseline subtraction based on the multilevel discrete wavelet transform.
-            
-        Returns
-        -------
-        out : Curve object
-        """
-        # Find indices between peaks
-        xpoints = [self.xdata[int(i)] for i in self._between_peaks()]
-        if mode == 'fit':
-            return self.inelastic_background(xpoints)
-        elif mode == 'wavelet':
-            return self._wavelet_background(xpoints)
-    
-    def _wavelet_background(self, xpoints):
-        """
-        Perform background fitting using the discrete wavelet transform.
-        """
-        background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
-        bg = wavelet.baseline(signal = self.ydata, niter = 1000, level = 8, wavelet = 'db10', background_regions = background_indices)
-        return Curve(self.xdata, bg, 'IBG {0}'.format(self.name), 'red')
-    
     def _between_peaks(self):
         """
         Finds the indices associated with local minima between peaks in ydata
@@ -185,7 +192,7 @@ class Curve(object):
         """
         widths = n.arange(1, len(self.ydata)/10)    # Max width determined with testing
         return find_peaks_cwt(-self.ydata, widths = widths, wavelet = ricker, 
-                              min_length = len(widths)/15, min_snr = 1.0)
+                              min_length = len(widths)/10, min_snr = 1.5)
     
     def _find_peaks(self):
         """
@@ -221,5 +228,5 @@ if __name__ == '__main__':
     from dataset import PowderDiffractionDataset
     d = PowderDiffractionDataset(directory)
     test = d.radial_pattern(0.0)
-    background = test.auto_inelastic_background(mode = 'wavelet')
+    background = test.inelastic_background(xpoints = [], mode = 'wavelet')
     plt.plot(test.ydata, 'b', background.ydata, 'r')

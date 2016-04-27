@@ -662,6 +662,9 @@ class Iris(QtGui.QMainWindow):
         self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.toggle_inelastic_background_setup)
         self.toggle_inelastic_background_tools.toggled.connect(self.set_inelastic_background.setEnabled)
         self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.untoggle_peak_dynamics_setup)
+        
+        self.export_to_matlab = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, '')), '&Export master HDF5 file to MATLAB format', self)
+        self.export_to_matlab.triggered.connect(self.matlab_export)
     
     def _create_menu(self):
         """ Menu and actions for single crystal tools. """
@@ -681,6 +684,8 @@ class Iris(QtGui.QMainWindow):
         powder_menu.addAction(self.toggle_inelastic_background_tools)
         powder_menu.addAction(self.set_inelastic_background)
         powder_menu.addAction(self.set_auto_inelastic_background)
+        powder_menu.addSeparator()
+        powder_menu.addAction(self.export_to_matlab)
         
         sc_menu = self.menubar.addMenu('&Single-crystal tools')
         sc_menu.addAction(self.toggle_sc_viewer)
@@ -721,6 +726,12 @@ class Iris(QtGui.QMainWindow):
         filename = os.path.abspath(filename)
         self.toggle_plot_viewer.setChecked(False)
         self.image_viewer.display_data(image = cast_to_16_bits(read(filename)))
+    
+    def matlab_export(self):
+        """ Export master HDF5 file to MATLAB for old geezers in the group. """
+        filename = self.file_dialog.getSaveFileName(self, 'Save MATLAB file', self.dataset.directory, filter = '*.mat')
+        filename = os.path.abspath(filename)
+        self.dataset.export_to_matlab(filename)
     
     # Display/show slots  -----------------------------------------------------
     

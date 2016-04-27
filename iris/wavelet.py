@@ -118,7 +118,7 @@ def approx_rec(signal, level, wavelet):
     else:
         return reconstructed
     
-def baseline(signal, niter = 10, level = 5, wavelet = 'db10', background_regions = []):
+def baseline(signal, max_iter, level, wavelet = 'db10', background_regions = [], conv_tol = 1e-4):
     """
     Iterative method of baseline determination from [1].
     
@@ -126,7 +126,7 @@ def baseline(signal, niter = 10, level = 5, wavelet = 'db10', background_regions
     ----------
     signal : ndarray, shape (N,)
         Signal with background.
-    niter : int
+    max_iter : int
         Number of iterations to perform.
     level : int
         Decomposition level. A higher level will result in a coarser approximation of
@@ -136,6 +136,9 @@ def baseline(signal, niter = 10, level = 5, wavelet = 'db10', background_regions
         for available values. Default is 'db10'.
     background_regions : list of ints, optional
         Indices of the signal values that are purely background.
+    conv_tol : float, optional
+        Convergence tolerance. If the sum square difference of the background
+        between two steps is smaller than this tolerance, the algorithm stops.
     
     Returns
     -------
@@ -143,11 +146,17 @@ def baseline(signal, niter = 10, level = 5, wavelet = 'db10', background_regions
         Baseline of the input signal.
     """
     # Initial starting point
+    previous_background = n.zeros_like(signal, dtype = signal.dtype)
     background = n.array(signal)
     
-    # Idea: make approx_rec output be the same shape as input
-    for i in range(niter):
+    for i in range(max_iter):
+        
         background = approx_rec(signal = background, level = level, wavelet = wavelet)
+        
+        # Check convergence
+        if (n.abs(previous_background - background)**2).sum() < conv_tol:
+            print('Convergence reached before maximum number of iteration.')
+            break
         
         # Modify the background so it cannot be more than the signal itself
         # Set the background to be equal to the signal in the places where it
@@ -159,5 +168,8 @@ def baseline(signal, niter = 10, level = 5, wavelet = 'db10', background_regions
         # background regions
         for index in background_regions:
             background[index] = signal[index]
+        
+        # Save computation to check for convergence
+        previous_background = n.array(background)
     
     return background
