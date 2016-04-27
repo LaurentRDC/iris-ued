@@ -767,7 +767,6 @@ class PowderDiffractionDataset(DiffractionDataset):
             f.attrs['energy'] = self.energy
             f.attrs['exposure'] = self.exposure
             f.attrs['current'] = self.current
-            
             #Iteratively create a group for each timepoint
             for item in results:
                 timedelay, curve = item
