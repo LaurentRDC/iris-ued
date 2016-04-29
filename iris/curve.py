@@ -4,25 +4,7 @@
 import matplotlib.pyplot as plt
 import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
-import scipy.optimize as opt
 import wavelet
-
-def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, floor):
-    """
-    Returns a biexponential function evaluated over an array.
-    
-    Notes
-    -----
-    In case of fitting, there are 7 free parameters, and thus at least 7 points
-    must be provided.
-    """
-    exp1 = amplitude1*n.exp(-decay1*(x - offset2))
-    exp2 = amplitude2*n.exp(-decay2*(x - offset1))
-    return exp1 + exp2 + floor
-
-# -----------------------------------------------------------------------------
-#           RADIAL CURVE CLASS
-# -----------------------------------------------------------------------------
 
 class Curve(object):
     """
@@ -167,5 +149,5 @@ if __name__ == '__main__':
     from dataset import PowderDiffractionDataset
     d = PowderDiffractionDataset(directory)
     test = d.radial_pattern(0.0)
-    background = test.inelastic_background(xpoints = [], mode = 'wavelet')
+    background = test.inelastic_background(xpoints = [], level = 10)
     plt.plot(test.ydata, 'b', background.ydata, 'r')

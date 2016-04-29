@@ -667,7 +667,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             results.append( (time, curve) )
         self._export_curves(results)
     
-    def inelastic_background_fit(self, positions):
+    def inelastic_background_fit(self, positions, level):
         """
         Fits an inelastic scattering background to the data. The fits are applied 
         to each time point independently. Results are then exported to the master
@@ -678,10 +678,13 @@ class PowderDiffractionDataset(DiffractionDataset):
         positions : list of floats or None
             x-data positions of where radial averages should be fit to. If None, 
             the positions will be automatically determined.
+        level : int
+            Wavelet decomposition level. A higher level implies a coarser approximation 
+            to the baseline.
         """
         background_curves = list()
         for time in self.time_points:
-            background_curves.append( (time, self.radial_pattern(time).inelastic_background(positions)) )
+            background_curves.append( (time, self.radial_pattern(time).inelastic_background(positions, level)) )
             
         self._export_background_curves(background_curves)
 
@@ -801,6 +804,13 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         # Build dictionary
         matlab_dict = {}
+        matlab_dict['acquisition_date'] = self.acquisition_date
+        matlab_dict['resolution'] = self.resolution
+        matlab_dict['fluence'] = self.fluence
+        matlab_dict['energy'] = self.energy
+        matlab_dict['exposure'] = self.exposure
+        matlab_dict['current'] = self.current
+        
         for time in self.time_points:
             # Give structs names in femtoseconds to avoid punctuation
             # Also avoid having the name start with a number

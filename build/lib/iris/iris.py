@@ -367,6 +367,11 @@ class PowderToolsWidget(QtGui.QWidget):
         self.show_inelastic_background_btn.setCheckable(True)
         self.subtract_inelastic_background_btn.setCheckable(True)
         
+        # Wavelet decomposition level combo box
+        self.wavelet_level_label = QtGui.QLabel('Wavelet decomposition level: ', parent = self)
+        self.wavelet_dec_level_box = QtGui.QLineEdit(parent = self)
+        self.wavelet_dec_level_box.setText('10') # Dfault decomposition level
+        
         # Hide progress widgets
         self.progress_widget_radial_patterns.hide()
         
@@ -379,13 +384,17 @@ class PowderToolsWidget(QtGui.QWidget):
         self.splitter.addWidget(self.peak_dynamics_viewer)
         
         # Buttons
-        self.plot_buttons = QtGui.QHBoxLayout()
-        self.plot_buttons.addWidget(self.show_inelastic_background_btn)
-        self.plot_buttons.addWidget(self.subtract_inelastic_background_btn)
+        plot_buttons = QtGui.QHBoxLayout()
+        plot_buttons.addWidget(self.show_inelastic_background_btn)
+        plot_buttons.addWidget(self.subtract_inelastic_background_btn)
         
-        # TODO: insert buttons
+        # Final layout
+        wavelet = QtGui.QHBoxLayout()
+        wavelet.addWidget(self.wavelet_level_label)
+        wavelet.addWidget(self.wavelet_dec_level_box)
         self.layout = QtGui.QVBoxLayout()
-        self.layout.addLayout(self.plot_buttons)
+        self.layout.addLayout(plot_buttons)
+        self.layout.addLayout(wavelet)
         self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
         
@@ -418,6 +427,10 @@ class PowderToolsWidget(QtGui.QWidget):
     @property
     def dataset(self):
         return self.parent.dataset
+    
+    @property
+    def wavelet_decomposition_level(self):
+        return int(self.wavelet_dec_level_box.text())
         
     @property
     def peak_dynamics_region_shown(self):
@@ -774,9 +787,13 @@ class Iris(QtGui.QMainWindow):
             
             #Thread the computation
             if mode == 'auto':
-                self.worker = WorkThread(self.dataset.inelastic_background_fit, None)
+                self.worker = WorkThread(self.dataset.inelastic_background_fit,
+                                         None,
+                                         self.plot_viewer.wavelet_decomposition_level)
             else:
-                self.worker = WorkThread(self.dataset.inelastic_background_fit, self.plot_viewer.inelastic_background_lines_positions)
+                self.worker = WorkThread(self.dataset.inelastic_background_fit,
+                                         self.plot_viewer.inelastic_background_lines_positions,
+                                         self.plot_viewer.wavelet_decomposition_level)
                 
             self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
             self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
