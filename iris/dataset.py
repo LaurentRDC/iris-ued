@@ -413,25 +413,12 @@ class DiffractionDataset(object):
     def _substrate(self):
         return read(os.path.join(self.directory, 'substrate.tif'))
     
-    def intensity_noise(self):
-        """
-        RMS intensity noise for pictures before photoexcitation.
-        """
-        b4_time0 = n.dstack( tuple([self.image(time) for time in self.time_points if float(time) <= 0.0]) )
-        return n.std(b4_time0, axis = -1)
-    
     def _pumpoff_intensity_stability(self):
         """ Plots the total intensity of the pumpoff pictures. """
         overall_intensity = list()
         for fn in self._pumpoff_filenames:
             overall_intensity.append( imread(os.path.join(self._pumpoff_directory, fn)).sum() )
         return n.array(overall_intensity)/overall_intensity[0]
-        
-    def stability_diagnostic(self, time = '+0.00'):
-        """ Plots the overall intensity of time-delay picture over nscan."""
-        template = 'data.timedelay.' + time + '.nscan.*.pumpon.tif'
-        filenames = [fn for fn in glob(os.path.join(self.raw_directory, template))]
-        return n.array([read(filename).sum() for filename in filenames])
         
 
 class SingleCrystalDiffractionDataset(DiffractionDataset):
@@ -443,14 +430,46 @@ class SingleCrystalDiffractionDataset(DiffractionDataset):
     
     Methods
     -------
+    pattern
+        Return a Pattern object associated with a time-delay.
     
-    Notes
-    -----
+    inelastic_background_fit
+        Fit an inelastic scattering background to all patterns in the dataset.
     """
     def __init__(self, directory):
         super(SingleCrystalDiffractionDataset, self).__init__(directory)
-        # TODO: all of this class
+    
+    def pattern(self, time):
+        """
+        Returns a single-crystal diffraction pattern as an array.
         
+        Parameters
+        ----------
+        time : str, numerical
+            Time delay value of the image.
+        """
+        time = str(float(time))
+        return Pattern(data = self.image(time))
+    
+    def inelastic_background_fit(self, positions, level):
+        """
+        Fits an inelastic scattering background to the data. The fits are applied 
+        to each time point independently. Results are then exported to the master
+        HDF5 file.
+        
+        Parameters
+        ----------
+        positions : list of tuples or None
+            Indices in images known to be purely background positions.
+        level : int
+            Wavelet decomposition level. A higher level implies a coarser approximation 
+            to the baseline.
+        """
+        background_arrays = list()
+        for time in self.time_points:
+            background.append( (time, self.radial_pattern(time).inelastic_background(positions, level)) )
+            
+        self._export_background_curves(background_curves)
 
 class PowderDiffractionDataset(DiffractionDataset):
     """
@@ -567,9 +586,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         for time in self.time_points:
             curves.append(self.inelastic_background(time))
         return curves
-    
-    def peak_dynamics(self, rect):
-        pass
         
     def radial_peak_dynamics(self, edge, edge2 = None, subtract_background = False):
         """

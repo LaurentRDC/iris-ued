@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
 import scipy.optimize as opt
-from scipy import interpolate
 import wavelet
 
 def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, floor):
@@ -20,7 +19,7 @@ def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, f
     exp1 = amplitude1*n.exp(-decay1*(x - offset2))
     exp2 = amplitude2*n.exp(-decay2*(x - offset1))
     return exp1 + exp2 + floor
-        
+
 # -----------------------------------------------------------------------------
 #           RADIAL CURVE CLASS
 # -----------------------------------------------------------------------------
@@ -44,10 +43,6 @@ class Curve(object):
     -------    
     inelastic_background
         Fits a biexponential inelastic scattering background to the curve
-        
-    auto_inelastic_background
-        Fits a biexponential inelastic scattering background to the curve.
-        Background values are automatically determined from peak locations.
     """
     def __init__(self, xdata, ydata, name = '', color = 'b'):
         
@@ -79,9 +74,9 @@ class Curve(object):
             for peak_index in self._find_peaks():
                 plt.axvline(self.xdata[peak_index], color = 'r')
     
-    def inelastic_background(self, xpoints, mode = 'wavelet'):
+    def inelastic_background(self, xpoints, level = 10):
         """
-        Master method for inelastic background determination.
+        Master method for inelastic background determination via wavelet decomposition.
         
         Parameters
         ---------
@@ -89,8 +84,9 @@ class Curve(object):
             List of x-values at which the curve is entirely background. If None, 
             these points will be automatically determined using the continuous 
             wavelet transform.
-        mode : str {'wavelet' (default), 'fit'}, optional
-            Algorithm to use in background determination.
+        level : int, optional
+            Wavelet decomposition level. A higher level implies a coarser approximation 
+            to the baseline.
         
         Returns
         -------
@@ -99,72 +95,15 @@ class Curve(object):
         """
         if xpoints is None:          # Find x-values between peaks
             xpoints = [self.xdata[int(i)] for i in self._between_peaks()]
-        
-        if mode == 'wavelet':
-            return self._wavelet_background(xpoints)
-        elif mode == 'fit':
-            return self._biexponential_background(xpoints)
-        else:
-            raise ValueError('Mode not recognized.')
-            
-    def _wavelet_background(self, xpoints):
-        """
-        Perform background fitting using the discrete wavelet transform.
-        
-        Parameters
-        ----------
-        xpoints : array-like, optional
-            x-values of the points to fit to.
-        """
+
         background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
-        background_values = wavelet.baseline(signal = self.ydata, max_iter = 1000, level = 7, wavelet = 'db10', background_regions = background_indices)
+        background_values = wavelet.baseline(array = self.ydata,
+                                             max_iter = 200,
+                                             level = level,
+                                             wavelet = 'db10',
+                                             background_regions = background_indices)
         
         return Curve(self.xdata, background_values, 'IBG {0}'.format(self.name), 'red')
-        
-    
-    def _biexponential_background(self, xpoints):
-        """
-        Enelastic scattering background fit using a biexponential.
-        
-        Parameters
-        ----------
-        xpoints : array-like, optional
-            x-values of the points to fit to.
-        """
-        # Preliminaries
-        xpoints = n.array(xpoints, dtype = n.float)
-        
-        def positivity_constraint(params):
-            """
-            This function returns a positive value if the background is less than
-            the data, everywhere.
-            """
-            return self.ydata - biexponential(self.xdata, *params)
-        
-        def residuals(params):
-            """
-            This function is 0 if the background passes through all required xpoints
-            """
-            background = biexponential(xpoints, *params)
-            ypoints = n.interp(xpoints, self.xdata, self.ydata)     # interpolation of the data at the background xpoints
-            return n.sum( (ypoints - background) ** 2 )
-            
-        constraints = {'type' : 'ineq', 'fun' : positivity_constraint}
-        
-        #Create initial guesses
-        # amp1, amp2, decay1, decay2, offset1, offset2, floor
-        guesses = (10,10,-1,-1,0,0,self.ydata.min())
-        
-        # Bounds detemined by logic and empiricism
-        bounds = [(0, 1e3*self.ydata.max()), (0, 1e3*self.ydata.max()), (-100, 100),(-100, 100), (-1e4, 1e4), (-1e4, 1e4), (-1e4, 1e4)]
-        
-        # method = 'SLSQP', 
-        results = opt.minimize(residuals, x0 = guesses, bounds = bounds, constraints = constraints, method = 'SLSQP', options = {'disp' : True, 'maxiter' : 1000})
-        
-        # Create inelastic background function 
-        amp1, amp2, dec1, dec2, off1, off2, floor = results.x
-        new_fit = biexponential(self.xdata, amp1, amp2, dec1, dec2, off1, off2, floor)
-        return Curve(self.xdata, new_fit, 'IBG {0}'.format(self.name), 'red')
     
     def _between_peaks(self):
         """
