@@ -4,6 +4,7 @@
 import matplotlib.pyplot as plt
 import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
+import scipy.optimize as opt
 import wavelet
 
 class Curve(object):
@@ -46,7 +47,7 @@ class Curve(object):
     def __copy__(self):
         return Curve(self.xdata, self.ydata, self.name, self.color)
     
-    def plot(self, show_peaks = True):
+    def plot(self, show_peaks = False):
         """ Diagnostic tool. """        
         plt.figure()
         plt.title(self.name)
@@ -77,16 +78,61 @@ class Curve(object):
         """
         if xpoints is None:          # Find x-values between peaks
             xpoints = [self.xdata[int(i)] for i in self._between_peaks()]
-
         background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
-        background_values = wavelet.baseline(array = self.ydata,
+        
+        # Remove low frequency exponential trends
+        exp_bg = self._exponential_baseline()
+        
+        # Remove background
+        background_values = wavelet.baseline(array = self.ydata - exp_bg,
                                              max_iter = 200,
                                              level = level,
                                              wavelet = 'db10',
                                              background_regions = background_indices)
         
-        return Curve(self.xdata, background_values, 'IBG {0}'.format(self.name), 'red')
+        return Curve(self.xdata, background_values + exp_bg, 'IBG {0}'.format(self.name), 'red')
     
+    def _exponential_baseline(self):
+        """
+        Fits an exponential decay to the curve, in order to remove low frequency baseline.
+        
+        Returns
+        -------
+        baseline : ndarray
+            Same shape as ydata
+        """
+        # Only fit to the first and last data point, for speed.
+        # What really matters here is that the fit is below the signal
+        xpoints = n.array([self.xdata[0], self.xdata[-1]])
+        
+        def exponential(x, amplitude, decay):
+            return amplitude*n.exp(decay*x)
+        
+        def positivity_constraint(params):
+            """
+            This function returns a positive value if the background is less than
+            the data, everywhere.
+            """
+            return self.ydata - exponential(self.xdata, *params)
+        
+        def residuals(params):
+            """
+            This function is 0 if the background passes through all required xpoints
+            """
+            background = exponential(xpoints, *params)
+            ypoints = n.interp(xpoints, self.xdata, self.ydata)     # interpolation of the data at the background xpoints
+            return n.sum( (ypoints - background) ** 2 )
+            
+        constraints = {'type' : 'ineq', 'fun' : positivity_constraint}
+        
+        #Create initial guesses and fit
+        guesses = (self.ydata[0], -1)
+        results = opt.minimize(residuals, x0 = guesses, constraints = constraints, method = 'SLSQP', options = {'disp' : False, 'maxiter' : 1000})
+        
+        # Create inelastic background function 
+        amp, dec = results.x
+        return exponential(self.xdata, amp, dec)
+                            
     def _between_peaks(self):
         """
         Finds the indices associated with local minima between peaks in ydata
@@ -150,4 +196,5 @@ if __name__ == '__main__':
     d = PowderDiffractionDataset(directory)
     test = d.radial_pattern(0.0)
     background = test.inelastic_background(xpoints = [], level = 10)
-    plt.plot(test.ydata, 'b', background.ydata, 'r')
+    plt.plot(test.ydata)
+    plt.plot(background.ydata)
