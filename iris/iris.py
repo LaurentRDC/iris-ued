@@ -412,6 +412,7 @@ class PowderToolsWidget(QtGui.QWidget):
         self.wavelet_dec_level_box = QtGui.QComboBox(parent = self)
         for integer in range(0, 15):
             self.wavelet_dec_level_box.addItem(str(integer))
+        self.wavelet_dec_level_box.setCurrentIndex(self.wavelet_dec_level_box.findText('10'))
         
         # Hide progress widgets
         self.progress_widget_radial_patterns.hide()
@@ -531,7 +532,7 @@ class PowderToolsWidget(QtGui.QWidget):
         
         #Update plot
         if background_curve is not None:
-            self.background_curve_item = pg.PlotDataItem(background_curve.xdata, background_curve.ydata, pen = None, symbol = 'o',
+            self.background_curve_item = pg.PlotDataItem(background_curve.xdata, background_curve.data, pen = None, symbol = 'o',
                                             symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 2)
             self.radial_pattern_viewer.addItem(self.background_curve_item)
         else:
@@ -576,20 +577,21 @@ class PowderToolsWidget(QtGui.QWidget):
         # Get the experimental data from the dataset. If any file-related error,
         # abort function by returning None
         try:
-            curves = self.dataset.radial_pattern_series(self.subtract_inelastic_background)
+            curves = self.dataset.pattern_series(self.subtract_inelastic_background)
         except:     # HDF5 file with radial averages is not found
             return
         
         # Get timedelay colors and plot
         colors = spectrum_colors(len(curves))
         for color, curve in zip(colors, curves):
-            self.radial_pattern_viewer.plot(curve.xdata, curve.ydata, pen = None, symbol = 'o',
+            self.radial_pattern_viewer.plot(curve.xdata, curve.data, pen = None, symbol = 'o',
                                             symbolPen = pg.mkPen(color), symbolBrush = pg.mkBrush(color), symbolSize = 3)
         
         self._display_peak_dynamics_setup()
         self.update_peak_dynamics_plot()
 
     def _display_peak_dynamics_setup(self):
+        self.peak_dynamics_region.setRegion((0.2, 0.3))
         self.radial_pattern_viewer.addItem(self.peak_dynamics_region, ignoreBounds = False)
     
     def _display_inelastic_background_setup(self):

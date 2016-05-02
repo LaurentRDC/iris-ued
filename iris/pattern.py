@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 #Basics
-import matplotlib.pyplot as plt
 import numpy as n
-from scipy.ndimage.filters import maximum_filter
+from scipy.signal import find_peaks_cwt, ricker
+
 import scipy.optimize as opt
 import wavelet
 
@@ -13,8 +13,13 @@ class Pattern(object):
     
     Attributes
     ----------
-    data : ndarray, shape (M,N)
-        Image data as an array.
+    xdata : ndarray or None
+        Scattering length of the pattern, if radial pattern. If Pattern is a 2D
+        image (as for single crystal data), xdata is None.
+    data : ndarray, shape (M,N) or shape(M,)
+        Image data as an array or intensity data from radially-averaged data.
+    type : str {'polycrystalline', 'single crystal'}
+        Data type.
     name : str
         Description.
     
@@ -23,50 +28,195 @@ class Pattern(object):
     inelastic_background
         Fits a biexponential inelastic scattering background to the data
     """
-    def __init__(self, image, name = ''):
+    def __init__(self, data, name = ''):
         """
         Parameters
         ----------
-        image : array-like, shape (M,N)
-            Image data
+        data : ndarray ndim 2, or list
+            If list or tuple or ndarrays, assumed to be a 1D radial pattern
         """
-        self.data = n.asarray(image, dtype = n.float)
         self.name = name
+        self.xdata = None
+        self.data = None
+        
+        if isinstance(data, (list, tuple, iter)):
+            self.xdata = n.asarray(data[0], dtype = n.float)
+            self.data = n.asarray(data[1], dtype = n.float)
+        else:
+            self.data = n.asarray(data, dtype = n.float)
+    
+    @property
+    def type(self):
+        if self.data.ndim == 1:
+            return 'polycrystalline'
+        elif self.data.ndim == 2:
+            return 'single crystal'
+        else:
+            raise TypeError
     
     def __sub__(self, pattern):
-        return Pattern(data = self.data - pattern.data, name = self.name)
+        if self.type == 'polycrystalline':
+            return Pattern([self.xdata, self.data - n.interp(self.xdata, pattern.xdata, pattern.data)], name = self.name)
+        elif self.type == 'single crystal':
+            return Pattern(data = self.data - pattern.data, name = self.name)
     
     def __add__(self, pattern):
-        return Pattern(data = self.data + pattern.data, name = self.name)
+        if self.type == 'polycrystalline':
+            return Pattern([self.xdata, self.data + n.interp(self.xdata, pattern.xdata, pattern.data)], name = self.name)
+        elif self.type == 'single crystal':
+            return Pattern(data = self.data + pattern.data, name = self.name)
     
     def __copy__(self):
-        return Pattern(data = self.data, name = self.name)
+        if self.type == 'polycrystalline':
+            return Pattern([n.array(self.xdata), n.array(self.data)], name = self.name)
+        elif self.type == 'single crystal':
+            return Pattern(data = n.array(self.data), name = self.name)
     
     def plot(self):
-        from matplotlib.pyplot import imshow
-        imshow(self.data)
+        """ For debugging purposes. """
+        from matplotlib.pyplot import imshow, plot
+        if self.type == 'single crystal':
+            imshow(self.data)
+        elif self.type == 'polycrystalline':
+            plot(self.xdata, self.data)
     
-    def inelastic_background(self, points = [], level = 10):
+    def inelastic_background(self, xpoints, level = 10):
         """
-        Master method for inelastic background determination via wavelet decomposition.
+        Method for inelastic background determination via wavelet decomposition.d
         
         Parameters
         ---------
-        points : list, optional
-            List of (i,j) at which the pattern is entirely background.
+        xpoints : list or None
+            List of x-values at which the curve is entirely background. If None, 
+            these points will be automatically determined using the continuous 
+            wavelet transform.
         level : int, optional
             Wavelet decomposition level. A higher level implies a coarser approximation 
             to the baseline.
         
         Returns
         -------
-        background : Pattern object
-            Background pattern.
+        background : Curve object
+            Background curve.
         """
-        background = wavelet.baseline(array = self.data,
-                                             max_iter = 50,
+        if self.type == 'single crystal':
+            raise NotImplemented
+        
+        if xpoints is None:          # Find x-values between peaks
+            xpoints = [self.xdata[int(i)] for i in self._between_peaks()]
+        background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
+        
+        # Remove low frequency exponential trends
+        exp_bg = self._exponential_baseline()
+        
+        # Remove background
+        background_values = wavelet.baseline(array = self.data - exp_bg,
+                                             max_iter = 200,
                                              level = level,
                                              wavelet = 'db10',
-                                             background_regions = points)
+                                             background_regions = background_indices)
         
-        return Pattern(data = background)
+        return Pattern([self.xdata, background_values + exp_bg], 'IBG {0}'.format(self.name))
+        
+    def _exponential_baseline(self):
+        """
+        Fits an exponential decay to the curve, in order to remove low frequency baseline.
+        
+        Returns
+        -------
+        baseline : ndarray
+            Same shape as ydata
+        """
+        # Only fit to the first and last data point, for speed.
+        # What really matters here is that the fit is below the signal
+        xpoints = n.array([self.xdata[0], self.xdata[-1]])
+        
+        def exponential(x, amplitude, decay):
+            return amplitude*n.exp(decay*x)
+        
+        def positivity_constraint(params):
+            """
+            This function returns a positive value if the background is less than
+            the data, everywhere.
+            """
+            return self.ydata - exponential(self.xdata, *params)
+        
+        def residuals(params):
+            """
+            This function is 0 if the background passes through all required xpoints
+            """
+            background = exponential(xpoints, *params)
+            ypoints = n.interp(xpoints, self.xdata, self.data)     # interpolation of the data at the background xpoints
+            return n.sum( (ypoints - background) ** 2 )
+            
+        constraints = {'type' : 'ineq', 'fun' : positivity_constraint}
+        
+        #Create initial guesses and fit
+        guesses = (self.data[0], -1)
+        results = opt.minimize(residuals, x0 = guesses, constraints = constraints, method = 'SLSQP', options = {'disp' : False, 'maxiter' : 1000})
+        
+        # Create inelastic background function 
+        amp, dec = results.x
+        return exponential(self.xdata, amp, dec)
+                            
+    def _between_peaks(self):
+        """
+        Finds the indices associated with local minima between peaks in ydata
+        
+        Returns
+        -------
+        indices : list of ints
+            Indices of the throughs in ydata.
+        
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> plt.plot(curve.ydata)
+        >>> 
+        >>> indices = curve._find_peaks()
+        >>> for i in indices:
+        ...    plt.axvline(i)
+        ...
+        >>>
+        
+        See also
+        --------
+        scipy.signal.find_peaks_cwt
+        """
+        if self.type == 'single crystal':
+            raise NotImplemented
+        
+        widths = n.arange(1, len(self.data)/10)    # Max width determined with testing
+        return find_peaks_cwt(-self.data, widths = widths, wavelet = ricker, 
+                              min_length = len(widths)/10, min_snr = 1.5)
+    
+    def _find_peaks(self):
+        """
+        Finds the indices associated with peaks in ydata
+        
+        Returns
+        -------
+        peak_indices : list of ints
+            Indices of the peaks in ydata.
+        
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> plt.plot(curve.ydata)
+        >>> 
+        >>> peak_indices = curve._find_peaks()
+        >>> for i in peak_indices:
+        ...    plt.axvline(i)
+        ...
+        >>>
+        
+        See also
+        --------
+        scipy.signal.find_peaks_cwt
+        """
+        if self.type == 'single crystal':
+            raise NotImplemented
+        
+        widths = n.arange(1, len(self.data)/10)    # Max width determined with testing
+        return find_peaks_cwt(self.data, widths = widths, wavelet = ricker, 
+                              min_length = len(widths)/20, min_snr = 1.5)
