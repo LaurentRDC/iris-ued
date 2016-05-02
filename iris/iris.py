@@ -326,16 +326,35 @@ class PowderToolsWidget(QtGui.QWidget):
     Components
     ----------
     radial_pattern_viewer : PlotWidget
+        View the time-delay radial patterns. This widget is also used to specify peak
+        dynamics.
     
     peak_dynamics_viewer : PlotWidget
+        View the time-delay information about peaks specified in radial_pattern_viewer.
     
+    menubar: QtGui.QMenuBar
+        Actions are stored in a menu bar
+        
     Methods
     -------
+    update_peak_dynamics_plot
+        Update the peak dynamics plot after changed to the radial pattern viewer
+    
+    set_background_curve
+        Show or hide an inelastic scattering background curve
+    
+    display_radial_averages
+        Plot the data from a PowderDiffractionDataset object
+    
+    compute_inelastic_background
+        Wavelet decomposition of the inelastic scattering background.
+    
+    matlab_export
+        Export the master HDF5 file from a PowderDiffractionDataset to *.mat
     """
     def __init__(self, parent):
         
         super(PowderToolsWidget, self).__init__()
-        
         self.parent = parent
                 
         self.radial_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
@@ -355,22 +374,44 @@ class PowderToolsWidget(QtGui.QWidget):
         # In progress widgets
         self.progress_widget_radial_patterns = InProgressWidget(parent = self.radial_pattern_viewer)
         
+        self._init_actions()
         self._init_ui()
         self._connect_signals()
+        
+    def _init_actions(self):
+        
+        self.show_inelastic_background_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Show/hide inelastic scattering background', self )
+        self.show_inelastic_background_action.setCheckable(True)
+        self.show_inelastic_background_action.toggled.connect(self.set_background_curve)
+        
+        self.subtract_inelastic_background_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Subtract inelastic scattering background', self )
+        self.subtract_inelastic_background_action.setCheckable(True)
+        self.subtract_inelastic_background_action.toggled.connect(self.display_radial_averages)
+        self.subtract_inelastic_background_action.toggled.connect(self.update_peak_dynamics_plot)
+        
+        self.set_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the inelastic scattering background', self)
+        self.set_inelastic_background.triggered.connect(self.compute_inelastic_background)
+        self.set_inelastic_background.setEnabled(False)
+        
+        self.set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Automatically compute the inelastic scattering background', self)
+        self.set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
+        
+        self.toggle_inelastic_background_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
+        self.toggle_inelastic_background_tools.setCheckable(True)
+        self.toggle_inelastic_background_tools.toggled.connect(self.toggle_inelastic_background_setup)
+        self.toggle_inelastic_background_tools.toggled.connect(self.set_inelastic_background.setEnabled)
+        self.toggle_inelastic_background_tools.toggled.connect(self.untoggle_peak_dynamics_setup)
+        
+        self.export_to_matlab = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, '')), '&Export master HDF5 file to MATLAB format', self)
+        self.export_to_matlab.triggered.connect(self.matlab_export)
     
     def _init_ui(self):
         
-        # Display buttons
-        self.show_inelastic_background_btn = QtGui.QPushButton(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), 'Show inelastic background', parent = self)
-        self.subtract_inelastic_background_btn = QtGui.QPushButton(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), 'Subtract inelastic background', parent = self)
-        
-        self.show_inelastic_background_btn.setCheckable(True)
-        self.subtract_inelastic_background_btn.setCheckable(True)
-        
         # Wavelet decomposition level combo box
         self.wavelet_level_label = QtGui.QLabel('Wavelet decomposition level: ', parent = self)
-        self.wavelet_dec_level_box = QtGui.QLineEdit(parent = self)
-        self.wavelet_dec_level_box.setText('10') # Dfault decomposition level
+        self.wavelet_dec_level_box = QtGui.QComboBox(parent = self)
+        for integer in range(0, 15):
+            self.wavelet_dec_level_box.addItem(str(integer))
         
         # Hide progress widgets
         self.progress_widget_radial_patterns.hide()
@@ -383,17 +424,26 @@ class PowderToolsWidget(QtGui.QWidget):
         self.splitter.addWidget(self.radial_pattern_viewer)
         self.splitter.addWidget(self.peak_dynamics_viewer)
         
-        # Buttons
-        plot_buttons = QtGui.QHBoxLayout()
-        plot_buttons.addWidget(self.show_inelastic_background_btn)
-        plot_buttons.addWidget(self.subtract_inelastic_background_btn)
+        # Menu bar
+        self.menubar = QtGui.QMenuBar(parent = self)
+        display_menu = self.menubar.addMenu('&Display')
+        display_menu.addAction(self.show_inelastic_background_action)
+        display_menu.addAction(self.subtract_inelastic_background_action)
+        
+        inelastic_menu = self.menubar.addMenu('&Inelastic Scattering')
+        inelastic_menu.addAction(self.toggle_inelastic_background_tools)
+        inelastic_menu.addAction(self.set_inelastic_background)
+        inelastic_menu.addAction(self.set_auto_inelastic_background)
+        
+        export_menu = self.menubar.addMenu('&Export')
+        export_menu.addAction(self.export_to_matlab)
         
         # Final layout
         wavelet = QtGui.QHBoxLayout()
         wavelet.addWidget(self.wavelet_level_label)
         wavelet.addWidget(self.wavelet_dec_level_box)
         self.layout = QtGui.QVBoxLayout()
-        self.layout.addLayout(plot_buttons)
+        self.layout.addWidget(self.menubar)
         self.layout.addLayout(wavelet)
         self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
@@ -405,11 +455,6 @@ class PowderToolsWidget(QtGui.QWidget):
         self.peak_dynamics_region.sigRegionChangeFinished.connect(self.update_peak_dynamics_plot)
         #If the splitter handle is moved, resize the progress widget
         self.splitter.splitterMoved.connect(lambda: self.progress_widget_radial_patterns.resize(self.radial_pattern_viewer.size()))
-        
-        # Update plots if buttons are pressed
-        self.show_inelastic_background_btn.toggled.connect(self.set_background_curve)
-        self.subtract_inelastic_background_btn.toggled.connect(self.display_radial_averages)
-        self.subtract_inelastic_background_btn.toggled.connect(self.update_peak_dynamics_plot)
     
     def resizeEvent(self, event):
         # Resize the in_progress_widget when the widget is resized
@@ -430,7 +475,7 @@ class PowderToolsWidget(QtGui.QWidget):
     
     @property
     def wavelet_decomposition_level(self):
-        return int(self.wavelet_dec_level_box.text())
+        return int(self.wavelet_dec_level_box.currentText())
         
     @property
     def peak_dynamics_region_shown(self):
@@ -448,12 +493,8 @@ class PowderToolsWidget(QtGui.QWidget):
         return intersects
     
     @property
-    def show_inelastic_background(self):
-        return self.show_inelastic_background_btn.isChecked()
-    
-    @property
     def subtract_inelastic_background(self):
-        return self.subtract_inelastic_background_btn.isChecked()
+        return self.subtract_inelastic_background_action.isChecked()
     
     def update_peak_dynamics_plot(self):
         self.peak_dynamics_viewer.clear()
@@ -470,6 +511,16 @@ class PowderToolsWidget(QtGui.QWidget):
     
     @QtCore.pyqtSlot(bool)
     def set_background_curve(self, set_curve):
+        """
+        Adds an inelastic scattering background curve to the radial plot viewer.
+        
+        Parameters
+        ----------
+        set_curve : bool
+            If True, add the background curve to the plot.
+            If False, either remove the current background curve if it is displayed,
+            or do nothing.
+        """
         if set_curve:
             try:
                 background_curve = self.dataset.inelastic_background(time = 0.0)
@@ -522,6 +573,8 @@ class PowderToolsWidget(QtGui.QWidget):
         self.peak_dynamics_viewer.clear()
         self.peak_dynamics_viewer.enableAutoRange()
         
+        # Get the experimental data from the dataset. If any file-related error,
+        # abort function by returning None
         try:
             curves = self.dataset.radial_pattern_series(self.subtract_inelastic_background)
         except:     # HDF5 file with radial averages is not found
@@ -540,17 +593,19 @@ class PowderToolsWidget(QtGui.QWidget):
         self.radial_pattern_viewer.addItem(self.peak_dynamics_region, ignoreBounds = False)
     
     def _display_inelastic_background_setup(self):
+        """ Displays the background region lines on the radial patterns plot. """
         #Determine curve range
+        # If no curve is plotted, xmin and xmax will be None. Abort function
+        # in this case
         try:
             xmin, xmax = self.radial_pattern_viewer.getPlotItem().listDataItems()[0].dataBounds(ax = 0)
+            if xmin is None or xmax is None:
+                return
         except:
             return
-        
-        # If no lines are plotted, xmin and xmax will be None
-        if xmin is None or xmax is None:
-            return
 
-        #Distribute lines equidistantly            
+        # Distribute lines equidistantly       
+        # TODO: distribute lines according to guesses from continuous wavelet transform?  
         dist_between_lines = float(xmax - xmin)/len(self.inelastic_background_lines)
         pos = xmin
         for line in self.inelastic_background_lines:
@@ -559,11 +614,47 @@ class PowderToolsWidget(QtGui.QWidget):
             pos += dist_between_lines
         
     def _hide_peak_dynamics_setup(self):
+        """ Hide the peaks dynamics region on radial pattern plot """
         self.radial_pattern_viewer.removeItem(self.peak_dynamics_region)
     
     def _hide_inelastic_background_setup(self):
+        """ Remove background region lines """
         for line in self.inelastic_background_lines:
             self.radial_pattern_viewer.removeItem(line)
+            
+    def compute_inelastic_background(self, mode = None):
+        """
+        Compute inelastic scattering background. if mode == 'auto', positions are
+        automatically determined using the continuous wavelet transform
+        """
+        if self.dataset is None:
+            return
+        
+        self.toggle_inelastic_background_tools.setChecked(False)
+        
+        #Thread the computation
+        if mode == 'auto':
+            self.worker = WorkThread(self.dataset.inelastic_background_fit,
+                                     None,
+                                     self.wavelet_decomposition_level)
+        else:
+            self.worker = WorkThread(self.dataset.inelastic_background_fit,
+                                     self.inelastic_background_lines_positions,
+                                     self.wavelet_decomposition_level)
+            
+        self.worker.in_progress_signal.connect(self.progress_widget_radial_patterns.show)
+        self.worker.done_signal.connect(self.progress_widget_radial_patterns.hide)
+        self.worker.done_signal.connect(self.display_radial_averages)
+        # Show the inelastic background
+        self.worker.done_signal.connect(lambda: self.show_inelastic_background_action.setChecked(True))
+        self.worker.done_signal.connect(lambda: self.subtract_inelastic_background_action.setChecked(False))
+        self.worker.start()
+    
+    def matlab_export(self):
+        """ Export master HDF5 file to MATLAB for old geezers in the group. """
+        filename = QtGui.QFileDialog.getSaveFileName(self, 'Save MATLAB file', self.dataset.directory, filter = '*.mat')
+        filename = os.path.abspath(filename)
+        self.dataset.export_to_matlab(filename)
         
 class Iris(QtGui.QMainWindow):
     """
@@ -605,8 +696,23 @@ class Iris(QtGui.QMainWindow):
         # UI components
         self.file_dialog = QtGui.QFileDialog(parent = self)      
         self.menubar = self.menuBar()
-        self._create_menu()
         self.splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
+        
+        # Assemble menu from previously-defined actions
+        file_menu = self.menubar.addMenu('&File')
+        file_menu.addAction(self.powder_directory_action)
+        file_menu.addAction(self.single_crystal_directory_action)
+        file_menu.addSeparator()
+        file_menu.addAction(self.picture_action)
+        
+        powder_menu = self.menubar.addMenu('&Polycrystalline tools')
+        powder_menu.addAction(self.toggle_plot_viewer)
+        powder_menu.addSeparator()
+        powder_menu.addAction(self.toggle_radav_tools)
+        powder_menu.addAction(self.set_radav_tools)
+        
+        sc_menu = self.menubar.addMenu('&Single-crystal tools')
+        sc_menu.addAction(self.toggle_sc_viewer)
         
         #Taskbar icon
         self.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
@@ -618,6 +724,7 @@ class Iris(QtGui.QMainWindow):
         self.layout = QtGui.QGridLayout()
         self.layout.addWidget(self.splitter, 0, 0)
         
+        # Hide accessory viewers on start-up
         self.sc_viewer.hide()
         self.plot_viewer.hide()
         
@@ -643,12 +750,6 @@ class Iris(QtGui.QMainWindow):
         self.picture_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'diffraction.png')), '&Picture', self)
         self.picture_action.triggered.connect(self.picture_locator)
         
-        # Single-crystal ------------------------------------------------------
-        self.toggle_sc_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Show/hide single-crystal tools', self)
-        self.toggle_sc_viewer.setCheckable(True)
-        self.toggle_sc_viewer.toggled.connect(self.image_viewer.toggle_peak_dynamics_region)
-        self.toggle_sc_viewer.toggled.connect(self.show_sc_viewer)
-        
         # Polycrystaline ------------------------------------------------------
         self.set_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute radial averages with beamblock mask and center finder', self)
         self.set_radav_tools.triggered.connect(self.compute_radial_average)    
@@ -662,46 +763,12 @@ class Iris(QtGui.QMainWindow):
         self.toggle_plot_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial patterns', self)
         self.toggle_plot_viewer.setCheckable(True)
         self.toggle_plot_viewer.toggled.connect(self.show_plot_viewer)
-                
-        self.set_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the inelastic scattering background', self)
-        self.set_inelastic_background.triggered.connect(self.compute_inelastic_background)
-        self.set_inelastic_background.setEnabled(False)
         
-        self.set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Automatically compute the inelastic scattering background', self)
-        self.set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
-        
-        self.toggle_inelastic_background_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
-        self.toggle_inelastic_background_tools.setCheckable(True)
-        self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.toggle_inelastic_background_setup)
-        self.toggle_inelastic_background_tools.toggled.connect(self.set_inelastic_background.setEnabled)
-        self.toggle_inelastic_background_tools.toggled.connect(self.plot_viewer.untoggle_peak_dynamics_setup)
-        
-        self.export_to_matlab = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, '')), '&Export master HDF5 file to MATLAB format', self)
-        self.export_to_matlab.triggered.connect(self.matlab_export)
-    
-    def _create_menu(self):
-        """ Menu and actions for single crystal tools. """
-        
-        file_menu = self.menubar.addMenu('&File')
-        file_menu.addAction(self.powder_directory_action)
-        file_menu.addAction(self.single_crystal_directory_action)
-        file_menu.addSeparator()
-        file_menu.addAction(self.picture_action)
-        
-        powder_menu = self.menubar.addMenu('&Polycrystalline tools')
-        powder_menu.addAction(self.toggle_plot_viewer)
-        powder_menu.addSeparator()
-        powder_menu.addAction(self.toggle_radav_tools)
-        powder_menu.addAction(self.set_radav_tools)
-        powder_menu.addSeparator()
-        powder_menu.addAction(self.toggle_inelastic_background_tools)
-        powder_menu.addAction(self.set_inelastic_background)
-        powder_menu.addAction(self.set_auto_inelastic_background)
-        powder_menu.addSeparator()
-        powder_menu.addAction(self.export_to_matlab)
-        
-        sc_menu = self.menubar.addMenu('&Single-crystal tools')
-        sc_menu.addAction(self.toggle_sc_viewer)
+        # Single-crystal ------------------------------------------------------
+        self.toggle_sc_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Show/hide single-crystal tools', self)
+        self.toggle_sc_viewer.setCheckable(True)
+        self.toggle_sc_viewer.toggled.connect(self.image_viewer.toggle_peak_dynamics_region)
+        self.toggle_sc_viewer.toggled.connect(self.show_sc_viewer)
 
     def _connect_signals(self):
         # Nothing to see here yet
@@ -740,12 +807,6 @@ class Iris(QtGui.QMainWindow):
         self.toggle_plot_viewer.setChecked(False)
         self.image_viewer.display_data(image = cast_to_16_bits(read(filename)))
     
-    def matlab_export(self):
-        """ Export master HDF5 file to MATLAB for old geezers in the group. """
-        filename = self.file_dialog.getSaveFileName(self, 'Save MATLAB file', self.dataset.directory, filter = '*.mat')
-        filename = os.path.abspath(filename)
-        self.dataset.export_to_matlab(filename)
-    
     # Display/show slots  -----------------------------------------------------
     
     @QtCore.pyqtSlot(bool)
@@ -776,32 +837,6 @@ class Iris(QtGui.QMainWindow):
             self.worker.start()
             # Only hide the tools after computation has started
             self.toggle_radav_tools.setChecked(False)
-    
-    def compute_inelastic_background(self, mode = None):
-        """
-        Compute inelastic scattering background. if mode == 'auto', positions are
-        automatically determined using the continuous wavelet transform
-        """
-        if self.dataset is not None:
-            self.toggle_inelastic_background_tools.setChecked(False)
-            
-            #Thread the computation
-            if mode == 'auto':
-                self.worker = WorkThread(self.dataset.inelastic_background_fit,
-                                         None,
-                                         self.plot_viewer.wavelet_decomposition_level)
-            else:
-                self.worker = WorkThread(self.dataset.inelastic_background_fit,
-                                         self.plot_viewer.inelastic_background_lines_positions,
-                                         self.plot_viewer.wavelet_decomposition_level)
-                
-            self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
-            self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
-            self.worker.done_signal.connect(self.plot_viewer.display_radial_averages)
-            # Show the inelastic background
-            self.worker.done_signal.connect(lambda: self.plot_viewer.show_inelastic_background_btn.setChecked(True))
-            self.worker.done_signal.connect(lambda: self.plot_viewer.subtract_inelastic_background_btn.setChecked(False))
-            self.worker.start()
             
     # Misc --------------------------------------------------------------------
             
