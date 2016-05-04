@@ -116,8 +116,8 @@ def approx_rec(array, level, wavelet, array_mask = []):
     reconstructed : ndarray
         Approximated reconstruction of the input array.
     """
-    dim = array.ndim
-    
+    # Choose deconstruction and reconstruction functions based on dimensionality
+    dim = array.ndim    
     if dim == 1:
         dec_func = pywt.wavedec
         rec_func = pywt.waverec
@@ -132,18 +132,20 @@ def approx_rec(array, level, wavelet, array_mask = []):
     # Check maximum decomposition level and interpolate if needed
     # Upsample the signal via interpolation as long as we cannot reach the desired
     # decomposition level
+    # For 2D array, check the condition with shortest dimension min(array.shape). This is how
+    # it is done in PyWavelet.wavedec2.
     upsampling_factor = 1
     while pywt.dwt_max_level(data_len = min(array.shape), filter_len = wavelet.dec_len) < level:
         array = dyadic_upsampling(array)
         upsampling_factor *= 2
         
     # By now, we are sure that the decomposition level will be supported.
-    # Decompose the signal using the multilevel wavelet transform
+    # Decompose the signal using the multilevel discrete wavelet transform
     coeffs = dec_func(data = array, wavelet = wavelet, level = level, mode = extension_mode)
     app_coeffs, det_coeffs = coeffs[0], coeffs[1:]
     
-    # Replace detail coefficients by 0; keep the right length so that the
-    # reconstructed signal has the same length as the (possibly upsampled) signal
+    # Replace detail coefficients by 0; keep the correct length so that the
+    # reconstructed signal has the same size as the (possibly upsampled) signal
     # The structure of coefficients depends on the dimensionality
     zeroed = list()
     if dim == 1:
@@ -151,7 +153,7 @@ def approx_rec(array, level, wavelet, array_mask = []):
             zeroed.append( n.zeros_like(detail) )
     elif dim == 2:
         for detail_tuples in det_coeffs:
-            cHn, cVn, cDn = detail_tuples
+            cHn, cVn, cDn = detail_tuples       # See PyWavelet.wavedec2 documentation for coefficients structure.
             zeroed.append( (n.zeros_like(cHn), n.zeros_like(cVn), n.zeros_like(cDn)) )  
         
     # Reconstruct signal
@@ -163,7 +165,6 @@ def approx_rec(array, level, wavelet, array_mask = []):
         upsampling_factor /= 2
         
     # Adjust size of reconstructed signal so that it is the same size as input
-    # TODO: clean up by removing special cases in terms of dimensionality?
     if reconstructed.size == original_array.size:
         return reconstructed
         
@@ -180,30 +181,12 @@ def approx_rec(array, level, wavelet, array_mask = []):
         elif dim == 2:
             extended_reconstructed[:reconstructed.shape[0], :reconstructed.shape[1]] = reconstructed
         return extended_reconstructed
-        
-def apply_mask(array, mask):
-    """
-    Interpolates the values of an array over the regions bounded by a rectangular mask.
-    
-    Parameters
-    ----------
-    array : ndarray, ndim 2
-        Array
-    mask : list of ints
-        2D mask as rectangle. Syntax is [x1, x2, y1, y2]. Values of array[x1:x2, y1:y2]
-        are interpolated from the edges of the mask.
-    """
-    x1, x2, y1, y2 = mask
-    
-    # support
-    x_support, y_support = n.meshgrid(n.arange(0, array.shape[0]), n.arange())
-    
-    raise NotImplemented
-    
 
-def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], conv_tol = 1e-3):
+
+def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], mask = None, conv_tol = None):
     """
-    Iterative method of baseline determination from [1].
+    Iterative method of baseline determination from [1]. This function handles
+    both 1D radial patterns and 2D single-crystal diffraction images.
     
     Parameters
     ----------
@@ -228,16 +211,28 @@ def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], 
         ``array.ndim == 2``
           background_regions is a list of tuples of ints (indices) or tuples of slices
           E.g. >>> background_regions = [(14, 19), (42, 99), (slice(59, 82), slice(81,23))]
-          
-    conv_tol : float, optional
+    
+    mask : ndarray, dtype bool
+        Mask array that evaluates to True for pixels that are valid. Only available
+        for 2D arrays (i.e. images). Useful to determine which pixels are masked
+        by a beam block.
+    conv_tol : float or None, optional
         Convergence tolerance. If the sum square difference of the background
         between two steps is smaller than this tolerance, the algorithm stops.
+        If None (default), convergence is never checked. The algorithm will stop
+        after the maximum number of iterations.
     
     Returns
     -------
     baseline : ndarray
         Baseline of the input array.
     """
+    if (array.ndim == 2) and (mask is not None):
+        raise NotImplemented
+    
+    # In case a mask is not provided, all data points are valid
+    if mask is None:
+        mask = n.ones_like(array, dtype = n.bool)
 
     # Initial starting point
     previous_background = n.zeros_like(array, dtype = array.dtype)
@@ -248,13 +243,14 @@ def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], 
         background = approx_rec(array = background, level = level, wavelet = wavelet)
         
         # Check convergence
-        if n.sum(n.abs(previous_background - background)**2) < conv_tol:
-            break
+        if conv_tol is not None:
+            if n.sum(n.abs(previous_background - background)**2) < conv_tol:
+                break
         
         # Modify the background so it cannot be more than the signal itself
         # Set the background to be equal to the signal in the places where it
         # is more than the signal
-        background_over_signal = (array - background) < 0.0
+        background_over_signal = (array - background)*mask < 0.0    # Background where mask is false is invalid
         background[background_over_signal] = array[background_over_signal]
         
         # Make sure the background values are equal to the signal values in the
@@ -265,9 +261,15 @@ def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], 
         # Save computation to check for convergence
         previous_background = n.array(background)
     
-    return background
+    # The background should be identically 0 where the data points are invalid
+    # A boolean ndarray is 0 where False, and 1 where True
+    # Therefore, simple multiplication results in what we want
+    return background*mask
 
+    
 if __name__ == '__main__':
     from PIL import Image
+    from uediff import diffshow
     test_image = n.array(Image.open('graphite_test.tif'))
-    bg = baseline(array = test_image, max_iter = 10, level = 5, wavelet = 'db10')
+    bg = baseline(array = test_image, max_iter = 1, level = 8, wavelet = 'db10')
+    diffshow(bg)
