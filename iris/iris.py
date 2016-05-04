@@ -601,19 +601,19 @@ class PowderToolsWidget(QtGui.QWidget):
         # in this case
         try:
             xmin, xmax = self.radial_pattern_viewer.getPlotItem().listDataItems()[0].dataBounds(ax = 0)
-            if xmin is None or xmax is None:
+            if (xmin is None) or (xmax is None):
                 return
         except:
             return
 
-        # Distribute lines equidistantly       
-        # TODO: distribute lines according to guesses from continuous wavelet transform?  
-        dist_between_lines = float(xmax - xmin)/len(self.inelastic_background_lines)
-        pos = xmin
-        for line in self.inelastic_background_lines:
+        # Distribute lines according the guesses of where the background is
+        # for the pattern at time 0
+        guessed_background_regions = self.dataset.pattern(time = 0.0)._background_guesses(data_values = True)
+        self.inelastic_background_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(len(guessed_background_regions))]
+        
+        for line, pos in zip(self.inelastic_background_lines, guessed_background_regions):
             line.setValue(pos)
             self.radial_pattern_viewer.addItem(line)
-            pos += dist_between_lines
         
     def _hide_peak_dynamics_setup(self):
         """ Hide the peaks dynamics region on radial pattern plot """

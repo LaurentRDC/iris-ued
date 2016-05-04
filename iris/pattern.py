@@ -9,7 +9,8 @@ import wavelet
 
 class Pattern(object):
     """
-    This class represents single-crystal diffraction patterns.
+    This class represents both polycrystalline 1D patterns and 
+    single-crystal 2D patterns.
     
     Attributes
     ----------
@@ -23,8 +24,16 @@ class Pattern(object):
     name : str
         Description.
     
+    Special Methods
+    ---------------
+    This object overloads the following special methods:
+    [__add__, __sub__, __copy__]
+    
     Methods
     -------
+    plot
+        Diagnostic plotting tool
+    
     inelastic_background
         Fits a biexponential inelastic scattering background to the data
     """
@@ -33,7 +42,9 @@ class Pattern(object):
         Parameters
         ----------
         data : ndarray ndim 2, or list
-            If list or tuple or ndarrays, assumed to be a 1D radial pattern
+            If list or tuple of ndarrays, assumed to be a 1D radial pattern
+        name : str, optional
+            Descriptive name
         """
         self.name = name
         self.xdata = None
@@ -103,7 +114,7 @@ class Pattern(object):
             raise NotImplemented
         
         if xpoints is None:          # Find x-values between peaks
-            xpoints = [self.xdata[int(i)] for i in self._between_peaks()]
+            xpoints = [self.xdata[int(i)] for i in self._background_guesses()]
         background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
         
         # Remove low frequency exponential trends
@@ -159,14 +170,21 @@ class Pattern(object):
         amp, dec = results.x
         return exponential(self.xdata, amp, dec)
                             
-    def _between_peaks(self):
+    def _background_guesses(self, data_values = False):
         """
         Finds the indices associated with local minima between peaks in ydata
         
+        Parameters
+        ----------
+        data_values : bool, optional
+            If False (default), indices of the location of background guesses
+            is returned. If True, values of xdata of background guesses is returned
+        
         Returns
         -------
-        indices : list of ints
-            Indices of the throughs in ydata.
+        out : list
+            Indices of the locations of background in data (if data_values is False)
+            of data values of the background in data (if data_values is True).
         
         Examples
         --------
@@ -187,8 +205,12 @@ class Pattern(object):
             raise NotImplemented
         
         widths = n.arange(1, len(self.data)/10)    # Max width determined with testing
-        return find_peaks_cwt(-self.data, widths = widths, wavelet = ricker, 
-                              min_length = len(widths)/10, min_snr = 1.5)
+        indices = find_peaks_cwt(-self.data, widths = widths, wavelet = ricker, 
+                                 min_length = len(widths)/10, min_snr = 1.5)
+        if data_values:
+            return [self.xdata[int(i)] for i in indices]
+        else:
+            return indices
     
     def _find_peaks(self):
         """
