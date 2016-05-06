@@ -13,7 +13,7 @@ import numpy as n
 from h5py import File
 
 #Batch processing libraries
-from pattern import Pattern
+from iris.pattern import Pattern
 import os.path
 from tifffile import imread, imsave
 
@@ -663,7 +663,10 @@ class DiffractionDataset(object):
             # Setting the array in the form of group[dataset_name] = data raises
             # an error:
             #     RuntimeError: Unable to create link (Name already exists)
-            del group[dataset_name]
+            try:
+                del group[dataset_name]
+            except:
+                pass
             group.create_dataset(dataset_name, dtype = n.float, data = n.asarray(data))
     
     def _export_results(self, results):
@@ -798,11 +801,11 @@ class PowderDiffractionDataset(DiffractionDataset):
         """
         super().__init__(directory)
         
-    def radial_peak_dynamics(self, edge, edge2 = None, subtract_background = False):
+    def radial_peak_dynamics(self, edge, edge2 = None, subtract_background = False, background_dynamics = False):
         """
         Returns a pattern corresponding to the time-dynamics of a location in the 
         diffraction patterns. Think of it as looking at the time-evolution
-        of a diffraction peak.
+        of a diffraction peak. This can be for data or for the background fits
         
         Parameters
         ----------
@@ -814,6 +817,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         subtract_background : bool, optional
             If True, inelastic scattering background is subtracted from the intensity data 
             before integration. Default is False.
+        background_dynamics : bool, optional
+            If True, the radial peak dynamics in the background fit is returned. In this case,
+            the subtract_background parameter is ignored
         
         Returns
         -------
@@ -822,7 +828,12 @@ class PowderDiffractionDataset(DiffractionDataset):
         intensity_series : ndarray, shape (N,M)
             Array of intensities. Each column corresponds to a time-delay
         """
-        patterns = self.pattern_series()    
+        if background_dynamics:
+            subtract_background = False
+            patterns = self.inelastic_background_series()
+        else:
+            patterns = self.pattern_series()    
+        
         scattering_length = patterns[0].xdata
         intensity_series = n.vstack( tuple( [pattern.data for pattern in patterns] ))
         
@@ -865,7 +876,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         # Change x-data from pixels to scattering length
         s = scattering_length(xdata, self.energy)
-        return Pattern(data = [s, intensity], name = str(time), color = 'b')
+        return Pattern(data = [s, intensity], name = str(time))
     
     def radial_average_series(self, center, mask_rect = None):
         """
@@ -884,7 +895,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             pattern = self.radial_average(time, center, mask_rect)
             results.append( (time, pattern) )
         self._export_results(results)
-
+        
     # -------------------------------------------------------------------------
     
     def master_file(self):
@@ -894,5 +905,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         
 
 if __name__ == '__main__':
-    directory = 'D:\\2016.04.22.09.47.VO2_0.36mW'
+    from matplotlib.pyplot import imshow
+    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
     d = PowderDiffractionDataset(directory)
+    imshow(d.inelastic_background_evolution())
+    
