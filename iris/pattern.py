@@ -5,7 +5,7 @@ import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
 
 import scipy.optimize as opt
-import wavelet
+from iris.wavelet import baseline
 
 class Pattern(object):
     """
@@ -91,7 +91,7 @@ class Pattern(object):
         elif self.type == 'polycrystalline':
             plot(self.xdata, self.data)
     
-    def inelastic_background(self, xpoints, level = 10):
+    def inelastic_background(self, xpoints, level = 10, max_iter = 200, wavelet = 'db10'):
         """
         Method for inelastic background determination via wavelet decomposition.d
         
@@ -104,6 +104,12 @@ class Pattern(object):
         level : int, optional
             Wavelet decomposition level. A higher level implies a coarser approximation 
             to the baseline.
+        max_iter : int, optional
+            Number of iterations to perform. Default is 200, a good compromise between 
+            speed and goodness-of-fit in most cases.
+        wavelet : PyWavelet.Wavelet object or str, optional
+            Wavelet with which to perform the algorithm. See PyWavelet documentation
+            for available values. Default is 'db10'.
         
         Returns
         -------
@@ -117,17 +123,14 @@ class Pattern(object):
             xpoints = [self.xdata[int(i)] for i in self._background_guesses()]
         background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
         
-        # Remove low frequency exponential trends
-        exp_bg = self._exponential_baseline()
-        
         # Remove background
-        background_values = wavelet.baseline(array = self.data - exp_bg,
-                                             max_iter = 200,
-                                             level = level,
-                                             wavelet = 'db10',
-                                             background_regions = background_indices)
+        background_values = baseline(array = self.data,
+                                     max_iter = max_iter,
+                                     level = level,
+                                     wavelet = wavelet,
+                                     background_regions = background_indices)
         
-        return Pattern([self.xdata, background_values + exp_bg], 'IBG {0}'.format(self.name))
+        return Pattern([self.xdata, background_values], 'IBG {0}'.format(self.name))
         
     def _exponential_baseline(self):
         """
@@ -150,7 +153,7 @@ class Pattern(object):
             This function returns a positive value if the background is less than
             the data, everywhere.
             """
-            return self.ydata - exponential(self.xdata, *params)
+            return self.data - exponential(self.xdata, *params)
         
         def residuals(params):
             """

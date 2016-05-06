@@ -6,8 +6,8 @@ Created on Mon Apr  4 15:18:35 2016
 """
 
 #Core functions
-from dataset import DiffractionDataset, PowderDiffractionDataset, read, cast_to_16_bits
-from progress_widget import InProgressWidget
+from iris.dataset import DiffractionDataset, PowderDiffractionDataset, read, cast_to_16_bits
+from iris.progress_widget import InProgressWidget
 import os
 
 #GUI backends
@@ -361,6 +361,8 @@ class PowderToolsWidget(QtGui.QWidget):
                                                    labels = {'left': 'Intensity (counts)', 'bottom': 'Scattering length (1/A)'})
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
+        self.background_dynamics_viewer = pg.PlotWidget(title = 'Background dynamics',
+                                                        labels = {'left': 'Intensity (counts)', 'bottom': 'Scattering length (1/A)'})
         self.peak_dynamics_region = pg.LinearRegionItem()
         
         # Background curve is an item so that it can be easily added and removed to a plot.
@@ -379,6 +381,10 @@ class PowderToolsWidget(QtGui.QWidget):
         self._connect_signals()
         
     def _init_actions(self):
+        
+        self.toggle_background_dynamics_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Show/hide background dynamics plot', self )
+        self.toggle_background_dynamics_action.setCheckable(True)
+        self.toggle_background_dynamics_action.toggled.connect(self.display_radial_averages)
         
         self.show_inelastic_background_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Show/hide inelastic scattering background', self )
         self.show_inelastic_background_action.setCheckable(True)
@@ -424,12 +430,15 @@ class PowderToolsWidget(QtGui.QWidget):
         self.splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
         self.splitter.addWidget(self.radial_pattern_viewer)
         self.splitter.addWidget(self.peak_dynamics_viewer)
+        self.splitter.addWidget(self.background_dynamics_viewer)
         
         # Menu bar
         self.menubar = QtGui.QMenuBar(parent = self)
         display_menu = self.menubar.addMenu('&Display')
         display_menu.addAction(self.show_inelastic_background_action)
         display_menu.addAction(self.subtract_inelastic_background_action)
+        display_menu.addSeparator()
+        display_menu.addAction(self.toggle_background_dynamics_action)
         
         inelastic_menu = self.menubar.addMenu('&Inelastic Scattering')
         inelastic_menu.addAction(self.toggle_inelastic_background_tools)
@@ -449,6 +458,7 @@ class PowderToolsWidget(QtGui.QWidget):
         self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
         
+        self.background_dynamics_viewer.hide()
         self._hide_peak_dynamics_setup()
     
     def _connect_signals(self):
@@ -497,12 +507,21 @@ class PowderToolsWidget(QtGui.QWidget):
     def subtract_inelastic_background(self):
         return self.subtract_inelastic_background_action.isChecked()
     
+    @property
+    def show_inelastic_background_dynamics(self):
+        return self.toggle_background_dynamics_action.isChecked()
+    
     def update_peak_dynamics_plot(self):
         self.peak_dynamics_viewer.clear()
         
         #Get region
         min_x, max_x = self.peak_dynamics_region.getRegion()
-        time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background)
+        if self.show_inelastic_background_dynamics:
+            time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x, background_dynamics = True)
+        else:
+            time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background, background_dynamics = False)
+        
+        # Plot
         colors = spectrum_colors(len(time))
         self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
@@ -559,7 +578,7 @@ class PowderToolsWidget(QtGui.QWidget):
             self._hide_inelastic_background_setup()
         else:
             self._display_inelastic_background_setup()
-        
+    
     def display_radial_averages(self):
         """ 
         Display the radial averages of a dataset, if available. 
@@ -574,10 +593,19 @@ class PowderToolsWidget(QtGui.QWidget):
         self.peak_dynamics_viewer.clear()
         self.peak_dynamics_viewer.enableAutoRange()
         
+        # Adjust title accordingly
+        if self.show_inelastic_background_dynamics:
+            self.radial_pattern_viewer.getPlotItem().setTitle('Background fits')
+        else:
+            self.radial_pattern_viewer.getPlotItem().setTitle('Radially-averaged patterns')
+        
         # Get the experimental data from the dataset. If any file-related error,
         # abort function by returning None
         try:
-            curves = self.dataset.pattern_series(self.subtract_inelastic_background)
+            if self.show_inelastic_background_dynamics:
+                curves = self.dataset.inelastic_background_series()
+            else:
+                curves = self.dataset.pattern_series(self.subtract_inelastic_background)
         except:     # HDF5 file with radial averages is not found
             return
         
