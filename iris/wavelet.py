@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 25 14:57:31 2016
-
 @author: Laurent P. René de Cotret
 
 References
@@ -33,46 +31,31 @@ def dyadic_upsampling(array):
     Raises
     ------
     ValueError
-        If mode argument is not recognized.
+        If input array is neither 1D nor 2D.
     """
     if array.ndim == 1:
-        return _dyadic_upsampling_1d(array)
+        signal = n.asarray(array)
+        support = n.arange(0, signal.shape[0], dtype = n.int)
+        
+        # Support for interpolated values
+        interpolated_support = n.arange(0, signal.shape[0], step = 1/2)
+        return n.interp(interpolated_support, support, signal)
     
-    # Create array support
-    # These are integer coordinates for the array
-    x_support = n.arange(0, array.shape[0], step = 1)
-    y_support = n.arange(0, array.shape[1], step = 1)
-    interpolator = interpolate.RectBivariateSpline( x = x_support, y = y_support, z = array)
+    elif array.ndim == 2:
+        # Create array support
+        # These are integer coordinates for the array
+        x_support = n.arange(0, array.shape[0], step = 1)
+        y_support = n.arange(0, array.shape[1], step = 1)
+        interpolator = interpolate.RectBivariateSpline( x = x_support, y = y_support, z = array)
+        
+        # Create interpolated support
+        interp_x_support = n.arange(0, array.shape[0], step = 1/2)
+        interp_y_support = n.arange(0, array.shape[1], step = 1/2)
+        
+        return interpolator(x = interp_x_support, y = interp_y_support, grid = True)
     
-    # Create interpolated support
-    interp_x_support = n.arange(0, array.shape[0], step = 1/2)
-    interp_y_support = n.arange(0, array.shape[1], step = 1/2)
-    
-    return interpolator(x = interp_x_support, y = interp_y_support, grid = True)
-
-def _dyadic_upsampling_1d(signal):
-    """
-    Upsamples a signal by a factor of 2 using cubic spline interpolation.
-    
-    Parameters
-    ----------
-    signal : ndarray, ndim 1
-        Array to be upsampled.
-
-    Returns
-    -------
-    out : ndarray, ndim 1
-        Upsampled array
-    """
-    if signal.ndim == 2:
-        return dyadic_upsampling(signal)
-
-    signal = n.asarray(signal)
-    support = n.arange(0, signal.shape[0], dtype = n.int)
-    
-    # Support for interpolated values
-    interpolated_support = n.arange(0, signal.shape[0], step = 1/2)
-    return n.interp(interpolated_support, support, signal)
+    else:
+        raise ValueError('Input array must be 1D or 2D.')
     
 def dyadic_downsampling(array):
     """
@@ -85,7 +68,7 @@ def dyadic_downsampling(array):
     
     Returns
     -------
-    out : ndarray, ndim 1
+    out : ndarray
         Downsampled array
     """
     array = n.asarray(array)
@@ -183,9 +166,9 @@ def approx_rec(array, level, wavelet, array_mask = []):
         return extended_reconstructed
 
 
-def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], mask = None, conv_tol = None):
+def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], mask = None):
     """
-    Iterative method of baseline determination from [1]. This function handles
+    Iterative method of baseline determination modified from [1]. This function handles
     both 1D radial patterns and 2D single-crystal diffraction images.
     
     Parameters
@@ -211,41 +194,45 @@ def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], 
         ``array.ndim == 2``
           background_regions is a list of tuples of ints (indices) or tuples of slices
           E.g. >>> background_regions = [(14, 19), (42, 99), (slice(59, 82), slice(81,23))]
+         
+         Default is empty list.
     
-    mask : ndarray, dtype bool
+    mask : ndarray, dtype bool, optional
         Mask array that evaluates to True for pixels that are valid. Only available
         for 2D arrays (i.e. images). Useful to determine which pixels are masked
         by a beam block.
-    conv_tol : float or None, optional
-        Convergence tolerance. If the sum square difference of the background
-        between two steps is smaller than this tolerance, the algorithm stops.
-        If None (default), convergence is never checked. The algorithm will stop
-        after the maximum number of iterations.
     
     Returns
     -------
     baseline : ndarray
         Baseline of the input array.
+    
+    Raises
+    ------
+    NotImplemented
+        If a 2D array is provided with a non-trivial mask.
+    
+    Notes
+    -----
+    While the algorithm presented in [1] modifies the input signal to never be over
+    the background, this function does the opposite: the background is forced to
+    not exceed the input. This yields identical results to [1].
     """
     if (array.ndim == 2) and (mask is not None):
         raise NotImplemented
     
     # In case a mask is not provided, all data points are valid
-    if mask is None:
+    # Masks are also not available for 1D signals
+    if (mask is None) or array.ndim == 1:
         mask = n.ones_like(array, dtype = n.bool)
 
     # Initial starting point
-    previous_background = n.zeros_like(array, dtype = array.dtype)
     background = n.array(array)
     
     for i in range(max_iter):
         
+        # TODO: check convergence after each iteration?
         background = approx_rec(array = background, level = level, wavelet = wavelet)
-        
-        # Check convergence
-        if conv_tol is not None:
-            if n.sum(n.abs(previous_background - background)**2) < conv_tol:
-                break
         
         # Modify the background so it cannot be more than the signal itself
         # Set the background to be equal to the signal in the places where it
@@ -255,21 +242,29 @@ def baseline(array, max_iter, level, wavelet = 'db10', background_regions = [], 
         
         # Make sure the background values are equal to the signal values in the
         # background regions
+        # This reduces the influence of the array peaks from the baseline
         for index in background_regions:
             background[index] = array[index]
-        
-        # Save computation to check for convergence
-        previous_background = n.array(background)
     
     # The background should be identically 0 where the data points are invalid
     # A boolean ndarray is 0 where False, and 1 where True
-    # Therefore, simple multiplication results in what we want
+    # Therefore, simple multiplication does what we want
     return background*mask
+    
+    
+def denoise(array, level, wavelet = 'db20'):
+    """
+    Denoise an array using the wavelet transform.
+    """
+    #TODO: this
+    pass
 
     
 if __name__ == '__main__':
-    from PIL import Image
-    from uediff import diffshow
-    test_image = n.array(Image.open('graphite_test.tif'))
-    bg = baseline(array = test_image, max_iter = 1, level = 8, wavelet = 'db10')
-    diffshow(bg)
+    from iris import dataset
+    import matplotlib.pyplot as plt
+    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
+    d = dataset.PowderDiffractionDataset(directory)
+    p = d.pattern(0.0)
+    bg = baseline(p.data, max_iter = 200, level = 10)
+    plt.plot(p.data, 'b', bg, 'r')

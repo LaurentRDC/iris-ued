@@ -543,7 +543,7 @@ class PowderToolsWidget(QtGui.QWidget):
         """
         if set_curve:
             try:
-                background_curve = self.dataset.inelastic_background(time = 0.0)
+                background_curve = self.dataset.inelastic_background()
             except KeyError:  #Background curve hasn't been determined
                 background_curve = None
         else:
@@ -635,8 +635,8 @@ class PowderToolsWidget(QtGui.QWidget):
             return
 
         # Distribute lines according the guesses of where the background is
-        # for the pattern at time 0
-        guessed_background_regions = self.dataset.pattern(time = 0.0)._background_guesses(data_values = True)
+        # for the pattern at the earliest time
+        guessed_background_regions = self.dataset.pattern()._background_guesses(data_values = True)
         self.inelastic_background_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(len(guessed_background_regions))]
         
         for line, pos in zip(self.inelastic_background_lines, guessed_background_regions):
