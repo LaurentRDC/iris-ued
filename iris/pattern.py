@@ -7,6 +7,20 @@ from scipy.signal import find_peaks_cwt, ricker
 import scipy.optimize as opt
 from iris.wavelet import baseline
 
+
+def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, floor):
+    """
+    Returns a biexponential function evaluated over an array.
+    
+    Notes
+    -----
+    In case of fitting, there are 7 free parameters, and thus at least 7 points
+    must be provided.
+    """
+    exp1 = amplitude1*n.exp(-decay1*(x - offset2))
+    exp2 = amplitude2*n.exp(-decay2*(x - offset1))
+    return exp1 + exp2 + floor
+
 class Pattern(object):
     """
     This class represents both polycrystalline 1D patterns and 
@@ -91,16 +105,17 @@ class Pattern(object):
         elif self.type == 'polycrystalline':
             plot(self.xdata, self.data)
     
-    def inelastic_background(self, xpoints, level = 10, max_iter = 200, wavelet = 'db10'):
+    def inelastic_background(self, background_regions, level = 10, max_iter = 200, wavelet = 'db10'):
         """
         Method for inelastic background determination via wavelet decomposition.d
         
         Parameters
         ---------
-        xpoints : list or None
+        background_regions : list or None
             List of x-values at which the curve is entirely background. If None, 
             these points will be automatically determined using the continuous 
-            wavelet transform.
+            wavelet transform. If no background regions are to be specified, input empty
+            list.
         level : int, optional
             Wavelet decomposition level. A higher level implies a coarser approximation 
             to the baseline.
@@ -119,9 +134,10 @@ class Pattern(object):
         if self.type == 'single crystal':
             raise NotImplemented
         
-        if xpoints is None:          # Find x-values between peaks
-            xpoints = [self.xdata[int(i)] for i in self._background_guesses()]
-        background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in xpoints]
+        if background_regions is None:          # Guess indices of xdata corresponding to background
+            background_indices = self._background_guesses(data_values = False)
+        else:
+            background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in background_regions]
         
         # Remove background
         background_values = baseline(array = self.data,
@@ -132,47 +148,51 @@ class Pattern(object):
         
         return Pattern([self.xdata, background_values], 'IBG {0}'.format(self.name))
         
-    def _exponential_baseline(self):
+    def inelastic_background_legacy(self, xpoints):
         """
-        Fits an exponential decay to the curve, in order to remove low frequency baseline.
+        Legacy inelastic scattering background fit.
         
-        Returns
-        -------
-        baseline : ndarray
-            Same shape as ydata
+        Parameters
+        ----------
+        points : array-like, optional
+            x-values of the points to fit to.
         """
-        # Only fit to the first and last data point, for speed.
-        # What really matters here is that the fit is below the signal
-        xpoints = n.array([self.xdata[0], self.xdata[-1]])
-        
-        def exponential(x, amplitude, decay):
-            return amplitude*n.exp(decay*x)
+        # Preliminaries
+        xpoints = n.array(xpoints, dtype = n.float)
         
         def positivity_constraint(params):
             """
             This function returns a positive value if the background is less than
             the data, everywhere.
             """
-            return self.data - exponential(self.xdata, *params)
+            return self.data - biexponential(self.xdata, *params)
         
         def residuals(params):
             """
             This function is 0 if the background passes through all required xpoints
             """
-            background = exponential(xpoints, *params)
+            background = biexponential(xpoints, *params)
             ypoints = n.interp(xpoints, self.xdata, self.data)     # interpolation of the data at the background xpoints
             return n.sum( (ypoints - background) ** 2 )
             
         constraints = {'type' : 'ineq', 'fun' : positivity_constraint}
         
-        #Create initial guesses and fit
-        guesses = (self.data[0], -1)
-        results = opt.minimize(residuals, x0 = guesses, constraints = constraints, method = 'SLSQP', options = {'disp' : False, 'maxiter' : 1000})
+        #Create initial guesses
+        # amp1, amp2, decay1, decay2, offset1, offset2, floor
+        guesses = (75, 52, 7, 2,0,0,self.data.min())
+        
+        # Bounds detemined by logic and empiricism
+        bounds = [(0, 1e3*self.data.max()), (0, 1e3*self.data.max()), (-100, 100),(-100, 100), (-1e4, 1e4), (-1e4, 1e4), (-1e4, 1e4)]
+        
+        # method = 'SLSQP', 
+        results = opt.minimize(residuals, x0 = guesses, bounds = bounds, constraints = constraints, method = 'SLSQP', options = {'disp' : True, 'maxiter' : 1000})
         
         # Create inelastic background function 
-        amp, dec = results.x
-        return exponential(self.xdata, amp, dec)
-                            
+        amp1, amp2, dec1, dec2, off1, off2, floor = results.x
+        new_fit = biexponential(self.xdata, amp1, amp2, dec1, dec2, off1, off2, floor)
+        return Pattern([self.xdata, new_fit], 'IBG {0}'.format(self.name))
+
+        
     def _background_guesses(self, data_values = False):
         """
         Finds the indices associated with local minima between peaks in ydata

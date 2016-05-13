@@ -336,20 +336,23 @@ class DiffractionDataset(object):
             
         return n.array(list(map(float, self.time_points))), n.array(images)
     
-    def pattern(self, time):
+    def pattern(self, time = None):
         """
         Returns the radially-averaged pattern.
         
         Parameters
         ----------
-        time : str, numerical
-            Time delay value of the image.
+        time : str, numerical, or None, optional
+            Time delay value of the image. If None, the earliest measured pattern
+            is returned
         
         Notes
         -----
         This function depends on the existence of an HDF5 file containing radial
         averages.
         """
+        if time is None:
+            time = self.time_points[0]
         
         time = str(float(time))
         file = self.master_file()
@@ -387,7 +390,7 @@ class DiffractionDataset(object):
                 out.append(self.pattern(time))
         return out
     
-    def inelastic_background(self, time = 0.0):
+    def inelastic_background(self, time = None):
         """
         Returns the inelastic scattering background of the radially-averaged pattern.
         
@@ -397,14 +400,17 @@ class DiffractionDataset(object):
         
         Parameters
         ----------
-        time : str, numerical, optional
-            Time delay value of the image.
+        time : str, numerical, or None. optional
+            Time delay value of the image. If None (default), the earlier background
+            is returned.
         
         Notes
         -----
         This function depends on the existence of an HDF5 file containing radial
         averages.
         """
+        if time is None:
+            time = self.time_points[0]
         
         time = str(float(time))
         file = self.master_file()
