@@ -17,6 +17,9 @@ from iris.pattern import Pattern
 import os.path
 from tifffile import imread, imsave
 
+HOT_PIXEL_THRESHOLD = 25000
+HOT_PIXEL_VALUE = 0
+
 class cached_property(object):
     """
     Decorator that minimizes computations of class attributes by caching
@@ -122,7 +125,13 @@ def read(filename):
     out : ndarray, dtype numpy.float
         Numpy array from the image.
     """
-    return imread(filename).astype(n.float)
+    image = imread(filename).astype(n.float)
+    
+    # Deal with saturated pixels
+    image[image < 0] = 0
+    image[image > HOT_PIXEL_THRESHOLD] = HOT_PIXEL_VALUE
+    
+    return image
     
 def save(array, filename):
     """ 
@@ -451,13 +460,14 @@ class DiffractionDataset(object):
         positions : list of floats or None
             x-data positions of where radial averages should be fit to. If None, 
             the positions will be automatically determined.
-        level : int
+        level : int, deprecated
             Wavelet decomposition level. A higher level implies a coarser approximation 
-            to the baseline.
+            to the baseline. This parameter is not taken into account anymore, as the
+            maximal decomposition level possible is used.
         """
         backgrounds = list()
         for time in self.time_points:
-            backgrounds.append( (time, self.pattern(time).inelastic_background(positions, level)) )
+            backgrounds.append( (time, self.pattern(time).baseline(background_regions = positions, level = None)) )
             
         self._export_background_results(backgrounds)
     
