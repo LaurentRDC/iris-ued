@@ -14,6 +14,7 @@ import os
 import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 import numpy as n
+import matplotlib.pyplot as plt
 
 image_folder = os.path.join(os.path.dirname(__file__), 'images')
 
@@ -94,6 +95,7 @@ class WorkThread(QtCore.QThread):
         self.result = self.function(*self.args, **self.kwargs)  # Computation is here      
         self.done_signal.emit(True)        
         self.results_signal.emit(self.result)
+
 
 class ImageViewer(pg.ImageView):
     """
@@ -705,8 +707,7 @@ class Iris(QtGui.QMainWindow):
     dataset : DiffractionDataset
         Dataset object
     """
-    dataset_to_plot = QtCore.pyqtSignal(object, name = 'dataset_to_plot')
-    
+        
     def __init__(self):
         
         super(Iris, self).__init__()
@@ -744,6 +745,9 @@ class Iris(QtGui.QMainWindow):
         sc_menu = self.menubar.addMenu('&Single-crystal tools')
         sc_menu.addAction(self.toggle_sc_viewer)
         
+        diagnostic_menu = self.menubar.addMenu('&Diagnostic tools')
+        diagnostic_menu.addAction(self.pumpoff_intensity_stability)
+        
         #Taskbar icon
         self.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
         
@@ -751,8 +755,8 @@ class Iris(QtGui.QMainWindow):
         self.splitter.addWidget(self.sc_viewer)
         self.splitter.addWidget(self.image_viewer)
         self.splitter.addWidget(self.plot_viewer)
-        self.layout = QtGui.QGridLayout()
-        self.layout.addWidget(self.splitter, 0, 0)
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addWidget(self.splitter)
         
         # Hide accessory viewers on start-up
         self.sc_viewer.hide()
@@ -799,6 +803,10 @@ class Iris(QtGui.QMainWindow):
         self.toggle_sc_viewer.setCheckable(True)
         self.toggle_sc_viewer.toggled.connect(self.image_viewer.toggle_peak_dynamics_region)
         self.toggle_sc_viewer.toggled.connect(self.show_sc_viewer)
+        
+        # Diagnostics
+        self.pumpoff_intensity_stability = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '& Plot pumpoff pictures integrated intensity', self)
+        self.pumpoff_intensity_stability.triggered.connect(self.compute_pumpoff_stability)
 
     def _connect_signals(self):
         # Nothing to see here yet
@@ -815,7 +823,7 @@ class Iris(QtGui.QMainWindow):
         
         directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
         directory = os.path.abspath(directory)
-        self.dataset = PowderDiffractionDataset(directory)        
+        self.dataset = PowderDiffractionDataset(directory)
         self.image_viewer.display_data()
         
         # Plot radial averages if they exist. If error, no plot. This is handled
@@ -853,6 +861,8 @@ class Iris(QtGui.QMainWindow):
         else:
             self.sc_viewer.hide()
     
+    
+    
     # Computations ------------------------------------------------------------
     
     def compute_radial_average(self):
@@ -860,14 +870,25 @@ class Iris(QtGui.QMainWindow):
             self.plot_viewer.show()
             
             #Thread the computation
-            self.worker = WorkThread(self.dataset.radial_average_series, self.image_viewer.center_position, self.image_viewer.mask_position)
+            center, mask = self.image_viewer.center_position, self.image_viewer.mask_position
+            self.worker = WorkThread(self.dataset.radial_average_series, center, mask)
             self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
             self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
             self.worker.done_signal.connect(self.plot_viewer.display_radial_averages)
             self.worker.start()
             # Only hide the tools after computation has started
             self.toggle_radav_tools.setChecked(False)
-            
+    
+    def compute_pumpoff_stability(self):
+        if self.dataset is not None:
+            self.worker = WorkThread(self.dataset._pumpoff_intensity_stability)
+            self.worker.results_signal.connect(self.plot_pumpoff_stability)
+            self.worker.start()
+    
+    @QtCore.pyqtSlot(object)
+    def plot_pumpoff_stability(self, array):
+        pass
+    
     # Misc --------------------------------------------------------------------
             
     def center_window(self):

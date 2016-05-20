@@ -6,6 +6,7 @@ from scipy.signal import find_peaks_cwt, ricker
 
 import scipy.optimize as opt
 from iris.wavelet import baseline
+from warnings import warn
 
 
 def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, floor):
@@ -41,7 +42,7 @@ class Pattern(object):
     Special Methods
     ---------------
     This object overloads the following special methods:
-    [__add__, __sub__, __copy__]
+    [__add__ (+), __sub__ (-), __truediv__ (/), __copy__]
     
     Methods
     -------
@@ -76,8 +77,6 @@ class Pattern(object):
             return 'polycrystalline'
         elif self.data.ndim == 2:
             return 'single crystal'
-        else:
-            raise TypeError
     
     def __sub__(self, pattern):
         if self.type == 'polycrystalline':
@@ -90,6 +89,12 @@ class Pattern(object):
             return Pattern([self.xdata, self.data + n.interp(self.xdata, pattern.xdata, pattern.data)], name = self.name)
         elif self.type == 'single crystal':
             return Pattern(data = self.data + pattern.data, name = self.name)
+    
+    def __truediv__(self, divisor):
+        if self.type == 'polycrystalline':
+            return Pattern(data = [self.xdata, self.data/divisor], name = self.name)
+        elif self.type == 'single crystal':
+            return Pattern(data = self.data/divisor, name = self.name)
     
     def __copy__(self):
         if self.type == 'polycrystalline':
@@ -105,7 +110,14 @@ class Pattern(object):
         elif self.type == 'polycrystalline':
             plot(self.xdata, self.data)
     
-    def inelastic_background(self, background_regions, level = 10, max_iter = 200, wavelet = 'db10'):
+    def inelastic_background(self, *args, **kwargs):
+        """
+        Deprecated version of Pattern.baseline. Provided for backwards-compatibility only.
+        """
+        warn('Deprecated method. See Pattern.baseline instead.', DeprecationWarning, stacklevel = 2)
+        return self.baseline(*args, **kwargs)
+    
+    def baseline(self, background_regions, level = None, max_iter = 1000, wavelet = 'sym6'):
         """
         Method for inelastic background determination via wavelet decomposition.d
         
@@ -116,9 +128,10 @@ class Pattern(object):
             these points will be automatically determined using the continuous 
             wavelet transform. If no background regions are to be specified, input empty
             list.
-        level : int, optional
+        level : int or None, optional
             Wavelet decomposition level. A higher level implies a coarser approximation 
-            to the baseline.
+            to the baseline. If None (default), level is automatically set to the maximum
+            possible.
         max_iter : int, optional
             Number of iterations to perform. Default is 200, a good compromise between 
             speed and goodness-of-fit in most cases.
@@ -128,11 +141,16 @@ class Pattern(object):
         
         Returns
         -------
-        background : Curve object
+        background : Pattern object
             Background curve.
+        
+        See also
+        --------
+        iris.wavelet.baseline
+            Lower-level function for baseline determination from digital signals.
         """
         if self.type == 'single crystal':
-            raise NotImplemented
+            raise NotImplementedError
         
         if background_regions is None:          # Guess indices of xdata corresponding to background
             background_indices = self._background_guesses(data_values = False)
