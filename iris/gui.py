@@ -887,7 +887,11 @@ class Iris(QtGui.QMainWindow):
     
     @QtCore.pyqtSlot(object)
     def plot_pumpoff_stability(self, array):
-        pass
+        plt.figure()
+        plt.plot(array)
+        plt.xlabel('Scan number')
+        plt.ylabel('Integrated intensity (a. u.)')
+        plt.title('Normalized intensity of the pumpoff pictures for every scan.')
     
     # Misc --------------------------------------------------------------------
             
