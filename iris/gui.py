@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr  4 15:18:35 2016
-
-@author: Laurent
+@author: Laurent P. René de Cotret
 """
 
 #Core functions
@@ -41,6 +39,41 @@ def spectrum_colors(num_colors):
     for h in reversed(hue_values):
         colors.append(pg.hsvColor(hue = h, sat = 0.7, val = 0.9))
     return colors
+
+def toggle_appearance(parent_frame, items, show, inverted_behavior = False):
+    """
+    Convenience function for showing/hiding items from a parent frame.
+    
+    Parameters
+    ----------
+    parent_frame : PyQtGraph QGraphicsWidget
+        Can be any object implementing the addItem and removeItem methods.
+    Items : QGraphicsItem or list of QGraphicsItem
+        Items to be hidden/shown
+    show : bool
+        If True, items are displayed on the parent frame. If False, items are hidden
+        from the parent frame.
+    inverted_behavior : bool, optional
+        If True, the behavior of the 'show' argument is reversed.
+    Raises
+    ------
+    ValueError
+        If show argument is does not have a Boolean cast.
+    """
+    if inverted_behavior:
+        show = not show
+    
+    # If there is only a single item, make it into a (1,) list
+    if not isinstance(items, (list, tuple)):
+        items = [items]
+    
+    # Show / hide
+    if show:
+        [parent_frame.addItem(item) for item in items]
+    elif not show:
+        [parent_frame.removeItem(item) for item in items]
+    else:
+        raise ValueError("'show' argument must be boolean, not {}.".format(show))
 
 class WorkThread(QtCore.QThread):
     """
@@ -219,6 +252,7 @@ class ImageViewer(pg.ImageView):
         """            
         if image is not None:
             self.setImage(image)
+            
         elif isinstance(self.dataset, DiffractionDataset):
             # Create a thread to compute the image series array
             # This prevents the GUI from freezing.
@@ -236,26 +270,38 @@ class ImageViewer(pg.ImageView):
     
     @QtCore.pyqtSlot(object)
     def _display_image_series(self, results):
-        """ Display a dataset.DiffractionDataset image series as a 3D array """
+        """ 
+        Display a dataset.DiffractionDataset image series as a 3D array
+        
+        Parameters
+        ----------
+        results : 2-tuple of (N,) lists
+            Tuple of time-points and image arrays
+        """
         self.time_points, self.data = results
         self.setImage(self.data, xvals = self.time_points, axes = {'t':0, 'x':1, 'y':2})
     
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics_region(self, show):
-        if show:
-            self.addItem(self.peak_dynamics_region)
-        else:
-            self.removeItem(self.peak_dynamics_region)
+        """
+        Parameters
+        ----------
+        show : bool
+            If True, peak dynamics region will be shown.
+        """
+        return toggle_appearance(parent_frame = self, items = self.peak_dynamics_region, show = show)
         
     @QtCore.pyqtSlot(bool)
     def toggle_radav_tools(self, show):
-        """ Hides the radial-averaging tools if currently displayed, and vice-versa. """
-        if show:
-            self.addItem(self.mask)
-            self.addItem(self.center_finder)
-        else:
-            self.removeItem(self.mask)
-            self.removeItem(self.center_finder)
+        """ 
+        Hides the radial-averaging tools if currently displayed, and vice-versa.
+        
+        Parameters
+        ----------
+        show : bool
+            If True
+        """
+        return toggle_appearance(parent_frame = self, items = [self.mask, self.center_finder], show = show)
 
 
 class SingleCrystalToolsWidget(QtGui.QWidget):
@@ -461,7 +507,6 @@ class PowderToolsWidget(QtGui.QWidget):
         self.setLayout(self.layout)
         
         self.background_dynamics_viewer.hide()
-        self._hide_peak_dynamics_setup()
     
     def _connect_signals(self):
         # Changing peak dynamics in real-time is too slow for now
@@ -563,22 +608,18 @@ class PowderToolsWidget(QtGui.QWidget):
     
     @QtCore.pyqtSlot(bool)
     def untoggle_peak_dynamics_setup(self, show):
-        if not show:
-            self._display_peak_dynamics_setup()
-        else:
-            self._hide_peak_dynamics_setup()
+            toggle_appearance(parent_frame = self.radial_pattern_viewer, items = [self.peak_dynamics_region], show = show, inverted_behavior = True)
             
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics_setup(self, show):
-        if show:
-            self._display_peak_dynamics_setup()
-        else:
-            self._hide_peak_dynamics_setup()
+            toggle_appearance(parent_frame = self.radial_pattern_viewer, items = [self.peak_dynamics_region], show = show, inverted_behavior = False)
     
     def toggle_inelastic_background_setup(self):
         if self.inelastic_lines_shown:
-            self._hide_inelastic_background_setup()
+            toggle_appearance(parent_frame = self, items = self.inelastic_background_lines, show = False)
         else:
+            # Displaying the inelastic background lines require something more
+            # complicated than toggle_appearance
             self._display_inelastic_background_setup()
     
     def display_radial_averages(self):
@@ -644,15 +685,6 @@ class PowderToolsWidget(QtGui.QWidget):
         for line, pos in zip(self.inelastic_background_lines, guessed_background_regions):
             line.setValue(pos)
             self.radial_pattern_viewer.addItem(line)
-        
-    def _hide_peak_dynamics_setup(self):
-        """ Hide the peaks dynamics region on radial pattern plot """
-        self.radial_pattern_viewer.removeItem(self.peak_dynamics_region)
-    
-    def _hide_inelastic_background_setup(self):
-        """ Remove background region lines """
-        for line in self.inelastic_background_lines:
-            self.radial_pattern_viewer.removeItem(line)
             
     def compute_inelastic_background(self, mode = None):
         """

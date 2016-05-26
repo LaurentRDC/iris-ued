@@ -111,7 +111,7 @@ def cast_to_16_bits(array):
     array[ array > (2**16) - 1] = (2**16) - 1
     return n.around(array, decimals = 0).astype(n.int16)
     
-def read(filename):
+def read(filename, return_mask = False):
     """ 
     Returns a ndarray from an image filename. 
     
@@ -119,19 +119,31 @@ def read(filename):
     ----------
     filename : str
         Absolute path to the file.
+    return_mask : bool, optional
+        If True, returns a mask the same size as image that evaluates to False
+        on pixels that are invalid due to being above a certain threshold 
+        (hot pixels). Default is False.
     
     Returns
     -------
     out : ndarray, dtype numpy.float
         Numpy array from the image.
+    mask : ndarray, dtype numpy.bool
+        Numpy array of the valid pixels. Only returned if return_mask is True
     """
     image = imread(filename).astype(n.float)
+    image[image < 0] = 0
     
     # Deal with saturated pixels
-    image[image < 0] = 0
-    image[image > HOT_PIXEL_THRESHOLD] = HOT_PIXEL_VALUE
-    
-    return image
+    mask = image < HOT_PIXEL_THRESHOLD   # Mask evaluated to False on hot pixels
+    if not return_mask:
+        # Set hot pixels to HOT_PIXEL_VALUE
+        image[n.logical_not(mask)] = HOT_PIXEL_VALUE
+        return image
+    elif return_mask:
+        return image, mask
+    else:
+        raise ValueError("'return_mask' parameter must be bool, not {}.".format(return_mask))
     
 def save(array, filename):
     """ 
@@ -152,7 +164,7 @@ def save(array, filename):
     array = cast_to_16_bits(array)
     imsave(filename, array)
 
-def radial_average(image, center, mask_rect):
+def radial_average(image, center, beamblock_rect, mask = None):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -164,18 +176,33 @@ def radial_average(image, center, mask_rect):
         [x,y] coordinates of the center (in pixels)
     name : str
         String identifier for the output RadialCurve
-    mask_rect : Tuple, shape (4,)
+    beamblock_rect : Tuple, shape (4,)
         Tuple containing x- and y-bounds (in pixels) for the beamblock mask
         mast_rect = (x1, x2, y1, y2)
+    mask : ndarray or None, optional
+        Array of booleans that evaluates to False on pixels that should be discarded.
+        If None (default), all pixels are treated as valid (except for beamblock)
         
     Returns
     -------
     radius, intensity : ndarray, shape (N,)
+    
+    Raises
+    ------
+    ValueError
+        If 'mask' is an array of a different shape than the image shape.
     """
     
     #preliminaries
+    if mask is None:
+        mask = n.ones_like(image, dtype = n.bool)
+    elif mask.shape != image.shape:
+        raise ValueError("'mask' array (shape {}) must have the same shape as 'image' (shape {})".format(mask.shape, image.shape))
+    
     image = image.astype(n.float)
+    mask = mask.astype(n.bool)
     xc, yc = center     #Center coordinates
+    x1, x2, y1, y2 = beamblock_rect     
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
@@ -184,30 +211,32 @@ def radial_average(image, center, mask_rect):
     #radii beyond r_max don't fit a full circle within the image
     image_edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
     r_max = image_edge_values.min()           #Maximal radius that fits completely in the image
+    
+    # Find the smallest circle that completely fits inside the mask rectangle
+    r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
 
     # Replace all values in the image corresponding to beamblock or other irrelevant
     # data by 0: this way, it will never count in any calculation because image
     # values are used as weights in numpy.bincount
-    image[R > r_max] = 0
-    x1, x2, y1, y2 = mask_rect
-    image[x1:x2, y1:y2] = 0
-    
-    # Find the smallest circle that completely fits inside the mask rectangle
-    r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
+    # Create a composite mask that uses the pixels mask, beamblock mask, and maximum/minimum
+    # radii     
+    composite_mask = n.array(mask, dtype = n.bool)      # start from the pixel mask
+    composite_mask[R > r_max] = False
+    composite_mask[R < r_min] = False
+    composite_mask[x1:x2, y1:y2] = False
+    image[ n.logical_not(composite_mask) ] = 0    # composite_mask is false where pixels should be disregarded
     
     #Radial average
     px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
     r_bin = n.bincount(R.ravel().astype(n.int))  
     radial_intensity = px_bin/r_bin
     
-    # Only return values with radius below r_max
-    radius = n.unique(R.ravel().astype(n.int))
+    # Only return values with radius between r_min and r_max
+    radius = n.unique(R.ravel().astype(n.int))      # Round up to integer number of pixel
     r_max_index = n.argmin(n.abs(r_max - radius))
     r_min_index = n.argmin(n.abs(r_min - radius))
     
     return (radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index])
-
-
 
 
 class DiffractionDataset(object):
