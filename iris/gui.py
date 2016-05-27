@@ -2,6 +2,8 @@
 """
 @author: Laurent P. René de Cotret
 """
+#Debugger
+import pdb
 
 #Core functions
 from iris.dataset import DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
@@ -15,6 +17,7 @@ import numpy as n
 import matplotlib.pyplot as plt
 
 image_folder = os.path.join(os.path.dirname(__file__), 'images')
+config_path = os.path.join(os.path.dirname(__file__), 'config.txt')
 
 def spectrum_colors(num_colors):
     """
@@ -168,6 +171,7 @@ class ImageViewer(pg.ImageView):
         # Radial-averaging tools
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
+        self._read_radav_tool_params()        
         
         # Single crystal peak dynamics tool
         self.peak_dynamics_region = pg.CircleROI(pos = [800,800], size = [200,200], pen = pg.mkPen('b'))
@@ -234,7 +238,58 @@ class ImageViewer(pg.ImageView):
         radius = self.center_finder.size().x()/2.0
         #Flip output since image viewer plots transpose...
         return corner_y + radius, corner_x + radius
+        
+    @property
+    def center_finder_radius(self):
+        if not self.center_finder_shown: return None
+        
+        radius = self.center_finder.size().x()/2.0
+        return radius
     
+    def _read_radav_tool_params(self):
+        """
+        Reads the config file to determine the default positions for the center
+        finder and mask.
+        
+        Parameters
+        ----------
+        key : str
+            Name of the parameter
+        """
+        
+        with open(config_path, 'r') as config_file:
+            for line in config_file:
+                if line.startswith('MASK_POSITION'):
+                    mask_params = eval(line.split('=')[-1])
+                    mask_pos = [mask_params[2],mask_params[0]]
+                    mask_size = [mask_params[3]-mask_params[2],mask_params[1]-mask_params[0]]
+                elif line.startswith('CENTER_FINDER_POSITION'):    
+                    center_finder_pos = eval(line.split('=')[-1])              
+                elif line.startswith('CENTER_FINDER_RADIUS'):   
+                    center_finder_radius = float(line.split('=')[-1])
+            
+        self.mask.setPos(mask_pos)
+        self.mask.setSize(mask_size)
+        self.center_finder.setPos([center_finder_pos[1]-center_finder_radius,center_finder_pos[0]-center_finder_radius])
+        self.center_finder.setSize(center_finder_radius*2.0)
+
+        
+    
+    def _write_radav_tool_params(self):
+        """
+        Writes the default positions for the center finder and mask.
+        
+        Parameters
+        ----------
+        key : str
+            Name of the parameter
+        """
+        with open(config_path, 'w') as config_file:
+            config_file.write('MASK_POSITION = '+str(self.mask_position)+'\n')
+            config_file.write('CENTER_FINDER_POSITION = '+str((self.center_position[0],self.center_position[1]))+'\n')
+            config_file.write('CENTER_FINDER_RADIUS = '+str(self.center_finder_radius)+'\n')
+    
+        
     # Methods -----------------------------------------------------------------
     
     @QtCore.pyqtSlot(object)
@@ -461,6 +516,13 @@ class PowderToolsWidget(QtGui.QWidget):
     
     def _init_ui(self):
         
+        # Wavelet decomposition level combo box
+        self.wavelet_level_label = QtGui.QLabel('Wavelet decomposition level: ', parent = self)
+        self.wavelet_dec_level_box = QtGui.QComboBox(parent = self)
+        for integer in range(0, 15):
+            self.wavelet_dec_level_box.addItem(str(integer))
+        self.wavelet_dec_level_box.setCurrentIndex(self.wavelet_dec_level_box.findText('10'))
+        
         # Hide progress widgets
         self.progress_widget_radial_patterns.hide()
         
@@ -490,8 +552,12 @@ class PowderToolsWidget(QtGui.QWidget):
         export_menu.addAction(self.export_to_matlab)
         
         # Final layout
+        wavelet = QtGui.QHBoxLayout()
+        wavelet.addWidget(self.wavelet_level_label)
+        wavelet.addWidget(self.wavelet_dec_level_box)
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.menubar)
+        self.layout.addLayout(wavelet)
         self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
         
@@ -519,6 +585,10 @@ class PowderToolsWidget(QtGui.QWidget):
     @property
     def dataset(self):
         return self.parent.dataset
+    
+    @property
+    def wavelet_decomposition_level(self):
+        return int(self.wavelet_dec_level_box.currentText())
         
     @property
     def peak_dynamics_region_shown(self):
@@ -601,7 +671,7 @@ class PowderToolsWidget(QtGui.QWidget):
     
     def toggle_inelastic_background_setup(self):
         if self.inelastic_lines_shown:
-            toggle_appearance(parent_frame = self.radial_pattern_viewer, items = self.inelastic_background_lines, show = False)
+            toggle_appearance(parent_frame = self, items = self.inelastic_background_lines, show = False)
         else:
             # Displaying the inelastic background lines require something more
             # complicated than toggle_appearance
@@ -683,11 +753,13 @@ class PowderToolsWidget(QtGui.QWidget):
         
         #Thread the computation
         if mode == 'auto':
-            self.worker = WorkThread(self.dataset.inelastic_background_fit, None,None)
+            self.worker = WorkThread(self.dataset.inelastic_background_fit,
+                                     None,
+                                     self.wavelet_decomposition_level)
         else:
             self.worker = WorkThread(self.dataset.inelastic_background_fit,
                                      self.inelastic_background_lines_positions,
-                                     None)
+                                     self.wavelet_decomposition_level)
             
         self.worker.in_progress_signal.connect(self.progress_widget_radial_patterns.show)
         self.worker.done_signal.connect(self.progress_widget_radial_patterns.hide)
@@ -882,10 +954,13 @@ class Iris(QtGui.QMainWindow):
     
     def compute_radial_average(self):
         if self.dataset is not None:
-            self.plot_viewer.show()
+            self.plot_viewer.show() 
+            
+            #Save the mask and center parameters
+            center, mask = self.image_viewer.center_position, self.image_viewer.mask_position      
+            self.image_viewer._write_radav_tool_params()
             
             #Thread the computation
-            center, mask = self.image_viewer.center_position, self.image_viewer.mask_position
             self.worker = WorkThread(self.dataset.radial_average_series, center, mask)
             self.worker.in_progress_signal.connect(self.plot_viewer.progress_widget_radial_patterns.show)
             self.worker.done_signal.connect(self.plot_viewer.progress_widget_radial_patterns.hide)
