@@ -4,7 +4,7 @@
 """
 
 #Core functions
-from iris.dataset import DiffractionDataset, PowderDiffractionDataset, read, cast_to_16_bits
+from iris.dataset import DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
 from iris.progress_widget import InProgressWidget
 import os
 
@@ -874,8 +874,8 @@ class Iris(QtGui.QMainWindow):
         """ Open a file dialog to select an image to view """
         filename = self.file_dialog.getOpenFileName(self, 'Open diffraction picture', 'C:\\')
         filename = os.path.abspath(filename)
-        self.toggle_plot_viewer.setChecked(False)
-        self.image_viewer.display_data(image = cast_to_16_bits(read(filename)))
+        self.dataset = SinglePictureDataset(filename)
+        self.image_viewer.display_data()
     
     # Display/show slots  -----------------------------------------------------
     
