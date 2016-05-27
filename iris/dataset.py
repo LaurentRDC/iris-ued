@@ -16,7 +16,7 @@ import shutil
 #Batch processing libraries
 from iris.pattern import Pattern
 import os.path
-from tifffile import imread, imsave
+from .tifffile import imread, imsave
 
 HOT_PIXEL_THRESHOLD = 25000
 HOT_PIXEL_VALUE = 0
