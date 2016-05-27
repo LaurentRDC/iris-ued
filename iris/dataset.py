@@ -11,6 +11,7 @@ parameters, etc.
 
 import numpy as n
 from h5py import File
+import shutil
 
 #Batch processing libraries
 from iris.pattern import Pattern
@@ -648,7 +649,7 @@ class DiffractionDataset(object):
         if opened_file is None:
             close_on_return = True
             opened_file = self.master_file()
-
+        
         opened_file.attrs['acquisition date'] = self.acquisition_date
         opened_file.attrs['resolution'] = self.resolution
         opened_file.attrs['fluence'] = self.fluence
@@ -798,7 +799,6 @@ class DiffractionDataset(object):
         
         savemat(filename, matlab_dict, oned_as = 'row')
         
-        
 
 
 class SingleCrystalDiffractionDataset(DiffractionDataset):
@@ -945,6 +945,54 @@ class PowderDiffractionDataset(DiffractionDataset):
     
     def master_file(self):
         return super().master_file(polycrystalline = True)
+
+
+        
+class SinglePictureDataset(PowderDiffractionDataset):
+    """
+    Dummy diffraction dataset to perform operations on single images.
+    """
+    def __init__(self, filename):
+        from tempfile import TemporaryDirectory
+        self.temporary_directory = TemporaryDirectory()
+
+        directory = os.path.join(self.temporary_directory.name, 'processed')
+        os.mkdir(path = directory)
+        
+        # Create the illusion of a full-fledged dataset, but with a single timepoint and picture.
+        shutil.copyfile(filename, os.path.join(directory, 'data_timedelay_0.0_average_pumpon.tif'))
+        
+        resolution = read(filename).shape
+        save(n.zeros(shape = resolution), os.path.join(directory, 'background_average_pumpon.tif'))
+        save(n.zeros(shape = resolution), os.path.join(directory, 'background_average_pumpoff.tif'))
+        save(n.zeros(shape = resolution), os.path.join(directory, 'substrate.tif'))
+        
+        # Go on with our day with this 'temporary' dataset
+        super().__init__(directory = directory)
+    
+    # Overload some properties
+    @property
+    def fluence(self):
+        return 0.0
+    
+    @property
+    def current(self):
+        return 0.0
+    
+    @property
+    def exposure(self):
+        return 0.0
+        
+    @property
+    def energy(self):
+        return 90
+        
+    @property    
+    def acquisition_date(self):
+        return '0.0.0.0.0'
+        
+    def __del__(self):
+        self.temporary_directory.cleanup()
         
         
         
