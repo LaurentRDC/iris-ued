@@ -645,7 +645,6 @@ class DiffractionDataset(object):
         # If opened_file is a File object, don't close on return
         # If opened_file is None, open and close within this method
         close_on_return = False
-        
         if opened_file is None:
             close_on_return = True
             opened_file = self.master_file()
@@ -970,7 +969,10 @@ class SinglePictureDataset(PowderDiffractionDataset):
         # Go on with our day with this 'temporary' dataset
         super().__init__(directory = directory)
     
-    # Overload some properties
+    def __del__(self):
+        self.temporary_directory.cleanup()
+    
+    # Overload  properties as placeholder values
     @property
     def fluence(self):
         return 0.0
@@ -990,9 +992,6 @@ class SinglePictureDataset(PowderDiffractionDataset):
     @property    
     def acquisition_date(self):
         return '0.0.0.0.0'
-        
-    def __del__(self):
-        self.temporary_directory.cleanup()
         
         
         

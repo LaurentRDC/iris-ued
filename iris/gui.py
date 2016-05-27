@@ -461,13 +461,6 @@ class PowderToolsWidget(QtGui.QWidget):
     
     def _init_ui(self):
         
-        # Wavelet decomposition level combo box
-        self.wavelet_level_label = QtGui.QLabel('Wavelet decomposition level: ', parent = self)
-        self.wavelet_dec_level_box = QtGui.QComboBox(parent = self)
-        for integer in range(0, 15):
-            self.wavelet_dec_level_box.addItem(str(integer))
-        self.wavelet_dec_level_box.setCurrentIndex(self.wavelet_dec_level_box.findText('10'))
-        
         # Hide progress widgets
         self.progress_widget_radial_patterns.hide()
         
@@ -497,12 +490,8 @@ class PowderToolsWidget(QtGui.QWidget):
         export_menu.addAction(self.export_to_matlab)
         
         # Final layout
-        wavelet = QtGui.QHBoxLayout()
-        wavelet.addWidget(self.wavelet_level_label)
-        wavelet.addWidget(self.wavelet_dec_level_box)
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.menubar)
-        self.layout.addLayout(wavelet)
         self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
         
@@ -530,10 +519,6 @@ class PowderToolsWidget(QtGui.QWidget):
     @property
     def dataset(self):
         return self.parent.dataset
-    
-    @property
-    def wavelet_decomposition_level(self):
-        return int(self.wavelet_dec_level_box.currentText())
         
     @property
     def peak_dynamics_region_shown(self):
@@ -616,7 +601,7 @@ class PowderToolsWidget(QtGui.QWidget):
     
     def toggle_inelastic_background_setup(self):
         if self.inelastic_lines_shown:
-            toggle_appearance(parent_frame = self, items = self.inelastic_background_lines, show = False)
+            toggle_appearance(parent_frame = self.radial_pattern_viewer, items = self.inelastic_background_lines, show = False)
         else:
             # Displaying the inelastic background lines require something more
             # complicated than toggle_appearance
@@ -698,13 +683,11 @@ class PowderToolsWidget(QtGui.QWidget):
         
         #Thread the computation
         if mode == 'auto':
-            self.worker = WorkThread(self.dataset.inelastic_background_fit,
-                                     None,
-                                     self.wavelet_decomposition_level)
+            self.worker = WorkThread(self.dataset.inelastic_background_fit, None,None)
         else:
             self.worker = WorkThread(self.dataset.inelastic_background_fit,
                                      self.inelastic_background_lines_positions,
-                                     self.wavelet_decomposition_level)
+                                     None)
             
         self.worker.in_progress_signal.connect(self.progress_widget_radial_patterns.show)
         self.worker.done_signal.connect(self.progress_widget_radial_patterns.hide)

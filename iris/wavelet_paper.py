@@ -219,7 +219,6 @@ d = dataset.PowderDiffractionDataset(directory)
 def track_background():
     """
     """
-    global b4t0
     fig = plt.figure()
     colors = spectrum_colors(num_colors = len(d.time_points))
     
@@ -237,4 +236,4 @@ def track_background():
 if __name__ == '__main__':
     pass
     #wavelist = best_wavelet()
-    FOM = simulated_background_fit_unassisted()
+    #FOM = simulated_background_fit_unassisted()
