@@ -171,7 +171,10 @@ class ImageViewer(pg.ImageView):
         # Radial-averaging tools
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
-        self._read_radav_tool_params()        
+        try:
+            self._read_radav_tool_params()
+        except:
+            pass
         
         # Single crystal peak dynamics tool
         self.peak_dynamics_region = pg.CircleROI(pos = [800,800], size = [200,200], pen = pg.mkPen('b'))
@@ -284,7 +287,7 @@ class ImageViewer(pg.ImageView):
         key : str
             Name of the parameter
         """
-        with open(config_path, 'w') as config_file:
+        with open(config_path, 'w+') as config_file:
             config_file.write('MASK_POSITION = '+str(self.mask_position)+'\n')
             config_file.write('CENTER_FINDER_POSITION = '+str((self.center_position[0],self.center_position[1]))+'\n')
             config_file.write('CENTER_FINDER_RADIUS = '+str(self.center_finder_radius)+'\n')
