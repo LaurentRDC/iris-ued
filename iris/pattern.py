@@ -49,8 +49,8 @@ class Pattern(object):
     plot
         Diagnostic plotting tool
     
-    inelastic_background
-        Fits a biexponential inelastic scattering background to the data
+    baseline
+        Determine a baseline using the discrete wavelet transform
     """
     def __init__(self, data, name = ''):
         """
@@ -117,7 +117,7 @@ class Pattern(object):
         warn('Deprecated method. See Pattern.baseline instead.', DeprecationWarning, stacklevel = 2)
         return self.baseline(*args, **kwargs)
     
-    def baseline(self, background_regions, level = None, max_iter = 1000, wavelet = 'sym6'):
+    def baseline(self, background_regions, level = None, max_iter = 1000, wavelet = 'sym4'):
         """
         Method for inelastic background determination via wavelet decomposition.d
         
@@ -213,7 +213,7 @@ class Pattern(object):
         
     def _background_guesses(self, data_values = False):
         """
-        Finds the indices associated with local minima between peaks in ydata
+        Finds the indices associated with local minima between peaks.
         
         Parameters
         ----------
@@ -226,6 +226,11 @@ class Pattern(object):
         out : list
             Indices of the locations of background in data (if data_values is False)
             of data values of the background in data (if data_values is True).
+        
+        Raises
+        ------
+        NotImplementedError
+            If instance is of type 'single crystal'
         
         Examples
         --------
@@ -241,9 +246,10 @@ class Pattern(object):
         See also
         --------
         scipy.signal.find_peaks_cwt
+            Continuous wavelet transform applied to peak-finding in 1D signals.
         """
         if self.type == 'single crystal':
-            raise NotImplemented
+            raise NotImplementedError
         
         widths = n.arange(1, len(self.data)/10)    # Max width determined with testing
         indices = find_peaks_cwt(-self.data, widths = widths, wavelet = ricker, 
@@ -262,6 +268,11 @@ class Pattern(object):
         peak_indices : list of ints
             Indices of the peaks in ydata.
         
+        Raises
+        ------
+        NotImplementedError
+            If instance is of type 'single crystal'
+        
         Examples
         --------
         >>> import matplotlib.pyplot as plt
@@ -276,9 +287,10 @@ class Pattern(object):
         See also
         --------
         scipy.signal.find_peaks_cwt
+            Continuous wavelet transform applied to peak-finding in 1D signals.
         """
         if self.type == 'single crystal':
-            raise NotImplemented
+            raise NotImplementedError
         
         widths = n.arange(1, len(self.data)/10)    # Max width determined with testing
         return find_peaks_cwt(self.data, widths = widths, wavelet = ricker, 

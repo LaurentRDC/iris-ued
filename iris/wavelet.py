@@ -22,8 +22,9 @@ def approx_rec(array, level, wavelet, array_mask = []):
     
     Parameters
     ----------
-    array : ndarray, ndim 1 or ndim 2
-        Array to be decomposed.
+    array : ndarray
+        Array to be decomposed. Currently, only 1D and 2D arrays are supported.
+        nD support is on the way.
     level : int or None
         Decomposition level. A higher level will result in a coarser approximation of
         the input array. If the level is higher than the maximum possible decomposition level,
@@ -38,22 +39,21 @@ def approx_rec(array, level, wavelet, array_mask = []):
         Approximated reconstruction of the input array.
     
     Raises
-    ------
-    ValueError  
-        If input array is neither 1D nor 2D.
+    ------    
+    NotImplementedError
+        If input array has dimension > 2 
     """
     original_array = n.array(array)         # Copy
     
     # Choose deconstruction and reconstruction functions based on dimensionality
     dim = array.ndim 
     if dim == 1:
-        dec_func = pywt.wavedec
-        rec_func = pywt.waverec
+        dec_func, rec_func = pywt.wavedec, pywt.waverec
     elif dim == 2:
-        dec_func = pywt.wavedec2
-        rec_func = pywt.waverec2
-    else:
-        raise ValueError('Input array must be either 1D or 2D, not {}D'.format(str(array.ndim)))
+        dec_func, rec_func = pywt.wavedec2, pywt.waverec2
+    elif dim > 2:
+        raise NotImplementedError
+        dec_func, rec_func = pywt.wavedecn, pywt.waverecn
 
     # Build Wavelet object
     if isinstance(wavelet, str):
@@ -84,7 +84,10 @@ def approx_rec(array, level, wavelet, array_mask = []):
     elif dim == 2:
         for detail_tuples in det_coeffs:
             cHn, cVn, cDn = detail_tuples       # See PyWavelet.wavedec2 documentation for coefficients structure.
-            zeroed.append( (n.zeros_like(cHn), n.zeros_like(cVn), n.zeros_like(cDn)) )  
+            zeroed.append( (n.zeros_like(cHn), n.zeros_like(cVn), n.zeros_like(cDn)) )
+    elif dim > 2:
+        pass
+        #TODO: set the detail coefficients to zero
         
     # Reconstruct signal
     reconstructed = rec_func([app_coeffs] + zeroed, wavelet = wavelet, mode = EXTENSION_MODE)
@@ -98,6 +101,8 @@ def approx_rec(array, level, wavelet, array_mask = []):
             return reconstructed[:original_array.shape[0]]
         elif dim == 2:
             return reconstructed[:original_array.shape[0], :original_array.shape[1]]
+        elif dim > 2:
+            pass
         
     elif original_array.size > reconstructed.size:
         extended_reconstructed = n.zeros_like(original_array, dtype = original_array.dtype)        
@@ -105,10 +110,12 @@ def approx_rec(array, level, wavelet, array_mask = []):
             extended_reconstructed[:reconstructed.shape[0]] = reconstructed
         elif dim == 2:
             extended_reconstructed[:reconstructed.shape[0], :reconstructed.shape[1]] = reconstructed
+        elif dim > 2:
+            pass
         return extended_reconstructed
 
 
-def baseline(array, max_iter, level = None, wavelet = 'db10', background_regions = [], mask = None):
+def baseline(array, max_iter, level = None, wavelet = 'sym6', background_regions = [], mask = None):
     """
     Iterative method of baseline determination modified from [1]. This function handles
     both 1D radial patterns and 2D single-crystal diffraction images.
@@ -166,6 +173,8 @@ def baseline(array, max_iter, level = None, wavelet = 'db10', background_regions
         mask = n.ones_like(array, dtype = n.bool)
 
     # Initial starting point
+    if max_iter == 0:
+        return array*mask
     signal = n.array(array)
     
     for i in range(max_iter):
@@ -189,7 +198,7 @@ def baseline(array, max_iter, level = None, wavelet = 'db10', background_regions
     return background*mask
     
     
-def denoise(array, wavelet = 'db10'):
+def denoise(array, wavelet = 'db5'):
     """
     Denoise an array using the wavelet transform.
     """
