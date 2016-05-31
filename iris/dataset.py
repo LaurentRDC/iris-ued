@@ -13,8 +13,9 @@ import numpy as n
 from h5py import File
 import shutil
 
-#Batch processing libraries
-from iris.pattern import Pattern
+from pattern import Pattern
+from hough import diffraction_center
+
 import os.path
 from .tifffile import imread, imsave
 
@@ -173,8 +174,9 @@ def radial_average(image, center, beamblock_rect, mask = None):
     ----------
     image : ndarray
         image data from the diffractometer.
-    center : array-like, shape (2,)
-        [x,y] coordinates of the center (in pixels)
+    center : array-like shape (2,) or None
+        [x,y] coordinates of the center (in pixels). If None, the center of the image
+        will be determined via the Hough transform.
     name : str
         String identifier for the output RadialCurve
     beamblock_rect : Tuple, shape (4,)
@@ -192,16 +194,24 @@ def radial_average(image, center, beamblock_rect, mask = None):
     ------
     ValueError
         If 'mask' is an array of a different shape than the image shape.
-    """
     
+    See also
+    --------
+    iris.hough.diffraction_center
+        Find the center of polycrystalline diffraction images using the Hough transform.
+    """    
     #preliminaries
     if mask is None:
         mask = n.ones_like(image, dtype = n.bool)
     elif mask.shape != image.shape:
         raise ValueError("'mask' array (shape {}) must have the same shape as 'image' (shape {})".format(mask.shape, image.shape))
     
+    if center is None:
+        center = diffraction_center(image, beamblock = beamblock_rect)
+    
     image = image.astype(n.float)
     mask = mask.astype(n.bool)
+    
     xc, yc = center     #Center coordinates
     x1, x2, y1, y2 = beamblock_rect     
     
@@ -479,7 +489,7 @@ class DiffractionDataset(object):
     
     # Operations --------------------------------------------------------------
     
-    def inelastic_background_fit(self, positions, level):
+    def inelastic_background_fit(self, positions, **kwargs):
         """
         Fits an inelastic scattering background to the data. The fits are applied 
         to each time point independently. Results are then exported to the master
@@ -488,16 +498,17 @@ class DiffractionDataset(object):
         Parameters
         ----------
         positions : list of floats or None
-            x-data positions of where radial averages should be fit to. If None, 
-            the positions will be automatically determined.
-        level : int, deprecated
-            Wavelet decomposition level. A higher level implies a coarser approximation 
-            to the baseline. This parameter is not taken into account anymore, as the
-            maximal decomposition level possible is used.
+            x-data positions of where radial averages are known to be purely background. 
+            If None, the positions will be automatically determined. For an unassisted
+            fit, set positions = [].
+        
+        *args : optional arguments
+            Can be any argument accepted by iris.pattern.Pattern.baseline. Most
+            useful are max_iter and wavelet.
         """
         backgrounds = list()
         for time in self.time_points:
-            backgrounds.append( (time, self.pattern(time).baseline(background_regions = positions, level = None)) )
+            backgrounds.append( (time, self.pattern(time).baseline(background_regions = positions, level = None, **kwargs)) )
             
         self._export_background_results(backgrounds)
     

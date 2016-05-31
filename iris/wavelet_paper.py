@@ -18,19 +18,28 @@ DEC_LEVEL = 10
 NOISE_STD = 0.05
 PLOT_MARKERSIZE = 2
 
+# Diffraction dataset from Morrison
+directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
+d = dataset.PowderDiffractionDataset(directory)  
+
 def spectrum_colors(num_colors):
     """
     Generates a set of RGB colors corresponding to the visible spectrum.
     
     Parameters
     ----------
-    num_colors : int
-        number of colors to return
+    num_colors : int or iterable
+        number of colors to return. Alternatively, if num_colors is an object
+        with the attribute __len__ (list, tuple, ndarray, ...), then the number
+        of colors is deduced.
     
     Returns
     -------
     colors : list of (R,B,G) tuples.
     """
+    if hasattr(num_colors, '__len__'):
+        num_colors = len(num_colors)
+        
     # Hue values from 0 to 1
     hue_values = [i/num_colors for i in range(num_colors)]
     
@@ -41,12 +50,37 @@ def spectrum_colors(num_colors):
     for hue in reversed(hue_values):
         colors.append(hsv_to_rgb(h = hue, s = 0.7, v = 0.9))
     return colors
+
+def red_colors(num_colors):
+    """
+    Generates a set of RGB colors corresponding to color, from low values to high.
+    
+    Parameters
+    ----------
+    num_colors : int or iterable
+        number of colors to return. Alternatively, if num_colors is an object
+        with the attribute __len__ (list, tuple, ndarray, ...), then the number
+        of colors is deduced.
+    
+    Returns
+    -------
+    colors : list of (R,B,G) tuples.
+    """
+    if hasattr(num_colors, '__len__'):
+        num_colors = len(num_colors)
+    
+    # Values from 0 to 1
+    values = [i/num_colors for i in range(num_colors)]
+    
+    colors = list()
+    for value in values:
+        colors.append(hsv_to_rgb(h = 0, s = 0.7, v = value))
+    return colors
     
 def best_wavelet():
     """
     Determines what the best wavelet is for unassisted background removal for UED data
     """
-    global composite, signal, noise, background, s
     VO2 = crystalMaker('M1')
     
     s = n.linspace(0.11, 0.8, 1000)
@@ -85,20 +119,20 @@ def time_dependent_background(scatt_angle):
     """
     def amplitude(time_points):
         """ Returns monotonically decreasing amplitude over time. """
-        return n.linspace(75, 70, num = len(time_points))
+        return n.linspace(75, 74, num = len(time_points))
     
     def subamplitude(time_points):
         """ Returns monotonically increasing subamplitude over time. """
-        return n.linspace(55, 60, num = len(time_points))
+        return n.linspace(55, 56, num = len(time_points))
     
     def substrate_amp1(time_points):
-        return n.linspace(0.7, 1, num = len(time_points))
+        return n.linspace(0.9, 1, num = len(time_points))
         
     def substrate_amp2(time_points):
-        return n.linspace(1, 0.7, num = len(time_points))
+        return n.linspace(1, 0.9, num = len(time_points))
     
     def decay(time_points):
-        return n.linspace(-7, -5, num = len(time_points))
+        return n.linspace(-7, -6.9, num = len(time_points))
     
     backgrounds = list()
     for time, amp, subamp, dec, subs1, subs2 in zip(timepoints, amplitude(timepoints), subamplitude(timepoints), decay(timepoints), substrate_amp1(timepoints), substrate_amp2(timepoints)):
@@ -129,7 +163,7 @@ def plot_dynamics():
     backgrounds = time_dependent_background(s)
     patterns = time_dependent_diffraction(s)
     
-    colors = spectrum_colors(len(timepoints))
+    colors = spectrum_colors(timepoints)
     for c, bg, diff_pattern in zip(colors, backgrounds, patterns):
         composite = diff_pattern + bg
         noise = n.random.normal(0.0, NOISE_STD, size = composite.data.shape)
@@ -171,7 +205,7 @@ def simulated_background_fit(background_indices = bg_regions):
     # Generate main signal with gaussian noise on the order of 0.25 count
     signals = time_dependent_diffraction(s)
     
-    colors = spectrum_colors(num_colors = len(timepoints))
+    colors = spectrum_colors(timepoints)
     
     FOM_over_time = n.zeros_like(timepoints, dtype = n.float)
     fig = plt.figure()
@@ -181,10 +215,11 @@ def simulated_background_fit(background_indices = bg_regions):
     for i, background, signal, c in zip(range(len(timepoints)), backgrounds, signals, colors):
         noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
         composite = signal + background + noise
-        wav_background = composite.baseline(background_regions = background_regions, max_iter = 200, level = None, wavelet = 'sym6')   # Use max level with level = None
+        wav_background = composite.baseline(background_regions = background_regions, max_iter = 1000, level = None, wavelet = 'sym4')   # Use max level with level = None
         
         reconstructed = composite - wav_background
-        residuals = pattern.Pattern([s, (reconstructed.data - (signal.data + noise.data))])
+        reference = signal + noise
+        residuals = pattern.Pattern([s, ((reconstructed.data - reference.data))])
         
         # Set residuals to 0 in background regions
         for j in background_indices:
@@ -210,17 +245,64 @@ def simulated_background_fit_unassisted():
     return simulated_background_fit(background_indices = [])
 
 # -----------------------------------------------------------------------------
-#           DEALING WITH REAL DATA
+#           VISUALIZATION OF SPECTRUM AND ALGORITHM
+#   Note: while dealing with real data, the wavelet 'sym4' produces extreme artifacts.
+#         'sym5', 'sym7' and 'sym8' are worse than 'sym6' (by eye), so we use 'sym6'.
 # -----------------------------------------------------------------------------
-directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
-d = dataset.PowderDiffractionDataset(directory)    
 
+def algo_at_work():
+    
+    fig = plt.figure()
+    
+    pattern = d.pattern(0.0)
+    plt.plot(pattern.xdata, pattern.data, 'k')
+    iterations = n.exp2(n.arange(0, 10)).astype(n.int).tolist()
+    colors = red_colors(iterations)
+    for max_iter, c in zip(iterations, colors):
+        algo = pattern.baseline([], None, max_iter = max_iter, wavelet = 'sym6')
+        plt.plot(algo.xdata, algo.data, color = c)
+    
+    plt.xlim([pattern.xdata.min(), pattern.xdata.max()])
+    plt.xlabel('Scattering length (1/A)', fontsize = 20)
+    plt.ylabel('Intensity (counts)', fontsize = 20)
+    
+    
+def plot_peak_spectrum():
+    
+    fig = plt.figure()
+    
+    x = n.linspace(0, 1, 1000)
+    sharp_peak_spectrum = 0.5*n.exp(-2*x)
+    background_spectrum = n.exp(-12*x)
+    plt.plot(x, sharp_peak_spectrum, 'r', linewidth = 2, label = 'Elastic scattering peak spectrum')
+    plt.plot(x, background_spectrum, 'b', linewidth = 2, label = 'Background spectrum')
+    
+    # Fill region with background spectrum
+    xlim = 0.3
+    plt.fill_betweenx(background_spectrum, 0, xlim, facecolor = 'k', alpha = 0.1)
+    plt.axvline(x = xlim, color = 'k')
+    
+    # Formatting
+    plt.xlabel('Frequency')
+    plt.ylabel('Fourier transform')
+    plt.legend()
+    
 
-def track_background():
+# -----------------------------------------------------------------------------
+#           DEALING WITH REAL DATA
+#   Note: while dealing with real data, the wavelet 'sym4' produces extreme artifacts.
+#         'sym5', 'sym7' and 'sym8' are worse than 'sym6' (by eye), so we use 'sym6'.
+# -----------------------------------------------------------------------------
+
+def track_background(compute = False):
     """
     """
     fig = plt.figure()
     colors = spectrum_colors(num_colors = len(d.time_points))
+    
+    # Unassisted background fit
+    if compute:
+        d.inelastic_background_fit(positions = [], wavelet = 'sym6', max_iter = 1000)
     
     # Build reference curve as an average of before-time-zero
     b4t0 = [d.inelastic_background(time) for time in d.time_points if float(time) < 0.0]
@@ -231,9 +313,11 @@ def track_background():
             continue
         background = d.inelastic_background(time)
         diff = background - reference
-        plt.plot(diff.xdata, diff.data, color = c, marker = '.', markersize = 2*PLOT_MARKERSIZE, linestyle = 'None')
+        plt.plot(diff.xdata, diff.data/background.data, color = c, marker = '.', markersize = 2*PLOT_MARKERSIZE, linestyle = 'None')
+    
+    #plt.plot(d.pattern(0.0).xdata, d.pattern(0.0).data)
     
 if __name__ == '__main__':
     pass
-    #wavelist = best_wavelet()
-    #FOM = simulated_background_fit_unassisted()
+    plot_dynamics()
+    #algo_at_work()

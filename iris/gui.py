@@ -519,13 +519,6 @@ class PowderToolsWidget(QtGui.QWidget):
     
     def _init_ui(self):
         
-        # Wavelet decomposition level combo box
-        self.wavelet_level_label = QtGui.QLabel('Wavelet decomposition level: ', parent = self)
-        self.wavelet_dec_level_box = QtGui.QComboBox(parent = self)
-        for integer in range(0, 15):
-            self.wavelet_dec_level_box.addItem(str(integer))
-        self.wavelet_dec_level_box.setCurrentIndex(self.wavelet_dec_level_box.findText('10'))
-        
         # Hide progress widgets
         self.progress_widget_radial_patterns.hide()
         
@@ -555,12 +548,8 @@ class PowderToolsWidget(QtGui.QWidget):
         export_menu.addAction(self.export_to_matlab)
         
         # Final layout
-        wavelet = QtGui.QHBoxLayout()
-        wavelet.addWidget(self.wavelet_level_label)
-        wavelet.addWidget(self.wavelet_dec_level_box)
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.menubar)
-        self.layout.addLayout(wavelet)
         self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
         
@@ -674,7 +663,7 @@ class PowderToolsWidget(QtGui.QWidget):
     
     def toggle_inelastic_background_setup(self):
         if self.inelastic_lines_shown:
-            toggle_appearance(parent_frame = self, items = self.inelastic_background_lines, show = False)
+            toggle_appearance(parent_frame = self.radial_pattern_viewer, items = self.inelastic_background_lines, show = False)
         else:
             # Displaying the inelastic background lines require something more
             # complicated than toggle_appearance
@@ -757,12 +746,10 @@ class PowderToolsWidget(QtGui.QWidget):
         #Thread the computation
         if mode == 'auto':
             self.worker = WorkThread(self.dataset.inelastic_background_fit,
-                                     None,
-                                     self.wavelet_decomposition_level)
+                                     None)
         else:
             self.worker = WorkThread(self.dataset.inelastic_background_fit,
-                                     self.inelastic_background_lines_positions,
-                                     self.wavelet_decomposition_level)
+                                     self.inelastic_background_lines_positions)
             
         self.worker.in_progress_signal.connect(self.progress_widget_radial_patterns.show)
         self.worker.done_signal.connect(self.progress_widget_radial_patterns.hide)
@@ -831,6 +818,7 @@ class Iris(QtGui.QMainWindow):
         powder_menu.addSeparator()
         powder_menu.addAction(self.toggle_radav_tools)
         powder_menu.addAction(self.set_radav_tools)
+        powder_menu.addAction(self.set_radav_tools_auto_center)
         
         sc_menu = self.menubar.addMenu('&Single-crystal tools')
         sc_menu.addAction(self.toggle_sc_viewer)
@@ -876,13 +864,19 @@ class Iris(QtGui.QMainWindow):
         
         # Polycrystaline ------------------------------------------------------
         self.set_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute radial averages with beamblock mask and center finder', self)
-        self.set_radav_tools.triggered.connect(self.compute_radial_average)    
+        self.set_radav_tools.triggered.connect(lambda: self.compute_radial_average(auto_center = False))    
         self.set_radav_tools.setEnabled(False)
+        
+        # Polycrystaline ------------------------------------------------------
+        self.set_radav_tools_auto_center = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&(beta) Compute radial averages with auto-center', self)
+        self.set_radav_tools_auto_center.triggered.connect(lambda: self.compute_radial_average(auto_center = True))    
+        self.set_radav_tools_auto_center.setEnabled(False)
         
         self.toggle_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial-averaging tools', self)
         self.toggle_radav_tools.setCheckable(True)
         self.toggle_radav_tools.toggled.connect(self.image_viewer.toggle_radav_tools)
         self.toggle_radav_tools.toggled.connect(self.set_radav_tools.setEnabled)
+        self.toggle_radav_tools.toggled.connect(self.set_radav_tools_auto_center.setEnabled)
         
         self.toggle_plot_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial patterns', self)
         self.toggle_plot_viewer.setCheckable(True)
@@ -955,12 +949,15 @@ class Iris(QtGui.QMainWindow):
     
     # Computations ------------------------------------------------------------
     
-    def compute_radial_average(self):
+    def compute_radial_average(self, auto_center = False):
         if self.dataset is not None:
             self.plot_viewer.show() 
             
             #Save the mask and center parameters
-            center, mask = self.image_viewer.center_position, self.image_viewer.mask_position      
+            if not auto_center:
+                center, mask = self.image_viewer.center_position, self.image_viewer.mask_position
+            else:
+                center, mask = None, self.image_viewer.mask_position
             self.image_viewer._write_radav_tool_params()
             
             #Thread the computation
