@@ -13,8 +13,8 @@ import numpy as n
 from h5py import File
 import shutil
 
-from pattern import Pattern
-from hough import diffraction_center
+from iris.pattern import Pattern
+from iris.hough import diffraction_center
 
 import os.path
 from .tifffile import imread, imsave

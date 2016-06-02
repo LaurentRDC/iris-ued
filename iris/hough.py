@@ -6,7 +6,7 @@ Created on Tue May 31 11:20:33 2016
 
 This module is concerned with finding the center of polycrystalline diffraction images.
 """
-from wavelet import denoise
+from iris. wavelet import denoise
 import numpy as n
 import matplotlib.pyplot as plt
 
