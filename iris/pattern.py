@@ -51,6 +51,9 @@ class Pattern(object):
     
     baseline
         Determine a baseline using the discrete wavelet transform
+    
+    fft
+        FFT of the pattern.
     """
     def __init__(self, data, name = ''):
         """
@@ -110,24 +113,29 @@ class Pattern(object):
         elif self.type == 'polycrystalline':
             plot(self.xdata, self.data)
     
-    def inelastic_background(self, *args, **kwargs):
+    def fft(self):
         """
-        Deprecated version of Pattern.baseline. Provided for backwards-compatibility only.
+        Fast Fourier transform of the Pattern.
+        
+        Returns
+        -------
+        out : Pattern object
         """
-        warn('Deprecated method. See Pattern.baseline instead.', DeprecationWarning, stacklevel = 2)
-        return self.baseline(*args, **kwargs)
+        if self.type == 'polycrystalline':
+            return Pattern([self.xdata, n.fft.fft(self.data)])
+        elif self.type == 'single crystal':
+            return Pattern(n.fft.fft2(self.data))
     
-    def baseline(self, background_regions, level = None, max_iter = 1000, wavelet = 'sym4'):
+    def baseline(self, background_regions = [], level = None, max_iter = 1000, wavelet = 'sym4'):
         """
         Method for inelastic background determination via wavelet decomposition.d
         
         Parameters
         ---------
-        background_regions : list or None
+        background_regions : list or None, optional
             List of x-values at which the curve is entirely background. If None, 
             these points will be automatically determined using the continuous 
-            wavelet transform. If no background regions are to be specified, input empty
-            list.
+            wavelet transform. Default is empty list.
         level : int or None, optional
             Wavelet decomposition level. A higher level implies a coarser approximation 
             to the baseline. If None (default), level is automatically set to the maximum
@@ -260,6 +268,9 @@ class Pattern(object):
             return indices
     
     def _find_peaks(self):
+        return self.peak_indices()
+    
+    def peak_indices(self):
         """
         Finds the indices associated with peaks in ydata
         
@@ -294,4 +305,19 @@ class Pattern(object):
         
         widths = n.arange(1, len(self.data)/10)    # Max width determined with testing
         return find_peaks_cwt(self.data, widths = widths, wavelet = ricker, 
-                              min_length = len(widths)/20, min_snr = 1.5)
+                              min_length = len(widths)/15, min_snr = 2)
+    
+    def show_peaks(self):
+        """
+        Plots the location of the peaks
+        """
+        from matplotlib.pyplot import figure, axvline
+        
+        if self.type == 'single crystal':
+            raise NotImplementedError
+        
+        figure()
+        self.plot()
+        
+        for index in self.peak_indices():
+            axvline(x = self.xdata[index], color = 'r')

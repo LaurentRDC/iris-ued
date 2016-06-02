@@ -13,14 +13,16 @@ import matplotlib.pyplot as plt
 
 # Typical experimental time-points
 # and other useful CONSTANTS
-timepoints = n.arange(0, 30, dtype = n.float)
+TIMEPOINTS = n.arange(0, 30, dtype = n.float)
 DEC_LEVEL = 10
 NOISE_STD = 0.05
 PLOT_MARKERSIZE = 2
 
 # Diffraction dataset from Morrison
 directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
-d = dataset.PowderDiffractionDataset(directory)  
+d = dataset.PowderDiffractionDataset(directory)
+
+peaks_to_look_at = [1781, 2791, 3141]   # Based on s = n.linspace(0.11, 0.8, 10000)
 
 def spectrum_colors(num_colors):
     """
@@ -135,7 +137,7 @@ def time_dependent_background(scatt_angle):
         return n.linspace(-7, -6.9, num = len(time_points))
     
     backgrounds = list()
-    for time, amp, subamp, dec, subs1, subs2 in zip(timepoints, amplitude(timepoints), subamplitude(timepoints), decay(timepoints), substrate_amp1(timepoints), substrate_amp2(timepoints)):
+    for time, amp, subamp, dec, subs1, subs2 in zip(TIMEPOINTS, amplitude(TIMEPOINTS), subamplitude(TIMEPOINTS), decay(TIMEPOINTS), substrate_amp1(TIMEPOINTS), substrate_amp2(TIMEPOINTS)):
         arr = amp*n.exp(dec*scatt_angle) + subamp*n.exp(-2*scatt_angle) + subs1*gaussian(scatt_angle, (scatt_angle.max() + scatt_angle.min())/2, (scatt_angle.max() - scatt_angle.min())/8) + subs2*gaussian(scatt_angle, (scatt_angle.max() + scatt_angle.min())/2.5, (scatt_angle.max() - scatt_angle.min())/8)
         backgrounds.append( pattern.Pattern([scatt_angle, arr], str(time)) )
     return backgrounds
@@ -149,10 +151,11 @@ def time_dependent_diffraction(scatt_angle):
     m1_pattern = 20*powder_diffraction(M1, plot = False, scattering_length = scatt_angle)[1]
     
     # Set the change timescale
-    timescale = n.linspace(1, 0, len(timepoints))**2
+    timescale = n.exp(-0.2*TIMEPOINTS)
+    timescale /= timescale.max()
     
     # Distribute the changes into Pattern objects
-    dynamics = n.zeros(shape = (len(timepoints), len(scatt_angle)))
+    dynamics = n.zeros(shape = (len(TIMEPOINTS), len(scatt_angle)))
     dynamics += n.outer(timescale, m1_pattern)
     dynamics += n.outer(1 - timescale, r_pattern)
     return [pattern.Pattern([scatt_angle, row], '') for row in dynamics]
@@ -163,7 +166,7 @@ def plot_dynamics():
     backgrounds = time_dependent_background(s)
     patterns = time_dependent_diffraction(s)
     
-    colors = spectrum_colors(timepoints)
+    colors = spectrum_colors(TIMEPOINTS)
     for c, bg, diff_pattern in zip(colors, backgrounds, patterns):
         composite = diff_pattern + bg
         noise = n.random.normal(0.0, NOISE_STD, size = composite.data.shape)
@@ -205,14 +208,14 @@ def simulated_background_fit(background_indices = bg_regions):
     # Generate main signal with gaussian noise on the order of 0.25 count
     signals = time_dependent_diffraction(s)
     
-    colors = spectrum_colors(timepoints)
+    colors = spectrum_colors(TIMEPOINTS)
     
-    FOM_over_time = n.zeros_like(timepoints, dtype = n.float)
+    FOM_over_time = n.zeros_like(TIMEPOINTS, dtype = n.float)
     fig = plt.figure()
     frame1 = fig.add_axes((0.1, 0.3, 0.8, 0.6)) #TODO: add inset for reconstruction figure of merit
     frame2 = fig.add_axes((0.1, 0.1, 0.8, 0.2))
     frame2.axhline(y = 0, color = 'k', linewidth = 2)
-    for i, background, signal, c in zip(range(len(timepoints)), backgrounds, signals, colors):
+    for i, background, signal, c in zip(range(len(TIMEPOINTS)), backgrounds, signals, colors):
         noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
         composite = signal + background + noise
         wav_background = composite.baseline(background_regions = background_regions, max_iter = 1000, level = None, wavelet = 'sym4')   # Use max level with level = None
@@ -229,6 +232,10 @@ def simulated_background_fit(background_indices = bg_regions):
         frame2.plot(residuals.xdata, residuals.data, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
         FOM_over_time[i] = figure_of_merit(reconstructed.data, (composite-background).data)
     
+    # Add vertical line to plot to indicate peak dynamic sthat will be investigated later
+    for index in peaks_to_look_at:
+        frame1.axvline(x = signals[0].xdata[index], color = 'k', linewidth = 3)
+    
     # Plot formatting
     [label.set_visible(False) for label in frame1.get_xticklabels()]    # Hide xlabel ticks for the top plot
     frame1.set_ylabel('Intensity (counts)', fontsize = 20)
@@ -241,8 +248,55 @@ def simulated_background_fit(background_indices = bg_regions):
     
     return FOM_over_time
 
+def peak_dynamics():
+    s = n.linspace(0.11, 0.8, 10000)
+    backgrounds = time_dependent_background(s)
+    signals = time_dependent_diffraction(s)
+    noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
+    composites = [bg + sig + noise for bg, sig in zip(backgrounds, signals)]
+    reconstructed_signals = [composite - composite.baseline(wavelet = 'sym4') for composite in composites]
+    
+    # Track peaks
+    indices = peaks_to_look_at
+    colors = spectrum_colors(indices)
+    
+    fig = plt.figure()
+    for index, color in zip(indices, colors):
+        change = reconstructed_signals[0].data[index] - n.asarray([sig.data[index] for sig in reconstructed_signals])
+        change -= change.min()
+        change /= change.max()
+        plt.plot(TIMEPOINTS, change, color = color)
+    
+
 def simulated_background_fit_unassisted():
     return simulated_background_fit(background_indices = [])
+
+def reconstruction_spectra():
+    s = n.linspace(0.11, 0.8, 10000)
+    
+    background = time_dependent_background(s)[0]
+    signal = time_dependent_diffraction(s)[0]
+    noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
+    composite = background + signal + noise
+    
+    reconstructed_background = composite.baseline()
+    reconstructed_signal = composite - reconstructed_background
+    
+    residuals = reconstructed_signal - (signal + noise)
+    
+    # Plot specta
+    fig1 = plt.figure()
+    background_spectrum = background.fft()
+    plt.plot(background_spectrum.xdata, background_spectrum.data, 'r.')
+    
+    fig2 = plt.figure()
+    signal_spectrum = signal.fft()
+    plt.plot(signal_spectrum.xdata, signal_spectrum.data, 'b.')
+    
+    fig3 = plt.figure()
+    residual_spectrum = residuals.fft()
+    plt.plot(residual_spectrum.xdata, residual_spectrum.data, 'g.')
+    
 
 # -----------------------------------------------------------------------------
 #           VISUALIZATION OF SPECTRUM AND ALGORITHM
@@ -319,5 +373,4 @@ def track_background(compute = False):
     
 if __name__ == '__main__':
     pass
-    plot_dynamics()
-    #algo_at_work()
+    peak_dynamics()
