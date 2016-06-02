@@ -5,8 +5,13 @@ Created on Tue May 31 11:20:33 2016
 @author: Laurent
 
 This module is concerned with finding the center of polycrystalline diffraction images.
+
+Functions
+---------
+diffraction_center
+    
 """
-from iris. wavelet import denoise
+from wavelet import denoise
 import numpy as n
 import matplotlib.pyplot as plt
 
@@ -130,14 +135,19 @@ def _binary_edge(image, mask):
     # The Hough transform is very sensitive to noise
     image = denoise(image, wavelet = 'db5')
     
-    array = threshold_adaptive(image, block_size = 101)
+    #TODO: use morphology techniques to clean up canny output?
+    
+    array = threshold_adaptive(image, block_size = 101, method = 'gaussian',
+                               offset = image.min(), mode = 'constant')
     array[mask] = 0 # Apply mask
     
-    return canny(array, sigma = 0.4)    # sigma determined by testing
+    return array
+    #return canny(array, sigma = 0.5)    # sigma determined by testing
 
 # -----------------------------------------------------------------------------
 #           TESTING
 # -----------------------------------------------------------------------------
+from uediff import diffshow
 
 def test_diffraction_center(image, beamblock):
     """
@@ -151,6 +161,10 @@ def test_diffraction_center(image, beamblock):
     circle = plt.Circle(tuple(center), 100, color = 'r')
     fig.gca().add_artist(circle)
 
+def test_binary(image):
+    mask = n.zeros_like(image, dtype = n.bool)
+    diffshow(_binary_edge(image, mask))
+
 if __name__ == '__main__':
     TEST_BEAMBLOCK = (800, 1110, 0, 1100)
     
@@ -159,4 +173,5 @@ if __name__ == '__main__':
     directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
     d = dataset.PowderDiffractionDataset(directory)  
     image = d.image(0.0)
-    test_diffraction_center(image, beamblock = TEST_BEAMBLOCK)
+    #test_diffraction_center(image, beamblock = TEST_BEAMBLOCK)
+    test_binary(image)
