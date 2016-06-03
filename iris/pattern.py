@@ -64,10 +64,12 @@ class Pattern(object):
         self.name = name
         self.xdata = None
         self.data = None
+        self.error = None
         
         if isinstance(data, (list, tuple, iter)):
             self.xdata = n.asarray(data[0], dtype = n.float)
             self.data = n.asarray(data[1], dtype = n.float)
+            self.error = n.asarray(data[2],dtype = n.float)
         else:
             self.data = n.asarray(data, dtype = n.float)
     
