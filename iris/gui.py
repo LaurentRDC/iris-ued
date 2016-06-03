@@ -619,6 +619,9 @@ class PowderToolsWidget(QtGui.QWidget):
         colors = spectrum_colors(len(time))
         self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
+        #Error bars
+        error_bars = pg.ErrorBarItem(x=time,y=intensity,height = n.sqrt(intensity))
+        self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.enableAutoRange()

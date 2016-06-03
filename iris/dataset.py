@@ -907,7 +907,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             intensities = (intensity_series[:, index:index2] - background_series[:, index:index2]).mean(axis = 1)
         
         # Normalize intensities
-        return time_values, intensities/intensities.max()
+        return time_values, intensities#/intensities.max()
         
     def radial_average(self, time, center, mask_rect = None):
         """
