@@ -611,16 +611,16 @@ class PowderToolsWidget(QtGui.QWidget):
         #Get region
         min_x, max_x = self.peak_dynamics_region.getRegion()
         if self.show_inelastic_background_dynamics:
-            time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x, background_dynamics = True)
+            time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, background_dynamics = True)
         else:
-            time, intensity = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background, background_dynamics = False)
+            time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background, background_dynamics = False)
         
         # Plot
         colors = spectrum_colors(len(time))
         self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
         #Error bars
-        error_bars = pg.ErrorBarItem(x=time,y=intensity,height = n.sqrt(intensity))
+        error_bars = pg.ErrorBarItem(x=time,y=intensity,height = error/2.0)
         self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
@@ -685,7 +685,7 @@ class PowderToolsWidget(QtGui.QWidget):
         self.radial_pattern_viewer.enableAutoRange()
         self.peak_dynamics_viewer.clear()
         self.peak_dynamics_viewer.enableAutoRange()
-        
+        pdb.set_trace()
         # Adjust title accordingly
         if self.show_inelastic_background_dynamics:
             self.radial_pattern_viewer.getPlotItem().setTitle('Background fits')
@@ -710,6 +710,7 @@ class PowderToolsWidget(QtGui.QWidget):
         
         self._display_peak_dynamics_setup()
         self.update_peak_dynamics_plot()
+        
 
     def _display_peak_dynamics_setup(self):
         self.peak_dynamics_region.setRegion((0.2, 0.3))
