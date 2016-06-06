@@ -5,6 +5,7 @@ Wavelet decomposition paper
 from colorsys import hsv_to_rgb
 import pywt
 import numpy as n
+import scipy.optimize as opt
 from uediff.structure import crystalMaker
 from uediff.instrumentation import gaussian
 from uediff.diffsim.powder import powder_diffraction
@@ -22,7 +23,7 @@ PLOT_MARKERSIZE = 2
 directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
 d = dataset.PowderDiffractionDataset(directory)
 
-peaks_to_look_at = [1781, 2791, 3141]   # Based on s = n.linspace(0.11, 0.8, 10000)
+peaks_to_look_at = [1391, 1801, 2565, 2791, 4985, 5507, 8473]   # Based on s = n.linspace(0.11, 0.8, 10000)
 
 def spectrum_colors(num_colors):
     """
@@ -215,6 +216,11 @@ def simulated_background_fit(background_indices = bg_regions):
     frame1 = fig.add_axes((0.1, 0.3, 0.8, 0.6)) #TODO: add inset for reconstruction figure of merit
     frame2 = fig.add_axes((0.1, 0.1, 0.8, 0.2))
     frame2.axhline(y = 0, color = 'k', linewidth = 2)
+    
+    # Add vertical line to plot to indicate peak dynamic sthat will be investigated later
+    for index in peaks_to_look_at:
+        frame1.axvline(x = signals[0].xdata[index], color = 'k', linewidth = 2)
+        
     for i, background, signal, c in zip(range(len(TIMEPOINTS)), backgrounds, signals, colors):
         noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
         composite = signal + background + noise
@@ -231,10 +237,6 @@ def simulated_background_fit(background_indices = bg_regions):
         frame1.plot(reconstructed.xdata, reconstructed.data, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
         frame2.plot(residuals.xdata, residuals.data, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
         FOM_over_time[i] = figure_of_merit(reconstructed.data, (composite-background).data)
-    
-    # Add vertical line to plot to indicate peak dynamic sthat will be investigated later
-    for index in peaks_to_look_at:
-        frame1.axvline(x = signals[0].xdata[index], color = 'k', linewidth = 3)
     
     # Plot formatting
     [label.set_visible(False) for label in frame1.get_xticklabels()]    # Hide xlabel ticks for the top plot
@@ -260,13 +262,32 @@ def peak_dynamics():
     indices = peaks_to_look_at
     colors = spectrum_colors(indices)
     
+    # For fitting the time constant
+    def exp(time, amp, constant, floor):
+        return amp*n.exp(-constant*time) + floor
+
+    results = list()
+    errors = list()
     fig = plt.figure()
     for index, color in zip(indices, colors):
         change = reconstructed_signals[0].data[index] - n.asarray([sig.data[index] for sig in reconstructed_signals])
+        change = n.abs(change) # Flip so that the change is always in the same direction
         change -= change.min()
         change /= change.max()
-        plt.plot(TIMEPOINTS, change, color = color)
+        
+        # Fit the time constant
+        time_const , covariant_matrix = opt.curve_fit(exp, xdata = TIMEPOINTS, ydata = change)
+        results.append(time_const[1])
+        errors.append(n.sqrt(n.diag(covariant_matrix))[1])
+            
+        plt.plot(TIMEPOINTS, change, color = color, linestyle = 'None', marker = 'o', markersize = 7)
     
+    # Plot formatting
+    plt.xlabel('Time-delay (ps)', fontsize = 20)
+    plt.ylabel('Absolute change in intensity (a. u.)', fontsize = 20)
+    
+    print('Time constants (ps):', results)
+    print('Errors (ps):', errors)
 
 def simulated_background_fit_unassisted():
     return simulated_background_fit(background_indices = [])
@@ -373,4 +394,5 @@ def track_background(compute = False):
     
 if __name__ == '__main__':
     pass
+    #FOM = simulated_background_fit_unassisted()
     peak_dynamics()
