@@ -8,6 +8,8 @@ parameters, etc.
 
 @author: Laurent P. René de Cotret
 """
+#Debugger
+import pdb
 
 import numpy as n
 from h5py import File
@@ -241,13 +243,14 @@ def radial_average(image, center, beamblock_rect, mask = None):
     px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
     r_bin = n.bincount(R.ravel().astype(n.int))  
     radial_intensity = px_bin/r_bin
+    radial_intensity_error = n.sqrt(px_bin)/r_bin
     
     # Only return values with radius between r_min and r_max
     radius = n.unique(R.ravel().astype(n.int))      # Round up to integer number of pixel
     r_max_index = n.argmin(n.abs(r_max - radius))
     r_min_index = n.argmin(n.abs(r_min - radius))
     
-    return (radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index])
+    return (radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index],radial_intensity_error[r_min_index + 1:r_max_index])
 
 
 class DiffractionDataset(object):
@@ -410,7 +413,8 @@ class DiffractionDataset(object):
         if file.attrs['mode'] == 'polycrystalline':
             xdata = file['/{0}/xdata'.format(time)]
             intensity = file['/{0}/intensity'.format(time)]
-            return Pattern(data = [xdata, intensity], name = time)
+            error = file['/{0}/error'.format(time)]
+            return Pattern(data = [xdata, intensity, error], name = time)
         elif file.attrs['mode'] == 'single crystal':
             data = file['/{0}/intensity'.format(time)]
             return Pattern(data = data, name = time)
@@ -751,6 +755,7 @@ class DiffractionDataset(object):
                 self._access_dataset(f, timedelay, dataset_name = 'intensity', data = pattern.data)
                 if pattern.type == 'polycrystalline':
                     self._access_dataset(f, timedelay, dataset_name = 'xdata', data = pattern.xdata)
+                    self._access_dataset(f, timedelay, dataset_name = 'error', data = pattern.error)
     
     def _export_background_results(self, results):
         """
@@ -891,6 +896,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         scattering_length = patterns[0].xdata
         intensity_series = n.vstack( tuple( [pattern.data for pattern in patterns] ))
+        error_series =  n.vstack( tuple( [pattern.error for pattern in patterns] ))
         
         if subtract_background:
             background_series = n.vstack( tuple(bg_pattern.data for bg_pattern in self.inelastic_background_series()))
@@ -905,9 +911,10 @@ class PowderDiffractionDataset(DiffractionDataset):
         else:
             index2 = n.argmin(n.abs(scattering_length - edge2))
             intensities = (intensity_series[:, index:index2] - background_series[:, index:index2]).mean(axis = 1)
+            errors = (error_series[:, index:index2]).mean(axis=1)
         
         # Normalize intensities
-        return time_values, intensities/intensities.max()
+        return time_values, intensities, errors#/intensities.max()
         
     def radial_average(self, time, center, mask_rect = None):
         """
@@ -927,11 +934,11 @@ class PowderDiffractionDataset(DiffractionDataset):
         -------
         Pattern object, type 'polycrystalline'
         """
-        xdata, intensity = radial_average(self.image(time), center, mask_rect)
+        xdata, intensity, error = radial_average(self.image(time), center, mask_rect)
         
         # Change x-data from pixels to scattering length
         s = scattering_length(xdata, self.energy)
-        return Pattern(data = [s, intensity], name = str(time))
+        return Pattern(data = [s, intensity, error], name = str(time))
     
     def radial_average_series(self, center, mask_rect = None):
         """
