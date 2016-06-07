@@ -149,8 +149,6 @@ def _binary_edge(image, mask):
 # -----------------------------------------------------------------------------
 #           TESTING
 # -----------------------------------------------------------------------------
-from uediff import diffshow
-
 def test_diffraction_center(image, beamblock):
     """
     
@@ -165,7 +163,7 @@ def test_diffraction_center(image, beamblock):
 
 def test_binary(image):
     mask = n.zeros_like(image, dtype = n.bool)
-    diffshow(_binary_edge(image, mask))
+    plt.imshow(_binary_edge(image, mask))
 
 if __name__ == '__main__':
     TEST_BEAMBLOCK = (800, 1110, 0, 1100)

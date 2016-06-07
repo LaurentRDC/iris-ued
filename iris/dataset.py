@@ -19,7 +19,7 @@ from iris.pattern import Pattern
 from iris.hough import diffraction_center
 
 import os.path
-from .tifffile import imread, imsave
+from iris.tifffile import imread, imsave
 
 HOT_PIXEL_THRESHOLD = 25000
 HOT_PIXEL_VALUE = 0
@@ -1034,8 +1034,8 @@ class SinglePictureDataset(PowderDiffractionDataset):
         
 
 if __name__ == '__main__':
-    from matplotlib.pyplot import imshow
-    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
-    d = PowderDiffractionDataset(directory)
-    imshow(d.inelastic_background_evolution())
-    
+   # from matplotlib.pyplot import imshow
+   # directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
+   # d = PowderDiffractionDataset(directory)
+   # imshow(d.inelastic_background_evolution())
+   pass 
