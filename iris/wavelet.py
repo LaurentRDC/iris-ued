@@ -11,6 +11,8 @@ import numpy as n
 import pywt
 from warnings import warn
 
+__all__ = ['approx_rec', 'baseline', 'denoise']
+
 # Boundary extension mode
 EXTENSION_MODE = 'constant'
 
@@ -118,11 +120,11 @@ def approx_rec(array, level, wavelet, array_mask = []):
 def baseline(array, max_iter, level = None, wavelet = 'sym6', background_regions = [], mask = None):
     """
     Iterative method of baseline determination modified from [1]. This function handles
-    both 1D radial patterns and 2D single-crystal diffraction images.
+    both 1D curves and 2D images.
     
     Parameters
     ----------
-    array : ndarray
+    array : ndarray, shape (M,N)
         Data with background. Can be either 1D signal or 2D array.
     max_iter : int
         Number of iterations to perform.
@@ -132,7 +134,7 @@ def baseline(array, max_iter, level = None, wavelet = 'sym6', background_regions
         possible is used.
     wavelet : PyWavelet.Wavelet object or str, optional
         Wavelet with which to perform the algorithm. See PyWavelet documentation
-        for available values. Default is 'db10'.
+        for available values. Default is 'sym6'.
     background_regions : list, optional
         Indices of the array values that are known to be purely background. Depending
         on the dimensions of array, the format is different:
@@ -154,14 +156,14 @@ def baseline(array, max_iter, level = None, wavelet = 'sym6', background_regions
     
     Returns
     -------
-    baseline : ndarray
+    baseline : ndarray, shape (M,N)
         Baseline of the input array.
     
     Raises
     ------
     ValueError
         If input array is neither 1D nor 2D. Inherited behavior from approx_rec.
-    NotImplemented
+    NotImplementedError
         If a 2D array is provided with a non-trivial mask.
     """
     if (array.ndim == 2) and (mask is not None):
@@ -201,6 +203,14 @@ def baseline(array, max_iter, level = None, wavelet = 'sym6', background_regions
 def denoise(array, wavelet = 'db5'):
     """
     Denoise an array using the wavelet transform.
+    
+    Parameters
+    ----------
+    array : ndarray, shape (M,N)
+        Data with background. Can be either 1D signal or 2D array.
+    wavelet : PyWavelet.Wavelet object or str, optional
+        Wavelet with which to perform the algorithm. See PyWavelet documentation
+        for available values. Default is 'db5'.
     """
     return approx_rec(array = array, level = 1, wavelet = wavelet)
     

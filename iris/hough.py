@@ -19,6 +19,8 @@ from skimage.transform import hough_circle
 from skimage.filters import threshold_adaptive
 from skimage.feature import canny, peak_local_max
 
+# Clustering
+from sklearn.cluster import AffinityPropagation
 from scipy.cluster.vq import whiten, kmeans2
 
 def diffraction_center(image, beamblock = None, n_centroids = 5):
@@ -174,4 +176,4 @@ if __name__ == '__main__':
     d = dataset.PowderDiffractionDataset(directory)  
     image = d.image(0.0)
     #test_diffraction_center(image, beamblock = TEST_BEAMBLOCK)
-    test_binary(image)
+    test_diffraction_center(image, TEST_BEAMBLOCK)

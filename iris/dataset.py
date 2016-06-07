@@ -168,7 +168,7 @@ def save(array, filename):
     array = cast_to_16_bits(array)
     imsave(filename, array)
 
-def radial_average(image, center, beamblock_rect, mask = None):
+def radial_average(image, center, beamblock_rect, mask = None, return_error = False):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -187,10 +187,15 @@ def radial_average(image, center, beamblock_rect, mask = None):
     mask : ndarray or None, optional
         Array of booleans that evaluates to False on pixels that should be discarded.
         If None (default), all pixels are treated as valid (except for beamblock)
+    return_error :  bool, optional
+        If True, returns the square-root-N error on the counts.
         
     Returns
     -------
-    radius, intensity : ndarray, shape (N,)
+    radius : ndarray, shape (N,)
+    intensity : ndarray, shape (N,)
+    error : ndarray, shape (N,)
+        Returned only if return_error is True
     
     Raises
     ------
@@ -243,6 +248,8 @@ def radial_average(image, center, beamblock_rect, mask = None):
     px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
     r_bin = n.bincount(R.ravel().astype(n.int))  
     radial_intensity = px_bin/r_bin
+    
+    # Compute the error as square-root-N
     radial_intensity_error = n.sqrt(px_bin)/r_bin
     
     # Only return values with radius between r_min and r_max
@@ -250,7 +257,10 @@ def radial_average(image, center, beamblock_rect, mask = None):
     r_max_index = n.argmin(n.abs(r_max - radius))
     r_min_index = n.argmin(n.abs(r_min - radius))
     
-    return (radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index],radial_intensity_error[r_min_index + 1:r_max_index])
+    if return_error:
+        return radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index], radial_intensity_error[r_min_index + 1:r_max_index]
+    else:
+        return radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index]
 
 
 class DiffractionDataset(object):
@@ -414,7 +424,7 @@ class DiffractionDataset(object):
             xdata = file['/{0}/xdata'.format(time)]
             intensity = file['/{0}/intensity'.format(time)]
             error = file['/{0}/error'.format(time)]
-            return Pattern(data = [xdata, intensity, error], name = time)
+            return Pattern(data = [xdata, intensity], error = error, name = time)
         elif file.attrs['mode'] == 'single crystal':
             data = file['/{0}/intensity'.format(time)]
             return Pattern(data = data, name = time)
@@ -805,7 +815,8 @@ class DiffractionDataset(object):
             
             # Basic amount of information
             matlab_dict[name] = {'time': time + 'ps', 
-                                 'intensity' : self.pattern(time).data, 
+                                 'intensity' : self.pattern(time).data,
+                                 'error' : self.pattern(time).error,
                                  'inelastic_background': self.inelastic_background(time).data}
             
             # In case of polycrystalline pattern, extra info is useful
@@ -861,7 +872,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         """
         super().__init__(directory)
         
-    def radial_peak_dynamics(self, edge, edge2 = None, subtract_background = False, background_dynamics = False):
+    def radial_peak_dynamics(self, edge, edge2 = None, subtract_background = False, background_dynamics = False, return_error = False):
         """
         Returns a pattern corresponding to the time-dynamics of a location in the 
         diffraction patterns. Think of it as looking at the time-evolution
@@ -880,6 +891,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         background_dynamics : bool, optional
             If True, the radial peak dynamics in the background fit is returned. In this case,
             the subtract_background parameter is ignored
+        return_error: bool, optional
+            If True, a stack of radial intensity errors is returned. Default is False.
         
         Returns
         -------
@@ -887,6 +900,8 @@ class PowderDiffractionDataset(DiffractionDataset):
             Time-delay values as an array
         intensity_series : ndarray, shape (N,M)
             Array of intensities. Each column corresponds to a time-delay
+        error_series : ndarray, shape (N,M)
+            Returned if return_error is True (default is False)
         """
         if background_dynamics:
             subtract_background = False
@@ -914,7 +929,10 @@ class PowderDiffractionDataset(DiffractionDataset):
             errors = (error_series[:, index:index2]).mean(axis=1)
         
         # Normalize intensities
-        return time_values, intensities, errors#/intensities.max()
+        if return_error:
+            return time_values, intensities, errors
+        else:
+            return time_values, intensities
         
     def radial_average(self, time, center, mask_rect = None):
         """
@@ -925,7 +943,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         time : str, numerical, optional
             Time delay value of the image.
         center : array-like, shape (2,)
-            [x,y] coordinates of the center (in pixels)
+            [x,y] coordinates of the center (in pixels). If None, the center of 
+            the image will be determined via the Hough transform.
         mask_rect : Tuple, shape (4,)
             Tuple containing x- and y-bounds (in pixels) for the beamblock mask
             mast_rect = (x1, x2, y1, y2)
@@ -934,11 +953,11 @@ class PowderDiffractionDataset(DiffractionDataset):
         -------
         Pattern object, type 'polycrystalline'
         """
-        xdata, intensity, error = radial_average(self.image(time), center, mask_rect)
+        xdata, intensity, error = radial_average(self.image(time), center, mask_rect, return_error = True)
         
         # Change x-data from pixels to scattering length
         s = scattering_length(xdata, self.energy)
-        return Pattern(data = [s, intensity, error], name = str(time))
+        return Pattern(data = [s, intensity], error = error, name = str(time))
     
     def radial_average_series(self, center, mask_rect = None):
         """
