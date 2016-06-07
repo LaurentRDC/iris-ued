@@ -613,7 +613,7 @@ class PowderToolsWidget(QtGui.QWidget):
         if self.show_inelastic_background_dynamics:
             time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, background_dynamics = True)
         else:
-            time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background, background_dynamics = False)
+            time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background, background_dynamics = False, return_error = True)
         
         # Plot
         colors = spectrum_colors(len(time))
@@ -685,7 +685,6 @@ class PowderToolsWidget(QtGui.QWidget):
         self.radial_pattern_viewer.enableAutoRange()
         self.peak_dynamics_viewer.clear()
         self.peak_dynamics_viewer.enableAutoRange()
-        pdb.set_trace()
         # Adjust title accordingly
         if self.show_inelastic_background_dynamics:
             self.radial_pattern_viewer.getPlotItem().setTitle('Background fits')

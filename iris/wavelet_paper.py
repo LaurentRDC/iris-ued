@@ -23,7 +23,7 @@ PLOT_MARKERSIZE = 2
 directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
 d = dataset.PowderDiffractionDataset(directory)
 
-peaks_to_look_at = [1391, 1801, 2565, 2791, 4985, 5507, 8473]   # Based on s = n.linspace(0.11, 0.8, 10000)
+peaks_to_look_at = [667, 1391, 1801, 2565, 2791, 4985, 5507, 7392, 8473]   # Based on s = n.linspace(0.11, 0.8, 10000)
 
 def spectrum_colors(num_colors):
     """
@@ -286,8 +286,11 @@ def peak_dynamics():
     plt.xlabel('Time-delay (ps)', fontsize = 20)
     plt.ylabel('Absolute change in intensity (a. u.)', fontsize = 20)
     
+    # Return analysis results
     print('Time constants (ps):', results)
-    print('Errors (ps):', errors)
+    print('Fit errors (ps):', errors)
+    print('Average time constant (ps):', n.mean(results))
+    print('Standard deviation (ps):', n.std(results))
 
 def simulated_background_fit_unassisted():
     return simulated_background_fit(background_indices = [])

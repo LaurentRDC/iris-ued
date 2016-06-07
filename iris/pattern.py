@@ -32,8 +32,11 @@ class Pattern(object):
     xdata : ndarray or None
         Scattering length of the pattern, if radial pattern. If Pattern is a 2D
         image (as for single crystal data), xdata is None.
-    data : ndarray, shape (M,N) or shape(M,)
+    data : ndarray, shape (M,N) or shape (M,)
         Image data as an array or intensity data from radially-averaged data.
+    error : ndarray, shape (M,N) or shape (M,)
+        Error in intensity, typically determined to be square root of the total
+        pattern count.
     type : str {'polycrystalline', 'single crystal'}
         Data type.
     name : str
@@ -55,7 +58,7 @@ class Pattern(object):
     fft
         FFT of the pattern.
     """
-    def __init__(self, data, name = ''):
+    def __init__(self, data, error = None, name = ''):
         """
         Parameters
         ----------
@@ -69,12 +72,18 @@ class Pattern(object):
         self.data = None
         self.error = None
         
+        # Parse input
         if isinstance(data, (list, tuple, iter)):
             self.xdata = n.asarray(data[0], dtype = n.float)
             self.data = n.asarray(data[1], dtype = n.float)
-            self.error = n.asarray(data[2],dtype = n.float)
         else:
             self.data = n.asarray(data, dtype = n.float)
+        
+        # Determine error
+        if error is None:
+            self.error = n.zeros_like(self.data, dtype = n.float)
+        else:
+            self.error = error
     
     @property
     def type(self):
