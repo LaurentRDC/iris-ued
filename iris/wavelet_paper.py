@@ -248,7 +248,7 @@ def simulated_background_fit(background_indices = bg_regions):
     frame2.set_ylabel('Residuals (counts)', fontsize = 20)
     frame2.set_xlim([s.min(), s.max()])
     
-    return FOM_over_time
+    return FOM_over_time    
 
 def peak_dynamics():
     s = n.linspace(0.11, 0.8, 10000)
@@ -262,35 +262,41 @@ def peak_dynamics():
     indices = peaks_to_look_at
     colors = spectrum_colors(indices)
     
+    # compute amplitudes
+    ref_amplitudes = [abs(signals[-1].data[i] - signals[0].data[i]) for i in indices]
+    
     # For fitting the time constant
     def exp(time, amp, constant, floor):
         return amp*n.exp(-constant*time) + floor
 
-    results = list()
-    errors = list()
+    time_constant_results = list()
+    amplitude_results = list()
     fig = plt.figure()
+    time_fig = fig.add_axes((0.1, 0.3, 0.8, 0.6))
+    amp_fig = fig.add_axes((0.1, 0.3, 0.8, 0.6))
     for index, color in zip(indices, colors):
-        change = reconstructed_signals[0].data[index] - n.asarray([sig.data[index] for sig in reconstructed_signals])
+        change = n.asarray([sig.data[index] for sig in reconstructed_signals]) - reconstructed_signals[0].data[index]
         change = n.abs(change) # Flip so that the change is always in the same direction
-        change -= change.min()
-        change /= change.max()
         
         # Fit the time constant
-        time_const , covariant_matrix = opt.curve_fit(exp, xdata = TIMEPOINTS, ydata = change)
-        results.append(time_const[1])
-        errors.append(n.sqrt(n.diag(covariant_matrix))[1])
+        params , covariant_matrix = opt.curve_fit(exp, xdata = TIMEPOINTS, ydata = change)
+        amplitude_results.append(params[0])
+        time_constant_results.append(params[1])
             
-        plt.plot(TIMEPOINTS, change, color = color, linestyle = 'None', marker = 'o', markersize = 7)
+        time_fig.plot(TIMEPOINTS, change, color = color, linestyle = 'None', marker = 'o', markersize = 7)
+    
+    # Build amplitude data
+    print('Reference amplitudes: ', n.abs(ref_amplitudes))
+    print('Reconstructed amplitudes: ', n.abs(amplitude_results))
+    print('Average deviation of amplitude (%):', 1 - n.mean(n.abs(ref_amplitudes)/n.abs(amplitude_results)))
     
     # Plot formatting
     plt.xlabel('Time-delay (ps)', fontsize = 20)
     plt.ylabel('Absolute change in intensity (a. u.)', fontsize = 20)
     
     # Return analysis results
-    print('Time constants (ps):', results)
-    print('Fit errors (ps):', errors)
-    print('Average time constant (ps):', n.mean(results))
-    print('Standard deviation (ps):', n.std(results))
+    print('Average time constant (ps):', n.mean(time_constant_results))
+    print('Standard deviation (ps):', n.std(time_constant_results))
 
 def simulated_background_fit_unassisted():
     return simulated_background_fit(background_indices = [])
