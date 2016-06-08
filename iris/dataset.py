@@ -20,13 +20,6 @@ from iris.hough import diffraction_center
 from iris.io import read, save, cast_to_16_bits
 
 import os.path
-<<<<<<< HEAD
-=======
-from iris.tifffile import imread, imsave
-
-HOT_PIXEL_THRESHOLD = 25000
-HOT_PIXEL_VALUE = 0
->>>>>>> origin/master
 
 class cached_property(object):
     """
