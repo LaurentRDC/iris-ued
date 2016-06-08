@@ -6,6 +6,7 @@
 import pdb
 
 #Core functions
+import iris.preprocess
 from iris.dataset import DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
 from iris.progress_widget import InProgressWidget
 import os
@@ -811,6 +812,8 @@ class Iris(QtGui.QMainWindow):
         
         # Assemble menu from previously-defined actions
         file_menu = self.menubar.addMenu('&File')
+        file_menu.addAction(self.preprocess_folder_action)
+        file_menu.addSeparator()
         file_menu.addAction(self.powder_directory_action)
         file_menu.addAction(self.single_crystal_directory_action)
         file_menu.addSeparator()
@@ -856,6 +859,9 @@ class Iris(QtGui.QMainWindow):
     def _init_actions(self):
         
         # General -------------------------------------------------------------
+        self.preprocess_folder_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Preprocess raw data folder', self)
+        self.preprocess_folder_action.triggered.connect(self.preprocess_folder)
+        
         self.powder_directory_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&Powder dataset', self)
         self.powder_directory_action.triggered.connect(self.powder_directory_locator)
         
@@ -900,16 +906,30 @@ class Iris(QtGui.QMainWindow):
         pass
     
     # File handling -----------------------------------------------------------
+    
+    def preprocess_folder(self):
+        """
+        Preprocesses a raw data folder and loads it into iris.
+        """
+        directory = self.file_dialog.getExistingDirectory(self, 'Open raw data folder', 'C:\\')
+        directory = os.path.abspath(directory)
         
-    def powder_directory_locator(self):
+        self.worker = WorkThread(iris.preprocess.preprocess, directory)
+        self.worker.in_progress_signal.connect(self.image_viewer.in_progress_widget.show)
+        self.worker.done_signal.connect(self.image_viewer.in_progress_widget.hide)
+        self.worker.results_signal.connect(self.powder_directory_locator)
+        self.worker.start()
+    
+    @QtCore.pyqtSlot(object)
+    def powder_directory_locator(self, directory = None):
         """ 
         Activates a file dialog that selects the data directory to be processed. If the folder
         selected is one with processed images (then the directory name is C:\\...\\processed\\),
         return data 'root' directory.
         """
-        
-        directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
-        directory = os.path.abspath(directory)
+        if directory is None:
+            directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
+            directory = os.path.abspath(directory)
         self.dataset = PowderDiffractionDataset(directory)
         self.image_viewer.display_data()
         

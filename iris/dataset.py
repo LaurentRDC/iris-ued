@@ -17,12 +17,9 @@ import shutil
 
 from iris.pattern import Pattern
 from iris.hough import diffraction_center
+from iris.io import read, save, cast_to_16_bits
 
 import os.path
-from .tifffile import imread, imsave
-
-HOT_PIXEL_THRESHOLD = 25000
-HOT_PIXEL_VALUE = 0
 
 class cached_property(object):
     """
@@ -95,78 +92,6 @@ def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2
     radius = n.array(radius) * pixel_width
     diffraction_half_angle = n.arctan(radius/camera_distance)/2
     return n.sin(diffraction_half_angle)/electron_wavelength(energy, units = 'angstroms')
-        
-def cast_to_16_bits(array):
-    """ 
-    Returns an array in int16 format. Array values below 0 are cast to 0,
-    and array values above (2**16) - 1 are cast to (2**16) - 1.
-    
-    Parameters
-    ----------
-    array : array-like
-        Array to be cast into 16 bits.
-    
-    Returns
-    -------
-    out : ndarray, dtype numpy.int16
-    """
-    array = n.asarray(array)
-    array[ array < 0] = 0
-    array[ array > (2**16) - 1] = (2**16) - 1
-    return n.around(array, decimals = 0).astype(n.int16)
-    
-def read(filename, return_mask = False):
-    """ 
-    Returns a ndarray from an image filename. 
-    
-    Parameters
-    ----------
-    filename : str
-        Absolute path to the file.
-    return_mask : bool, optional
-        If True, returns a mask the same size as image that evaluates to False
-        on pixels that are invalid due to being above a certain threshold 
-        (hot pixels). Default is False.
-    
-    Returns
-    -------
-    out : ndarray, dtype numpy.float
-        Numpy array from the image.
-    mask : ndarray, dtype numpy.bool
-        Numpy array of the valid pixels. Only returned if return_mask is True
-    """
-    image = imread(filename).astype(n.float)
-    image[image < 0] = 0
-    
-    # Deal with saturated pixels
-    mask = image < HOT_PIXEL_THRESHOLD   # Mask evaluated to False on hot pixels
-    if not return_mask:
-        # Set hot pixels to HOT_PIXEL_VALUE
-        image[n.logical_not(mask)] = HOT_PIXEL_VALUE
-        return image
-    elif return_mask:
-        return image, mask
-    else:
-        raise ValueError("'return_mask' parameter must be bool, not {}.".format(return_mask))
-    
-def save(array, filename):
-    """ 
-    Saves a ndarray to an image filename. 
-    
-    Parameters
-    ----------
-    array : ndarray
-        Image as an array of any type. The array will be cast to 16 bits.
-    filename : str
-        Absolute path to the file.
-    
-    See also
-    --------        
-    cast_to_16_bits
-        For casting rules.
-    """
-    array = cast_to_16_bits(array)
-    imsave(filename, array)
 
 def radial_average(image, center, beamblock_rect, mask = None, return_error = False):
     """
