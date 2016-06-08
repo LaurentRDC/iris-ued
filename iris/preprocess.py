@@ -3,7 +3,7 @@
 Preprocess of Ultrafast Electron Diffraction data
 -------------------------------------------------
 
-This script averages pictures together, subtracting background images when
+This package averages pictures together, subtracting background images when
 possible, in order to reduce the size of datasets. Anything more involved than 
 this (e.g. brightness equalization) should be done in processing.
 
@@ -11,42 +11,20 @@ Preprocessed data is put in a folder called 'processed'. Information is logged
 into a .txt file as well.Experimental parameters (from the original tagfile.txt) 
 are recorded into a file called experimental_parameters.txt.
 
-Arguments
-----------
-directory : str, optional
-    The directory of the data directory. If left empty, the script will act as
-    if it was placed inside the directory itself.
-
-Examples
---------
-Local mode in Windows cmd.exe or Powershell:
-    C:/Users>
-    C:/Users> cd 'K:/2016.03.01.16.57.VO2_1500mW'
-    K:/2016.03.01.16.57.VO2_1500mW>
-    K:/2016.03.01.16.57.VO2_1500mW> python preprocess.py
-    [2016-04-02  13:35:42] Preprocessing begun.
-    [2016-04-02  13:35:42] Script author: Laurent P. René de Cotret
-    [2016-04-02  13:35:42] Script version: 2016-04-02
-    [2016-04-02  13:35:42] Processing directory K:/2016.03.01.16.57.VO2_1500mW
-    ...
-
-Remote mode in Windows cmd.exe or Powershell:
-    C:/Users>
-    C:/Users> python preprocess.py 'K:/2016.03.01.16.57.VO2_1500mW'
-    [2016-04-02  13:35:42] Preprocessing begun.
-    [2016-04-02  13:35:42] Script author: Laurent P. René de Cotret
-    [2016-04-02  13:35:42] Script version: 2016-04-02
-    [2016-04-02  13:35:42] Processing directory K:/2016.03.01.16.57.VO2_1500mW
-    ...
+Functions
+---------
+preprocess
+    Preprocess a raw data folder for use in iris.
+    
+@author : Laurent P. René de Cotret
 """
 
 import sys
-from os.path import abspath, join, isfile, isdir, dirname
+from os.path import join, isfile, isdir
 from os import listdir, mkdir
 from shutil import copy2, rmtree
 from glob import glob
 from datetime import datetime
-from time import sleep
 import re
 import numpy as n
 from iris.io import read, save, RESOLUTION
@@ -54,6 +32,7 @@ from iris.io import read, save, RESOLUTION
 # Info
 __author__ = 'Siwick Lab'
 __version__ = '1.7 released 2016-06-07'
+__all__ = ['preprocess']
 
 # Hard-coded parameters
 SUBSTRATE_FILENAME = 'subs.tif'
