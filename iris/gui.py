@@ -917,25 +917,27 @@ class Iris(QtGui.QMainWindow):
         self.worker = WorkThread(iris.preprocess.preprocess, directory)
         self.worker.in_progress_signal.connect(self.image_viewer.in_progress_widget.show)
         self.worker.done_signal.connect(self.image_viewer.in_progress_widget.hide)
-        self.worker.results_signal.connect(self.powder_directory_locator)
+        self.worker.results_signal.connect(self._load_powder_dataset)
         self.worker.start()
     
     @QtCore.pyqtSlot(object)
-    def powder_directory_locator(self, directory = None):
-        """ 
-        Activates a file dialog that selects the data directory to be processed. If the folder
-        selected is one with processed images (then the directory name is C:\\...\\processed\\),
-        return data 'root' directory.
-        """
-        if directory is None:
-            directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
-            directory = os.path.abspath(directory)
+    def _load_powder_dataset(self, directory):
         self.dataset = PowderDiffractionDataset(directory)
         self.image_viewer.display_data()
         
         # Plot radial averages if they exist. If error, no plot. This is handled
         # by the plot viewer
         self.plot_viewer.display_radial_averages()
+    
+    def powder_directory_locator(self):
+        """ 
+        Activates a file dialog that selects the data directory to be processed. If the folder
+        selected is one with processed images (then the directory name is C:\\...\\processed\\),
+        return data 'root' directory.
+        """
+        directory = self.file_dialog.getExistingDirectory(self, 'Open diffraction dataset', 'C:\\')
+        directory = os.path.abspath(directory)
+        self._load_powder_dataset(directory)
     
     def single_crystal_directory_locator(self):
         """ 
