@@ -502,9 +502,13 @@ class PowderToolsWidget(QtGui.QWidget):
         self.subtract_inelastic_background_action.toggled.connect(self.display_radial_averages)
         self.subtract_inelastic_background_action.toggled.connect(self.update_peak_dynamics_plot)
         
-        self.set_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the inelastic scattering background', self)
-        self.set_inelastic_background.triggered.connect(self.compute_inelastic_background)
+        self.set_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the dynamic inelastic scattering background', self)
+        self.set_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'dynamic'))
         self.set_inelastic_background.setEnabled(False)
+
+        self.set_static_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the static inelastic scattering background', self)
+        self.set_static_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'static'))
+        self.set_static_inelastic_background.setEnabled(False)
         
         self.set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Automatically compute the inelastic scattering background', self)
         self.set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
@@ -513,6 +517,7 @@ class PowderToolsWidget(QtGui.QWidget):
         self.toggle_inelastic_background_tools.setCheckable(True)
         self.toggle_inelastic_background_tools.toggled.connect(self.toggle_inelastic_background_setup)
         self.toggle_inelastic_background_tools.toggled.connect(self.set_inelastic_background.setEnabled)
+        self.toggle_inelastic_background_tools.toggled.connect(self.set_static_inelastic_background.setEnabled)
         self.toggle_inelastic_background_tools.toggled.connect(self.untoggle_peak_dynamics_setup)
         
         self.export_to_matlab = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, '')), '&Export master HDF5 file to MATLAB format', self)
@@ -543,6 +548,7 @@ class PowderToolsWidget(QtGui.QWidget):
         inelastic_menu = self.menubar.addMenu('&Inelastic Scattering')
         inelastic_menu.addAction(self.toggle_inelastic_background_tools)
         inelastic_menu.addAction(self.set_inelastic_background)
+        inelastic_menu.addAction(self.set_static_inelastic_background)
         inelastic_menu.addAction(self.set_auto_inelastic_background)
         
         export_menu = self.menubar.addMenu('&Export')
@@ -612,7 +618,7 @@ class PowderToolsWidget(QtGui.QWidget):
         #Get region
         min_x, max_x = self.peak_dynamics_region.getRegion()
         if self.show_inelastic_background_dynamics:
-            time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, background_dynamics = True)
+            time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, background_dynamics = True, return_error = True)
         else:
             time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background, background_dynamics = False, return_error = True)
         
@@ -621,7 +627,7 @@ class PowderToolsWidget(QtGui.QWidget):
         self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
         #Error bars
-        error_bars = pg.ErrorBarItem(x=time,y=intensity,height = error/2.0)
+        error_bars = pg.ErrorBarItem(x=time,y=intensity,height = error/2)
         self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
@@ -741,6 +747,10 @@ class PowderToolsWidget(QtGui.QWidget):
         """
         Compute inelastic scattering background. if mode == 'auto', positions are
         automatically determined using the continuous wavelet transform
+
+        Parameters
+        ----------
+        mode : str, {'auto', 'dynamic', 'static'}
         """
         if self.dataset is None:
             return
@@ -750,10 +760,15 @@ class PowderToolsWidget(QtGui.QWidget):
         #Thread the computation
         if mode == 'auto':
             self.worker = WorkThread(self.dataset.inelastic_background_fit,
-                                     None)
-        else:
+                                     None,
+                                     'dynamic')
+        elif mode in ['dynamic', 'static']:
             self.worker = WorkThread(self.dataset.inelastic_background_fit,
-                                     self.inelastic_background_lines_positions)
+                                     self.inelastic_background_lines_positions,
+                                     mode)
+        else:
+            return
+
             
         self.worker.in_progress_signal.connect(self.progress_widget_radial_patterns.show)
         self.worker.done_signal.connect(self.progress_widget_radial_patterns.hide)
