@@ -428,7 +428,7 @@ class DiffractionDataset(object):
     
     # Operations --------------------------------------------------------------
     
-    def inelastic_background_fit(self, positions, **kwargs):
+    def inelastic_background_fit(self, positions, mode = 'dynamic', **kwargs):
         """
         Fits an inelastic scattering background to the data. The fits are applied 
         to each time point independently. Results are then exported to the master
@@ -440,15 +440,31 @@ class DiffractionDataset(object):
             x-data positions of where radial averages are known to be purely background. 
             If None, the positions will be automatically determined. For an unassisted
             fit, set positions = [].
+        mode : str, {'dynamic' (default), 'static'}
+            Background fit mode. If 'dynamic', an inelastic background is fit to each pattern
+            independently. If 'static', the first inelastic background fit for the first time-point 
+            is used for all time-points.
         
         *args : optional arguments
             Can be any argument accepted by iris.pattern.Pattern.baseline. Most
             useful are max_iter and wavelet.
+        
+        Raises
+        ------
+        ValueError 
+            If mode argument is invalid
         """
         backgrounds = list()
-        for time in self.time_points:
-            backgrounds.append( (time, self.pattern(time).baseline(background_regions = positions, level = None, **kwargs)) )
-            
+        if mode == 'dynamic':
+            for time in self.time_points:
+                backgrounds.append( (time, self.pattern(time).baseline(background_regions = positions, level = None, **kwargs)) )
+        elif mode == 'static':
+            static_background = self.pattern(self.time_points[0]).baseline(background_regions = positions, level = None, **kwargs)
+            for time in self.time_points:
+                backgrounds.append( (time, static_background))
+        else:
+            raise ValueError("'mode' argument {} invalid. Possible values are ['dynamic', 'static']".format(mode))
+        
         self._export_background_results(backgrounds)
     
     # -------------------------------------------------------------------------
@@ -552,7 +568,7 @@ class DiffractionDataset(object):
         """ Plots the total intensity of the pumpoff pictures. """
         overall_intensity = list()
         for fn in self._pumpoff_filenames:
-            overall_intensity.append( imread(os.path.join(self._pumpoff_directory, fn)).sum() )
+            overall_intensity.append( read(os.path.join(self._pumpoff_directory, fn)).sum() )
         return n.array(overall_intensity)/overall_intensity[0]
 
     # Master HDF5 results file ------------------------------------------------
@@ -824,7 +840,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         time_values : ndarray, shape (N,)
             Time-delay values as an array
         intensity_series : ndarray, shape (N,M)
-            Array of intensities. Each column corresponds to a time-delay
+            Array of intensities. Each column corresponds to a time-delay. 
+            Intensities are normalized to the maximal intensity over time.
         error_series : ndarray, shape (N,M)
             Returned if return_error is True (default is False)
         """
@@ -848,16 +865,17 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         if edge2 is None:
             intensities = intensity_series[:, index] - background_series[:, index]
+            errors = error_series[:, index]
         else:
             index2 = n.argmin(n.abs(scattering_length - edge2))
             intensities = (intensity_series[:, index:index2] - background_series[:, index:index2]).mean(axis = 1)
-            errors = (error_series[:, index:index2]).mean(axis=1)
+            errors = error_series[:, index:index2].mean(axis=1)
         
         # Normalize intensities
         if return_error:
-            return time_values, intensities, errors
+            return time_values, intensities/intensities.max(), errors/intensities.max()
         else:
-            return time_values, intensities
+            return time_values, intensities/intensities.max()
         
     def radial_average(self, time, center, mask_rect = None):
         """

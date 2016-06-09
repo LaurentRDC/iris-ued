@@ -280,7 +280,7 @@ def peak_dynamics():
         
         # Fit the time constant
         params , covariant_matrix = opt.curve_fit(exp, xdata = TIMEPOINTS, ydata = change)
-        amplitude_results.append(params[0])
+        amplitude_results.append(change.max() - change.min())
         time_constant_results.append(params[1])
             
         time_fig.plot(TIMEPOINTS, change, color = color, linestyle = 'None', marker = 'o', markersize = 7)
