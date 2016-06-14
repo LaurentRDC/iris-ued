@@ -10,13 +10,15 @@ image_list = glob.glob('App\\images\\*.png')
 
 setup(
     name = 'Iris', 
-    version = 'v1.5',
-    packages = ['iris.tifffile','iris.pyqtgraph'],
+    version = 'v1.6',
+    packages = ['iris', 'iris.tifffile','iris.pyqtgraph'],
     description = 'UED data exploration', 
     author = 'Laurent P. René de Cotret',
+    author_email = 'laurent.renedecotret@mail.mcgill.ca',
     url = 'www.physics.mcgill.ca/siwicklab',
     scripts = ['post_installation_script.py'],
-    py_modules = ['iris.dataset','iris.curve', 'iris.iris', 'iris.progress_widget'], 
-    install_requires = ['numpy', 'pyqt4', 'scipy', 'h5py', 'PyWavelet'],
+    py_modules = ['iris.dataset','iris.pattern', 'iris.gui', 'iris.progress_widget', 
+                  'iris.hough', 'iris.preprocess', 'iris.wavelet'], 
+    install_requires = ['numpy', 'pyqt4', 'scipy', 'h5py', 'PyWavelets'],
     data_files = [('App\\images', image_list)]
     )

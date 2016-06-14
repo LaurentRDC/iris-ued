@@ -249,7 +249,7 @@ def simulated_background_fit(background_indices = bg_regions):
     for i, background, signal, c in zip(range(len(TIMEPOINTS)), backgrounds, signals, colors):
         noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
         composite = signal + background + noise
-        wav_background = composite.baseline(background_regions = background_regions, max_iter = 1000, level = None, wavelet = 'sym6')   # Use max level with level = None
+        wav_background = composite.baseline(background_regions = background_regions, max_iter = 1000, level = None, wavelet = 'sym4')   # Use max level with level = None
         
         frame3.plot(wav_background.xdata, wav_background.data, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
         
@@ -445,5 +445,5 @@ def track_background(compute = False):
 if __name__ == '__main__':
     pass
     #FOM = simulated_background_fit_unassisted()
-    #peak_dynamics()
+    peak_dynamics()
     #reconstruction_spectra()

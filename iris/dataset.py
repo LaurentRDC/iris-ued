@@ -188,7 +188,127 @@ def radial_average(image, center, beamblock_rect, mask = None, return_error = Fa
         return radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index]
 
 
-class DiffractionDataset(object):
+class RawDataset(object):
+    """
+    Wrapper around raw dataset as produced by UEDbeta.
+    
+    Attributes
+    ----------
+    directory : str or path
+    
+    nscans : int
+    
+    processed : bool
+    
+    Methods
+    -------
+    raw_image
+        
+    """
+    _master_file = 'master.hdf5'
+    
+    def __init__(self, directory):
+        if os.path.isdir(directory):
+            self.raw_directory = directory
+        else:
+            raise ValueError('The path {} is not a directory'.format(directory))
+    
+    @property
+    def nscans(self):
+        pass
+    
+    @property
+    def processed(self):
+        return os.path.isdir(os.path.join(self.raw_directory, 'processed'))
+    
+    @property
+    def compressed(self):
+        return os.path.isfile(os.path.join(self.raw_directory, self._master_file))
+        
+    def raw_image(self, timedelay, scan):
+        """
+        Returns an array of the raw TIFF. If the RawDataset has been compressed,
+        the raw image will come from the compressed master HDF5 file.
+        
+        Parameters
+        ----------
+        timedelay : numerical
+            Time-delay in picoseconds.
+        scan : int, > 0
+            Scan number. 
+        
+        Returns
+        -------
+        arr : ndarray, shape (N,M)
+        
+        Raises
+        ------
+        ValueError
+            Filename is not associated with a TIFF.
+        
+        Notes
+        -----
+        Template filename looks like:
+            'data.timedelay.+1.00.nscan.04.pumpon.tif'
+        """
+        sign = '-' if timedelay < 0 else '+'
+        str_time = sign + '{0:.2f}'.format(float(timedelay))
+        filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
+        
+        if self.compressed:
+            with File(os.path.join(self.raw_directory, self._master_file), 'a', libver = 'latest') as master:
+                return n.array(master['/{}'.format(filename)])
+        else:
+            return read(os.path.join(self.raw_directory, filename)).astype(n.int16)
+    
+    def compress(self, cleanup = False):
+        """
+        Copy the raw TIFFs into an HDF5 file. This is meant as long-term storage.
+        
+        Parameters
+        ----------
+        cleanup : bool, optional
+            If True, TIFF images are deleted after being compressed to HDF5. Default
+            is False.
+        
+        See also
+        --------
+        uncompress
+        """
+        if self.compressed:
+            return
+        
+        with File(os.path.join(self.raw_directory, self._master_file), 'x', libver = 'latest') as master:
+            
+            # Iteratively store pictures in the master file
+            for filename in os.listdir(self.raw_directory):
+                if not filename.endswith('tif'):
+                    continue
+                
+                file = os.path.join(self.raw_directory, filename)
+                image = read(file)
+                master.create_dataset(name = str(filename), shape = image.shape, dtype = n.int16, data = image, compression = 'lzf')
+                
+                if cleanup :
+                    os.remove(file)
+    
+    def uncompress(self):
+        """
+        Export the raw images as TIFFs.
+        """
+        if not self.compressed:
+            raise RuntimeError('Raw dataset is not compressed. Decompression is impossible.')
+        
+        # Iterate over datasets
+        with File(os.path.join(self.raw_directory, self._master_file), 'r', libver = 'latest') as master:
+            for dataset_name in master:
+                save(n.array(master[dataset_name]), filename = os.path.join(self.raw_directory, dataset_name))
+        
+        os.remove(os.path.join(self.raw_directory, self._master_file))
+            
+
+
+class DiffractionDataset(RawDataset):
     """ 
     Container object for Ultrafast Electron Diffraction Datasets from the Siwick 
     Research group.
@@ -256,11 +376,13 @@ class DiffractionDataset(object):
             Absolute path to the dataset directory
         """
         # Check that the directory is a 'processed' directory.
-        if not directory.endswith('processed') and 'processed' in os.listdir(directory):
-            directory = os.path.join(directory, 'processed')
-        
-        self.raw_directory = os.path.dirname(directory)
-        self.directory = directory
+        if directory.endswith('processed'):
+            self.directory = directory
+        else:
+            self.directory = os.path.join(directory, 'processed')
+            
+        self.raw_directory = os.path.dirname(self.directory)
+        super().__init__(self.raw_directory)
     
     @property
     def time_points(self):            
@@ -678,7 +800,7 @@ class DiffractionDataset(object):
                 del group[dataset_name]
             except:
                 pass
-            group.create_dataset(dataset_name, dtype = n.float, data = n.asarray(data))
+            group.create_dataset(dataset_name, dtype = n.float, data = n.asarray(data), compression = 'lzf')
     
     def _export_results(self, results):
         """
@@ -972,13 +1094,10 @@ class SinglePictureDataset(PowderDiffractionDataset):
     @property    
     def acquisition_date(self):
         return '0.0.0.0.0'
-        
-        
-        
 
 if __name__ == '__main__':
    # from matplotlib.pyplot import imshow
-   # directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
-   # d = PowderDiffractionDataset(directory)
+   directory = 'K:\\test_folder'#'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
+   d = RawDataset(directory)
    # imshow(d.inelastic_background_evolution())
    pass 
