@@ -61,8 +61,6 @@ def approx_rec(array, level, wavelet, array_mask = []):
     if isinstance(wavelet, str):
         wavelet = pywt.Wavelet(wavelet)
         
-    # TODO: pad for better filtering?
-        
     # Check maximum decomposition level
     # For 2D array, check the condition with shortest dimension min(array.shape). This is how
     # it is done in PyWavelet.wavedec2.
@@ -198,7 +196,7 @@ def baseline(array, max_iter, level = None, wavelet = 'sym6', background_regions
     
     # The background should be identically 0 where the data points are invalid
     # A boolean ndarray is 0 where False, and 1 where True
-    # Therefore, simple multiplication does what we want
+    # Therefore, simple multiplication does what we want        
     return background*mask
     
     

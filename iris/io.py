@@ -74,7 +74,7 @@ def resize(array, resolution = RESOLUTION):
     
 def read(filename, return_mask = False):
     """ 
-    Returns a ndarray from an image filename. 
+    Returns a ndarray from an image filename.  Only TIFF are supported.
     
     Parameters
     ----------
@@ -91,6 +91,10 @@ def read(filename, return_mask = False):
         Numpy array from the image.
     mask : ndarray, dtype numpy.bool
         Numpy array of the valid pixels. Only returned if return_mask is True
+    
+    Raises
+    ------
+    FileNotFoundError
     """
     image = imread(filename).astype(n.float)
     if image.shape != RESOLUTION:
