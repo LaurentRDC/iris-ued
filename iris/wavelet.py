@@ -61,6 +61,8 @@ def approx_rec(array, level, wavelet, array_mask = []):
     if isinstance(wavelet, str):
         wavelet = pywt.Wavelet(wavelet)
         
+    # TODO: pad for better filtering?
+        
     # Check maximum decomposition level
     # For 2D array, check the condition with shortest dimension min(array.shape). This is how
     # it is done in PyWavelet.wavedec2.
@@ -93,7 +95,7 @@ def approx_rec(array, level, wavelet, array_mask = []):
         
     # Reconstruct signal
     reconstructed = rec_func([app_coeffs] + zeroed, wavelet = wavelet, mode = EXTENSION_MODE)
-        
+    
     # Adjust size of reconstructed signal so that it is the same size as input
     if reconstructed.size == original_array.size:
         return reconstructed
@@ -211,6 +213,10 @@ def denoise(array, wavelet = 'db5'):
     wavelet : PyWavelet.Wavelet object or str, optional
         Wavelet with which to perform the algorithm. See PyWavelet documentation
         for available values. Default is 'db5'.
+    
+    Returns
+    -------
+    out : ndarray, shape (M,N)
     """
     return approx_rec(array = array, level = 1, wavelet = wavelet)
     

@@ -6,7 +6,7 @@ from colorsys import hsv_to_rgb
 import pywt
 import numpy as n
 import scipy.optimize as opt
-from uediff.structure import crystalMaker
+from uediff.structure import InorganicCrystal
 from uediff.instrumentation import gaussian
 from uediff.diffsim.powder import powder_diffraction
 from iris import pattern, dataset
@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 # Typical experimental time-points
 # and other useful CONSTANTS
 TIMEPOINTS = n.arange(0, 30, dtype = n.float)
-DEC_LEVEL = 10
 NOISE_STD = 0.05
 PLOT_MARKERSIZE = 2
 
@@ -84,7 +83,7 @@ def best_wavelet():
     """
     Determines what the best wavelet is for unassisted background removal for UED data
     """
-    VO2 = crystalMaker('M1')
+    VO2 = InorganicCrystal.from_preset('M1')
     
     s = n.linspace(0.11, 0.8, 1000)
     background = 80*n.exp(-7*s) + 50*n.exp(-2*s)
@@ -129,7 +128,7 @@ def time_dependent_background(scatt_angle):
         return n.linspace(55, 56, num = len(time_points))
     
     def substrate_amp1(time_points):
-        return n.linspace(0.9, 1, num = len(time_points))
+        return n.linspace(0.8, 0.9, num = len(time_points))
         
     def substrate_amp2(time_points):
         return n.linspace(1, 0.9, num = len(time_points))
@@ -143,11 +142,34 @@ def time_dependent_background(scatt_angle):
         backgrounds.append( pattern.Pattern([scatt_angle, arr], str(time)) )
     return backgrounds
 
+def static_background(scatt_angle):
+    """
+    Returns an array of time-varying background.
+    
+    Parameters
+    ----------
+    scatt_angle : ndarray, shape (N,)
+        Scattering angle 's'
+    
+    Returns
+    -------
+    background : ndarray, shape (N, M)
+        Background array for which each row is associated with a specific timepoint
+    """
+
+    amp, subamp, dec, subs1, subs2 = 75, 55, -7, 0.8, 1
+    arr = amp*n.exp(dec*scatt_angle) + subamp*n.exp(-2*scatt_angle) + subs1*gaussian(scatt_angle, (scatt_angle.max() + scatt_angle.min())/2, (scatt_angle.max() - scatt_angle.min())/8) + subs2*gaussian(scatt_angle, (scatt_angle.max() + scatt_angle.min())/2.5, (scatt_angle.max() - scatt_angle.min())/8)
+    backgrounds = list()
+    for time in TIMEPOINTS:
+        backgrounds.append( pattern.Pattern([scatt_angle, arr], str(time)) )
+    return backgrounds
+    
+
 def time_dependent_diffraction(scatt_angle):
     # Generate time dynamics
     # Simulate powder diffraction first
-    R = crystalMaker('R')
-    M1 = crystalMaker('M1')
+    R = InorganicCrystal.from_preset('R')
+    M1 = InorganicCrystal.from_preset('M1')
     r_pattern = 20*powder_diffraction(R, plot = False, scattering_length = scatt_angle)[1]
     m1_pattern = 20*powder_diffraction(M1, plot = False, scattering_length = scatt_angle)[1]
     
@@ -172,8 +194,8 @@ def plot_dynamics():
         composite = diff_pattern + bg
         noise = n.random.normal(0.0, NOISE_STD, size = composite.data.shape)
         plt.plot(composite.xdata, composite.data + noise, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
-    plt.xlabel('Scattering length (1/A)')
-    plt.ylabel('Intensity (counts)')
+    plt.xlabel('Scattering length (1/A)', fontsize = 20)
+    plt.ylabel('Intensity (counts)', fontsize = 20)
     plt.xlim([s.min(), s.max()])
 
 def figure_of_merit(array1, array2):
@@ -204,7 +226,7 @@ def simulated_background_fit(background_indices = bg_regions):
     
     # Determine background regions in terms of s
     background_regions = [s[i] for i in background_indices]
-    backgrounds = time_dependent_background(s)
+    backgrounds = static_background(s)
     
     # Generate main signal with gaussian noise on the order of 0.25 count
     signals = time_dependent_diffraction(s)
@@ -213,9 +235,12 @@ def simulated_background_fit(background_indices = bg_regions):
     
     FOM_over_time = n.zeros_like(TIMEPOINTS, dtype = n.float)
     fig = plt.figure()
+    fig2 = plt.figure()
     frame1 = fig.add_axes((0.1, 0.3, 0.8, 0.6)) #TODO: add inset for reconstruction figure of merit
     frame2 = fig.add_axes((0.1, 0.1, 0.8, 0.2))
     frame2.axhline(y = 0, color = 'k', linewidth = 2)
+    
+    frame3 = fig2.add_axes( (0.1, 0.3, 0.8, 0.6) )
     
     # Add vertical line to plot to indicate peak dynamic sthat will be investigated later
     for index in peaks_to_look_at:
@@ -224,7 +249,9 @@ def simulated_background_fit(background_indices = bg_regions):
     for i, background, signal, c in zip(range(len(TIMEPOINTS)), backgrounds, signals, colors):
         noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
         composite = signal + background + noise
-        wav_background = composite.baseline(background_regions = background_regions, max_iter = 1000, level = None, wavelet = 'sym4')   # Use max level with level = None
+        wav_background = composite.baseline(background_regions = background_regions, max_iter = 1000, level = None, wavelet = 'sym6')   # Use max level with level = None
+        
+        frame3.plot(wav_background.xdata, wav_background.data, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
         
         reconstructed = composite - wav_background
         reference = signal + noise
@@ -248,11 +275,21 @@ def simulated_background_fit(background_indices = bg_regions):
     frame2.set_ylabel('Residuals (counts)', fontsize = 20)
     frame2.set_xlim([s.min(), s.max()])
     
+    frame3.set_xlabel('Scattering length (1/A)', fontsize = 20)
+    frame3.set_ylabel('Intensity (counts)', fontsize = 20)
+    frame3.set_xlim([s.min(), s.max()])
+    
+    # Plot background dynamics
+    fig2 = plt.figure()
+    for c, bg in zip(colors, backgrounds):
+        plt.plot(bg.xdata, bg.data, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
+    
+    
     return FOM_over_time    
 
 def peak_dynamics():
     s = n.linspace(0.11, 0.8, 10000)
-    backgrounds = time_dependent_background(s)
+    backgrounds = static_background(s)
     signals = time_dependent_diffraction(s)
     noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
     composites = [bg + sig + noise for bg, sig in zip(backgrounds, signals)]
@@ -316,16 +353,20 @@ def reconstruction_spectra():
     
     # Plot specta
     fig1 = plt.figure()
-    background_spectrum = background.fft()
-    plt.plot(background_spectrum.xdata, background_spectrum.data, 'r.')
-    
-    fig2 = plt.figure()
-    signal_spectrum = signal.fft()
-    plt.plot(signal_spectrum.xdata, signal_spectrum.data, 'b.')
-    
-    fig3 = plt.figure()
+    background_spectrum = reconstructed_background.fft()
+    signal_spectrum = reconstructed_signal.fft()
     residual_spectrum = residuals.fft()
-    plt.plot(residual_spectrum.xdata, residual_spectrum.data, 'g.')
+    
+    plt.plot(signal_spectrum.xdata, signal_spectrum.data, 'b-')
+    plt.plot(residual_spectrum.xdata, residual_spectrum.data, 'g-')
+    
+    plt.xlim((0, 20))
+    plt.title('Background spectrum')
+    plt.xlabel('Conjugate of scattering length', fontsize = 15)
+    plt.ylabel('Power spectrum', fontsize = 15)
+
+    fig2 = plt.figure()
+    plt.plot(background_spectrum.xdata, background_spectrum.data, 'r-')
     
 
 # -----------------------------------------------------------------------------
@@ -404,4 +445,5 @@ def track_background(compute = False):
 if __name__ == '__main__':
     pass
     #FOM = simulated_background_fit_unassisted()
-    peak_dynamics()
+    #peak_dynamics()
+    #reconstruction_spectra()
