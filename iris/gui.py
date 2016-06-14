@@ -489,6 +489,11 @@ class PowderToolsWidget(QtGui.QWidget):
         
     def _init_actions(self):
         
+        self.toggle_line_connect_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Show/hide dynamics line connect', self)
+        self.toggle_line_connect_action.setCheckable(True)
+        self.toggle_line_connect_action.setChecked(False)
+        self.toggle_line_connect_action.toggled.connect(self.update_peak_dynamics_plot)
+        
         self.toggle_background_dynamics_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Show/hide background dynamics plot', self )
         self.toggle_background_dynamics_action.setCheckable(True)
         self.toggle_background_dynamics_action.toggled.connect(self.display_radial_averages)
@@ -544,6 +549,8 @@ class PowderToolsWidget(QtGui.QWidget):
         display_menu.addAction(self.subtract_inelastic_background_action)
         display_menu.addSeparator()
         display_menu.addAction(self.toggle_background_dynamics_action)
+        display_menu.addSeparator()
+        display_menu.addAction(self.toggle_line_connect_action)
         
         inelastic_menu = self.menubar.addMenu('&Inelastic Scattering')
         inelastic_menu.addAction(self.toggle_inelastic_background_tools)
@@ -588,6 +595,13 @@ class PowderToolsWidget(QtGui.QWidget):
     @property
     def wavelet_decomposition_level(self):
         return int(self.wavelet_dec_level_box.currentText())
+    
+    @property
+    def dynamics_pen(self):
+        if self.toggle_line_connect_action.isChecked():
+            return pg.mkPen('w')
+        else:
+            return None
         
     @property
     def peak_dynamics_region_shown(self):
@@ -624,7 +638,7 @@ class PowderToolsWidget(QtGui.QWidget):
         
         # Plot
         colors = spectrum_colors(len(time))
-        self.peak_dynamics_viewer.plot(time, intensity, pen = None, symbol = 'o', 
+        self.peak_dynamics_viewer.plot(time, intensity, pen = self.dynamics_pen, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
         #Error bars
         error_bars = pg.ErrorBarItem(x=time,y=intensity,height = error/2)
