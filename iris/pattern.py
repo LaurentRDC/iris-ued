@@ -3,24 +3,9 @@
 #Basics
 import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
+import h5py
 
-import scipy.optimize as opt
 from iris.wavelet import baseline
-from warnings import warn
-
-
-def biexponential(x, amplitude1, amplitude2, decay1, decay2, offset1, offset2, floor):
-    """
-    Returns a biexponential function evaluated over an array.
-    
-    Notes
-    -----
-    In case of fitting, there are 7 free parameters, and thus at least 7 points
-    must be provided.
-    """
-    exp1 = amplitude1*n.exp(-decay1*(x - offset2))
-    exp2 = amplitude2*n.exp(-decay2*(x - offset1))
-    return exp1 + exp2 + floor
 
 class Pattern(object):
     """
@@ -85,6 +70,17 @@ class Pattern(object):
         else:
             self.error = error
     
+    @classmethod
+    def from_hdf5(self, group):
+        try:
+            assert isinstance(group, h5py.Group)
+        except AssertionError:
+            raise TypeError('Input group should be an instance of h5py.Group, not {}'.format(type(group)))
+        
+        name, xdata, data, error = group.attrs['name'], n.array(group['xdata']), n.array(group['data']), n.array(group['error'])
+        return Pattern(data = (xdata, data), error = error, name = name)
+
+    
     @property
     def type(self):
         if self.data.ndim == 1:
@@ -115,6 +111,29 @@ class Pattern(object):
             return Pattern([n.array(self.xdata), n.array(self.data)], name = self.name)
         elif self.type == 'single crystal':
             return Pattern(data = n.array(self.data), name = self.name)
+    
+    def save(self, group):
+        """
+        Saves the pattern as a set of datasets inside an HDF5 group
+        
+        Parameters
+        ----------
+        group : h5py.Group object
+            Group in which to save the instance.
+        """
+        try:
+            assert isinstance(group, h5py.Group)
+        except AssertionError:
+            raise TypeError('Input group should be an instance of h5py.Group, not {}'.format(type(group)))
+            
+        group.attrs['name'] = self.name
+        
+        # Overwrite all preexisting datasets
+        for name_field, data_field in zip(['xdata', 'data', 'error'], [self.xdata, self.data, self.error]):
+            if name_field in group:
+                del group[name_field]
+            group.create_dataset(name = name_field, shape = data_field.shape, 
+                                 dtype = data_field.dtype, data = data_field)
     
     def plot(self):
         """ For debugging purposes. """
@@ -183,52 +202,7 @@ class Pattern(object):
                                      wavelet = wavelet,
                                      background_regions = background_indices)
         
-        return Pattern([self.xdata, background_values], 'IBG {0}'.format(self.name))
-        
-    def inelastic_background_legacy(self, xpoints):
-        """
-        Legacy inelastic scattering background fit.
-        
-        Parameters
-        ----------
-        points : array-like, optional
-            x-values of the points to fit to.
-        """
-        # Preliminaries
-        xpoints = n.array(xpoints, dtype = n.float)
-        
-        def positivity_constraint(params):
-            """
-            This function returns a positive value if the background is less than
-            the data, everywhere.
-            """
-            return self.data - biexponential(self.xdata, *params)
-        
-        def residuals(params):
-            """
-            This function is 0 if the background passes through all required xpoints
-            """
-            background = biexponential(xpoints, *params)
-            ypoints = n.interp(xpoints, self.xdata, self.data)     # interpolation of the data at the background xpoints
-            return n.sum( (ypoints - background) ** 2 )
-            
-        constraints = {'type' : 'ineq', 'fun' : positivity_constraint}
-        
-        #Create initial guesses
-        # amp1, amp2, decay1, decay2, offset1, offset2, floor
-        guesses = (75, 52, 7, 2,0,0,self.data.min())
-        
-        # Bounds detemined by logic and empiricism
-        bounds = [(0, 1e3*self.data.max()), (0, 1e3*self.data.max()), (-100, 100),(-100, 100), (-1e4, 1e4), (-1e4, 1e4), (-1e4, 1e4)]
-        
-        # method = 'SLSQP', 
-        results = opt.minimize(residuals, x0 = guesses, bounds = bounds, constraints = constraints, method = 'SLSQP', options = {'disp' : True, 'maxiter' : 1000})
-        
-        # Create inelastic background function 
-        amp1, amp2, dec1, dec2, off1, off2, floor = results.x
-        new_fit = biexponential(self.xdata, amp1, amp2, dec1, dec2, off1, off2, floor)
-        return Pattern([self.xdata, new_fit], 'IBG {0}'.format(self.name))
-
+        return Pattern([self.xdata, background_values], error = None, name = 'baseline {}'.format(self.name))
         
     def _background_guesses(self, data_values = False):
         """
