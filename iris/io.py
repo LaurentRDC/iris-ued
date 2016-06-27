@@ -72,7 +72,7 @@ def resize(array, resolution = RESOLUTION):
         base[:array.shape[0],:array.shape[1]] = array
     return base
     
-def read(filename, return_mask = False):
+def read(filename, return_mask = False, normalize = False):
     """ 
     Returns a ndarray from an image filename.  Only TIFF are supported.
     
@@ -84,6 +84,8 @@ def read(filename, return_mask = False):
         If True, returns a mask the same size as image that evaluates to False
         on pixels that are invalid due to being above a certain threshold 
         (hot pixels). Default is False.
+    normalize : bool, optional
+        If True, normalized image to the total number of counts. Default is False.
     
     Returns
     -------
@@ -91,6 +93,7 @@ def read(filename, return_mask = False):
         Numpy array from the image.
     mask : ndarray, dtype numpy.bool
         Numpy array of the valid pixels. Only returned if return_mask is True
+        
     
     Raises
     ------
@@ -106,6 +109,9 @@ def read(filename, return_mask = False):
     if not return_mask:
         # Set hot pixels to _HOT_PIXEL_VALUE
         image[n.logical_not(mask)] = _HOT_PIXEL_VALUE
+        # Normalize to total counts
+        if normalize is True:
+            image = image/n.sum(image)
         return image
     elif return_mask:
         return image, mask
