@@ -28,11 +28,14 @@ RESOLUTION
 import numpy as n
 from iris.tifffile import imread, imsave
 
-__all__ = ['read', 'save', 'resize', 'cast_to_16_bits', 'RESOLUTION']
+__all__ = ['read', 'save', 'resize', 'cast_to_16_bits', 'RESOLUTION', 'ImageNotFoundError']
 
 RESOLUTION = (2048, 2048)
 _HOT_PIXEL_THRESHOLD = 25000
 _HOT_PIXEL_VALUE = 0
+
+class ImageNotFoundError(FileNotFoundError):
+    pass
 
 def cast_to_16_bits(array):
     """ 
@@ -72,7 +75,7 @@ def resize(array, resolution = RESOLUTION):
         base[:array.shape[0],:array.shape[1]] = array
     return base
     
-def read(filename, return_mask = False, normalize = False):
+def read(filename, normalize = False):
     """ 
     Returns a ndarray from an image filename.  Only TIFF are supported.
     
@@ -97,25 +100,24 @@ def read(filename, return_mask = False, normalize = False):
     
     Raises
     ------
-    FileNotFoundError
+    ImageNotFoundError
     """
-    image = imread(filename).astype(n.float)
+    try:
+        image = imread(filename).astype(n.float)
+    except:
+        raise ImageNotFoundError
     if image.shape != RESOLUTION:
         image = resize(image, RESOLUTION)
-    image[image < 0] = 0
     
     # Deal with saturated pixels
     mask = image < _HOT_PIXEL_THRESHOLD   # Mask evaluated to False on hot pixels
-    if not return_mask:
-        # Set hot pixels to _HOT_PIXEL_VALUE
-        image[n.logical_not(mask)] = _HOT_PIXEL_VALUE
-        # Normalize to total counts
-        if normalize is True:
-            image = image/n.sum(image)
-        return image
-    elif return_mask:
-        return image, mask
-
+    # Set hot pixels to _HOT_PIXEL_VALUE
+    image[n.logical_not(mask)] = _HOT_PIXEL_VALUE
+    image[image < 0] = 0
+    # Normalize to total counts
+    if normalize is True:
+        image = image/n.sum(image)
+    return image
     
 def save(array, filename):
     """ 

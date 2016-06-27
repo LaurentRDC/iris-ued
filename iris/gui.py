@@ -7,7 +7,7 @@ import pdb
 
 #Core functions
 import iris.preprocess
-from iris.dataset import DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
+from iris.dataset import RawDataset, DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
 from iris.progress_widget import InProgressWidget
 import os
 
@@ -380,7 +380,7 @@ class SingleCrystalToolsWidget(QtGui.QWidget):
     -------
     """
     def __init__(self, parent):
-        super(SingleCrystalToolsWidget, self).__init__()
+        super().__init__()
         self.parent = parent
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
@@ -453,11 +453,8 @@ class PowderToolsWidget(QtGui.QWidget):
     display_radial_averages
         Plot the data from a PowderDiffractionDataset object
     
-    compute_inelastic_background
+    compute_baseline
         Wavelet decomposition of the inelastic scattering background.
-    
-    matlab_export
-        Export the master HDF5 file from a PowderDiffractionDataset to *.mat
     """
     def __init__(self, parent):
         
@@ -478,7 +475,7 @@ class PowderToolsWidget(QtGui.QWidget):
         self.background_curve_item = None
         
         # Need 7 lines because biexponential fit has 7 free parameters
-        self.inelastic_background_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(10)]
+        self.baseline_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(10)]
         
         # In progress widgets
         self.progress_widget_radial_patterns = InProgressWidget(parent = self.radial_pattern_viewer)
@@ -498,35 +495,32 @@ class PowderToolsWidget(QtGui.QWidget):
         self.toggle_background_dynamics_action.setCheckable(True)
         self.toggle_background_dynamics_action.toggled.connect(self.display_radial_averages)
         
-        self.show_inelastic_background_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Show/hide inelastic scattering background', self )
-        self.show_inelastic_background_action.setCheckable(True)
-        self.show_inelastic_background_action.toggled.connect(self.set_background_curve)
+        self.show_baseline_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Show/hide inelastic scattering background', self )
+        self.show_baseline_action.setCheckable(True)
+        self.show_baseline_action.toggled.connect(self.set_background_curve)
         
-        self.subtract_inelastic_background_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Subtract inelastic scattering background', self )
-        self.subtract_inelastic_background_action.setCheckable(True)
-        self.subtract_inelastic_background_action.toggled.connect(self.display_radial_averages)
-        self.subtract_inelastic_background_action.toggled.connect(self.update_peak_dynamics_plot)
+        self.subtract_baseline_action = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Subtract inelastic scattering background', self )
+        self.subtract_baseline_action.setCheckable(True)
+        self.subtract_baseline_action.toggled.connect(self.display_radial_averages)
+        self.subtract_baseline_action.toggled.connect(self.update_peak_dynamics_plot)
         
-        self.set_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the dynamic inelastic scattering background', self)
-        self.set_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'dynamic'))
-        self.set_inelastic_background.setEnabled(False)
+        self.set_baseline = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the dynamic inelastic scattering background', self)
+        self.set_baseline.triggered.connect(lambda: self.compute_baseline(mode = 'dynamic'))
+        self.set_baseline.setEnabled(False)
 
-        self.set_static_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the static inelastic scattering background', self)
-        self.set_static_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'static'))
-        self.set_static_inelastic_background.setEnabled(False)
+        self.set_static_baseline = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&Compute the static inelastic scattering background', self)
+        self.set_static_baseline.triggered.connect(lambda: self.compute_baseline(mode = 'static'))
+        self.set_static_baseline.setEnabled(False)
         
-        self.set_auto_inelastic_background = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Automatically compute the inelastic scattering background', self)
-        self.set_auto_inelastic_background.triggered.connect(lambda: self.compute_inelastic_background(mode = 'auto'))
+        self.set_auto_baseline = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'wand.png')), '&(beta) Automatically compute the inelastic scattering background', self)
+        self.set_auto_baseline.triggered.connect(lambda: self.compute_baseline(mode = 'auto'))
         
-        self.toggle_inelastic_background_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
-        self.toggle_inelastic_background_tools.setCheckable(True)
-        self.toggle_inelastic_background_tools.toggled.connect(self.toggle_inelastic_background_setup)
-        self.toggle_inelastic_background_tools.toggled.connect(self.set_inelastic_background.setEnabled)
-        self.toggle_inelastic_background_tools.toggled.connect(self.set_static_inelastic_background.setEnabled)
-        self.toggle_inelastic_background_tools.toggled.connect(self.untoggle_peak_dynamics_setup)
-        
-        self.export_to_matlab = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, '')), '&Export master HDF5 file to MATLAB format', self)
-        self.export_to_matlab.triggered.connect(self.matlab_export)
+        self.toggle_baseline_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide inelastic background fit tools', self)
+        self.toggle_baseline_tools.setCheckable(True)
+        self.toggle_baseline_tools.toggled.connect(self.toggle_baseline_setup)
+        self.toggle_baseline_tools.toggled.connect(self.set_baseline.setEnabled)
+        self.toggle_baseline_tools.toggled.connect(self.set_static_baseline.setEnabled)
+        self.toggle_baseline_tools.toggled.connect(self.untoggle_peak_dynamics_setup)
     
     def _init_ui(self):
         
@@ -545,21 +539,18 @@ class PowderToolsWidget(QtGui.QWidget):
         # Menu bar
         self.menubar = QtGui.QMenuBar(parent = self)
         display_menu = self.menubar.addMenu('&Display')
-        display_menu.addAction(self.show_inelastic_background_action)
-        display_menu.addAction(self.subtract_inelastic_background_action)
+        display_menu.addAction(self.show_baseline_action)
+        display_menu.addAction(self.subtract_baseline_action)
         display_menu.addSeparator()
         display_menu.addAction(self.toggle_background_dynamics_action)
         display_menu.addSeparator()
         display_menu.addAction(self.toggle_line_connect_action)
         
-        inelastic_menu = self.menubar.addMenu('&Inelastic Scattering')
-        inelastic_menu.addAction(self.toggle_inelastic_background_tools)
-        inelastic_menu.addAction(self.set_inelastic_background)
-        inelastic_menu.addAction(self.set_static_inelastic_background)
-        inelastic_menu.addAction(self.set_auto_inelastic_background)
-        
-        export_menu = self.menubar.addMenu('&Export')
-        export_menu.addAction(self.export_to_matlab)
+        inelastic_menu = self.menubar.addMenu('&Baseline tools')
+        inelastic_menu.addAction(self.toggle_baseline_tools)
+        inelastic_menu.addAction(self.set_baseline)
+        inelastic_menu.addAction(self.set_static_baseline)
+        inelastic_menu.addAction(self.set_auto_baseline)
         
         # Final layout
         self.layout = QtGui.QVBoxLayout()
@@ -609,21 +600,21 @@ class PowderToolsWidget(QtGui.QWidget):
     
     @property
     def inelastic_lines_shown(self):
-        return self.inelastic_background_lines[0].getViewBox() is not None
+        return self.baseline_lines[0].getViewBox() is not None
     
     @property
-    def inelastic_background_lines_positions(self):
+    def baseline_lines_positions(self):
         intersects = list()
-        for line in self.inelastic_background_lines:
+        for line in self.baseline_lines:
             intersects.append( line.value() )
         return intersects
     
     @property
-    def subtract_inelastic_background(self):
-        return self.subtract_inelastic_background_action.isChecked()
+    def subtract_baseline(self):
+        return self.subtract_baseline_action.isChecked()
     
     @property
-    def show_inelastic_background_dynamics(self):
+    def show_baseline_dynamics(self):
         return self.toggle_background_dynamics_action.isChecked()
     
     def update_peak_dynamics_plot(self):
@@ -631,10 +622,10 @@ class PowderToolsWidget(QtGui.QWidget):
         
         #Get region
         min_x, max_x = self.peak_dynamics_region.getRegion()
-        if self.show_inelastic_background_dynamics:
+        if self.show_baseline_dynamics:
             time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, background_dynamics = True, return_error = True)
         else:
-            time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_inelastic_background, background_dynamics = False, return_error = True)
+            time, intensity, error = self.dataset.radial_peak_dynamics(min_x, max_x, subtract_background = self.subtract_baseline, background_dynamics = False, return_error = True)
         
         # Plot
         colors = spectrum_colors(len(time))
@@ -661,7 +652,7 @@ class PowderToolsWidget(QtGui.QWidget):
         """
         if set_curve:
             try:
-                background_curve = self.dataset.inelastic_background()
+                background_curve = self.dataset.baseline()
             except KeyError:  #Background curve hasn't been determined
                 background_curve = None
         else:
@@ -685,13 +676,13 @@ class PowderToolsWidget(QtGui.QWidget):
     def toggle_peak_dynamics_setup(self, show):
             toggle_appearance(parent_frame = self.radial_pattern_viewer, items = [self.peak_dynamics_region], show = show, inverted_behavior = False)
     
-    def toggle_inelastic_background_setup(self):
+    def toggle_baseline_setup(self):
         if self.inelastic_lines_shown:
-            toggle_appearance(parent_frame = self.radial_pattern_viewer, items = self.inelastic_background_lines, show = False)
+            toggle_appearance(parent_frame = self.radial_pattern_viewer, items = self.baseline_lines, show = False)
         else:
             # Displaying the inelastic background lines require something more
             # complicated than toggle_appearance
-            self._display_inelastic_background_setup()
+            self._display_baseline_setup()
     
     def display_radial_averages(self):
         """ 
@@ -707,7 +698,7 @@ class PowderToolsWidget(QtGui.QWidget):
         self.peak_dynamics_viewer.clear()
         self.peak_dynamics_viewer.enableAutoRange()
         # Adjust title accordingly
-        if self.show_inelastic_background_dynamics:
+        if self.show_baseline_dynamics:
             self.radial_pattern_viewer.getPlotItem().setTitle('Background fits')
         else:
             self.radial_pattern_viewer.getPlotItem().setTitle('Radially-averaged patterns')
@@ -715,10 +706,10 @@ class PowderToolsWidget(QtGui.QWidget):
         # Get the experimental data from the dataset. If any file-related error,
         # abort function by returning None
         try:
-            if self.show_inelastic_background_dynamics:
-                curves = self.dataset.inelastic_background_series()
+            if self.show_baseline_dynamics:
+                curves = self.dataset.baseline_series()
             else:
-                curves = self.dataset.pattern_series(self.subtract_inelastic_background)
+                curves = self.dataset.pattern_series(self.subtract_baseline)
         except:     # HDF5 file with radial averages is not found
             return
         
@@ -736,7 +727,7 @@ class PowderToolsWidget(QtGui.QWidget):
         self.peak_dynamics_region.setRegion((0.2, 0.3))
         self.radial_pattern_viewer.addItem(self.peak_dynamics_region, ignoreBounds = False)
     
-    def _display_inelastic_background_setup(self):
+    def _display_baseline_setup(self):
         """ Displays the background region lines on the radial patterns plot. """
         #Determine curve range
         # If no curve is plotted, xmin and xmax will be None. Abort function
@@ -751,13 +742,13 @@ class PowderToolsWidget(QtGui.QWidget):
         # Distribute lines according the guesses of where the background is
         # for the pattern at the earliest time
         guessed_background_regions = self.dataset.pattern()._background_guesses(data_values = True)
-        self.inelastic_background_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(len(guessed_background_regions))]
+        self.baseline_lines = [pg.InfiniteLine(angle = 90, movable = True, pen = pg.mkPen('b')) for i in range(len(guessed_background_regions))]
         
-        for line, pos in zip(self.inelastic_background_lines, guessed_background_regions):
+        for line, pos in zip(self.baseline_lines, guessed_background_regions):
             line.setValue(pos)
             self.radial_pattern_viewer.addItem(line)
             
-    def compute_inelastic_background(self, mode = None):
+    def compute_baseline(self, mode = None):
         """
         Compute inelastic scattering background. if mode == 'auto', positions are
         automatically determined using the continuous wavelet transform
@@ -769,16 +760,16 @@ class PowderToolsWidget(QtGui.QWidget):
         if self.dataset is None:
             return
         
-        self.toggle_inelastic_background_tools.setChecked(False)
+        self.toggle_baseline_tools.setChecked(False)
         
         #Thread the computation
         if mode == 'auto':
-            self.worker = WorkThread(self.dataset.inelastic_background_fit,
+            self.worker = WorkThread(self.dataset.baseline_fit,
                                      None,
                                      'dynamic')
         elif mode in ['dynamic', 'static']:
-            self.worker = WorkThread(self.dataset.inelastic_background_fit,
-                                     self.inelastic_background_lines_positions,
+            self.worker = WorkThread(self.dataset.baseline_fit,
+                                     self.baseline_lines_positions,
                                      mode)
         else:
             return
@@ -788,15 +779,9 @@ class PowderToolsWidget(QtGui.QWidget):
         self.worker.done_signal.connect(self.progress_widget_radial_patterns.hide)
         self.worker.done_signal.connect(self.display_radial_averages)
         # Show the inelastic background
-        self.worker.done_signal.connect(lambda: self.show_inelastic_background_action.setChecked(True))
-        self.worker.done_signal.connect(lambda: self.subtract_inelastic_background_action.setChecked(False))
+        self.worker.done_signal.connect(lambda: self.show_baseline_action.setChecked(True))
+        self.worker.done_signal.connect(lambda: self.subtract_baseline_action.setChecked(False))
         self.worker.start()
-    
-    def matlab_export(self):
-        """ Export master HDF5 file to MATLAB for old geezers in the group. """
-        filename = QtGui.QFileDialog.getSaveFileName(self, 'Save MATLAB file', self.dataset.directory, filter = '*.mat')
-        filename = os.path.abspath(filename)
-        self.dataset.export_to_matlab(filename)
         
 class Iris(QtGui.QMainWindow):
     """
@@ -950,7 +935,9 @@ class Iris(QtGui.QMainWindow):
         directory = self.file_dialog.getExistingDirectory(self, 'Open raw data folder', 'C:\\')
         directory = os.path.abspath(directory)
         
-        self.worker = WorkThread(iris.preprocess.preprocess, directory)
+        raw_dataset = RawDataset(directory)
+        
+        self.worker = WorkThread(raw_dataset.preprocess)
         self.worker.in_progress_signal.connect(self.image_viewer.in_progress_widget.show)
         self.worker.done_signal.connect(self.image_viewer.in_progress_widget.hide)
         self.worker.results_signal.connect(self._load_powder_dataset)
