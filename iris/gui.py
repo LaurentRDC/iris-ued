@@ -279,7 +279,7 @@ class ImageViewer(pg.ImageView):
 
         
     
-    def _write_radav_tool_params(self):
+    def _write_radav_tool_params(self, path = config_path):
         """
         Writes the default positions for the center finder and mask.
         
@@ -288,11 +288,11 @@ class ImageViewer(pg.ImageView):
         key : str
             Name of the parameter
         """
-        with open(config_path, 'w+') as config_file:
+        with open(path, 'w+') as config_file:
             config_file.write('MASK_POSITION = '+str(self.mask_position)+'\n')
             config_file.write('CENTER_FINDER_POSITION = '+str((self.center_position[0],self.center_position[1]))+'\n')
             config_file.write('CENTER_FINDER_RADIUS = '+str(self.center_finder_radius)+'\n')
-    
+
         
     # Methods -----------------------------------------------------------------
     
@@ -853,6 +853,7 @@ class Iris(QtGui.QMainWindow):
         powder_menu.addSeparator()
         powder_menu.addAction(self.toggle_radav_tools)
         powder_menu.addAction(self.set_radav_tools)
+        powder_menu.addAction(self.export_radav_tools)
         powder_menu.addAction(self.set_radav_tools_auto_center)
         
         sc_menu = self.menubar.addMenu('&Single-crystal tools')
@@ -905,6 +906,11 @@ class Iris(QtGui.QMainWindow):
         self.set_radav_tools.triggered.connect(lambda: self.compute_radial_average(auto_center = False))    
         self.set_radav_tools.setEnabled(False)
         
+        # Export beamblock mask and center position----------------------------
+        self.export_radav_tools = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'locator.png')), '&Export beamblock mask and center position', self)        
+        self.export_radav_tools.triggered.connect(lambda: self._export_radav_tools())
+        self.export_radav_tools.setEnabled(False)
+        
         # Polycrystaline ------------------------------------------------------
         self.set_radav_tools_auto_center = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '&(beta) Compute radial averages with auto-center', self)
         self.set_radav_tools_auto_center.triggered.connect(lambda: self.compute_radial_average(auto_center = True))    
@@ -915,6 +921,7 @@ class Iris(QtGui.QMainWindow):
         self.toggle_radav_tools.toggled.connect(self.image_viewer.toggle_radav_tools)
         self.toggle_radav_tools.toggled.connect(self.set_radav_tools.setEnabled)
         self.toggle_radav_tools.toggled.connect(self.set_radav_tools_auto_center.setEnabled)
+        self.toggle_radav_tools.toggled.connect(self.export_radav_tools.setEnabled)
         
         self.toggle_plot_viewer = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'toggle.png')), '&Show/hide radial patterns', self)
         self.toggle_plot_viewer.setCheckable(True)
@@ -929,7 +936,7 @@ class Iris(QtGui.QMainWindow):
         # Diagnostics
         self.pumpoff_intensity_stability = QtGui.QAction(QtGui.QIcon(os.path.join(image_folder, 'analysis.png')), '& Plot pumpoff pictures integrated intensity', self)
         self.pumpoff_intensity_stability.triggered.connect(self.compute_pumpoff_stability)
-
+        
     def _connect_signals(self):
         # Nothing to see here yet
         pass
@@ -982,6 +989,13 @@ class Iris(QtGui.QMainWindow):
         filename = os.path.abspath(filename)
         self.dataset = SinglePictureDataset(filename)
         self.image_viewer.display_data()
+        
+    def _export_radav_tools(self, filename = 'radav_tools.txt'):
+        """ Exports the beamblock and center finder positions to a .txt file named 'radav_tools.txt'"""
+        if self.dataset is not None:
+            self.image_viewer._write_radav_tool_params(os.path.join(self.dataset.directory,filename))
+        
+        
     
     # Display/show slots  -----------------------------------------------------
     
