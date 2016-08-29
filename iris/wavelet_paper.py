@@ -186,7 +186,7 @@ def time_dependent_diffraction(scatt_angle):
 def plot_dynamics():
     s = n.linspace(0.11, 0.8, 10000)
     
-    backgrounds = time_dependent_background(s)
+    backgrounds = static_background(s)
     patterns = time_dependent_diffraction(s)
     
     colors = spectrum_colors(TIMEPOINTS)
@@ -217,7 +217,59 @@ def figure_of_merit(array1, array2):
 # only valid for scattering_length = n.linspace(0.11, 0.8, 10000)
 bg_regions = list(range(0,300)) + list(range(1000, 1200)) + list(range(2177, 2340)) + [4290, 5766] + list(range(8200, 8279)) + [9643, 9999]
 
-def simulated_background_fit(background_indices = bg_regions):
+def simulated_static_fit():
+    """
+    Simplified fitting for MSc Thesis involving finding the baseline to time-zero and propagating
+    """
+    s = n.linspace(0.11, 0.8, 10000)
+    
+    # Determine background regions in terms of s
+    backgrounds = static_background(s)
+    
+    # Generate main signal with gaussian noise on the order of 0.25 count
+    signals = time_dependent_diffraction(s)
+    
+    colors = spectrum_colors(TIMEPOINTS)
+    
+    FOM_over_time = n.zeros_like(TIMEPOINTS, dtype = n.float)
+    fig = plt.figure()
+    frame1 = fig.add_axes((0.1, 0.3, 0.8, 0.6)) #TODO: add inset for reconstruction figure of merit
+    frame2 = fig.add_axes((0.1, 0.1, 0.8, 0.2))
+    frame2.axhline(y = 0, color = 'k', linewidth = 2)
+    
+    # Add vertical line to plot to indicate peak dynamic sthat will be investigated later
+    for index in peaks_to_look_at:
+        frame1.axvline(x = signals[0].xdata[index], color = 'k', linewidth = 2)
+    
+    #Find background of time-zero
+    composite = signals[0] + backgrounds[0]
+    baseline = composite.baseline(background_regions = [], max_iter = 1000, level = None, wavelet = 'sym4')   # Use max level with level = None
+        
+    for i, background, signal, c in zip(range(len(TIMEPOINTS)), backgrounds, signals, colors):
+        noise = pattern.Pattern([s, n.random.normal(0.0, NOISE_STD, size = s.shape)], '')
+        composite = signal + background + noise
+        
+        reconstructed = composite - baseline
+        reference = signal + noise
+        residuals = pattern.Pattern([s, ((reconstructed.data - reference.data))])
+        
+        frame1.plot(reconstructed.xdata, reconstructed.data, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
+        frame2.plot(residuals.xdata, residuals.data, color = c, marker = '.', markersize = PLOT_MARKERSIZE, linestyle = 'None')
+        FOM_over_time[i] = figure_of_merit(reconstructed.data, (composite-background).data)
+    
+    # Plot formatting
+    [label.set_visible(False) for label in frame1.get_xticklabels()]    # Hide xlabel ticks for the top plot
+    frame1.set_ylabel('Intensity (counts)', fontsize = 20)
+    frame1.set_xlim([s.min(), s.max()])
+    frame1.set_ylim([0, 21])
+    
+    frame2.set_xlabel('Scattering length (1/A)', fontsize = 20)
+    frame2.set_ylabel('Residuals (counts)', fontsize = 20)
+    frame2.set_xlim([s.min(), s.max()])    
+    
+    return FOM_over_time    
+
+def simulated_background_fit(background_indices = []):
     """
     Fits time-varying background to diffraction data and evaluates a figure of
     merit for each time point.
@@ -443,7 +495,7 @@ def track_background(compute = False):
     #plt.plot(d.pattern(0.0).xdata, d.pattern(0.0).data)
     
 if __name__ == '__main__':
-    pass
+    simulated_static_fit()
     #FOM = simulated_background_fit_unassisted()
-    peak_dynamics()
+    #peak_dynamics()
     #reconstruction_spectra()
