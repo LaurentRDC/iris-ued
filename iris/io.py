@@ -105,7 +105,7 @@ def read(filename, normalize = False):
     try:
         image = imread(filename).astype(n.float)
     except:
-        raise ImageNotFoundError
+        raise ImageNotFoundError('Image {} not found.'.format(filename))
     if image.shape != RESOLUTION:
         image = resize(image, RESOLUTION)
     
