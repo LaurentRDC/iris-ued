@@ -46,7 +46,7 @@ def ring_mask(shape, center, inner_radius, outer_radius):
 
     return mask
 
-def diffraction_center(image, mask = None, binary_mode = 'canny'):
+def diffraction_center(image, mask = None):
     """
     Returns the diffraction center from a diffraction pattern. The mask must highlight
     one diffraction ring.
@@ -57,11 +57,11 @@ def diffraction_center(image, mask = None, binary_mode = 'canny'):
         Grayscale image
     mask : ndarray, dtype bool
         Pixels where mask is False will be set to 0 (non-object pixels).
-    binary_mode : str, {'canny', 'walker', 'adaptive'}
 
     Returns
     -------
-    I don't know
+    xc, yc : floats
+        Center coordinates.
     """
     image -= baseline(image, max_iter = 10)
     image = skimage.filters.gaussian(image, sigma = 5)
@@ -70,19 +70,11 @@ def diffraction_center(image, mask = None, binary_mode = 'canny'):
     image[n.logical_not(mask)] = 0
 
     # Make into binary image
-    if binary_mode == 'walker':
-        markers = n.zeros_like(image, dtype = n.uint)
-        markers[image < 2*n.median(image[mask])] = 1
-        markers[image >= 2*n.median(image[mask])] = 2
-        binary = skimage.segmentation.random_walker(data = image, labels = markers, beta = 5, mode = 'bf')
-    elif binary_mode == 'canny':
-        binary = skimage.feature.canny(image, sigma = 5, mask = mask)
-        binary = skimage.morphology.remove_small_objects(binary, connectivity = 2)
-    elif binary_mode == 'adaptive':
-        binary= skimage.filters.threshold_adaptive(image, block_size = 21)
-    else:
-        raise ValueError('binary_mode argument {} invalid'.format(binary_mode))
+    binary = skimage.morphology.closing(image)
+    binary = skimage.feature.canny(binary, sigma = 5, mask = mask)
+    binary = skimage.morphology.remove_small_objects(binary, connectivity = 2)
 
+    # From image to list of coordinates
     xx, yy = n.meshgrid(n.arange(binary.shape[0]), n.arange(binary.shape[1]), indexing = 'ij')
     x, y = xx[binary.astype(n.bool)].ravel(), yy[binary.astype(n.bool)].ravel()
     
@@ -211,4 +203,5 @@ if __name__ == '__main__':
     image = read(join(dirname(__file__), 'tests\\test_diff_picture.tif'))
     TEST_MASK = ring_mask(image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
 
-    print(diffraction_center(image, mask = TEST_MASK))
+    #print(diffraction_center(image, mask = TEST_MASK))
+    diffshow(diffraction_center(image, mask = TEST_MASK))
