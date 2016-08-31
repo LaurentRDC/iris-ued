@@ -7,7 +7,7 @@ from skimage.draw import circle_perimeter
 from uediff import diffshow
 import unittest
 
-from iris.ellipse_fit import ellipse_fit, ellipse_center, circle_from_image, binary_image, diffraction_rings
+from iris.ellipse_fit import ellipse_fit, ellipse_center, circle_from_image, binary_image, ring_mask
 
 class TestEllipseFit(unittest.TestCase):
 
@@ -76,9 +76,11 @@ class TestDiffractionRings(unittest.TestCase):
 
     def setUp(self):
         self.image = read(join(dirname(__file__), 'test_diff_picture.tif'))
+        self.mask = ring_mask(self.image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
     
     def test_segmentation(self):
-        diffshow(diffraction_rings(self.image))
+        self.image[n.logical_not(self.mask)] = 0
+        diffshow(self.image)
     
 if __name__ == '__main__':
     unittest.main()
