@@ -7,7 +7,7 @@ from skimage.draw import circle_perimeter
 from uediff import diffshow
 import unittest
 
-from iris.ellipse_fit import ellipse_fit, ellipse_center, circle_from_image, binary_image, ring_mask
+from iris.ellipse_fit import ellipse_fit, ellipse_center, ring_mask, diffraction_center
 
 class TestEllipseFit(unittest.TestCase):
 
@@ -57,30 +57,21 @@ class TestEllipseFit(unittest.TestCase):
         self.assertAlmostEqual(-d/(2*a), xc, places = 1)    # center
         self.assertAlmostEqual(-e/(2*c), yc, places = 1)    # center
 
-class TestCircleFromImage(unittest.TestCase):
-
-    def setUp(self):
-        self.shape = (1000, 1000)
-        self.center = 650, 300
-        self.image = n.zeros(shape = (2048, 2048), dtype = n.float)
-        rr, cc = circle_perimeter(int(self.center[0]), int(self.center[1]), radius = 200)
-        self.image[rr, cc] = 1
-
-    def test_circle_from_image(self):
-        x, y = circle_from_image(self.image)
-        xc, yc = ellipse_center(x, y)
-        self.assertAlmostEqual(xc, self.center[0])
-        self.assertAlmostEqual(yc, self.center[1])
-
-class TestDiffractionRings(unittest.TestCase):
+class TestDiffractionCenter(unittest.TestCase):
 
     def setUp(self):
         self.image = read(join(dirname(__file__), 'test_diff_picture.tif'))
-        self.mask = ring_mask(self.image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
+        self.mask1 = ring_mask(self.image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
+        self.mask2 = ring_mask(self.image.shape, center = (1000, 950), inner_radius = 210, outer_radius = 290)
     
-    def test_segmentation(self):
-        self.image[n.logical_not(self.mask)] = 0
-        diffshow(self.image)
+    @unittest.expectedFailure
+    def test_stability(self):
+        xc1, yc1 = diffraction_center(self.image, mask = self.mask1)
+        xc2, yc2 = diffraction_center(self.image, mask = self.mask2)
+        print('Center 1: {}, {}'.format(xc1, yc1))
+        print('Center 2: {}, {}'.format(xc2, yc2))
+        self.assertAlmostEqual(xc1, xc2, places = 0)
+        self.assertAlmostEqual(yc1, yc2, places = 0)
     
 if __name__ == '__main__':
     unittest.main()
