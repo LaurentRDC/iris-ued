@@ -17,12 +17,11 @@ import matplotlib.pyplot as plt
 
 from skimage.transform import hough_circle
 from skimage.filters import threshold_adaptive
-from skimage.feature import peak_local_max
+from skimage.feature import peak_local_max, canny
 
-# Clustering
 from scipy.cluster.vq import whiten, kmeans2
 
-def diffraction_center(image, beamblock = None, n_centroids = 5):
+def diffraction_center(image, beamblock = None, min_rad = 150, n_centroids = 5):
     """
     Find the diffraction center of an image using the Hough transform and a clustering
     procedure.
@@ -34,11 +33,13 @@ def diffraction_center(image, beamblock = None, n_centroids = 5):
     beamblock : Tuple, shape (4,) or None, optional
         Tuple containing x- and y-bounds (in pixels) for the beamblock mask
         mast_rect = (x1, x2, y1, y2). If None (default), no mask is applied.
+    min_rad: int, optional
+        Minimum radius to investigate. Default is 150 px.
     n_centroids : int, optional
         Number of centroids to use during clustering of potential centers. 
-        Default is 3.
+        Default is 5.
     
-    Returns
+    Return
     -------
     center : 2-tuple
         Center indices (i,j)
@@ -48,8 +49,12 @@ def diffraction_center(image, beamblock = None, n_centroids = 5):
     The Hough transform is very sensitive to noise. Therefore, using a beamblock
     is highly recommended.
     """
+    radii = n.arange(min_rad, image.shape[0]/2, step = 100)
     # Find possible centers
-    centers = _candidate_centers(image, beamblock)
+    centers = list()
+    for min_radius in radii:
+        centers += _candidate_centers(image, beamblock, min_rad = min_radius, block_size = 100)
+    centers = n.asarray(centers)
     
     # Use k-means algorithm to group centers
     whitened = whiten(centers)
@@ -63,9 +68,11 @@ def diffraction_center(image, beamblock = None, n_centroids = 5):
     j,i =  n.mean(clustered_centers, axis = 0)
     return (i,j)
 
-def _candidate_centers(image, beamblock):
+def _candidate_centers(image, beamblock, min_rad = 150, block_size = 100):
     """
-    Returns potential centers based on the circle Hough transform.
+    Returns potential centers based on the circle Hough transform. 
+    The circles are assumed to be concentric; therefore, centers from circles with same radii are
+    averaged together.
     
     Parameters
     ----------
@@ -74,11 +81,15 @@ def _candidate_centers(image, beamblock):
     beamblock : Tuple, shape (4,) or None
         Tuple containing x- and y-bounds (in pixels) for the beamblock mask. 
         If None, no mask is applied.
+    min_rad : int, optional
+        Minimum radius to investigate. Default is 150px.
+    block_size : int, optional
+        Maximum radius is taken as min_rad + block_size. Do not play with this.
     
     Returns
     -------
-    centers : ndarray, shape (N, 2)
-        Rows of this array are potential centers
+    unique_centers : list of ndarrays, shape (2,)
+        Rows of this array are potential centers with shape (xc, yc)
     """
     # Set up the binary image
     mask = n.zeros_like(image, dtype = n.bool)
@@ -87,42 +98,20 @@ def _candidate_centers(image, beamblock):
         mask[x1:x2, y1:y2] = True
     binary_image = _binary_edge(image, mask)
     
-    # Determine a range of radii. Determined by testing.
-    radii = n.arange(150, min(image.shape)/3, step = 50)
-    
-    centers = list()
-    for radius in radii:
-        centers.append(_circle_center(binary_image, radius, num_centers = 5))
-        
-    return n.vstack(tuple(centers))
-    
-def _circle_center(image, radius, num_centers = 1):
-    """
-    Finds the diffraction center in an image for a specific radius.
-    
-    Parameters
-    ----------
-    image : ndarray, ndim 2
-        Binary image
-    radius : numerical
-        Circle radius. If not an integer, will be rounded to the nearest integer.
-    num_centers : int or None, optional
-        Number of centers to return. If None, there is no upper limit on the number
-        of centers. Default is 1
-    
-    Returns
-    -------
-    centers : list of 2-tuples
-        Array with each row being the indices of a potential center
-    """    
-    # Compute Hough transform accumulator
-    accumulator = hough_circle(image = image, radius = radius)
-    
-    # Find the local maximas in the accumulator: these are the centers
-    # Since we are only looking for a single radius, we can project the accumulator to 2D
-    return peak_local_max(image = accumulator[0,:,:], num_peaks = num_centers).tolist()
+    # Determine a range of radii. From:
+    # http://stackoverflow.com/questions/32287032/circular-hough-transform-misses-circles
+    # we want to iterate over small ranges of radii
+    radii = n.arange(min_rad, min_rad + block_size, step = 1)
+    accumulator = hough_circle(image = image, radius = radii)
+    centers = peak_local_max(image = accumulator, num_peaks = radii.size)
 
-def _binary_edge(image, mask):
+    # At this point, we might have centers for circles with the same radii. We want
+    # to average centers of the same radius.
+    unique_radii = n.unique(centers[:,0])
+    unique_centers = [n.mean(centers[centers[:,0] == r], axis = 0)[1::] for r in unique_radii]
+    return unique_centers
+        
+def _binary_edge(image, mask = None):
     """
     Returns a binary image of the ring edges in a diffraction patterns.
     
@@ -130,47 +119,19 @@ def _binary_edge(image, mask):
     ----------
     image : ndarray, ndim 2
         Grayscale image
-    mask : ndarray, dtype bool
+    mask : ndarray, dtype bool, optional
         Pixels where mask is True will be set to 0 (non-object pixels).
+        Default is trivial mask.
+    
+    Returns
+    -------
+    edges : ndarray
+        Same shape as input
     """
-    # The Hough transform is very sensitive to noise
-    image = denoise(image, wavelet = 'db5')
+    if mask is None:
+        mask = n.zeros_like(image, dtype = n.bool)
     
-    #TODO: use morphology techniques to clean up canny output?
-    
-    array = threshold_adaptive(image, block_size = 101, method = 'gaussian',
-                               offset = image.min(), mode = 'constant')
-    array[mask] = 0 # Apply mask
-    
-    return array
-    #return canny(array, sigma = 0.5)    # sigma determined by testing
+    edges = canny(image, sigma = 1, low_threshold = 0, high_threshold = 1, mask = n.logical_not(mask), use_quantiles = True)
+    edges[mask] = 0 # Apply mask
 
-# -----------------------------------------------------------------------------
-#           TESTING
-# -----------------------------------------------------------------------------
-def test_diffraction_center(image, beamblock):
-    """
-    
-    """
-    center = diffraction_center(image, beamblock)
-    
-    fig = plt.figure()
-    plt.imshow(image)
-    
-    circle = plt.Circle(tuple(center), 100, color = 'r')
-    fig.gca().add_artist(circle)
-
-def test_binary(image):
-    mask = n.zeros_like(image, dtype = n.bool)
-    plt.imshow(_binary_edge(image, mask))
-
-if __name__ == '__main__':
-    TEST_BEAMBLOCK = (800, 1110, 0, 1100)
-    
-    from iris import dataset
-
-    directory = 'K:\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
-    d = dataset.PowderDiffractionDataset(directory)  
-    image = d.image(0.0)
-    #test_diffraction_center(image, beamblock = TEST_BEAMBLOCK)
-    test_diffraction_center(image, TEST_BEAMBLOCK)
+    return edges
