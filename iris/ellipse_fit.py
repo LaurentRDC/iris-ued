@@ -4,65 +4,89 @@ Author : Laurent P. Rene de Cotret
 Ref.:
 [1] NUMERICALLY STABLE DIRECT LEAST SQUARES FITTING OF ELLIPSES
 """
-from iris.wavelet import denoise
+from iris.wavelet import denoise, baseline
+import matplotlib.pyplot as plt
 import numpy as n
 from numpy.linalg import inv, eig
 
 import skimage
+from skimage.segmentation import random_walker
 from skimage.feature import canny
 
-def diffraction_rings(image, mask = None):
+def ring_mask(shape, center, inner_radius, outer_radius):
     """
-    Returns a list of data arrays (x,y) representing connected diffraction rings
-    from a diffraction pattern.
+    Mark array representing a circlet (thick circle).
+
+    Parameters
+    ----------
+    shape : 2-tuple
+
+    center : 2-tuple
+
+    inner_radius, outer_radius : numerical
+
+    Returns
+    -------
+    mask : ndarray, dtype bool
+
+    Raises
+    ------
+    ValueError
+        If inner_radis > outer_radius
+    """
+    if inner_radius > outer_radius:
+        raise ValueError('Inner radius {} must be smaller than the outer radius {}.'.format(inner_radius, outer_radius))
+    x, y = n.arange(0, shape[0]), n.arange(0, shape[1])
+    xx, yy = n.meshgrid(x, y, indexing = 'ij')
+    xc, yc = center
+    inner = (xx - xc)**2 + (yy - yc)**2 <= inner_radius**2
+    outer = (xx - xc)**2 + (yy - yc)**2 <= outer_radius**2
+    mask = outer
+    mask[inner] = False
+
+    return mask
+
+def diffraction_center(image, mask = None, binary_mode = 'canny'):
+    """
+    Returns the diffraction center from a diffraction pattern. The mask must highlight
+    one diffraction ring.
 
     Parameters
     ----------
     image : ndarray, ndim 2
         Grayscale image
-    mask : ndarray, dtype bool, optional
-        Pixels where mask is True will be set to 0 (non-object pixels).
-        Default is trivial mask.
-    
+    mask : ndarray, dtype bool
+        Pixels where mask is False will be set to 0 (non-object pixels).
+    binary_mode : str, {'canny', 'walker', 'adaptive'}
+
     Returns
     -------
-    components : list of 2-tuples of ndarrays, shape (N,)
+    I don't know
     """
-    if mask is None:
-        mask = n.zeros_like(image, dtype = n.bool)
-    
-    #rings stand above the mediam
-    image -= n.mean(image)
+    image -= baseline(image, max_iter = 10)
+    image = skimage.filters.gaussian(image, sigma = 5)
+    image -= n.min(image[mask])
     image[image < 0] = 0
+    image[n.logical_not(mask)] = 0
 
-    # Threshold image into foreground and background.
-    smoothed = skimage.filters.gaussian(image, sigma = 5)
-    edges = skimage.filters.scharr(image = smoothed, mask = n.logical_not(mask))
+    # Make into binary image
+    if binary_mode == 'walker':
+        markers = n.zeros_like(image, dtype = n.uint)
+        markers[image < 2*n.median(image[mask])] = 1
+        markers[image >= 2*n.median(image[mask])] = 2
+        binary = skimage.segmentation.random_walker(data = image, labels = markers, beta = 5, mode = 'bf')
+    elif binary_mode == 'canny':
+        binary = skimage.feature.canny(image, sigma = 5, mask = mask)
+        binary = skimage.morphology.remove_small_objects(binary, connectivity = 2)
+    elif binary_mode == 'adaptive':
+        binary= skimage.filters.threshold_adaptive(image, block_size = 21)
+    else:
+        raise ValueError('binary_mode argument {} invalid'.format(binary_mode))
 
-    return edges
+    xx, yy = n.meshgrid(n.arange(binary.shape[0]), n.arange(binary.shape[1]), indexing = 'ij')
+    x, y = xx[binary.astype(n.bool)].ravel(), yy[binary.astype(n.bool)].ravel()
     
-def binary_image(image, mask = None):
-    """
-    Parameters
-    ----------
-    image : ndarray, ndim 2
-        Grayscale image
-    mask : ndarray, dtype bool, optional
-        Pixels where mask is True will be set to 0 (non-object pixels).
-        Default is trivial mask.
-    
-    Returns
-    -------
-    edges : ndarray, ndim 2
-        Thresholded image.
-    """
-    if mask is None:
-        mask = n.zeros_like(image, dtype = n.bool)
-
-    edges = canny(image, sigma = 20, mask = n.logical_not(mask))
-    edges[mask] = 0 # Apply mask
-
-    return edges
+    return ellipse_center(x, y)
 
 def circle_from_image(image, mask = None):
     """
@@ -179,9 +203,12 @@ def ellipse_center(x, y):
     return -d/(2*a), -e/(2*c)
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     from os.path import join, dirname
     from iris.io import read
     from uediff import diffshow
-    
+
     image = read(join(dirname(__file__), 'tests\\test_diff_picture.tif'))
-    diffshow(diffraction_rings(image))
+    TEST_MASK = ring_mask(image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
+
+    print(diffraction_center(image, mask = TEST_MASK))

@@ -11,10 +11,11 @@ Functions
 diffraction_center
     
 """
-from iris.wavelet import denoise
+from iris.wavelet import denoise, baseline
 import numpy as n
 import matplotlib.pyplot as plt
 
+import skimage
 from skimage.transform import hough_circle
 from skimage.filters import threshold_adaptive
 from skimage.feature import peak_local_max, canny
@@ -131,7 +132,13 @@ def _binary_edge(image, mask = None):
     if mask is None:
         mask = n.zeros_like(image, dtype = n.bool)
     
-    edges = canny(image, sigma = 1, low_threshold = 0, high_threshold = 1, mask = n.logical_not(mask), use_quantiles = True)
-    edges[mask] = 0 # Apply mask
+    image = denoise(image, wavelet = 'sym6')
+    image -= baseline(image, max_iter = 10)
 
-    return edges
+    # Threshold image into foreground and background.
+    smoothed = skimage.filters.gaussian(image, sigma = 5)
+    edges = skimage.filters.threshold_adaptive(image = smoothed, block_size = 51, method = 'mean')
+
+    # Remove small connected components; typically islands of noise.
+    rings = skimage.morphology.remove_small_objects(edges, min_size = 200000)
+    return rings
