@@ -80,28 +80,6 @@ def diffraction_center(image, mask = None):
     
     return ellipse_center(x, y)
 
-def circle_from_image(image, mask = None):
-    """
-    Returns a binary image of the ring edges in a diffraction patterns.
-    
-    Parameters
-    ----------
-    image : ndarray, ndim 2
-        Grayscale image
-    mask : ndarray, dtype bool, optional
-        Pixels where mask is True will be set to 0 (non-object pixels).
-        Default is trivial mask.
-    
-    Returns
-    -------
-    x, y : ndarrays, shape (N,)
-        Data points for the circle in the image
-    """
-    edge = binary_image(image = image, mask = mask)
-    xx, yy = n.meshgrid(n.arange(edge.shape[0]), n.arange(edge.shape[1]), indexing = 'ij')
-    x, y = xx[edge.astype(n.bool)].ravel(), yy[edge.astype(n.bool)].ravel()
-    return x, y
-
 def ellipse_fit(x, y, circle_constraint = False):
     """
     Returns the ellipse parameters that fits data points. The special 
@@ -203,5 +181,5 @@ if __name__ == '__main__':
     image = read(join(dirname(__file__), 'tests\\test_diff_picture.tif'))
     TEST_MASK = ring_mask(image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
 
-    #print(diffraction_center(image, mask = TEST_MASK))
-    diffshow(diffraction_center(image, mask = TEST_MASK))
+    print(diffraction_center(image, mask = TEST_MASK))
+    #diffshow(diffraction_center(image, mask = TEST_MASK))W
