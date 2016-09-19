@@ -78,7 +78,7 @@ def _candidate_centers(image, beamblock, min_rad = 150, block_size = 100):
     Parameters
     ----------
     image : ndarray, ndim 2
-        Diffraction pattern
+        Binary image of a diffraction pattern
     beamblock : Tuple, shape (4,) or None
         Tuple containing x- and y-bounds (in pixels) for the beamblock mask. 
         If None, no mask is applied.
@@ -112,9 +112,9 @@ def _candidate_centers(image, beamblock, min_rad = 150, block_size = 100):
     unique_centers = [n.mean(centers[centers[:,0] == r], axis = 0)[1::] for r in unique_radii]
     return unique_centers
         
-def _binary_edge(image, mask = None):
+def binary(image, mask = None):
     """
-    Returns a binary image of the ring edges in a diffraction patterns.
+    Returns a binary image of the rings in a diffraction patterns.
     
     Parameters
     ----------
@@ -132,13 +132,27 @@ def _binary_edge(image, mask = None):
     if mask is None:
         mask = n.zeros_like(image, dtype = n.bool)
     
-    image = denoise(image, wavelet = 'sym6')
     image -= baseline(image, max_iter = 10)
+    image = denoise(image, level = 3, wavelet = 'db5')
+    image -= n.median(image)
+    image[image < 0] = 0
+    image[n.logical_not(mask)] = 0
 
     # Threshold image into foreground and background.
     smoothed = skimage.filters.gaussian(image, sigma = 5)
-    edges = skimage.filters.threshold_adaptive(image = smoothed, block_size = 51, method = 'mean')
+    binary = image > skimage.filters.threshold_otsu(image[mask])
 
-    # Remove small connected components; typically islands of noise.
-    rings = skimage.morphology.remove_small_objects(edges, min_size = 200000)
-    return rings
+    return image
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    from os.path import join, dirname
+    from iris.io import read
+    from uediff import diffshow
+    from iris.ellipse_fit import ring_mask
+
+    image = read(join(dirname(__file__), 'tests\\test_diff_picture.tif'))
+    TEST_MASK = ring_mask(image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
+
+    #print(diffraction_center(image, mask = TEST_MASK))
+    diffshow(binary(image, mask = TEST_MASK))

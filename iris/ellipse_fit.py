@@ -171,15 +171,3 @@ def ellipse_center(x, y):
     """
     a, b, c, d, e, f = ellipse_fit(x, y)
     return -d/(2*a), -e/(2*c)
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    from os.path import join, dirname
-    from iris.io import read
-    from uediff import diffshow
-
-    image = read(join(dirname(__file__), 'tests\\test_diff_picture.tif'))
-    TEST_MASK = ring_mask(image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
-
-    print(diffraction_center(image, mask = TEST_MASK))
-    #diffshow(diffraction_center(image, mask = TEST_MASK))W

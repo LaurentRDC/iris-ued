@@ -4,8 +4,16 @@
 import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
 import h5py
+from warnings import warn
 
-from iris.wavelet import baseline
+try:
+    from dualtree import baseline
+    DUALTREE = True
+except ImportError:
+    from iris.wavelet import baseline
+    warn('dualtree package unavailable. Fallback to iris.wavelet', ImportWarning)
+    DUALTREE = False
+
 
 class Pattern(object):
     """
@@ -156,7 +164,7 @@ class Pattern(object):
         elif self.type == 'single crystal':
             return Pattern(n.fft.fft2(self.data))
     
-    def baseline(self, background_regions = [], level = None, max_iter = 1000, wavelet = 'sym4'):
+    def baseline(self, background_regions = [], level = 'max', max_iter = 100, wavelet = 'sym4', **kwargs):
         """
         Method for inelastic background determination via wavelet decomposition.d
         
@@ -195,12 +203,17 @@ class Pattern(object):
         else:
             background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in background_regions]
         
-        # Remove background
-        background_values = baseline(array = self.data,
-                                     max_iter = max_iter,
-                                     level = level,
-                                     wavelet = wavelet,
-                                     background_regions = background_indices)
+        if DUALTREE:
+            background_values = baseline(array = self.data,
+                                         max_iter = max_iter,
+                                         level = level,
+                                         background_regions = background_indices, **kwargs)
+        else:
+            background_values = baseline(array = self.data,
+                                         max_iter = max_iter,
+                                         level = level,
+                                         wavelet = wavelet,
+                                         background_regions = background_indices)
         
         return Pattern([self.xdata, background_values], error = None, name = 'baseline {}'.format(self.name))
         
