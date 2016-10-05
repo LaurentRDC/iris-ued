@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from iris import gui, wavelet, dataset, pattern, hough
+from iris import gui, dataset, pattern, hough
