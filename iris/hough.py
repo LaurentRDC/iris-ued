@@ -11,7 +11,7 @@ Functions
 diffraction_center
     
 """
-from iris.wavelet import denoise, baseline
+from dualtree import denoise, baseline
 import numpy as n
 import matplotlib.pyplot as plt
 
