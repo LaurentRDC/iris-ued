@@ -1,18 +1,10 @@
 # -*- coding: utf-8 -*-
 
-#Basics
 import numpy as n
 from scipy.signal import find_peaks_cwt, ricker
 import h5py
 from warnings import warn
-
-try:
-    from dualtree import baseline
-    DUALTREE = True
-except ImportError:
-    from iris.wavelet import baseline
-    warn('dualtree package unavailable. Fallback to iris.wavelet', ImportWarning)
-    DUALTREE = False
+from dualtree import baseline
 
 
 class Pattern(object):
@@ -164,7 +156,7 @@ class Pattern(object):
         elif self.type == 'single crystal':
             return Pattern(n.fft.fft2(self.data))
     
-    def baseline(self, background_regions = [], level = 'max', max_iter = 100, wavelet = 'sym4', **kwargs):
+    def baseline(self, background_regions = [], level = 'max', max_iter = 100, **kwargs):
         """
         Method for inelastic background determination via wavelet decomposition.d
         
@@ -202,18 +194,9 @@ class Pattern(object):
             background_indices = self._background_guesses(data_values = False)
         else:
             background_indices = [n.argmin(n.abs(self.xdata - xpoint)) for xpoint in background_regions]
-        
-        if DUALTREE:
-            background_values = baseline(array = self.data,
-                                         max_iter = max_iter,
-                                         level = level,
-                                         background_regions = background_indices, **kwargs)
-        else:
-            background_values = baseline(array = self.data,
-                                         max_iter = max_iter,
-                                         level = level,
-                                         wavelet = wavelet,
-                                         background_regions = background_indices)
+
+        background_values = baseline(array = self.data, max_iter = max_iter,
+                                     level = level, background_regions = background_indices, **kwargs)
         
         return Pattern([self.xdata, background_values], error = None, name = 'baseline {}'.format(self.name))
         
