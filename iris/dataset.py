@@ -538,10 +538,10 @@ class DiffractionDataset(object):
         backgrounds = list()
         if mode == 'dynamic':
             for time in self.time_points:
-                backgrounds.append( (time, self.pattern(time).baseline(background_regions = positions, level = None, **kwargs)) )
+                backgrounds.append( (time, self.pattern(time).baseline(background_regions = positions, level = 'max', **kwargs)) )
         elif mode == 'static':
             # TODO: have static background be the average of all time points before time-zero
-            static_background = self.pattern(self.time_points[0]).baseline(background_regions = positions, level = None, **kwargs)
+            static_background = self.pattern(self.time_points[0]).baseline(background_regions = positions, level = 'max', **kwargs)
             for time in self.time_points:
                 backgrounds.append( (time, static_background))
         else:
