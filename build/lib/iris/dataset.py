@@ -8,14 +8,16 @@ parameters, etc.
 
 @author: Laurent P. René de Cotret
 """
-
 import numpy as n
-from h5py import File
-#Batch processing libraries
-from curve import Curve
+import h5py
+import shutil
+
+from .pattern import Pattern
+from .hough import diffraction_center
+from .io import read, save, cast_to_16_bits, ImageNotFoundError
+from .raw import RawDataset
+
 import os.path
-from glob import glob
-from tifffile import imread, imsave
 
 class cached_property(object):
     """
@@ -88,62 +90,8 @@ def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2
     radius = n.array(radius) * pixel_width
     diffraction_half_angle = n.arctan(radius/camera_distance)/2
     return n.sin(diffraction_half_angle)/electron_wavelength(energy, units = 'angstroms')
-        
-def cast_to_16_bits(array):
-    """ 
-    Returns an array in int16 format. Array values below 0 are cast to 0,
-    and array values above (2**16) - 1 are cast to (2**16) - 1.
-    
-    Parameters
-    ----------
-    array : array-like
-        Array to be cast into 16 bits.
-    
-    Returns
-    -------
-    out : ndarray, dtype numpy.int16
-    """
-    array = n.asarray(array)
-    array[ array < 0] = 0
-    array[ array > (2**16) - 1] = (2**16) - 1
-    return n.around(array, decimals = 0).astype(n.int16)
-    
-def read(filename):
-    """ 
-    Returns a ndarray from an image filename. 
-    
-    Parameters
-    ----------
-    filename : str
-        Absolute path to the file.
-    
-    Returns
-    -------
-    out : ndarray, dtype numpy.float
-        Numpy array from the image.
-    """
-    return imread(filename).astype(n.float)
-    
-def save(array, filename):
-    """ 
-    Saves a ndarray to an image filename. 
-    
-    Parameters
-    ----------
-    array : ndarray
-        Image as an array of any type. The array will be cast to 16 bits.
-    filename : str
-        Absolute path to the file.
-    
-    See also
-    --------        
-    cast_to_16_bits
-        For casting rules.
-    """
-    array = cast_to_16_bits(array)
-    imsave(filename, array)
 
-def radial_average(image, center, mask_rect):
+def radial_average(image, center, beamblock_rect, mask = None, return_error = False):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -151,22 +99,51 @@ def radial_average(image, center, mask_rect):
     ----------
     image : ndarray
         image data from the diffractometer.
-    center : array-like, shape (2,)
-        [x,y] coordinates of the center (in pixels)
+    center : array-like shape (2,) or None
+        [x,y] coordinates of the center (in pixels). If None, the center of the image
+        will be determined via the Hough transform.
     name : str
         String identifier for the output RadialCurve
-    mask_rect : Tuple, shape (4,)
+    beamblock_rect : Tuple, shape (4,)
         Tuple containing x- and y-bounds (in pixels) for the beamblock mask
         mast_rect = (x1, x2, y1, y2)
+    mask : ndarray or None, optional
+        Array of booleans that evaluates to False on pixels that should be discarded.
+        If None (default), all pixels are treated as valid (except for beamblock)
+    return_error :  bool, optional
+        If True, returns the square-root-N error on the counts.
         
     Returns
     -------
-    curve.Curve object
-    """
+    radius : ndarray, shape (N,)
+    intensity : ndarray, shape (N,)
+    error : ndarray, shape (N,)
+        Returned only if return_error is True
     
+    Raises
+    ------
+    ValueError
+        If 'mask' is an array of a different shape than the image shape.
+    
+    See also
+    --------
+    iris.hough.diffraction_center
+        Find the center of polycrystalline diffraction images using the Hough transform.
+    """    
     #preliminaries
+    if mask is None:
+        mask = n.ones_like(image, dtype = n.bool)
+    elif mask.shape != image.shape:
+        raise ValueError("'mask' array (shape {}) must have the same shape as 'image' (shape {})".format(mask.shape, image.shape))
+    
+    if center is None:
+        center = diffraction_center(image, beamblock = beamblock_rect)
+    
     image = image.astype(n.float)
+    mask = mask.astype(n.bool)
+    
     xc, yc = center     #Center coordinates
+    x1, x2, y1, y2 = beamblock_rect     
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
@@ -175,28 +152,40 @@ def radial_average(image, center, mask_rect):
     #radii beyond r_max don't fit a full circle within the image
     image_edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
     r_max = image_edge_values.min()           #Maximal radius that fits completely in the image
+    
+    # Find the smallest circle that completely fits inside the mask rectangle
+    r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
 
     # Replace all values in the image corresponding to beamblock or other irrelevant
     # data by 0: this way, it will never count in any calculation because image
     # values are used as weights in numpy.bincount
-    image[R > r_max] = 0
-    x1, x2, y1, y2 = mask_rect
-    image[x1:x2, y1:y2] = 0
-    
-    # Find the smallest circle that completely fits inside the mask rectangle
-    r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
+    # Create a composite mask that uses the pixels mask, beamblock mask, and maximum/minimum
+    # radii     
+    composite_mask = n.array(mask, dtype = n.bool)      # start from the pixel mask
+    composite_mask[R > r_max] = False
+    composite_mask[R < r_min] = False
+    composite_mask[x1:x2, y1:y2] = False
+    image[ n.logical_not(composite_mask) ] = 0    # composite_mask is false where pixels should be disregarded
     
     #Radial average
     px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
     r_bin = n.bincount(R.ravel().astype(n.int))  
     radial_intensity = px_bin/r_bin
     
-    # Only return values with radius below r_max
-    radius = n.unique(R.ravel().astype(n.int))
+    # Compute the error as square-root-N
+    radial_intensity_error = n.sqrt(px_bin)/r_bin
+    
+    # Only return values with radius between r_min and r_max
+    radius = n.unique(R.ravel().astype(n.int))      # Round up to integer number of pixel
     r_max_index = n.argmin(n.abs(r_max - radius))
     r_min_index = n.argmin(n.abs(r_min - radius))
     
-    return (radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index])
+    if return_error:
+        return radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index], radial_intensity_error[r_min_index + 1:r_max_index]
+    else:
+        return radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index]
+
+
 
 class DiffractionDataset(object):
     """ 
@@ -207,9 +196,8 @@ class DiffractionDataset(object):
     ----------
     directory : str
         Absolute path to the dataset directory
-    radial_average_computed : bool
-        If radial averages have been computed and are available as an HDF5 file,
-        returns True. False otherwise.
+    mode : str, {'polycrystalline', 'single crystal'} or None
+        Data type.
     
     Attributes (experimental parameters)
     ------------------------------------
@@ -236,6 +224,14 @@ class DiffractionDataset(object):
     image_series
         Access to the ensemble of time-delay averaged diffraction patterns
         in a single ndarray.
+    
+    pattern
+    
+    pattern_series
+    
+    baseline
+    
+    baseline_series
         
     intensity_noise
         RMS intensity of diffraction pictures before photoexcitation
@@ -251,6 +247,9 @@ class DiffractionDataset(object):
     
     """
     
+    _time_group_template = 'timedelay_{}'
+    _baseline_group_template = 'baseline_{}'
+    
     def __init__(self, directory):
         """
         Parameters
@@ -259,11 +258,20 @@ class DiffractionDataset(object):
             Absolute path to the dataset directory
         """
         # Check that the directory is a 'processed' directory.
-        if not directory.endswith('processed') and 'processed' in os.listdir(directory):
-            directory = os.path.join(directory, 'processed')
+        if directory.endswith('processed'):
+            self.directory = directory
+        else:
+            self.directory = os.path.join(directory, 'processed')
+    
+    @property
+    def time_points(self):            
+        # get time points. Filename look like:
+        # data_timedelay_-10.00_pumpon.tif
+        time_list = [f.split('_')[2] for f in self._time_filenames]
+        time_list.sort(key = float)
+        return time_list
         
-        self.raw_directory = os.path.dirname(directory)
-        self.directory = directory
+    # Access to data ----------------------------------------------------------
     
     def image(self, time, reduced_memory = False):
         """
@@ -284,8 +292,8 @@ class DiffractionDataset(object):
         time = str(float(time))
         try:
             image = read(os.path.join(self.directory, 'data_timedelay_{0}_average_pumpon.tif'.format(time)))
-        except IOError:
-            print('Available time points : {0}'.format(repr(self.time_points)))
+        except ImageNotFoundError:
+            raise ImageNotFoundError('Available time points : {0}'.format(repr(self.time_points)))
         
         if reduced_memory:
             return cast_to_16_bits(image)
@@ -315,40 +323,6 @@ class DiffractionDataset(object):
             images.append(self.image(time, reduced_memory))
             
         return n.array(list(map(float, self.time_points))), n.array(images)
-        
-    
-    @property
-    def _exp_params_filename(self):
-        return os.path.join(self.directory, 'experimental_parameters.txt')
-    
-    @property
-    def _pumpoff_filenames(self):
-        return [os.path.join(self._pumpoff_directory, f) 
-                for f in os.listdir(self._pumpoff_directory)
-                if os.path.isfile(os.path.join(self._pumpoff_directory, f)) 
-                and f.endswith('pumpoff.tif')]
-                
-    @property
-    def _time_filenames(self):
-        #TODO: make _time_filenames return a list of absolute paths, not relative
-        return [f for f in os.listdir(self.directory) 
-                if os.path.isfile(os.path.join(self.directory, f)) 
-                and f.startswith('data_timedelay_') 
-                and f.endswith('_pumpon.tif')]
-    
-    @property
-    def time_points(self):            
-        # get time points. Filename look like:
-        # data_timedelay_-10.00_pumpon.tif
-        time_list = [f.split('_')[2] for f in self._time_filenames]
-        time_list.sort(key = lambda x: float(x))
-        return time_list
-    
-    @property
-    def resolution(self):
-        # Get the shape of the first image in self._time_filenames
-        fn = os.path.join(self.directory, self._time_filenames[0])
-        return read(fn).shape
     
     # -------------------------------------------------------------------------
     # Properties read from the experimental parameters file
@@ -380,6 +354,12 @@ class DiffractionDataset(object):
                 return 0.0
 
     @property
+    def resolution(self):
+        # Get the shape of the first image in self._time_filenames
+        fn = os.path.join(self.directory, self._time_filenames[0])
+        return read(fn).shape
+    
+    @property
     def fluence(self):
         return self._read_experimental_parameter('Fluence')
     
@@ -399,7 +379,29 @@ class DiffractionDataset(object):
     def acquisition_date(self):
         return self._read_experimental_parameter('Acquisition date')
         
-    # -------------------------------------------------------------------------
+    # Shortcut to files -------------------------------------------------------
+    
+    @property
+    def _results_filename(self):
+        return os.path.join(self.directory, 'results.hdf5')
+    
+    @property
+    def _exp_params_filename(self):
+        return os.path.join(self.directory, 'experimental_parameters.txt')
+    
+    @property
+    def _pumpoff_filenames(self):
+        return [os.path.join(self._pumpoff_directory, f) 
+                for f in os.listdir(self._pumpoff_directory)
+                if os.path.isfile(os.path.join(self._pumpoff_directory, f)) 
+                and f.endswith('pumpoff.tif')]
+                
+    @property
+    def _time_filenames(self):
+        return [f for f in os.listdir(self.directory) 
+                if os.path.isfile(os.path.join(self.directory, f)) 
+                and f.startswith('data_timedelay_') 
+                and f.endswith('_pumpon.tif')]
     
     @property
     def _pumpoff_background(self):
@@ -408,246 +410,276 @@ class DiffractionDataset(object):
     @property
     def _pumpon_background(self):
         return read(os.path.join(self.directory, 'background_average_pumpon.tif'))
+
+    @property
+    def _pumpoff_directory(self):
+        return os.path.join(self.directory, 'pumpoff pictures')
     
     @property
     def _substrate(self):
         return read(os.path.join(self.directory, 'substrate.tif'))
     
-    def intensity_noise(self):
-        """
-        RMS intensity noise for pictures before photoexcitation.
-        """
-        b4_time0 = n.dstack( tuple([self.image(time) for time in self.time_points if float(time) <= 0.0]) )
-        return n.std(b4_time0, axis = -1)
+    # Noise analysis ----------------------------------------------------------
     
     def _pumpoff_intensity_stability(self):
         """ Plots the total intensity of the pumpoff pictures. """
         overall_intensity = list()
         for fn in self._pumpoff_filenames:
-            overall_intensity.append( imread(os.path.join(self._pumpoff_directory, fn)).sum() )
+            overall_intensity.append( read(os.path.join(self._pumpoff_directory, fn)).sum() )
         return n.array(overall_intensity)/overall_intensity[0]
+
+    # Master HDF5 results file ------------------------------------------------
+    @property
+    def master_file(self):
+        """
+        Returns
+        -------
+        master : h5py.File object
+        """
+        # Create file if it doesn't exist, otherwise open for read/write
+        return h5py.File(self._results_filename, 'a', libver = 'latest')
+    
+    def _group(self, timedelay, name_template):
+        """
+        Returns HDF5 group of time-delay. Basis for time_group and baseline_group methods.
         
-    def stability_diagnostic(self, time = '+0.00'):
-        """ Plots the overall intensity of time-delay picture over nscan."""
-        template = 'data.timedelay.' + time + '.nscan.*.pumpon.tif'
-        filenames = [fn for fn in glob(os.path.join(self.raw_directory, template))]
-        return n.array([read(filename).sum() for filename in filenames])
+        Parameters
+        ----------
+        timedelay : str or numerical
+            Pump-probe time-delay.
+        name_template : str
+            formatable string. E.g. 'timedelay_{}', 'background_{}'
         
+        Returns
+        -------
+        group : HDF5.Group object
+        """
+        timedelay = str(float(timedelay))
+        group_name = name_template.format(timedelay)
+        if not group_name in self.master_file:
+            return self.master_file.create_group(group_name)
+        else:
+            return self.master_file[group_name]
+        
+    def time_group(self, timedelay):
+        """
+        Returns the HDF5 group associated with a certain time. If the group doesn't exist,
+        it will be created.
+        
+        Parameters
+        ----------
+        timedelay : str or numerical
+            Pump-probe time-delay.
+        
+        Returns
+        -------
+        group : HDF5.Group object
+        """
+        return self._group(timedelay, self._time_group_template)
+    
+    def baseline_group(self, timedelay):
+        """
+        Returns the HDF5 group associated with a certain time. If the group doesn't exist,
+        it will be created.
+        
+        Parameters
+        ----------
+        timedelay : str or numerical
+            Pump-probe time-delay.
+        
+        Returns
+        -------
+        group : HDF5.Group object
+        """
+        return self._group(timedelay, self._baseline_group_template)
+        
+    def baseline(self, time):
+        pass
+        
+    def baseline_series(self):
+        """
+        Returns a list of time-delay inelastic scattering background data.
+        
+        Returns
+        -------
+        patterns : list of Pattern objects
+        """
+        out = list()
+        for time in self.time_points:
+            out.append(self.baseline(time))
+        return out
+        
+    def baseline_fit(self, positions, mode = 'dynamic', **kwargs):
+        """
+        Fits an inelastic scattering background to the data. The fits are applied 
+        to each time point independently. Results are then exported to the master
+        HDF5 file.
+        
+        Parameters
+        ----------
+        positions : list of floats or None
+            x-data positions of where radial averages are known to be purely background. 
+            If None, the positions will be automatically determined. For an unassisted
+            fit, set positions = [].
+        mode : str, {'dynamic' (default), 'static'}
+            Background fit mode. If 'dynamic', an inelastic background is fit to each pattern
+            independently. If 'static', the first inelastic background fit for the first time-point 
+            is used for all time-points.
+        
+        *args : optional arguments
+            Can be any argument accepted by iris.pattern.Pattern.baseline. Most
+            useful are max_iter and wavelet.
+        
+        Raises
+        ------
+        ValueError 
+            If mode argument is invalid
+        """
+        backgrounds = list()
+        if mode == 'dynamic':
+            for time in self.time_points:
+                backgrounds.append( (time, self.pattern(time).baseline(background_regions = positions, level = 'max', **kwargs)) )
+        elif mode == 'static':
+            # TODO: have static background be the average of all time points before time-zero
+            static_background = self.pattern(self.time_points[0]).baseline(background_regions = positions, level = 'max', **kwargs)
+            for time in self.time_points:
+                backgrounds.append( (time, static_background))
+        else:
+            raise ValueError("'mode' argument {} invalid. Possible values are ['dynamic', 'static']".format(mode))
+        
+        self.export(backgrounds, group = self.baseline_group)
+    
+    def _record_parameters(self):
+        """
+        Records experimental parameters in the master HDF5 file.
+        
+        Parameters
+        ----------
+        opened_file : h5py.File object or None, optional
+            If None (default), the master HDF5 file will be opened and closed
+            automatically after recording parameters.
+        """
+        with self.master_file as opened_file:
+            opened_file.attrs['acquisition date'] = self.acquisition_date
+            opened_file.attrs['resolution'] = self.resolution
+            opened_file.attrs['fluence'] = self.fluence
+            opened_file.attrs['energy'] = self.energy
+            opened_file.attrs['exposure'] = self.exposure
+            opened_file.attrs['current'] = self.current
+        
+    def export(self, results, group):
+        """
+        Parameters
+        ----------
+        results : list
+            List of tuples containing a time delay (str) and a pattern (Pattern)
+        group : callable
+            Method that takes a single argument (timedelay). Results will be stored
+            in this family of groups.
+        
+        Examples
+        --------
+        >>> d = DiffractionDataset(...)
+        >>> background_results = zip(d.time_points, d.baseline_series)
+        >>> d.export(background_results, group = d.baseline_group)
+        
+        Notes
+        -----
+        This function will overwrite existing radial averages.
+        """   
+        self._record_parameters()
+        
+        for (timedelay, pattern) in results:
+            pattern.save(group(timedelay))
+
 
 class SingleCrystalDiffractionDataset(DiffractionDataset):
     """
-    Diffraction dataset of single-crystal diffraction data.
-    
-    Attributes
-    ----------
-    
-    Methods
-    -------
-    
-    Notes
-    -----
+    Diffraction dataset of single-crystal diffraction data. Inherits from
+    DiffractionDataset.
     """
     def __init__(self, directory):
-        super(SingleCrystalDiffractionDataset, self).__init__(directory)
-        # TODO: all of this class
-        
+        """
+        Parameters
+        ----------
+        directory : str
+            Absolute path to the dataset directory
+        """
+        super().__init__(directory)
+    
+    def master_file(self):
+        return super().master_file(polycrystalline = False)
+
+
+
 
 class PowderDiffractionDataset(DiffractionDataset):
     """
-    Diffraction dataset of polycrystalline diffraction data.
-    
-    Attributes
-    ----------
-    radial_average_computed : bool 
-        If True, radial average HDF5 file is available.
+    Diffraction dataset of polycrystalline diffraction data. Inherits from 
+    DiffractionDataset.
     
     Methods
-    -------
-    radial_pattern
-        Access time-delay processed powder diffraction patterns
-    
-    radial_pattern_series
-        Access to the ensemble of time-delay radially-averaged diffraction patterns.
+    -------       
+    radial_peak_dynamics
+        Get time-delay vs. intensity data for regions of a radial pattern.
         
     radial_average
         Radial average of a time delay picture.
     
     radial_average_series
         Radial average of all time delay pictures, saved in HDF5 and MATLAB formats
-    
-    export_to_matlab
-        Export the master HDF5 file to .mat format compatible with MATLAB and Octave
     """
     def __init__(self, directory):
-        super(PowderDiffractionDataset, self).__init__(directory)
-        
-    def radial_pattern(self, time):
         """
-        Returns the radially-averaged pattern.
-        
         Parameters
         ----------
-        time : str, numerical
-            Time delay value of the image.
-        
-        Notes
-        -----
-        This function depends on the existence of an HDF5 file containing radial
-        averages.
+        directory : str
+            Absolute path to the dataset directory
         """
-        from h5py import File
-        
-        time = str(float(time))
-        file = File(self._radial_average_filename, 'r')
-        
-        # Rebuild Curve object from saved data
-        xdata = file['/{0}/xdata'.format(time)]
-        intensity = file['/{0}/intensity'.format(time)]
-        return Curve(xdata, intensity, name = time)
+        super().__init__(directory)
     
-    def radial_pattern_series(self, background_subtracted = False):
-        """
-        Returns a list of time-delay radially-averaged data.
-        
-        Parameters
-        ----------
-        background_subtracted : bool
-            If True, radial patterns will be background-subtracted before being 
-            returned. False by default.
-        
-        Returns
-        -------
-        curves : list of curve.Curve objects
-        """
-        curves = list()
-        for time in self.time_points:
-            if background_subtracted:
-                curves.append(self.radial_pattern(time) - self.inelastic_background(time))
-            else:
-                curves.append(self.radial_pattern(time))
-        return curves
+    @property
+    def center(self):
+        return tuple(self.master_file.attrs['center'])
     
-    def inelastic_background(self, time = 0.0):
-        """
-        Returns the inelastic scattering background of the radially-averaged pattern.
+    @center.setter
+    def center(self, value):
+        self.master_file.attrs['center'] = value
         
-        The inelastic background is computed for the average of radial patterns
-        before photoexcitation; however, the background curve is saved in each 
-        HDF5 time group for flexibility. 
+    @property
+    def beamblock_rect(self):
+        return tuple(self.master_file.attrs['beamblock_rect'])
+    
+    @beamblock_rect.setter
+    def beamblock_rect(self, value):
+        self.master_file.attrs['beamblock_rect'] = value
+    
+    def radial_average(self, time, center, mask_rect = None):
+        """
+        Radial average of an image.
         
         Parameters
         ----------
         time : str, numerical, optional
             Time delay value of the image.
-        
-        Notes
-        -----
-        This function depends on the existence of an HDF5 file containing radial
-        averages.
-        """
-        
-        time = str(float(time))
-        file = File(self._radial_average_filename, 'r')
-        
-        # Rebuild Curve object from saved data
-        # see self._export_background_curves for the HDF5 group naming
-        xdata = self._access_dataset(file, time, 'xdata')
-        ydata = self._access_dataset(file, time, 'inelastic background')
-        return Curve(xdata, ydata, name = time)
-    
-    def inelastic_background_series(self):
-        """
-        Returns a list of time-delay inelastic scattering background data.
-        
-        Returns
-        -------
-        curves : list of curve.Curve objects
-        """
-        curves = list()
-        for time in self.time_points:
-            curves.append(self.inelastic_background(time))
-        return curves
-    
-    def peak_dynamics(self, rect):
-        pass
-        
-    def radial_peak_dynamics(self, edge, edge2 = None, subtract_background = False):
-        """
-        Returns a curve corresponding to the time-dynamics of a location in the 
-        diffraction patterns. Think of it as looking at the time-evolution
-        of a diffraction peak.
-        
-        Parameters
-        ----------
-        edge : float
-            Edge value in terms of xdata
-        edge2 : float, optional
-            If not None (default), the peak value is integrated between edge and
-            edge2.
-        subtract_background : bool, optional
-            If True, inelastic scattering background is subtracted from the intensity data 
-            before integration. Default is False.
-        
-        Returns
-        -------
-        time_values : ndarray, shape (N,)
-            Time-delay values as an array
-        intensity_series : ndarray, shape (N,M)
-            Array of intensities. Each column corresponds to a time-delay
-        """
-        curves = self.radial_pattern_series()    
-        scattering_length = curves[0].xdata
-        intensity_series = n.vstack( tuple( [curve.ydata for curve in curves] ))
-        
-        if subtract_background:
-            background_series = n.vstack( tuple(bg_curve.ydata for bg_curve in self.inelastic_background_series()))
-        else:
-            background_series = n.zeros_like(intensity_series)
-
-        time_values = n.array(list(map(float, self.time_points)))
-        index = n.argmin(n.abs(scattering_length - edge))
-        
-        if edge2 is None:
-            intensities = intensity_series[:, index] - background_series[:, index]
-        else:
-            index2 = n.argmin(n.abs(scattering_length - edge2))
-            intensities = (intensity_series[:, index:index2] - background_series[:, index:index2]).mean(axis = 1)
-        
-        # Normalize intensities
-        return time_values, intensities/intensities.max()
-        
-    @property
-    def _radial_average_filename(self):
-        return os.path.join(self.directory, 'radial_averages.hdf5')
-    
-    @property
-    def _pumpoff_directory(self):
-        return os.path.join(self.directory, 'pumpoff pictures')
-    
-    @property
-    def radial_average_computed(self):
-        return self._radial_average_filename in os.listdir(self.directory)
-        
-    def radial_average(self, time, center, mask_rect = None):
-        """
-        Radial average of a
-        Parameters
-        ----------
-        image : ndarray
-            image data from the diffractometer.
         center : array-like, shape (2,)
-            [x,y] coordinates of the center (in pixels)
-        name : str
-            String identifier for the output RadialCurve
+            [x,y] coordinates of the center (in pixels). If None, the center of 
+            the image will be determined via the Hough transform.
         mask_rect : Tuple, shape (4,)
             Tuple containing x- and y-bounds (in pixels) for the beamblock mask
             mast_rect = (x1, x2, y1, y2)
-        """
-        xdata, intensity = radial_average(self.image(time), center, mask_rect)
         
+        Returns
+        -------
+        Pattern object, type 'polycrystalline'
+        """
+        self.center = center
+        self.beamblock_rect = mask_rect if not None else (0,0,0,0)
+        
+        xdata, intensity, error = radial_average(self.image(time), center, mask_rect, return_error = True)
         # Change x-data from pixels to scattering length
         s = scattering_length(xdata, self.energy)
-        return Curve(s, intensity, name = str(time), color = 'b')
+        return Pattern(data = [s, intensity], error = error, name = str(time))
     
     def radial_average_series(self, center, mask_rect = None):
         """
@@ -663,166 +695,247 @@ class PowderDiffractionDataset(DiffractionDataset):
         """
         results = list()
         for time in self.time_points:
-            curve = self.radial_average(time, center, mask_rect)
-            results.append( (time, curve) )
-        self._export_curves(results)
+            pattern = self.radial_average(time, center, mask_rect)
+            results.append( (time, pattern) )
+        self.export(results, group = self.time_group)
     
-    def inelastic_background_fit(self, positions, level):
+    def pattern(self, time = None):
         """
-        Fits an inelastic scattering background to the data. The fits are applied 
-        to each time point independently. Results are then exported to the master
-        HDF5 file.
+        Returns the radially-averaged pattern.
         
         Parameters
         ----------
-        positions : list of floats or None
-            x-data positions of where radial averages should be fit to. If None, 
-            the positions will be automatically determined.
-        level : int
-            Wavelet decomposition level. A higher level implies a coarser approximation 
-            to the baseline.
+        time : str, numerical, or None, optional
+            Time delay value of the image. If None, the earliest measured pattern
+            is returned
+        
+        Notes
+        -----
+        This function depends on the existence of an HDF5 file containing radial
+        averages.
         """
-        background_curves = list()
-        for time in self.time_points:
-            background_curves.append( (time, self.radial_pattern(time).inelastic_background(positions, level)) )
-            
-        self._export_background_curves(background_curves)
-
-    # -------------------------------------------------------------------------
+        if time is None:
+            time = self.time_points[0]
+        time = str(float(time))
+        
+        return Pattern.from_hdf5(self.time_group(time))
     
-    @staticmethod
-    def _access_time_group(opened_file, timedelay):
+    def pattern_series(self, background_subtracted = False):
         """
-        Returns the HDF5 group associated with a certain time. If the group doesn't exist,
-        it will be created.
+        Returns a list of time-delay radially-averaged data.
         
         Parameters
         ----------
-        opened_file : h5py.File object
-            Opened file.
-        timedelay : str or numerical
-            Pump-probe time-delay.
-        """
-        
-        timedelay = str(float(timedelay))
-        return opened_file.require_group('/{0}'.format(timedelay))
-    
-    def _access_dataset(self, opened_file, timedelay, dataset_name, data = None):
-        """
-        Returns a dataset as a numpy array, or write a numpy array into the dataset.
-        
-        Parameters
-        ----------
-        opened_file : h5py.File object
-            Opened file.
-        timedelay : str or numerical
-            Pump-probe time-delay.
-        dataset_name : str
-            Name of the dataset to be created
-        data : ndarray or None, optional
-            If not None (default), data will be written in the dataset.
+        background_subtracted : bool
+            If True, radial patterns will be background-subtracted before being 
+            returned. False by default.
         
         Returns
         -------
-        out : ndarray or None
-            If data is None, out is an ndarray
+        patterns : list of Pattern objects
         """
-        # group.require_dataset cannot be used as the dataset shape is not known in advance
-        group = self._access_time_group(opened_file, timedelay)
-        
-        if data is None: # Retrieve data in the form of an ndarray
-            return n.array(group[dataset_name])
-            
-        else:
-            # TODO: write to an existing group without deleting
-            # Delete the group if it already exists
-            try:
-                del group[dataset_name]
-            except:
-                pass
-            # write to group
-            group.create_dataset(dataset_name, dtype = n.float, data = data)
-                
-    def _export_curves(self, results):
-        """
-        Parameters
-        ----------
-        results : list
-            List of tuples containing a time delay (str) and a curve (curve.Curve)
-        
-        Notes
-        -----
-        This function will overwrite existing radial averages.
-        """        
-        with File(self._radial_average_filename, 'w', libver = 'latest') as f:       # Overwrite if it already exists
-    
-            # Attributes
-            f.attrs['acquisition date'] = self.acquisition_date
-            f.attrs['resolution'] = self.resolution
-            f.attrs['fluence'] = self.fluence
-            f.attrs['energy'] = self.energy
-            f.attrs['exposure'] = self.exposure
-            f.attrs['current'] = self.current
-            #Iteratively create a group for each timepoint
-            for (timedelay, curve) in results:
-                group = self._access_time_group(f, timedelay)
-                group.attrs['time delay'] = timedelay
-                
-                #Add some data to the file
-                self._access_dataset(f, timedelay, dataset_name = 'xdata', data = curve.xdata)
-                self._access_dataset(f, timedelay, dataset_name = 'intensity', data = curve.ydata)
-    
-    def _export_background_curves(self, results):
-        """
-        Exports the background curves. If background curves have been computed,
-        a radial-average file already exists.
-        
-        Parameters
-        ----------
-        results : list
-            List of tuples containing a time delay (str) and a background curve (curve.Curve)
-        
-        Notes
-        -----
-        This function will overwrite existing inelastic scattering background curves.
-        """
-        with File(self._radial_average_filename, 'r+', libver = 'latest') as f:       # Overwrite if it already exists
-        
-            #Iteratively visit groups for each timepoint
-            for timedelay, background_curve in results:
-                self._access_dataset(f, timedelay, dataset_name = 'inelastic background', data = background_curve.ydata)
-
-    def export_to_matlab(self, filename):
-        """
-        Method that translates the master HDF5 file to MATLAB *.mat format.
-        
-        Parameters
-        ----------
-        filename : str or file-handle
-        """
-        from scipy.io import savemat
-        
-        # Build dictionary
-        matlab_dict = {}
-        matlab_dict['acquisition_date'] = self.acquisition_date
-        matlab_dict['resolution'] = self.resolution
-        matlab_dict['fluence'] = self.fluence
-        matlab_dict['energy'] = self.energy
-        matlab_dict['exposure'] = self.exposure
-        matlab_dict['current'] = self.current
-        
+        out = list()
         for time in self.time_points:
-            # Give structs names in femtoseconds to avoid punctuation
-            # Also avoid having the name start with a number
-            name = 'time_delay_' + str(int(float(time)*1000)) + 'fs'
-            
-            matlab_dict[name] = {'time': time + 'ps',
-                                 'intensity': self.radial_pattern(time).ydata,
-                                 'scattering_length': self.radial_pattern(time).xdata,
-                                 'inelastic_background': self.inelastic_background(time).ydata}
+            if background_subtracted:
+                out.append(self.pattern(time) - self.baseline(time))
+            else:
+                out.append(self.pattern(time))
+        return out
         
-        savemat(filename, matlab_dict, oned_as = 'row')
+    def baseline(self, time = None):
+        """
+        Returns the inelastic scattering background of the radially-averaged pattern.
+        
+        The inelastic background is computed for the average of radial patterns
+        before photoexcitation; however, the background pattern is saved in each 
+        HDF5 time group for flexibility. 
+        
+        Parameters
+        ----------
+        time : str, numerical, or None. optional
+            Time delay value of the image. If None (default), the earlier background
+            is returned.
+        
+        Notes
+        -----
+        This function depends on the existence of an HDF5 file containing radial
+        averages.
+        """
+        if time is None:
+            time = self.time_points[0]
+        time = str(float(time))
+        
+        return Pattern.from_hdf5(self.baseline_group(time))
+    
+    # Operations --------------------------------------------------------------
+        
+    def radial_peak_dynamics(self, edge, edge2 = None, subtract_background = False, background_dynamics = False, return_error = False):
+        """
+        Returns a pattern corresponding to the time-dynamics of a location in the 
+        diffraction patterns. Think of it as looking at the time-evolution
+        of a diffraction peak. This can be for data or for the background fits
+        
+        Parameters
+        ----------
+        edge : float
+            Edge value in terms of xdata
+        edge2 : float, optional
+            If not None (default), the peak value is integrated between edge and
+            edge2.
+        subtract_background : bool, optional
+            If True, inelastic scattering background is subtracted from the intensity data 
+            before integration. Default is False.
+        background_dynamics : bool, optional
+            If True, the radial peak dynamics in the background fit is returned. In this case,
+            the subtract_background parameter is ignored
+        return_error: bool, optional
+            If True, a stack of radial intensity errors is returned. Default is False.
+        
+        Returns
+        -------
+        time_values : ndarray, shape (N,)
+            Time-delay values as an array
+        intensity_series : ndarray, shape (N,M)
+            Array of intensities. Each column corresponds to a time-delay. 
+            Intensities are normalized to the maximal intensity over time.
+        error_series : ndarray, shape (N,M)
+            Returned if return_error is True (default is False)
+        """
+        if background_dynamics:
+            subtract_background = False
+            patterns = self.baseline_series()
+        else:
+            patterns = self.pattern_series()    
+        
+        scattering_length = patterns[0].xdata
+        intensity_series = n.vstack( tuple( [pattern.data for pattern in patterns] ))
+        error_series =  n.vstack( tuple( [pattern.error for pattern in patterns] ))
+        
+        if subtract_background:
+            background_series = n.vstack( tuple(bg_pattern.data for bg_pattern in self.baseline_series()))
+        else:
+            background_series = n.zeros_like(intensity_series)
+
+        time_values = n.array(list(map(float, self.time_points)))
+        index = n.argmin(n.abs(scattering_length - edge))
+        
+        if edge2 is None:
+            intensities = intensity_series[:, index] - background_series[:, index]
+            errors = error_series[:, index]
+        else:
+            index2 = n.argmin(n.abs(scattering_length - edge2))
+            intensities = (intensity_series[:, index:index2] - background_series[:, index:index2]).mean(axis = 1)
+            errors = error_series[:, index:index2].mean(axis=1)
+        
+        # Normalize intensities
+        if return_error:
+            return time_values, intensities/intensities.max(), errors/intensities.max()
+        else:
+            return time_values, intensities/intensities.max()
+    
+
+class PowderDiffractionDiagnosticDataset(h5py.File, PowderDiffractionDataset, RawDataset):
+    
+    _scan_template = 'nscan_{}'
+    _time_template = 'time_{}'
+    
+    @classmethod
+    def scan_to_group(cls, scan_number):
+        return cls._scan_template.format(int(scan_number))
+    
+    @classmethod
+    def time_to_group(cls, timedelay):
+        return cls._time_template.format(str(float(timedelay)))
+        
+    def __init__(self, filename, directory):
+        h5py.File.__init__(name = filename, mode = 'r+', liver = 'latest')
+        RawDataset.__init__(directory)
+        self._calculate()
+    
+    def _calculate(self):
+        """
+        Radially average all images in the underlying RawDataset
+        """
+        for scan in self.nscans:
+            self.create_group(self.scan_to_group(scan))
+            for timedelay in self.time_points:
+                radius, intensity, error = radial_average(image = self.raw_image(timedelay, scan) - self.pumpon_background, 
+                                                          center = self.center, beamblock_rect = self.beamblock_rect, return_error = True)
+                radav = Pattern([scattering_length(radius, self.energy), intensity], error = error)
+                
+                group = self.create_group(self.time_to_group(scan))
+                radav.save(group)
+            
+        self.attrs['calculated'] = True
+        
+    def group(self, timedelay, scan):
+        return self[self.scan_to_group(scan)][self.time_to_group(timedelay)]
+    
+    def pattern(self, timedelay, scan):
+        """
+        Returns the radial average at a certain time-delay and scan number.
+        """
+        return Pattern.from_hdf5(self.group(timedelay, scan))
+    
+    def pattern_series(self, timedelays, scans):
+        """
+        Returns the Pattern objects associated with various timedelays or scans.
+        
+        Parameters
+        ----------
+        timedelays : list of floats
+        
+        scans : list of ints
+        """
+
+
+        
+class SinglePictureDataset(PowderDiffractionDataset):
+    """
+    Dummy diffraction dataset to perform operations on single images.
+    """
+    def __init__(self, filename):
+        from tempfile import TemporaryDirectory
+        self.temporary_directory = TemporaryDirectory()
+
+        directory = os.path.join(self.temporary_directory.name, 'processed')
+        os.mkdir(path = directory)
+        
+        # Create the illusion of a full-fledged dataset, but with a single timepoint and picture.
+        shutil.copyfile(filename, os.path.join(directory, 'data_timedelay_0.0_average_pumpon.tif'))
+        
+        resolution = read(filename).shape
+        save(n.zeros(shape = resolution), os.path.join(directory, 'background_average_pumpon.tif'))
+        save(n.zeros(shape = resolution), os.path.join(directory, 'background_average_pumpoff.tif'))
+        save(n.zeros(shape = resolution), os.path.join(directory, 'substrate.tif'))
+        
+        # Go on with our day with this 'temporary' dataset
+        super().__init__(directory = directory)
+    
+    def __del__(self):
+        self.temporary_directory.cleanup()
+    
+    # Overload  properties as placeholder values
+    @property
+    def fluence(self):
+        return 0.0
+    
+    @property
+    def current(self):
+        return 0.0
+    
+    @property
+    def exposure(self):
+        return 0.0
+        
+    @property
+    def energy(self):
+        return 90
+        
+    @property    
+    def acquisition_date(self):
+        return '0.0.0.0.0'
 
 if __name__ == '__main__':
-    directory = 'D:\\2016.04.22.09.47.VO2_0.36mW'
-    d = PowderDiffractionDataset(directory)
+   directory = 'K:\\test_folder'
+   d = PowderDiffractionDataset(directory)
