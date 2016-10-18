@@ -16,7 +16,6 @@ iris/preprocess.py
 iris/preprocess_for_diagnostic.py
 iris/progress_widget.py
 iris/raw.py
-iris/run_gui.py
 iris/pyqtgraph/PlotData.py
 iris/pyqtgraph/Point.py
 iris/pyqtgraph/Qt.py

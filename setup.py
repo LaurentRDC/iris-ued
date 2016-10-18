@@ -19,6 +19,6 @@ setup(
     scripts = ['post_installation_script.py'],
     py_modules = ['iris.dataset','iris.pattern', 'iris.gui', 'iris.progress_widget', 
                   'iris.hough', 'iris.preprocess', 'iris.wavelet'], 
-    install_requires = ['numpy', 'pyqt4', 'scipy', 'h5py', 'PyWavelets'],
+    install_requires = ['numpy', 'scipy', 'h5py', 'PyWavelets'],
     data_files = [('App\\images', image_list)]
     )

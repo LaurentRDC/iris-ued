@@ -1,5 +1,4 @@
 numpy
-pyqt4
 scipy
 h5py
 PyWavelets
