@@ -143,16 +143,3 @@ def binary(image, mask = None):
     binary = image > skimage.filters.threshold_otsu(image[mask])
 
     return image
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    from os.path import join, dirname
-    from iris.io import read
-    from uediff import diffshow
-    from iris.ellipse_fit import ring_mask
-
-    image = read(join(dirname(__file__), 'tests\\test_diff_picture.tif'))
-    TEST_MASK = ring_mask(image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
-
-    #print(diffraction_center(image, mask = TEST_MASK))
-    diffshow(binary(image, mask = TEST_MASK))
