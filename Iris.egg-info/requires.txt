@@ -2,4 +2,4 @@ numpy
 pyqt4
 scipy
 h5py
-PyWavelet
+PyWavelets
