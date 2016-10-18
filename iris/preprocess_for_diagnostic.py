@@ -24,9 +24,9 @@ import traceback
 import pyqtgraph as pg
 from os.path import join, isdir
 from os import mkdir, listdir
-from iris.io import read
-from iris.preprocess import log
-from iris.dataset import radial_average
+from .io import read
+from .preprocess import log
+from .dataset import radial_average
 
 # Info
 __author__ = 'Siwick Lab'

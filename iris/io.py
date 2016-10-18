@@ -26,7 +26,7 @@ RESOLUTION
 """
 
 import numpy as n
-from iris.tifffile import imread, imsave
+from .tifffile import imread, imsave
 
 __all__ = ['read', 'save', 'resize', 'cast_to_16_bits', 'RESOLUTION', 'ImageNotFoundError']
 

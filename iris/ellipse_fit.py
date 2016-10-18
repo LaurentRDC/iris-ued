@@ -4,7 +4,7 @@ Author : Laurent P. Rene de Cotret
 Ref.:
 [1] NUMERICALLY STABLE DIRECT LEAST SQUARES FITTING OF ELLIPSES
 """
-from iris.wavelet import denoise, baseline
+from .wavelet import denoise, baseline
 import matplotlib.pyplot as plt
 import numpy as n
 from numpy.linalg import inv, eig
