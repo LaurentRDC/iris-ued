@@ -6,9 +6,9 @@
 import pdb
 
 #Core functions
-import iris.preprocess
-from iris.dataset import RawDataset, DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
-from iris.progress_widget import InProgressWidget
+from . import preprocess
+from .dataset import RawDataset, DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
+from .progress_widget import InProgressWidget
 import os
 
 #GUI backends

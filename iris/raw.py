@@ -10,7 +10,7 @@ import glob
 from datetime import datetime
 import re
 import numpy as n
-from iris.io import read, save, RESOLUTION, ImageNotFoundError
+from .io import read, save, RESOLUTION, ImageNotFoundError
 
 # Info
 __author__ = 'Laurent P. René de Cotret'

@@ -12,10 +12,10 @@ import numpy as n
 import h5py
 import shutil
 
-from iris.pattern import Pattern
-from iris.hough import diffraction_center
-from iris.io import read, save, cast_to_16_bits, ImageNotFoundError
-from iris.raw import RawDataset
+from .pattern import Pattern
+from .hough import diffraction_center
+from .io import read, save, cast_to_16_bits, ImageNotFoundError
+from .raw import RawDataset
 
 import os.path
 

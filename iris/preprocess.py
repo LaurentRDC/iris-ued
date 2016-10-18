@@ -27,7 +27,7 @@ from glob import glob
 from datetime import datetime
 import re
 import numpy as n
-from iris.io import read, save, RESOLUTION
+from .io import read, save, RESOLUTION
 
 # Info
 __author__ = 'Siwick Lab'
