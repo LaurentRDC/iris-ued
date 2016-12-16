@@ -39,7 +39,7 @@ class ImageNotFoundError(FileNotFoundError):
 
 def cast_to_16_bits(array):
     """ 
-    Returns an array in int16 format. Array values below 0 are cast to 0,
+    Returns an array in uint16 format. Array values below 0 are cast to 0,
     and array values above (2**16) - 1 are cast to (2**16) - 1.
     
     Parameters
@@ -49,12 +49,12 @@ def cast_to_16_bits(array):
     
     Returns
     -------
-    out : ndarray, dtype numpy.int16
+    out : ndarray, dtype uint16
     """
     array = n.asarray(array)
     array[ array < 0] = 0
     array[ array > (2**16) - 1] = (2**16) - 1
-    return n.around(array, decimals = 0).astype(n.int16)
+    return array.astype(n.uint16, order = 'C')
 
 def resize(array, resolution = RESOLUTION):
     """
@@ -83,21 +83,14 @@ def read(filename, normalize = False):
     ----------
     filename : str
         Absolute path to the file.
-    return_mask : bool, optional
-        If True, returns a mask the same size as image that evaluates to False
-        on pixels that are invalid due to being above a certain threshold 
-        (hot pixels). Default is False.
     normalize : bool, optional
         If True, normalized image to the total number of counts. Default is False.
     
     Returns
     -------
-    out : ndarray, dtype numpy.float
-        Numpy array from the image.
     mask : ndarray, dtype numpy.bool
         Numpy array of the valid pixels. Only returned if return_mask is True
         
-    
     Raises
     ------
     ImageNotFoundError

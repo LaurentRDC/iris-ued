@@ -7,7 +7,7 @@ from skimage.draw import circle_perimeter
 from uediff import diffshow
 import unittest
 
-from iris.ellipse_fit import ellipse_fit, ellipse_center, ring_mask, diffraction_center
+from ..ellipse_fit import ellipse_fit, ellipse_center
 
 class TestEllipseFit(unittest.TestCase):
 
@@ -56,22 +56,6 @@ class TestEllipseFit(unittest.TestCase):
         a,b,c,d,e,f = ellipse_fit(x = x, y = y)
         self.assertAlmostEqual(-d/(2*a), xc, places = 1)    # center
         self.assertAlmostEqual(-e/(2*c), yc, places = 1)    # center
-
-class TestDiffractionCenter(unittest.TestCase):
-
-    def setUp(self):
-        self.image = read(join(dirname(__file__), 'test_diff_picture.tif'))
-        self.mask1 = ring_mask(self.image.shape, center = (990, 940), inner_radius = 215, outer_radius = 280)
-        self.mask2 = ring_mask(self.image.shape, center = (1000, 950), inner_radius = 210, outer_radius = 290)
-    
-    @unittest.expectedFailure
-    def test_stability(self):
-        xc1, yc1 = diffraction_center(self.image, mask = self.mask1)
-        xc2, yc2 = diffraction_center(self.image, mask = self.mask2)
-        print('Center 1: {}, {}'.format(xc1, yc1))
-        print('Center 2: {}, {}'.format(xc2, yc2))
-        self.assertAlmostEqual(xc1, xc2, places = 0)
-        self.assertAlmostEqual(yc1, yc2, places = 0)
     
 if __name__ == '__main__':
     unittest.main()

@@ -4,81 +4,8 @@ Author : Laurent P. Rene de Cotret
 Ref.:
 [1] NUMERICALLY STABLE DIRECT LEAST SQUARES FITTING OF ELLIPSES
 """
-from .wavelet import denoise, baseline
-import matplotlib.pyplot as plt
 import numpy as n
 from numpy.linalg import inv, eig
-
-import skimage
-from skimage.segmentation import random_walker
-from skimage.feature import canny
-
-def ring_mask(shape, center, inner_radius, outer_radius):
-    """
-    Mark array representing a circlet (thick circle).
-
-    Parameters
-    ----------
-    shape : 2-tuple
-
-    center : 2-tuple
-
-    inner_radius, outer_radius : numerical
-
-    Returns
-    -------
-    mask : ndarray, dtype bool
-
-    Raises
-    ------
-    ValueError
-        If inner_radis > outer_radius
-    """
-    if inner_radius > outer_radius:
-        raise ValueError('Inner radius {} must be smaller than the outer radius {}.'.format(inner_radius, outer_radius))
-    x, y = n.arange(0, shape[0]), n.arange(0, shape[1])
-    xx, yy = n.meshgrid(x, y, indexing = 'ij')
-    xc, yc = center
-    inner = (xx - xc)**2 + (yy - yc)**2 <= inner_radius**2
-    outer = (xx - xc)**2 + (yy - yc)**2 <= outer_radius**2
-    mask = outer
-    mask[inner] = False
-
-    return mask
-
-def diffraction_center(image, mask = None):
-    """
-    Returns the diffraction center from a diffraction pattern. The mask must highlight
-    one diffraction ring.
-
-    Parameters
-    ----------
-    image : ndarray, ndim 2
-        Grayscale image
-    mask : ndarray, dtype bool
-        Pixels where mask is False will be set to 0 (non-object pixels).
-
-    Returns
-    -------
-    xc, yc : floats
-        Center coordinates.
-    """
-    image -= baseline(image, max_iter = 10)
-    image = skimage.filters.gaussian(image, sigma = 5)
-    image -= n.min(image[mask])
-    image[image < 0] = 0
-    image[n.logical_not(mask)] = 0
-
-    # Make into binary image
-    binary = skimage.morphology.closing(image)
-    binary = skimage.feature.canny(binary, sigma = 5, mask = mask)
-    binary = skimage.morphology.remove_small_objects(binary, connectivity = 2)
-
-    # From image to list of coordinates
-    xx, yy = n.meshgrid(n.arange(binary.shape[0]), n.arange(binary.shape[1]), indexing = 'ij')
-    x, y = xx[binary.astype(n.bool)].ravel(), yy[binary.astype(n.bool)].ravel()
-    
-    return ellipse_center(x, y)
 
 def ellipse_fit(x, y, circle_constraint = False):
     """
@@ -145,7 +72,7 @@ def ellipse_fit(x, y, circle_constraint = False):
     # and find the minimal element of vals
     vals, vecs = eig(M)
     if vals.max() < 0: 
-        raise RunTimeError('Unstable system?')
+        raise RuntimeError('Unstable system?')
     vals[vals < 0] = n.inf
     min_pos_eig = vals.argmin()
     a1 = vecs[:, min_pos_eig].ravel()
