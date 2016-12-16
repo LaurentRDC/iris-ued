@@ -87,10 +87,8 @@ class IrisController(QtCore.QObject):
         worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
 
         def in_progress(boolean):
-            if boolean:
-                self.status_message_signal.emit('Dataset processing in progress.')
-            else:
-                self.status_message_signal.emit('Dataset processing done.')
+            if boolean: self.status_message_signal.emit('Dataset processing in progress.')
+            else: self.status_message_signal.emit('Dataset processing done.')
         
         worker.in_progress_signal.connect(in_progress)
         worker.start()

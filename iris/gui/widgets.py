@@ -158,16 +158,16 @@ class RawDataViewer(QtGui.QWidget):
         corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2.0
         #Flip output since image viewer plots transpose...
-        processing_info['center'] = (corner_y + radius, corner_x + radius)
-        processing_info['radius'] = radius
+        processing_info['center'] = (round(corner_y + radius), round(corner_x + radius))
+        processing_info['radius'] = round(radius)
             
         # Beamblock rect
         rect = self.mask.parentBounds().toRect()
         #If coordinate is negative, return 0
-        x1 = max(0, rect.topLeft().x() )
-        x2 = max(0, rect.x() + rect.width() )
-        y1 = max(0, rect.topLeft().y() )
-        y2 = max(0, rect.y() + rect.height() )
+        x1 = round(max(0, rect.topLeft().x() ))
+        x2 = round(max(0, rect.x() + rect.width() ))
+        y1 = round(max(0, rect.topLeft().y() ))
+        y2 = round(max(0, rect.y() + rect.height() ))
         processing_info['beamblock_rect'] = (y1, y2, x1, x2)       #Flip output since image viewer plots transpose
 
         self.process_dataset_signal.emit(processing_info)
