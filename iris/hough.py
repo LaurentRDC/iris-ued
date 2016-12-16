@@ -22,7 +22,7 @@ from skimage.feature import peak_local_max, canny
 
 from scipy.cluster.vq import whiten, kmeans2
 
-def diffraction_center(image, beamblock = None, min_rad = 150, n_centroids = 5):
+def diffraction_center(image, center, beamblock = None, min_rad = 150, max_rad = 400, n_centroids = 5):
     """
     Find the diffraction center of an image using the Hough transform and a clustering
     procedure.
@@ -31,6 +31,8 @@ def diffraction_center(image, beamblock = None, min_rad = 150, n_centroids = 5):
     ----------
     image : ndarray, ndim 2
         Diffraction pattern
+    center: 2-tuple of ints
+        Initial guess center
     beamblock : Tuple, shape (4,) or None, optional
         Tuple containing x- and y-bounds (in pixels) for the beamblock mask
         mast_rect = (x1, x2, y1, y2). If None (default), no mask is applied.
@@ -50,11 +52,17 @@ def diffraction_center(image, beamblock = None, min_rad = 150, n_centroids = 5):
     The Hough transform is very sensitive to noise. Therefore, using a beamblock
     is highly recommended.
     """
-    radii = n.arange(min_rad, image.shape[0]/2, step = 100)
+    # Reduce image size
+    xc, yc = center
+    reduced_image = image[xc - max_rad : xc + max_rad, yc - max_rad : yc + max_rad]
+
+
+    radii = n.arange(min_rad, max_rad, step = 100)
+
     # Find possible centers
     centers = list()
     for min_radius in radii:
-        centers += _candidate_centers(image, beamblock, min_rad = min_radius, block_size = 100)
+        centers += _candidate_centers(reduced_image, beamblock, min_rad = min_radius, block_size = 100)
     centers = n.asarray(centers)
     
     # Use k-means algorithm to group centers
@@ -67,7 +75,9 @@ def diffraction_center(image, beamblock = None, min_rad = 150, n_centroids = 5):
     
     # Definition of center should be transposed
     j,i =  n.mean(clustered_centers, axis = 0)
-    return (i,j)
+
+    # Return center in the non-reduced image reference frame
+    return (i + (xc - max_rad), j + (yc - max_rad))
 
 def _candidate_centers(image, beamblock, min_rad = 150, block_size = 100):
     """
@@ -97,7 +107,7 @@ def _candidate_centers(image, beamblock, min_rad = 150, block_size = 100):
     if beamblock is not None:
         y1, y2, x1, x2 = beamblock 
         mask[x1:x2, y1:y2] = True
-    binary_image = _binary_edge(image, mask)
+    binary_image = binary(image, mask)
     
     # Determine a range of radii. From:
     # http://stackoverflow.com/questions/32287032/circular-hough-transform-misses-circles
@@ -132,14 +142,11 @@ def binary(image, mask = None):
     if mask is None:
         mask = n.zeros_like(image, dtype = n.bool)
     
-    image -= baseline(image, max_iter = 10)
-    image = denoise(image, level = 3, wavelet = 'db5')
     image -= n.median(image)
     image[image < 0] = 0
     image[n.logical_not(mask)] = 0
 
     # Threshold image into foreground and background.
-    smoothed = skimage.filters.gaussian(image, sigma = 5)
     binary = image > skimage.filters.threshold_otsu(image[mask])
 
     return image

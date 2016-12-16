@@ -74,14 +74,4 @@ class TestHoughOnDiffractionImages(unittest.TestCase):
         self.assertAlmostEqual(yc, jc, places = 0)
     
 if __name__ == '__main__':
-    #unittest.main()
-    shape = (500,500)      # Small size for quick tests
-    center = int(shape[0]/2), int(shape[1]/2)
-    image = n.zeros(shape = shape, dtype = n.float)
-    for radius in [100, 150, 200]:
-        rr, cc = circle_perimeter(center[0], center[1], radius = radius)
-        image[rr, cc] = 1
-    image += 0.05*n.random.random(size = image.shape)
-
-    center = diffraction_center(image, min_rad = 50)
-    print(center)
+    unittest.main()
