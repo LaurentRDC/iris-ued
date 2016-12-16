@@ -138,7 +138,7 @@ class RawDataset(object):
     
     @cached_property
     def time_points(self):
-        return (float(t) for t in self.time_points_str)
+        return tuple(float(t) for t in self.time_points_str)
     
     @cached_property
     def time_points_str(self):
@@ -271,7 +271,7 @@ class RawDataset(object):
             # Evaluates to TRUE on the beamblock
             x1,x2,y1,y2 = beamblock_rect
             beamblock_mask = n.zeros(shape = processed.resolution, dtype = n.bool)
-            beamblock_mask[x1:x2, y1:y2] = True
+            beamblock_mask[y1:y2, x1:x2] = True
             
             # Pre-allocation
             cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float)
@@ -297,7 +297,7 @@ class RawDataset(object):
                         image = n.empty(shape = self.resolution)
                         image[:] = n.nan
                         corr_i, corr_j = 0, 0
-                    cube[:,:,index] = shift(image, corr_i, corr_j, fill = n.nan)
+                    cube[:,:,index] = shift(image, round(corr_i), round(corr_j), fill = n.nan)
 
                 # Perform statistical test for outliers using estimator function
                 # Pixels deemed outliers have their value replaced by NaN so that
@@ -322,5 +322,5 @@ class RawDataset(object):
 
                 # Update callback
                 callback(round(100*i / len(self.time_points)))
-
+                
             return filename

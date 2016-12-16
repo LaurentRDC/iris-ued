@@ -5,8 +5,8 @@
 
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 
-from .reactor import Reactor, ProcessReactor, ThreadSafeQueue, ProcessSafeQueue
 from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, RawDataViewer, RadavViewer
+from .worker import WorkThread
 
 import functools
 import multiprocessing
@@ -81,16 +81,23 @@ class IrisController(QtCore.QObject):
     
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
-        #TODO: in a separate thread or process?
-        path = self.dataset.process(callback = self.processing_progress_signal.emit, **info_dict)
-        self.processing_progress_signal.emit(100)
-        self.load_dataset(path)
+        info_dict['callback'] = self.processing_progress_signal.emit
+        worker = WorkThread( function = self.dataset.process, kwargs = info_dict)
+        worker.results_signal.connect(self.load_dataset)    # self.dataset.process returns a string path
+        worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
+
+        def in_progress(boolean):
+            if boolean:
+                self.status_message_signal.emit('Dataset processing in progress.')
+            else:
+                self.status_message_signal.emit('Dataset processing done.')
+        
+        worker.in_progress_signal.connect(in_progress)
+        worker.start()
     
     @QtCore.pyqtSlot(str)
     def load_dataset(self, path):
         """ Determines which type of dataset should be loaded, and opens it. """
-        #TODO: what other HDF5 extensions?
-        print(path)
         if path.endswith('.hdf5'):
 
             self.dataset = DiffractionDataset(path, mode = 'r+')
@@ -233,7 +240,7 @@ class Iris(QtGui.QMainWindow):
 
         # Processing raw dataset
         self.raw_data_viewer.process_dataset_signal.connect(self.controller.process_raw_dataset)
-        self.controller.processing_progress_signal.connect(self.raw_data_viewer.processing_progress_bar.setValue)
+        self.controller.processing_progress_signal.connect(print) #self.raw_data_viewer.processing_progress_bar.setValue)
     
     def center_window(self):
         qr = self.frameGeometry()
