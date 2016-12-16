@@ -1,5 +1,5 @@
 """
-Prototype preprocessing to cast folders of TIFFs into a single HDF5 
+@author: Laurent P. Rene de Cotret
 """
 
 import glob

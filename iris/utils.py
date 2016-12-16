@@ -57,7 +57,13 @@ def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2
 
 def shift(arr, x, y, fill = n.nan):
     """
-    Shift an array to center
+    Shift an array to center.
+
+    Parameters
+    ----------
+    x : int
+    y : int
+    fill : numeric
     """
     canvas = n.empty_like(arr)
     if x > 0:
