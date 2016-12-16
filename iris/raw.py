@@ -322,5 +322,5 @@ class RawDataset(object):
 
                 # Update callback
                 callback(round(100*i / len(self.time_points)))
-                
+
             return filename
