@@ -325,7 +325,11 @@ class RadavViewer(QtGui.QWidget):
         pass
 
     def _init_ui(self):
-        pass
+        
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(self.radial_pattern_viewer)
+        layout.addWidget(self.peak_dynamics_viewer)
+        self.setLayout(layout)
     
     def _connect_signals(self):
         pass
