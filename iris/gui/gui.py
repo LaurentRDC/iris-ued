@@ -102,11 +102,13 @@ class IrisController(QtCore.QObject):
         """ Determines which type of dataset should be loaded, and opens it. """
         if path.endswith('.hdf5'):
 
+            # Special case: since a powder dataset is also a processed dataset, both
+            # tabs should be available
             self.dataset = DiffractionDataset(path, mode = 'r+')
             if self.dataset.sample_type == 'powder':
                 self.powder_dataset_loaded_signal.emit(True)
                 self.raw_dataset_loaded_signal.emit(False)
-                self.processed_dataset_loaded_signal.emit(False)
+                self.processed_dataset_loaded_signal.emit(True)
             elif self.dataset.sample_type == 'single crystal':
                 self.processed_dataset_loaded_signal.emit(True)
                 self.powder_dataset_loaded_signal.emit(False)
@@ -160,12 +162,12 @@ class Iris(QtGui.QMainWindow):
     
     @QtCore.pyqtSlot()
     def load_raw_dataset(self):
-        path = self.file_dialog.getExistingDirectory(self, 'Load raw dataset')
+        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
         self.dataset_path_signal.emit(path)
 
     @QtCore.pyqtSlot()
     def load_dataset(self):
-        path = self.file_dialog.getOpenFileName(self, 'Load dataset')
+        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset')[0]
         self.dataset_path_signal.emit(path)
     
     def _init_ui(self):
@@ -229,8 +231,8 @@ class Iris(QtGui.QMainWindow):
         self.controller.dataset_info_signal.connect(self.processed_viewer.update_info)
 
         self.controller.raw_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.raw_data_viewer), x))
-        self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.radav_viewer), x))
         self.controller.processed_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.processed_viewer), x))
+        self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.radav_viewer), x))
 
         # Display data
         self.controller.raw_data_signal.connect(self.raw_data_viewer.display)
