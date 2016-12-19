@@ -81,6 +81,11 @@ class IrisController(QtCore.QObject):
         """ Emit averaged data (array) at a certain timedelay """
         self.averaged_data_signal.emit(self.dataset.averaged_data(timedelay))
     
+    @QtCore.pyqtSlot(float)
+    def display_powder_data(self, timedelay):
+        """ Emit an array of all time-delay powder data """
+        raise NotImplementedError
+    
     @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
@@ -101,26 +106,18 @@ class IrisController(QtCore.QObject):
     def load_dataset(self, path):
         """ Determines which type of dataset should be loaded, and opens it. """
         if path.endswith('.hdf5'):
-
-            # Special case: since a powder dataset is also a processed dataset, both
-            # tabs should be available
-            self.dataset = DiffractionDataset(path, mode = 'r+')
-            if self.dataset.sample_type == 'powder':
-                self.powder_dataset_loaded_signal.emit(True)
-                self.raw_dataset_loaded_signal.emit(False)
-                self.processed_dataset_loaded_signal.emit(True)
+            with DiffractionDataset(path, mode = 'r+') as d:
+                sample_type = d.sample_type
+            
+            if sample_type == 'powder':
+                self._load_powder_dataset(path)
             elif self.dataset.sample_type == 'single crystal':
-                self.processed_dataset_loaded_signal.emit(True)
-                self.powder_dataset_loaded_signal.emit(False)
-                self.raw_dataset_loaded_signal.emit(False)
+                self._load_processed_dataset(path)
             else:
                 self.error_message_signal.emit('Unrecognized sample type: {}'.format(self.dataset.sample_type))
 
         elif os.path.isdir(path):
-            self.dataset = RawDataset(path)
-            self.raw_dataset_loaded_signal.emit(True)
-            self.processed_dataset_loaded_signal.emit(False)
-            self.powder_dataset_loaded_signal.emit(False)
+            self._load_raw_dataset(path)
 
         else:
             self.error_message_signal.emit('Unrecognized dataset format (path {})'.format(path))
@@ -132,7 +129,36 @@ class IrisController(QtCore.QObject):
                 info[attr] = getattr(self.dataset, attr)
             except : pass
         self.dataset_info_signal.emit(info)
+    
+    def _load_raw_dataset(self, path):
+        self.dataset = RawDataset(path)
+        self.raw_dataset_loaded_signal.emit(True)
+        self.processed_dataset_loaded_signal.emit(False)
+        self.powder_dataset_loaded_signal.emit(False)
+
+        # Show a picture
+        self.display_raw_data(timedelay = min(map(abs, self.dataset.time_points)),
+                                scan = min(self.dataset.nscans))
+    
+    def _load_powder_dataset(self, path):
+        self.dataset = PowderDiffractionDataset(path)
+        self.powder_dataset_loaded_signal.emit(True)
+        self.raw_dataset_loaded_signal.emit(False)
+        self.processed_dataset_loaded_signal.emit(True)
         
+        # TODO: display powder data
+        # Display data as close as possible to time zero
+        self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
+    
+    def _load_processed_dataset(self, path):
+        self.dataset = DiffractionDataset(path)
+        self.processed_dataset_loaded_signal.emit(True)
+        self.powder_dataset_loaded_signal.emit(False)
+        self.raw_dataset_loaded_signal.emit(False)
+
+        # Display data as close as possible to time zero
+        self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
+
 class Iris(QtGui.QMainWindow):
     """
     """
