@@ -33,7 +33,7 @@ class TestShift(unittest.TestCase):
         array = n.ones(shape = (256, 256), dtype = n.float)
         shifted_x = shift(array, 34.5, -0.1, fill = n.nan)
 
-class TestRadialAverage(unittest.TestCase):
+class TestAngularAverage(unittest.TestCase):
 
     def test_trivial_array(self):
         image = n.zeros(shape = (256, 256), dtype = n.float)
@@ -41,16 +41,6 @@ class TestRadialAverage(unittest.TestCase):
         s, i, e = angular_average(image, center, (0,0,0,0))
         self.assertTrue(i.sum() == 0)
         self.assertTrue(len(s) == len(i) == len(e))
-    
-    def test_ring_array(self):
-        image = n.zeros(shape = (256, 256), dtype = n.float)
-        center = (0,0)
-        extent = n.arange(-127, 128)
-        xx, yy = n.meshgrid(extent, extent)
-        rr = n.sqrt((xx - center[0])**2 + (yy - center[1])**2)
-        image[rr == 25] = 1
-        s, i, e = angular_average(image, center, (0,0,0,0))
-        self.assertTrue(n.sum(i) == 1)
 
 class TestFindCenter(unittest.TestCase):
 

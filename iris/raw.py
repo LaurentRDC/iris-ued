@@ -13,8 +13,8 @@ import sys
 
 from . import cached_property
 from .io import read, save, RESOLUTION, ImageNotFoundError, cast_to_16_bits
-from .dataset import DiffractionDataset
-from .utils import shift, find_center, average_tiff
+from .dataset import DiffractionDataset, PowderDiffractionDataset
+from .utils import shift, find_center, average_tiff, angular_average
 
 # Info
 __author__ = 'Laurent P. René de Cotret'
@@ -241,6 +241,7 @@ class RawDataset(object):
             processed.energy = self.energy
             processed.resolution = self.resolution
             processed.center = center
+            processed.beamblock_rect = beamblock_rect
             processed.sample_type = sample_type
 
             # Copy pumpoff pictures
@@ -277,6 +278,7 @@ class RawDataset(object):
             cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float)
             int_intensities = n.zeros(shape = (len(self.nscans),), dtype = n.float)
             averaged = n.empty(shape = self.resolution, dtype = n.float)
+            deviation = n.empty_like(cube, dtype = n.float)
 
             def estimator(*args, **kwargs):
                 return 2*n.nanstd(*args, **kwargs)
@@ -304,7 +306,12 @@ class RawDataset(object):
                 # they will be ignored by nanmean
                 mean = n.expand_dims(n.nanmean(cube, axis = -1, dtype = n.float), axis = 2)
                 estimation = n.expand_dims(estimator(cube, axis = -1, dtype = n.float), axis = 2)
-                cube[n.abs(cube - mean) > estimation] = n.nan
+                n.abs(cube - mean, out = deviation)
+
+                # Avoiding comparing NaNs
+                # TODO: is there a better way?
+                deviation[n.isnan(deviation)] = estimation.max() + 1
+                cube[deviation > estimation] = n.nan
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
@@ -318,9 +325,21 @@ class RawDataset(object):
                 # Averaged data is not uint16 anymore
                 n.nanmean(cube, axis = -1, dtype = n.float, out = averaged)
                 averaged[n.isnan(averaged)] = 0
-                processed.processed_measurements_group.create_dataset(name = str(timedelay), data = averaged, shape = self.resolution, dtype = n.float)
+                gp = processed.processed_measurements_group.create_group(name = str(timedelay))
+                # TODO: include error as well?
+                gp.create_dataset(name = 'intensity', data = averaged, shape = self.resolution, dtype = n.float)
 
                 # Update callback
                 callback(round(100*i / len(self.time_points)))
+            
+        # Extra step for powder data: angular average
+        # We already have the center + beamblock info
+        if sample_type == 'powder':
+            with PowderDiffractionDataset(name = filename, mode = 'r+') as processed:
+                for timedelay in self.time_points:
+                    s_length, intensity, error = angular_average(n.array(processed.averaged_data(timedelay)), center = center, beamblock_rect = beamblock_rect)
+                    gp = processed.powder_group.create_group(name = str(timedelay))
+                    for name, value in zip(('scattering length', 'intensity', 'error'), (s_length, intensity, error)):
+                        gp.create_dataset(name = name, data = value, dtype = n.float, compression = compression)
 
-            return filename
+        return filename
