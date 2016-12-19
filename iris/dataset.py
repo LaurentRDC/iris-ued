@@ -68,6 +68,7 @@ class DiffractionDataset(h5py.File):
     energy = ExperimentalParameter('energy', float)
     resolution = ExperimentalParameter('resolution', tuple)
     center = ExperimentalParameter('center', tuple)
+    beamblock_rect = ExperimentalParameter('beamblock_rect', tuple)
     sample_type = ExperimentalParameter('sample_type', str)
     
     def __init__(self, name, mode = 'r', **kwargs):
@@ -100,7 +101,7 @@ class DiffractionDataset(h5py.File):
             Time-delay data. If out is provided, None is returned.
         """
         timedelay = str(float(timedelay))
-        dataset = self.processed_measurements_group[timedelay]
+        dataset = self.processed_measurements_group[timedelay]['intensity']
         if out:
             return dataset.read_direct(array = out, source_sel = n.s_[:,:], dest_sel = n.s_[:,:])
         return n.array(dataset)
@@ -150,28 +151,9 @@ class DiffractionDataset(h5py.File):
 
 class PowderDiffractionDataset(DiffractionDataset):
     """ """
-    _radav_group_name = '/radav'
+    _powder_group_name = '/powder'
 
-    def compute_radial_averages(self, center, beamblock_rect):
-        """
-        Compute the radial average individually for every scan and time-delay.
-
-        Parameters
-        ----------
-        center : array-like shape (2,)
-            [x,y] coordinates of the center (in pixels).
-        beamblock_rect : array-like shape (4,)
-            Tuple containing x- and y-bounds (in pixels) for the beamblock mask
-            mast_rect = (x1, x2, y1, y2)
-        """
-        # TODO: would it be worth it to compress the radial averages?
-        for timedelay in self.time_points:
-            s_length, intensity, error = radial_average(self.averaged_data(timedelay), center = center, beamblock_rect = beamblock_rect)
-            gp = self.radav_group.create_group(name = str(timedelay))
-            for name, value in zip(('scattering length', 'intensity', 'error'), (s_length, intensity, error)):
-                gp.create_dataset(name = name, data = value)
-    
-    def radav_data(self, timedelay):
+    def powder_data(self, timedelay):
         """
         Returns the radial average data from scan-averaged diffraction patterns.
 
@@ -186,9 +168,9 @@ class PowderDiffractionDataset(DiffractionDataset):
             1D arrays for the scattering length, diffracted intensity and error
         """
         timedelay = str(float(timedelay))
-        gp = self.radav_group[timedelay]
+        gp = self.powder_group[timedelay]
         return gp['scattering length'], gp['intensity'], gp['error']
 
     @property
-    def radav_group(self):
-        return self.require_group(self._radav_group_name)
+    def powder_group(self):
+        return self.require_group(self._powder_group_name)

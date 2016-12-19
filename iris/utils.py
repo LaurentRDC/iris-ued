@@ -217,11 +217,10 @@ def angular_average(image, center, beamblock_rect, mask = None):
     R = n.sqrt( (X - xc)**2 + (Y - yc)**2 )
     
     #radii beyond r_max don't fit a full circle within the image
-    image_edge_values = n.array([R[0,:], R[-1,:], R[:,0], R[:,-1]])
-    r_max = image_edge_values.min()           #Maximal radius that fits completely in the image
+    r_max = min((X.max()/2, Y.max()/2))           #Maximal radius that fits completely in the image
     
-    # Find the smallest circle that completely fits inside the mask rectangle
-    r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
+    # #TODO: Find the smallest circle that completely fits inside the mask rectangle
+    r_min = 0 # = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
 
     # Replace all values in the image corresponding to beamblock or other irrelevant
     # data by 0: this way, it will never count in any calculation because image

@@ -28,18 +28,20 @@ def run():
     
     sys.exit(app.exec_())
 
-def error_aware(func, message):
+def error_aware(message):
     """
-    Wrap a function with a try/except and emit a message
+    Wrap a with a try/except and emit a message.
     """
-    @functools.wraps(func)
-    def aware_func(self, *args, **kwargs):
-        try:
-            return func(self, *args, **kwargs)
-        except:
-            self.error_message_signal.emit(message)
-            raise
-    return aware_func
+    def wrap(func):
+        @functools.wraps(func)
+        def aware_func(self, *args, **kwargs):
+            try:
+                return func(self, *args, **kwargs)
+            except: # TODO: get traceback message and add to message?
+                self.error_message_signal.emit(message)
+                raise
+        return aware_func
+    return wrap
 
 class IrisController(QtCore.QObject):
     """
@@ -54,7 +56,7 @@ class IrisController(QtCore.QObject):
     """
     raw_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'raw_dataset_loaded_signal')
     powder_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'powder_dataset_loaded_signal')
-    sc_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'sc_dataset_loaded_signal')
+    processed_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'processed_dataset_loaded_signal')
 
     status_message_signal = QtCore.pyqtSignal(str, name = 'status_message_signal')
     dataset_info_signal = QtCore.pyqtSignal(dict, name = 'dataset_info_signal')
@@ -79,6 +81,7 @@ class IrisController(QtCore.QObject):
         """ Emit averaged data (array) at a certain timedelay """
         self.averaged_data_signal.emit(self.dataset.averaged_data(timedelay))
     
+    @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
         info_dict['callback'] = self.processing_progress_signal.emit
@@ -93,6 +96,7 @@ class IrisController(QtCore.QObject):
         worker.in_progress_signal.connect(in_progress)
         worker.start()
     
+    @error_aware(message = 'Dataset could not be loaded')
     @QtCore.pyqtSlot(str)
     def load_dataset(self, path):
         """ Determines which type of dataset should be loaded, and opens it. """
@@ -102,9 +106,9 @@ class IrisController(QtCore.QObject):
             if self.dataset.sample_type == 'powder':
                 self.powder_dataset_loaded_signal.emit(True)
                 self.raw_dataset_loaded_signal.emit(False)
-                self.sc_dataset_loaded_signal.emit(False)
+                self.processed_dataset_loaded_signal.emit(False)
             elif self.dataset.sample_type == 'single crystal':
-                self.sc_dataset_loaded_signal.emit(True)
+                self.processed_dataset_loaded_signal.emit(True)
                 self.powder_dataset_loaded_signal.emit(False)
                 self.raw_dataset_loaded_signal.emit(False)
             else:
@@ -113,7 +117,7 @@ class IrisController(QtCore.QObject):
         elif os.path.isdir(path):
             self.dataset = RawDataset(path)
             self.raw_dataset_loaded_signal.emit(True)
-            self.sc_dataset_loaded_signal.emit(False)
+            self.processed_dataset_loaded_signal.emit(False)
             self.powder_dataset_loaded_signal.emit(False)
 
         else:
@@ -150,7 +154,7 @@ class Iris(QtGui.QMainWindow):
         # Initialization
         self.controller.raw_dataset_loaded_signal.emit(False)
         self.controller.powder_dataset_loaded_signal.emit(False)
-        self.controller.sc_dataset_loaded_signal.emit(False)
+        self.controller.processed_dataset_loaded_signal.emit(False)
         self.controller.status_message_signal.emit('Ready.')
         self.controller.processing_progress_signal.emit(0)
     
@@ -226,7 +230,7 @@ class Iris(QtGui.QMainWindow):
 
         self.controller.raw_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.raw_data_viewer), x))
         self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.radav_viewer), x))
-        self.controller.sc_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.processed_viewer), x))
+        self.controller.processed_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.processed_viewer), x))
 
         # Display data
         self.controller.raw_data_signal.connect(self.raw_data_viewer.display)
