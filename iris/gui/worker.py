@@ -35,7 +35,7 @@ class WorkThread(QtCore.QThread):
     """
     done_signal = QtCore.pyqtSignal(bool, name = 'done_signal')
     in_progress_signal = QtCore.pyqtSignal(bool, name = 'in_progress_signal')
-    results_signal = QtCore.pyqtSignal(object, name = 'results_signal')
+    results_signal = QtCore.pyqtSignal(str, name = 'results_signal')
     
     def __init__(self, function, args = (), kwargs = {}):
         

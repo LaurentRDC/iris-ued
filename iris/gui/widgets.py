@@ -152,7 +152,7 @@ class RawDataViewer(QtGui.QWidget):
         sample_type : str {'single crystal', 'powder'}
         """
         processing_info = dict()
-        processing_info['filename'] = self.file_dialog.getSaveFileName(parent = self, filter = '*.hdf5')
+        processing_info['filename'] = self.file_dialog.getSaveFileName(parent = self, filter = '*.hdf5')[0]
         processing_info['sample_type'] = sample_type
 
         corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
@@ -245,44 +245,8 @@ class RawDataViewer(QtGui.QWidget):
         self.process_dataset_as_powder_action.triggered.connect(lambda : self.process_dataset(sample_type = 'powder'))
         
 
-class RadavViewer(QtGui.QWidget):
+class PowderViewer(QtGui.QWidget):
     """
-    Widgets displaying two pyqtgraph.PlotWidget widgets. The first one is for radially-averaged
-    diffraction patterns, while the other is for time-dynamics of specific regions of
-    the radially-averaged diffractiona patterns.
-    
-    Attributes
-    ----------
-    parent : QWidget
-        Iris QWidget in which this instance is contained. While technically this
-        instance could be in a QSplitter, 'parent' refers to the Iris QWidget 
-        specifically.
-    
-    Components
-    ----------
-    radial_pattern_viewer : PlotWidget
-        View the time-delay radial patterns. This widget is also used to specify peak
-        dynamics.
-    
-    peak_dynamics_viewer : PlotWidget
-        View the time-delay information about peaks specified in radial_pattern_viewer.
-    
-    menubar: QtGui.QMenuBar
-        Actions are stored in a menu bar
-        
-    Methods
-    -------
-    update_peak_dynamics_plot
-        Update the peak dynamics plot after changed to the radial pattern viewer
-    
-    set_background_curve
-        Show or hide an inelastic scattering background curve
-    
-    display_radial_averages
-        Plot the data from a PowderDiffractionDataset object
-    
-    compute_baseline
-        Wavelet decomposition of the inelastic scattering background.
     """
     def __init__(self, *args, **kwargs):
         
@@ -293,13 +257,18 @@ class RadavViewer(QtGui.QWidget):
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
         self.peak_dynamics_region = pg.LinearRegionItem()
+
+        # Cache
+        self.powder_data_block = None
+        self.scattering_length = None
+        self.time_points = None
         
         self._init_actions()
         self._init_ui()
         self._connect_signals()
-
-    @QtCore.pyqtSlot(object, object)
-    def display_radial_averages(self, scattering_length, array):
+    
+    @QtCore.pyqtSlot(object, object, object)
+    def display_powder_data(self, scattering_length, powder_data_block, time_points):
         """ 
         Display the radial averages of a dataset.
 
@@ -310,17 +279,36 @@ class RadavViewer(QtGui.QWidget):
         array : ndarray, shape (M, N)
             Array for which each row is a radial pattern for a specific time-delay
         """
+        self.powder_data_block = powder_data_block
+        self.scattering_length = scattering_length
+        self.time_points = time_points
+
         for viewer in (self.radial_pattern_viewer, self.peak_dynamics_viewer):
             viewer.clear(), viewer.enableAutoRange()
-
-        #TODO: remove background from array in one operation using axis argument?
         
         # Get timedelay colors and plot
         colors = spectrum_colors(len(curves))
-        for color, curve in zip(colors, array):
+        for color, curve in zip(colors, powder_data_block):
             self.radial_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pg.mkPen(color), symbolBrush = pg.mkBrush(color), symbolSize = 3)
+    
+    @QtCore.pyqtSlot(object)
+    def update_peak_dynamics_plot(self, *args):
+        """ """
+        # Integrate signal between bounds
+        min_s, max_s = args
+        i_min, i_max = n.argmin(n.abs(self.scattering_length - min_s)), n.argmin(n.abs(self.scattering_length - max_s)) + 1
+        integrated = self.powder_data_block[:, i_min:imax].sum(axis = 0)
 
+        # Display and error bars
+        colors = list(spectrum_colors(len(self.time_points)))
+        self.peak_dynamics_viewer.plot(self.time_points, integrated, pen = None, symbol = 'o', 
+                                       symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
+        # TODO: error bars
+        
+        # If the use has zoomed on the previous frame, auto range might be disabled.
+        self.peak_dynamics_viewer.enableAutoRange()
+    
     def _init_actions(self):
         pass
 
@@ -332,4 +320,7 @@ class RadavViewer(QtGui.QWidget):
         self.setLayout(layout)
     
     def _connect_signals(self):
-        pass
+
+        # Powder dynamics
+        #TODO: if real-time is too hard, we could to sigRegionChangeFinished
+        self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics_plot)
