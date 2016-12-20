@@ -166,7 +166,7 @@ class RawDataset(object):
         backgrounds = (read(filename) for filename in glob.glob(join(self.raw_directory, 'background.*.pumpoff.tif')))
         return sum(backgrounds)/len(backgrounds)
         
-    def raw_image(self, timedelay, scan):
+    def raw_data(self, timedelay, scan):
         """
         Returns an array of the raw TIFF.
         
@@ -292,7 +292,7 @@ class RawDataset(object):
                 for index, scan in enumerate(self.nscans):
                     
                     try:    # Deal with missing pictures
-                        image = self.raw_image(timedelay, scan) - pumpon_background
+                        image = self.raw_data(timedelay, scan) - pumpon_background
                         image[beamblock_mask] = n.nan       # Don't take into account pixels under the beamblock
                         corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius)
                     except ImageNotFoundError:
@@ -334,12 +334,10 @@ class RawDataset(object):
             
         # Extra step for powder data: angular average
         # We already have the center + beamblock info
+        # scattering length is the same for all time-delays 
+        # if the center and beamblock_rect don't change.
         if sample_type == 'powder':
             with PowderDiffractionDataset(name = filename, mode = 'r+') as processed:
-                for timedelay in self.time_points:
-                    s_length, intensity, error = angular_average(n.array(processed.averaged_data(timedelay)), center = center, beamblock_rect = beamblock_rect)
-                    gp = processed.powder_group.create_group(name = str(timedelay))
-                    for name, value in zip(('scattering length', 'intensity', 'error'), (s_length, intensity, error)):
-                        gp.create_dataset(name = name, data = value, dtype = n.float, compression = compression)
+                processed._compute_angular_averages(**ckwargs)
 
         return filename

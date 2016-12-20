@@ -4,3 +4,4 @@
 core.py
 *.pyc
 *.pyc
+*.hdf5
