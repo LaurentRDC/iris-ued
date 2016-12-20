@@ -202,7 +202,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     level = AnalysisParameter(name = 'level', output = int, group_name = _powder_group_name)
     baseline_removed = AnalysisParameter(name = 'baseline_removed', output = bool, group_name = _powder_group_name)
 
-    @cached_property
+    @property
     def scattering_length(self):
         return n.array(self.powder_group['scattering_length'])
 

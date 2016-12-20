@@ -141,8 +141,13 @@ class IrisController(QtCore.QObject):
         self.dataset = cls(path)
         self.processed_dataset_loaded_signal.emit(True)
         self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
+        
+        # Emit dataset information such as fluence, time-points, ...
+        info = dict()
+        for attr in DiffractionDataset._exp_parameter_names:
+            info[attr] = getattr(self.dataset, attr)
+        self.dataset_info_signal.emit(info)
 
         if powder:
-            self.powder_data_signal.emit(self.dataset.scattering_length, 
-                                         self.dataset.powder_data_block(bgr = self.dataset.baseline_removed), 
-                                         self.dataset.time_points)
+            self.powder_data_signal.emit(*self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
+            self.powder_dataset_loaded_signal.emit(True)
