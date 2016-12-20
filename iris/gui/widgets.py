@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from os.path import join, dirname
 import pyqtgraph as pg
 from pyqtgraph import QtGui, QtCore
+import numpy as n
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -88,7 +89,7 @@ class ProcessedDataViewer(QtGui.QWidget):
     
     @QtCore.pyqtSlot(object)
     def display(self, image):
-        self.image_viewer.setImage(image)
+        self.image_viewer.setImage(image, autoRange = False)
     
     def _init_ui(self):
         
@@ -252,7 +253,7 @@ class PowderViewer(QtGui.QWidget):
         
         super().__init__(*args, **kwargs)
                 
-        self.radial_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
+        self.powder_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
                                                    labels = {'left': 'Intensity (counts)', 'bottom': 'Scattering length (1/A)'})
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
@@ -266,9 +267,15 @@ class PowderViewer(QtGui.QWidget):
         self._init_actions()
         self._init_ui()
         self._connect_signals()
+
+    @QtCore.pyqtSlot(dict)
+    def update_info(self, info_dict):
+        """ Update slider according to dataset info """
+        self.dataset_info = info_dict
+        self.time_points = info_dict['time_points']
     
     @QtCore.pyqtSlot(object, object, object)
-    def display_powder_data(self, scattering_length, powder_data_block, time_points):
+    def display_powder_data(self, scattering_length, powder_data_block, error_block):
         """ 
         Display the radial averages of a dataset.
 
@@ -281,41 +288,50 @@ class PowderViewer(QtGui.QWidget):
         """
         self.powder_data_block = powder_data_block
         self.scattering_length = scattering_length
-        self.time_points = time_points
+        self.error_block = error_block
 
-        for viewer in (self.radial_pattern_viewer, self.peak_dynamics_viewer):
+        for viewer in (self.powder_pattern_viewer, self.peak_dynamics_viewer):
             viewer.clear(), viewer.enableAutoRange()
         
         # Get timedelay colors and plot
-        colors = spectrum_colors(len(curves))
+        colors = spectrum_colors(len(self.time_points))
         for color, curve in zip(colors, powder_data_block):
-            self.radial_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
+            self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pg.mkPen(color), symbolBrush = pg.mkBrush(color), symbolSize = 3)
+        self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
     
     @QtCore.pyqtSlot(object)
     def update_peak_dynamics_plot(self, *args):
         """ """
+        self.peak_dynamics_viewer.clear()
+        
         # Integrate signal between bounds
-        min_s, max_s = args
+        min_s, max_s = self.peak_dynamics_region.getRegion()
         i_min, i_max = n.argmin(n.abs(self.scattering_length - min_s)), n.argmin(n.abs(self.scattering_length - max_s)) + 1
-        integrated = self.powder_data_block[:, i_min:imax].sum(axis = 0)
+        integrated = self.powder_data_block[:, i_min:i_max].sum(axis = 1)
 
         # Display and error bars
         colors = list(spectrum_colors(len(self.time_points)))
         self.peak_dynamics_viewer.plot(self.time_points, integrated, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
+        
         # TODO: error bars
+        error_bars = pg.ErrorBarItem(x = self.time_points, y = integrated, height = 0.0)
+        self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
-        self.peak_dynamics_viewer.enableAutoRange()
+        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
     
     def _init_actions(self):
         pass
 
     def _init_ui(self):
+        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+
+        self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
         
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(self.radial_pattern_viewer)
+        layout.addWidget(self.powder_pattern_viewer)
         layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(layout)
     

@@ -128,6 +128,7 @@ class Iris(QtGui.QMainWindow):
         # Switch tabs as well
         self.controller.dataset_info_signal.connect(self.dataset_info.update)
         self.controller.dataset_info_signal.connect(self.processed_viewer.update_info)
+        self.controller.dataset_info_signal.connect(self.powder_viewer.update_info)
 
         self.controller.raw_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.raw_data_viewer), x))
         self.controller.raw_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.raw_data_viewer)) if x else None)
