@@ -45,29 +45,6 @@ class Iris(QtGui.QMainWindow):
         self.powder_viewer = PowderViewer()
         self.status_bar = IrisStatusBar()
 
-        self._init_ui()
-        self._init_actions()
-        self._connect_signals()
-
-        # Initialization
-        self.controller.raw_dataset_loaded_signal.emit(False)
-        self.controller.powder_dataset_loaded_signal.emit(False)
-        self.controller.processed_dataset_loaded_signal.emit(False)
-        self.controller.status_message_signal.emit('Ready.')
-        self.controller.processing_progress_signal.emit(0)
-    
-    @QtCore.pyqtSlot()
-    def load_raw_dataset(self):
-        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
-        self.raw_dataset_path_signal.emit(path)
-
-    @QtCore.pyqtSlot()
-    def load_dataset(self):
-        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset')[0]
-        self.dataset_path_signal.emit(path)
-    
-    def _init_ui(self):
-        
         # UI components
         self.error_dialog = QtGui.QErrorMessage(parent = self)
         self.file_dialog = QtGui.QFileDialog(parent = self)      
@@ -79,37 +56,15 @@ class Iris(QtGui.QMainWindow):
         # Assemble menu from previously-defined actions
         self.file_menu = self.menu_bar.addMenu('&File')
         
-        #Taskbar icon
-        self.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
-        
-        
         self.viewer_stack.addTab(self.raw_data_viewer, 'View raw dataset')
         self.viewer_stack.addTab(self.processed_viewer, 'View processed dataset')
         self.viewer_stack.addTab(self.powder_viewer, 'View radial averages')
-        self.viewer_stack.setCurrentWidget(self.raw_data_viewer)
 
-        self.layout = QtGui.QHBoxLayout()
-        self.layout.addWidget(self.dataset_info)
-        self.layout.addWidget(self.viewer_stack)
-
-        self.central_widget = QtGui.QWidget()
-        self.central_widget.setLayout(self.layout)
-        self.setCentralWidget(self.central_widget)
-        
-        #Window settings ------------------------------------------------------
-        self.setGeometry(500, 500, 800, 800)
-        self.setWindowTitle('Iris - UED data exploration')
-        self.center_window()
-        self.showMaximized()
-    
-    def _init_actions(self):
         self.load_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load raw dataset', self)
         self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
         
         self.file_menu.addAction(self.load_raw_dataset_action)
         self.file_menu.addAction(self.load_dataset_action)
-    
-    def _connect_signals(self):
 
         # Status bar
         self.controller.status_message_signal.connect(self.status_bar.update_status)
@@ -164,6 +119,39 @@ class Iris(QtGui.QMainWindow):
         self.controller.dataset_info_signal.connect(self.dataset_info.update)
         self.controller.dataset_info_signal.connect(self.processed_viewer.update_info)
         self.controller.dataset_info_signal.connect(self.powder_viewer.update_info)
+        
+        self.layout = QtGui.QHBoxLayout()
+        self.layout.addWidget(self.dataset_info)
+        self.layout.addWidget(self.viewer_stack)
+
+        self.central_widget = QtGui.QWidget()
+        self.central_widget.setLayout(self.layout)
+        self.setCentralWidget(self.central_widget)
+        
+        # Initialization
+        self.controller.raw_dataset_loaded_signal.emit(False)
+        self.controller.powder_dataset_loaded_signal.emit(False)
+        self.controller.processed_dataset_loaded_signal.emit(False)
+        self.controller.status_message_signal.emit('Ready.')
+        self.controller.processing_progress_signal.emit(0)
+        self.viewer_stack.setCurrentWidget(self.raw_data_viewer)
+
+        #Window settings ------------------------------------------------------
+        self.setGeometry(500, 500, 800, 800)
+        self.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
+        self.setWindowTitle('Iris - UED data exploration')
+        self.center_window()
+        self.showMaximized()
+    
+    @QtCore.pyqtSlot()
+    def load_raw_dataset(self):
+        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
+        self.raw_dataset_path_signal.emit(path)
+
+    @QtCore.pyqtSlot()
+    def load_dataset(self):
+        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset')[0]
+        self.dataset_path_signal.emit(path)
             
     def center_window(self):
         qr = self.frameGeometry()

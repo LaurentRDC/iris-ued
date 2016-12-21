@@ -35,9 +35,62 @@ class RawDataViewer(QtGui.QWidget):
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
 
-        self._init_ui()
-        self._init_actions()
-        self._connect_signals()
+        self.command_bar = QtGui.QHBoxLayout()
+        self.command_bar.addWidget(QtGui.QLabel('Time-delay (ps):'))
+        self.command_bar.addWidget(self.timedelay_edit)
+        self.command_bar.addWidget(QtGui.QLabel('Scan number:'))
+        self.command_bar.addWidget(self.scan_edit)
+        self.command_bar.addWidget(self.display_btn)
+
+        # Menus
+        self.process_menu = self.menu_bar.addMenu('&Processing')
+
+        # Add handles to the beam block mask
+        self.mask.addScaleHandle([1, 1], [0, 0])
+        self.mask.addScaleHandle([0, 0], [1, 1])
+        
+        # Hide on instantiation
+        self.raw_viewer.getView().addItem(self.mask)
+        self.raw_viewer.getView().addItem(self.center_finder)
+        self.mask.hide(), self.center_finder.hide()
+
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addWidget(self.menu_bar)
+        self.layout.addWidget(self.processing_progress_bar)
+        self.layout.addWidget(self.raw_viewer)
+        self.layout.addLayout(self.command_bar)
+        self.setLayout(self.layout)
+    
+        self.show_centering_tools_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'diffraction.png')), '&Show centering tools', self)
+        self.show_centering_tools_action.setCheckable(True)
+        self.show_centering_tools_action.setChecked(False)
+        self.process_menu.addAction(self.show_centering_tools_action)
+
+        self.process_dataset_as_sc_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process dataset as single crystal', self)
+        self.process_dataset_as_sc_action.setDisabled(True)
+        self.process_menu.addAction(self.process_dataset_as_sc_action)
+        
+        self.process_dataset_as_powder_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process dataset as powder', self)
+        self.process_dataset_as_powder_action.setDisabled(True)
+        self.process_menu.addAction(self.process_dataset_as_powder_action)
+
+        # Toggle view of tools
+        def toggle_mask(t):
+            if t: self.mask.show()
+            else: self.mask.hide()
+        
+        def toggle_cf(t):
+            if t: self.center_finder.show()
+            else: self.center_finder.hide()
+
+        self.show_centering_tools_action.toggled.connect(toggle_mask)
+        self.show_centering_tools_action.toggled.connect(toggle_cf)
+        self.show_centering_tools_action.toggled.connect(self.process_dataset_as_sc_action.setEnabled)
+        self.show_centering_tools_action.toggled.connect(self.process_dataset_as_powder_action.setEnabled)
+
+        # Process dataset
+        self.process_dataset_as_sc_action.triggered.connect(lambda : self.process_dataset(sample_type = 'single crystal'))
+        self.process_dataset_as_powder_action.triggered.connect(lambda : self.process_dataset(sample_type = 'powder'))
     
     @QtCore.pyqtSlot(object)
     def display(self, data):
@@ -75,68 +128,6 @@ class RawDataViewer(QtGui.QWidget):
 
         self.process_dataset_signal.emit(processing_info)
     
-    def _init_ui(self):
-
-        self.command_bar = QtGui.QHBoxLayout()
-        self.command_bar.addWidget(QtGui.QLabel('Time-delay (ps):'))
-        self.command_bar.addWidget(self.timedelay_edit)
-        self.command_bar.addWidget(QtGui.QLabel('Scan number:'))
-        self.command_bar.addWidget(self.scan_edit)
-        self.command_bar.addWidget(self.display_btn)
-
-        # Menus
-        self.process_menu = self.menu_bar.addMenu('&Processing')
-
-        # Add handles to the beam block mask
-        self.mask.addScaleHandle([1, 1], [0, 0])
-        self.mask.addScaleHandle([0, 0], [1, 1])
-        
-        # Hide on instantiation
-        self.raw_viewer.getView().addItem(self.mask)
-        self.raw_viewer.getView().addItem(self.center_finder)
-        self.mask.hide(), self.center_finder.hide()
-
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(self.menu_bar)
-        self.layout.addWidget(self.processing_progress_bar)
-        self.layout.addWidget(self.raw_viewer)
-        self.layout.addLayout(self.command_bar)
-        self.setLayout(self.layout)
-    
-    def _init_actions(self):
-        self.show_centering_tools_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'diffraction.png')), '&Show centering tools', self)
-        self.show_centering_tools_action.setCheckable(True)
-        self.show_centering_tools_action.setChecked(False)
-        self.process_menu.addAction(self.show_centering_tools_action)
-
-        self.process_dataset_as_sc_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process dataset as single crystal', self)
-        self.process_dataset_as_sc_action.setDisabled(True)
-        self.process_menu.addAction(self.process_dataset_as_sc_action)
-        
-        self.process_dataset_as_powder_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process dataset as powder', self)
-        self.process_dataset_as_powder_action.setDisabled(True)
-        self.process_menu.addAction(self.process_dataset_as_powder_action)
-
-    def _connect_signals(self):
-
-        # Toggle view of tools
-        def toggle_mask(t):
-            if t: self.mask.show()
-            else: self.mask.hide()
-        
-        def toggle_cf(t):
-            if t: self.center_finder.show()
-            else: self.center_finder.hide()
-
-        self.show_centering_tools_action.toggled.connect(toggle_mask)
-        self.show_centering_tools_action.toggled.connect(toggle_cf)
-        self.show_centering_tools_action.toggled.connect(self.process_dataset_as_sc_action.setEnabled)
-        self.show_centering_tools_action.toggled.connect(self.process_dataset_as_powder_action.setEnabled)
-
-        # Process dataset
-        self.process_dataset_as_sc_action.triggered.connect(lambda : self.process_dataset(sample_type = 'single crystal'))
-        self.process_dataset_as_powder_action.triggered.connect(lambda : self.process_dataset(sample_type = 'powder'))
-
 class ProcessedDataViewer(QtGui.QWidget):
     """
     Widget displaying the result of processing from RawDataset.process()
@@ -217,10 +208,6 @@ class PowderViewer(QtGui.QWidget):
         self.baseline_removed_btn.setCheckable(True)
         self.baseline_removed_btn.setChecked(False)
         self.baseline_removed_btn.setEnabled(False)
-        
-        btns = QtGui.QHBoxLayout()
-        btns.addWidget(self.baseline_removed_btn)
-        btns.addWidget(self.compute_baseline_btn)
 
         # Scroll lists for wavelet parameters
         self.first_stage_cb = QtGui.QComboBox()
@@ -231,13 +218,23 @@ class PowderViewer(QtGui.QWidget):
         self.wavelet_cb.addItems(ALL_COMPLEX_WAV)
         self.wavelet_cb.setEnabled(False)
 
-        baseline_params = QtGui.QHBoxLayout()
-        baseline_params.addWidget(self.first_stage_cb)
-        baseline_params.addWidget(self.wavelet_cb)
+        first_stage_label = QtGui.QLabel('First stage wav.:', parent = self)
+        first_stage_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        wavelet_label = QtGui.QLabel('Dual-tree wavelet:', parent = self)
+        wavelet_label.setAlignment(QtCore.Qt.AlignCenter)
+        
+        command_layout = QtGui.QGridLayout()
+        command_layout.addWidget(self.baseline_removed_btn,  0,  0,  1,  1)
+        command_layout.addWidget(self.compute_baseline_btn,  1,  0,  1,  1)
+        command_layout.addWidget(first_stage_label,  0,  1,  1,  1)
+        command_layout.addWidget(self.first_stage_cb,  1,  1,  1,  1)
+        command_layout.addWidget(wavelet_label,  0,  2,  1,  1)
+        command_layout.addWidget(self.wavelet_cb,  1,  2,  1,  1)
+        
 
         layout = QtGui.QVBoxLayout()
-        layout.addLayout(btns)
-        layout.addLayout(baseline_params)
+        layout.addLayout(command_layout)
         layout.addWidget(self.powder_pattern_viewer)
         layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(layout)
