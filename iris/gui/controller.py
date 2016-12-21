@@ -23,7 +23,7 @@ def error_aware(message):
                 return func(self, *args, **kwargs)
             except: # TODO: get traceback message and add to message?
                 exc = traceback.format_exc()
-                self.error_message_signal.emit(message + '\n' + exc)
+                self.error_message_signal.emit(message + '\n \n \n' + exc)
         return aware_func
     return wrap
 
@@ -116,6 +116,15 @@ class IrisController(QtCore.QObject):
         worker.in_progress_signal.connect(in_progress)
         worker.start()
     
+    @error_aware('Powder baseline could not be computed.')
+    @QtCore.pyqtSlot(dict) # first stage, wavelet, level[int]
+    def compute_baseline(self, params):
+        # TODO: place this in a WorkThread
+        self.dataset.compute_baseline(**params)
+        self.update_dataset_info()
+        self.powder_data_signal.emit(*self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
+
+    
     @error_aware('Raw dataset could not be loaded.')
     @QtCore.pyqtSlot(str)
     def load_raw_dataset(self, path):
@@ -128,26 +137,33 @@ class IrisController(QtCore.QObject):
     @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
     @QtCore.pyqtSlot(str)
     def load_dataset(self, path):
-        """ 
-        Load dataset, correctly dispatching between DiffractionDataset
-        and PowderDiffractionDataset.
-        """
-        cls = DiffractionDataset
-        powder = False
+        # Dispatch between DiffractionDataset and PowderDiffractionDataset
+        cls = DiffractionDataset        # Most general case
         with DiffractionDataset(path, mode = 'r') as d:
             if d.sample_type == 'powder':
                 cls = PowderDiffractionDataset
-                powder = True
-        self.dataset = cls(path)
+        
+        self.dataset = cls(path, mode = 'r+')
+        self.update_dataset_info()
         self.processed_dataset_loaded_signal.emit(True)
         self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
-        
-        # Emit dataset information such as fluence, time-points, ...
-        info = dict()
-        for attr in DiffractionDataset._exp_parameter_names:
-            info[attr] = getattr(self.dataset, attr)
-        self.dataset_info_signal.emit(info)
 
-        if powder:
+        if isinstance(self.dataset, PowderDiffractionDataset):
             self.powder_data_signal.emit(*self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
             self.powder_dataset_loaded_signal.emit(True)
+    
+    def update_dataset_info(self):
+        """
+        Update the dataset info and emits the dataset_info_signal
+        to update all widgets.
+        """
+        # Emit dataset information such as fluence, time-points, ...
+        info = dict()
+        for attr in DiffractionDataset.experimental_parameter_names:
+            info[attr] = getattr(self.dataset, attr)
+        
+        if isinstance(self.dataset, PowderDiffractionDataset):
+            for attr in PowderDiffractionDataset.analysis_parameter_names:
+                info[attr] = getattr(self.dataset, attr)
+
+        self.dataset_info_signal.emit(info)
