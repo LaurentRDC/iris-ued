@@ -294,16 +294,19 @@ class PowderViewer(QtGui.QWidget):
         # Integrate signal between bounds
         min_s, max_s = self.peak_dynamics_region.getRegion()
         i_min, i_max = n.argmin(n.abs(self.scattering_length - min_s)), n.argmin(n.abs(self.scattering_length - max_s)) + 1
+
         integrated = self.powder_data_block[:, i_min:i_max].sum(axis = 1)
         integrated /= integrated.max() if integrated.max() > 0.0 else 1
+
+        # Errors add in quadrature
+        integrated_error = n.sqrt(n.sum(n.square(self.error_block[:, i_min:i_max]), axis = 1))
 
         # Display and error bars
         colors = list(spectrum_colors(len(self.time_points)))
         self.peak_dynamics_viewer.plot(self.time_points, integrated, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
         
-        # TODO: error bars
-        error_bars = pg.ErrorBarItem(x = self.time_points, y = integrated, height = 0.0)
+        error_bars = pg.ErrorBarItem(x = self.time_points, y = integrated, height = integrated_error)
         self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
