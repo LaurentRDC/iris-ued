@@ -119,11 +119,10 @@ class IrisController(QtCore.QObject):
     @error_aware('Powder baseline could not be computed.')
     @QtCore.pyqtSlot(dict) # first stage, wavelet, level[int]
     def compute_baseline(self, params):
-        # TODO: place this in a WorkThread
+        # TODO: place this in a WorkThread? It seems pretty fast for now
         self.dataset.compute_baseline(**params)
         self.update_dataset_info()
         self.powder_data_signal.emit(*self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
-
     
     @error_aware('Raw dataset could not be loaded.')
     @QtCore.pyqtSlot(str)
@@ -162,6 +161,8 @@ class IrisController(QtCore.QObject):
         for attr in DiffractionDataset.experimental_parameter_names:
             info[attr] = getattr(self.dataset, attr)
         
+        # PowderDiffractionDataset has some specific parameters
+        # like wavelet, decomp. level, etc.
         if isinstance(self.dataset, PowderDiffractionDataset):
             for attr in PowderDiffractionDataset.analysis_parameter_names:
                 info[attr] = getattr(self.dataset, attr)

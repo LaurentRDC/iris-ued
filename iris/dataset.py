@@ -12,7 +12,7 @@ import dualtree
 
 from .optimizations import cached_property
 from .io import RESOLUTION, read, cast_to_16_bits
-from .utils import angular_average
+from .utils import angular_average, scattering_length
 
 __author__ = 'Laurent P. René de Cotret'
 __version__ = '2.0'
@@ -120,6 +120,16 @@ class DiffractionDataset(h5py.File):
                   Sample type: {}, \n \
                   Acquisition date : {}, \n \
                   fluence {} mj/cm2 >'.format(self.sample_type,self.acquisition_date, self.fluence)
+    
+    @cached_property
+    def compression_opts(self):
+        """ Compression options in the form of a dictionary """
+        ckwargs = dict()
+        first_td = min(self.time_points)
+        dataset = self.processed_measurements_group[str(float(first_td))]
+        ckwargs['compression'] = dataset.compression
+        ckwargs.update(dataset.compression_opts)
+        return ckwargs
         
     def averaged_data(self, timedelay, out = None):
         """
@@ -359,11 +369,16 @@ class PowderDiffractionDataset(DiffractionDataset):
         Compute the angular averages. This method is only called by RawDataset.process
         """
         for timedelay in self.time_points:
-            s_length, intensity, error = angular_average(n.array(self.averaged_data(timedelay)), 
+            px_radius, intensity, error = angular_average(n.array(self.averaged_data(timedelay)), 
                                                             center = self.center, beamblock_rect = self.beamblock_rect)
             gp = self.powder_group.create_group(name = str(timedelay))
-            for name, value in zip(('intensity', 'error'), (intensity, error)):
-                gp.create_dataset(name = name, data = value, dtype = n.float, **ckwargs)
+
+            # Error in the powder pattern = image_data / sqrt(nscans) * sqrt(# of pixels at this radius)
+            # angular_average() doesn't know about nscans, so we must include it here
+            gp.create_dataset(name = 'intensity', data = intensity, dtype = n.float, **ckkwargs)
+            gp.create_dataset(name = 'error', data = error/n.sqrt(self.nscans), dtype = n.float, **ckwargs)
         
+        # TODO: variable pixel_width and camera distance in the future
+        s_length = scattering_length(px_radius, energy = self.energy)
         self.powder_group.create_dataset(name = 'scattering_length', data = s_length, dtype = n.float, **ckwargs)
         self.baseline_removed = False

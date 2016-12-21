@@ -219,8 +219,9 @@ def angular_average(image, center, beamblock_rect, mask = None):
     #radii beyond r_max don't fit a full circle within the image
     r_max = min((X.max()/2, Y.max()/2))           #Maximal radius that fits completely in the image
     
-    # #TODO: Find the smallest circle that completely fits inside the mask rectangle
     r_min = 0 # = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
+    if x1 < xc < x2 and y1 < yc < y2:
+        r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
 
     # Replace all values in the image corresponding to beamblock or other irrelevant
     # data by 0: this way, it will never count in any calculation because image
@@ -247,3 +248,35 @@ def angular_average(image, center, beamblock_rect, mask = None):
     r_min_index = n.argmin(n.abs(r_min - radius))
     
     return radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index], radial_intensity_error[r_min_index + 1:r_max_index]
+
+def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2235):
+    """
+    Returns the scattering length s = G/4pi for an array of radius data in pixels.
+    
+    Parameters
+    ----------
+    radius : array-like, shape (N,)
+        Radius from center of diffraction pattern [px]
+    energy : numerical
+        Electron energy [kV]
+    pixel_width : numerical
+        CCD pixel width [m]
+    camera_distance : float, optional
+        Sample-to-CCD distance [m]
+        
+    Notes
+    -----
+    Default values for pixel width and camera distance correspond to experimental
+    values for the Siwick diffractometer as of April 2016.
+    """
+    m = 9.109*10**(-31)     #in kg
+    e = 1.602*10**(-19)     #in C
+    c = 299792458*(10**10)  #in m/s
+    h = 6.63*10**(-34)      #in J*s
+    V = energy * 1000       #in eV
+
+    e_wavelength_angs = 1e10*n.sqrt((h**2*c**2)/(e*V*(2*m*c**2+e*V)))
+
+    radius = n.array(radius) * pixel_width
+    diffraction_half_angle = n.arctan(radius/camera_distance)/2
+    return n.sin(diffraction_half_angle)/e_wavelength_angs

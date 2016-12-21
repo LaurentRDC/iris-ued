@@ -10,6 +10,7 @@ from os.path import join, isfile, isdir
 from os import listdir 
 import re
 import sys
+from warnings import warn
 
 from . import cached_property
 from .io import read, save, RESOLUTION, ImageNotFoundError, cast_to_16_bits
@@ -197,7 +198,8 @@ class RawDataset(object):
         
         return read(join(self.raw_directory, filename)).astype(n.float)
     
-    def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', sample_type = 'powder', callback = print):
+    def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', 
+                sample_type = 'powder', callback = print, window_size = 10):
         """
         Processes raw data into something useable by iris.
         
@@ -216,6 +218,8 @@ class RawDataset(object):
         callback : callable or None, optional
             Callable with one argument executed at the end of each time-delay processing.
             Argument will be the progress as an integer between 0 and 100.
+        window_size : int, optional
+            Number of pixels the center is allowed to vary.
         
         Returns
         -------
@@ -223,6 +227,14 @@ class RawDataset(object):
         """
         if callback is None:
             callback = lambda x: None
+
+        # truncate the sides of images along axes (0, 1) due to the
+        # window size of the center finder. Since the center can move by
+        # as much as 'window_size' pixels in both all directions, we can
+        # save space and avoid a lot of NaNs.
+        reduced_resolution = tuple(n.array(self.resolution) - 2*window_size)
+        def reduced(arr):
+            return arr[window_size:-window_size, window_size:-window_size]
         
         # Prepare compression kwargs
         ckwargs = dict()
@@ -239,7 +251,7 @@ class RawDataset(object):
             processed.current = self.current
             processed.exposure = self.exposure
             processed.energy = self.energy
-            processed.resolution = self.resolution
+            processed.resolution = reduced_resolution  # Will be modified later due to center finder
             processed.center = center
             processed.beamblock_rect = beamblock_rect
             processed.sample_type = sample_type
@@ -247,11 +259,11 @@ class RawDataset(object):
             # Copy pumpoff pictures
             # Subtract background from all pumpoff pictures
             pumpoff_image_list = glob.glob(join(self.raw_directory, 'data.nscan.*.pumpoff.tif'))
-            pumpoff_cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.uint16)
+            pumpoff_cube = n.empty(shape = reduced_resolution + (len(self.nscans),), dtype = n.uint16)
             for index, image_filename in enumerate(pumpoff_image_list):
                 scan_str = re.search('[.]\d+[.]', image_filename.split('\\')[-1]).group()
                 scan = int(scan_str.replace('.',''))
-                pumpoff_cube[:, :, scan - 1] = cast_to_16_bits(read(image_filename))
+                pumpoff_cube[:, :, scan - 1] = reduced(cast_to_16_bits(read(image_filename)))
             processed.pumpoff_pictures_group.create_dataset(name = 'pumpoff_pictures', data = pumpoff_cube, dtype = n.uint16, **ckwargs)
 
             # Average background images
@@ -260,28 +272,38 @@ class RawDataset(object):
                 pumpon_background = average_tiff(self.raw_directory, 'background.*.pumpon.tif', background = None)
             except ImageNotFoundError:
                 pumpon_background = n.zeros(shape = self.resolution, dtype = n.uint16)
-            processed.processed_measurements_group.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = n.uint16, **ckwargs)
+            processed.processed_measurements_group.create_dataset(name = 'background_pumpon', data = reduced(pumpon_background), dtype = n.uint16, **ckwargs)
 
             try:
                 pumpoff_background = average_tiff(self.raw_directory, 'background.*.pumpoff.tif', background = None)
             except ImageNotFoundError:
                 pumpoff_background = n.zeros(shape = self.resolution, dtype = n.uint16)
-            processed.processed_measurements_group.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = n.uint16, **ckwargs)
+            processed.processed_measurements_group.create_dataset(name = 'background_pumpoff', data = reduced(pumpoff_background), dtype = n.uint16, **ckwargs)
 
             # Create beamblock mask right now
             # Evaluates to TRUE on the beamblock
+            # Only valid for images at the FULL RESOLUTION
             x1,x2,y1,y2 = beamblock_rect
-            beamblock_mask = n.zeros(shape = processed.resolution, dtype = n.bool)
+            beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
             beamblock_mask[y1:y2, x1:x2] = True
             
-            # Pre-allocation
-            cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float)
+            # truncate the sides of 'cube' along axes (0, 1) due to the
+            # window size of the center finder. Since the center can move by
+            # as much as 'window_size' pixels in both all directions, we can
+            # save space and avoid a lot of NaNs.
+            cube = n.empty(shape = reduced_resolution + (len(self.nscans),), dtype = n.float)
+
             int_intensities = n.zeros(shape = (len(self.nscans),), dtype = n.float)
-            averaged = n.empty(shape = self.resolution, dtype = n.float)
+            averaged = n.empty(shape = reduced_resolution, dtype = n.float)
             deviation = n.empty_like(cube, dtype = n.float)
 
+            # TODO: find best estimator. 3 std or 5 std?
             def estimator(*args, **kwargs):
-                return 2*n.nanstd(*args, **kwargs)
+                # Set 'estimator' to be 0 where all NaNs.
+                # Any comparison later will remove those pixels.
+                est = 3*n.nanstd(*args, **kwargs)
+                est[n.isnan(est)] = 0
+                return est
             
             for i, timedelay in enumerate(self.time_points):
 
@@ -296,20 +318,20 @@ class RawDataset(object):
                         image[beamblock_mask] = n.nan       # Don't take into account pixels under the beamblock
                         corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius)
                     except ImageNotFoundError:
-                        image = n.empty(shape = self.resolution)
+                        warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
+                        image = n.empty(shape = self.resolution)        # Resolution will be reduced later
                         image[:] = n.nan
                         corr_i, corr_j = 0, 0
-                    cube[:,:,index] = shift(image, round(corr_i), round(corr_j), fill = n.nan)
+                    cube[:,:,index] = reduced(shift(image, round(corr_i), round(corr_j), fill = n.nan))
 
                 # Perform statistical test for outliers using estimator function
                 # Pixels deemed outliers have their value replaced by NaN so that
                 # they will be ignored by nanmean
-                mean = n.expand_dims(n.nanmean(cube, axis = -1, dtype = n.float), axis = 2)
-                estimation = n.expand_dims(estimator(cube, axis = -1, dtype = n.float), axis = 2)
+                mean = n.nanmean(cube, axis = -1, dtype = n.float, keepdims = True)
+                estimation = estimator(cube, axis = -1, dtype = n.float, keepdims = True)
                 n.abs(cube - mean, out = deviation)
 
                 # Avoiding comparing NaNs
-                # TODO: is there a better way?
                 deviation[n.isnan(deviation)] = estimation.max() + 1
                 cube[deviation > estimation] = n.nan
 
@@ -326,10 +348,10 @@ class RawDataset(object):
                 n.nanmean(cube, axis = -1, dtype = n.float, out = averaged)
                 averaged[n.isnan(averaged)] = 0
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
-                # TODO: include error as well?
-                gp.create_dataset(name = 'intensity', data = averaged, shape = self.resolution, dtype = n.float)
+                gp.create_dataset(name = 'intensity', data = averaged, shape = reduced_resolution, dtype = n.float)
+                # TODO: include error. Can we approximate the error as intensity/sqrt(nscans) ? Otherwise we
+                #       need to store an entire array for error, per timedelay... Doubles the size of dataset.
 
-                # Update callback
                 callback(round(100*i / len(self.time_points)))
             
         # Extra step for powder data: angular average

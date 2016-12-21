@@ -41,6 +41,29 @@ class TestAngularAverage(unittest.TestCase):
         s, i, e = angular_average(image, center, (0,0,0,0))
         self.assertTrue(i.sum() == 0)
         self.assertTrue(len(s) == len(i) == len(e))
+    
+    def test_ring_no_beamblock(self):
+        image = n.zeros(shape = (256, 256), dtype = n.float)
+        xc, yc = (128, 128)
+        extent = n.arange(0, image.shape[0])
+        xx, yy = n.meshgrid(extent, extent)
+        rr = n.sqrt((xx - xc)**2 + (yy - yc)**2)
+        image[n.logical_and(24 < rr,rr < 26)] = 1
+
+        s, i, e = angular_average(image, (xc, yc), (0,0,0,0))
+        self.assertTrue(i.max() == image.max())
+    
+    def test_ring_with_beamblock(self):
+        image = n.zeros(shape = (256, 256), dtype = n.float)
+        xc, yc = (128, 128)
+        extent = n.arange(0, image.shape[0])
+        xx, yy = n.meshgrid(extent, extent)
+        rr = n.sqrt((xx - xc)**2 + (yy - yc)**2)
+        image[n.logical_and(24 < rr,rr < 26)] = 1
+        beamblock_rect = (120, 136, 120, 136)
+
+        s, i, e = angular_average(image, (xc, yc), beamblock_rect)
+        self.assertTrue(len(i) + 2 == 120)  # angular_average omits the largest and smallest radii
 
 class TestFindCenter(unittest.TestCase):
 
