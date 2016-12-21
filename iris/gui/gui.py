@@ -6,7 +6,7 @@
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 from .controller import IrisController, error_aware
 from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, RawDataViewer, PowderViewer
-from .worker import WorkThread
+from .utils import WorkThread
 
 import functools
 import multiprocessing
@@ -117,42 +117,54 @@ class Iris(QtGui.QMainWindow):
         # Error handling
         self.controller.error_message_signal.connect(self.error_dialog.showMessage)
 
-        # Loading datasets
+        ######################################################################
+        # RAW DATA INTERACTION
+        # Displaying raw data when requested
         self.load_raw_dataset_action.triggered.connect(self.load_raw_dataset)
-        self.load_dataset_action.triggered.connect(self.load_dataset)
-
-        self.dataset_path_signal.connect(self.controller.load_dataset)
         self.raw_dataset_path_signal.connect(self.controller.load_raw_dataset)
 
+        self.controller.raw_dataset_loaded_signal.connect(  
+            lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.raw_data_viewer), x))
+        self.controller.raw_dataset_loaded_signal.connect(  
+            lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.raw_data_viewer)) if x else None)
+
+        self.raw_data_viewer.display_btn.clicked.connect(   
+            lambda x: self.controller.raw_data_signal.emit( 
+                float(self.raw_data_viewer.timedelay_edit.text()),
+                int(self.raw_data_viewer.scan_edit.text())))
+        
+        self.controller.raw_data_signal.connect(self.raw_data_viewer.display)
+
+        # Processing raw dataset
+        self.raw_data_viewer.process_dataset_signal.connect(self.controller.process_raw_dataset)
+        self.controller.processing_progress_signal.connect(print) #self.raw_data_viewer.processing_progress_bar.setValue)
+
+        ######################################################################
+        # PROCESSED DATA INTERACTION
+        self.load_dataset_action.triggered.connect(self.load_dataset)
+        self.dataset_path_signal.connect(self.controller.load_dataset)
+
+        self.controller.processed_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.processed_viewer), x))
+        self.controller.processed_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.processed_viewer)) if x else None)
+        
+        self.processed_viewer.time_slider.sliderMoved.connect(lambda i: self.controller.display_averaged_data(self.controller.dataset.time_points[i]))
+        self.controller.averaged_data_signal.connect(self.processed_viewer.display)
+
+        ######################################################################
+        # POWDER DATA INTERACTION
+        self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.powder_viewer), x))
+        self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.powder_viewer)) if x else None)
+        self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
+        self.powder_viewer.baseline_parameters_signal.connect(self.controller.compute_baseline)
+        self.powder_viewer.baseline_removed_btn.toggled.connect(lambda x: self.controller.powder_data_signal.emit(*self.controller.dataset.powder_data_block(bgr = x)))
+
+        ######################################################################
         # Update when a new dataset is loaded
         # Switch tabs as well
         self.controller.dataset_info_signal.connect(self.dataset_info.update)
         self.controller.dataset_info_signal.connect(self.processed_viewer.update_info)
         self.controller.dataset_info_signal.connect(self.powder_viewer.update_info)
-
-        self.controller.raw_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.raw_data_viewer), x))
-        self.controller.raw_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.raw_data_viewer)) if x else None)
-
-        self.controller.processed_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.processed_viewer), x))
-        self.controller.processed_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.processed_viewer)) if x else None)
-
-        self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.powder_viewer), x))
-        self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.powder_viewer)) if x else None)
-
-        self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
-
-        # Display data
-        self.controller.raw_data_signal.connect(self.raw_data_viewer.display)
-        self.controller.averaged_data_signal.connect(self.processed_viewer.display)
-
-        # Display processed data when requested
-        self.raw_data_viewer.raw_data_request_signal.connect(self.controller.display_raw_data)
-        self.processed_viewer.averaged_data_request_signal.connect(self.controller.display_averaged_data)
-
-        # Processing raw dataset
-        self.raw_data_viewer.process_dataset_signal.connect(self.controller.process_raw_dataset)
-        self.controller.processing_progress_signal.connect(print) #self.raw_data_viewer.processing_progress_bar.setValue)
-    
+            
     def center_window(self):
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()

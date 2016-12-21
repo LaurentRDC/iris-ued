@@ -1,122 +1,24 @@
 from collections.abc import Iterable
+from dualtree import ALL_FIRST_STAGE, ALL_COMPLEX_WAV
 from os.path import join, dirname
 import pyqtgraph as pg
 from pyqtgraph import QtGui, QtCore
 import numpy as n
 
+from .utils import spectrum_colors
+
 image_folder = join(dirname(__file__), 'images')
-
-def spectrum_colors(num_colors):
-    """
-    Generates a set of QColor 0bjects corresponding to the visible spectrum.
-    
-    Parameters
-    ----------
-    num_colors : int
-        number of colors to return
-    
-    Yields
-    ------
-    colors : QColor 
-        Can be used with PyQt and PyQtGraph
-    """
-    # Hue values from 0 to 1
-    hue_values = [i/num_colors for i in range(num_colors)]
-    
-    # Scale so that the maximum is 'purple':
-    hue_values = [0.8*hue for hue in hue_values]
-    
-    colors = list()
-    for h in reversed(hue_values):
-        yield pg.hsvColor(hue = h, sat = 0.7, val = 0.9)
-
-class IrisStatusBar(QtGui.QStatusBar):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.permanent_status_label = QtGui.QLabel('')
-        self.addPermanentWidget(self.permanent_status_label)
-
-    @QtCore.pyqtSlot(str)
-    def update_status(self, message):
-        """ Update the permanent status label with a message. """
-        self.permanent_status_label.setText(message)
-
-class DatasetInfoWidget(QtGui.QWidget):
-    
-    @QtCore.pyqtSlot(dict)
-    def update(self, info):
-        """ Update the widget with dataset information """
-
-        self.master_layout = QtGui.QHBoxLayout()
-        self.keys_layout = QtGui.QVBoxLayout()
-        self.values_layout = QtGui.QVBoxLayout()
-
-        for key, value in info.items():
-            # Items like time_points and nscans are long lists. Summarize using length
-            if isinstance(value, Iterable) and not isinstance(value, str) and len(tuple(value)) > 3:
-                key += ' (len)'
-                value = len(tuple(value))
-            self.keys_layout.addWidget(QtGui.QLabel(str(key)))
-            self.values_layout.addWidget(QtGui.QLabel(str(value)))
-
-        self.master_layout.addLayout(self.keys_layout)
-        self.master_layout.addLayout(self.values_layout)
-        self.setLayout(self.master_layout)
-
-class ProcessedDataViewer(QtGui.QWidget):
-    """
-    Widget displaying the result of processing from RawDataset.process()
-    """
-    averaged_data_request_signal = QtCore.pyqtSignal(float, name = 'averaged_data_request_signal')
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.image_viewer = pg.ImageView(parent = self)
-        self.time_slider = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
-        self.dataset_info = dict()
-
-        self._init_ui()
-        self._init_actions()
-        self._connect_signals()
-    
-    @QtCore.pyqtSlot(dict)
-    def update_info(self, info_dict):
-        """ Update slider according to dataset info """
-        self.dataset_info = info_dict
-        self.time_slider.setRange(0, len(info_dict['time_points']))
-    
-    @QtCore.pyqtSlot(object)
-    def display(self, image):
-        self.image_viewer.setImage(image, autoRange = False)
-    
-    def _init_ui(self):
-        
-        # Final assembly
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(self.image_viewer)
-        self.layout.addWidget(self.time_slider)
-        self.setLayout(self.layout)
-    
-    def _init_actions(self):
-        pass
-
-    def _connect_signals(self):
-        # Emit the timedelay (float) of the corresponding slider position
-        self.time_slider.sliderMoved.connect(lambda i: self.averaged_data_request_signal.emit(self.dataset_info['time_points'][i] ))
 
 class RawDataViewer(QtGui.QWidget):
     """
     Slots
     -----
-    
-    display_image
+    display [object]
 
-    display_image_series
+    process_dataset [str]
+
     """
     process_dataset_signal = QtCore.pyqtSignal(dict, name = 'process_dataset_signal')
-    raw_data_request_signal = QtCore.pyqtSignal(float, int, name = 'raw_data_request_signal')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -173,13 +75,6 @@ class RawDataViewer(QtGui.QWidget):
 
         self.process_dataset_signal.emit(processing_info)
     
-    @QtCore.pyqtSlot()
-    def _request_raw_data(self):
-        """ """
-        timedelay = float(self.timedelay_edit.text())
-        scan = int(self.scan_edit.text())
-        self.raw_data_request_signal.emit( timedelay, scan )
-    
     def _init_ui(self):
 
         self.command_bar = QtGui.QHBoxLayout()
@@ -224,9 +119,6 @@ class RawDataViewer(QtGui.QWidget):
 
     def _connect_signals(self):
 
-        # Get raw data on display
-        self.display_btn.clicked.connect(self._request_raw_data)
-
         # Toggle view of tools
         def toggle_mask(t):
             if t: self.mask.show()
@@ -244,35 +136,128 @@ class RawDataViewer(QtGui.QWidget):
         # Process dataset
         self.process_dataset_as_sc_action.triggered.connect(lambda : self.process_dataset(sample_type = 'single crystal'))
         self.process_dataset_as_powder_action.triggered.connect(lambda : self.process_dataset(sample_type = 'powder'))
+
+class ProcessedDataViewer(QtGui.QWidget):
+    """
+    Widget displaying the result of processing from RawDataset.process()
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.image_viewer = pg.ImageView(parent = self)
+        self.dataset_info = dict()
         
+        # QSlider properties
+        self.time_slider = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
+        self.time_slider.setTickPosition(QtGui.QSlider.TicksBelow)
+        self.time_slider.setTickInterval(1)
+        self.time_slider.setValue(0)
+
+        # Final assembly
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addWidget(self.image_viewer)
+        self.layout.addWidget(self.time_slider)
+        self.setLayout(self.layout)
+    
+    @QtCore.pyqtSlot(dict)
+    def update_info(self, info):
+        """ Update slider according to dataset info """
+        self.dataset_info.update(info)
+        self.time_slider.setRange(0, len(self.dataset_info['time_points']) - 1)
+        # TODO: set tick labels to time points
+    
+    @QtCore.pyqtSlot(object)
+    def display(self, image):
+        # autoLevels = False ensures that the colormap stays the same
+        # when 'sliding' through data. This makes it easier to compare
+        # data at different time points.
+        self.image_viewer.setImage(image, autoLevels = False, autoRange = True)
 
 class PowderViewer(QtGui.QWidget):
     """
     """
+
+    baseline_parameters_signal = QtCore.pyqtSignal(dict, name = 'baseline_parameters_signal')
+
     def __init__(self, *args, **kwargs):
         
         super().__init__(*args, **kwargs)
                 
         self.powder_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
                                                    labels = {'left': 'Intensity (counts)', 'bottom': 'Scattering length (1/A)'})
+
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
+        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+       
+
         self.peak_dynamics_region = pg.LinearRegionItem()
+        self.peak_dynamics_region.sigRegionChanged.connect(self._update_peak_dynamics)
+        self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
 
         # Cache
+        self.dataset_info = dict()
         self.powder_data_block = None
         self.scattering_length = None
-        self.time_points = None
+        self.error_block = None
         
-        self._init_actions()
-        self._init_ui()
-        self._connect_signals()
+        # Buttons
+        self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
+        self.compute_baseline_btn.setEnabled(False) # On instantiation, there is no dataset available
+        self.compute_baseline_btn.clicked.connect(
+            lambda x: self.baseline_parameters_signal.emit(
+                {'first_stage': self.first_stage_cb.currentText(),
+                 'wavelet': self.wavelet_cb.currentText(),
+                 'level': 'max',
+                 'max_iter': 100}
+            ))
 
+        self.baseline_removed_btn = QtGui.QPushButton('Show baseline-removed', parent = self)
+        self.baseline_removed_btn.setCheckable(True)
+        self.baseline_removed_btn.setChecked(False)
+        self.baseline_removed_btn.setEnabled(False)
+        
+        btns = QtGui.QHBoxLayout()
+        btns.addWidget(self.baseline_removed_btn)
+        btns.addWidget(self.compute_baseline_btn)
+
+        # Scroll lists for wavelet parameters
+        self.first_stage_cb = QtGui.QComboBox()
+        self.first_stage_cb.addItems(ALL_FIRST_STAGE)
+        self.first_stage_cb.setEnabled(False)
+
+        self.wavelet_cb = QtGui.QComboBox()
+        self.wavelet_cb.addItems(ALL_COMPLEX_WAV)
+        self.wavelet_cb.setEnabled(False)
+
+        baseline_params = QtGui.QHBoxLayout()
+        baseline_params.addWidget(self.first_stage_cb)
+        baseline_params.addWidget(self.wavelet_cb)
+
+        layout = QtGui.QVBoxLayout()
+        layout.addLayout(btns)
+        layout.addLayout(baseline_params)
+        layout.addWidget(self.powder_pattern_viewer)
+        layout.addWidget(self.peak_dynamics_viewer)
+        self.setLayout(layout)
+    
     @QtCore.pyqtSlot(dict)
-    def update_info(self, info_dict):
-        """ Update slider according to dataset info """
-        self.dataset_info = info_dict
-        self.time_points = info_dict['time_points']
+    def update_info(self, info):
+        self.dataset_info.update(info)
+
+        self.compute_baseline_btn.setEnabled(True)  # info is updated as soon as a dataset is available
+        self.first_stage_cb.setEnabled(True)
+        self.wavelet_cb.setEnabled(True)
+
+        # TODO: set combo boxes to the value that is is dataset_info
+
+        self.baseline_removed_btn.setEnabled(self.dataset_info['baseline_removed'])
+        self.baseline_removed_btn.setChecked(self.dataset_info['baseline_removed'])
+    
+    @property
+    def time_points(self):
+        return self.dataset_info['time_points']
     
     @QtCore.pyqtSlot(object, object, object)
     def display_powder_data(self, scattering_length, powder_data_block, error_block):
@@ -299,9 +284,10 @@ class PowderViewer(QtGui.QWidget):
             self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pg.mkPen(color), symbolBrush = pg.mkBrush(color), symbolSize = 3)
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
+        self._update_peak_dynamics()
     
     @QtCore.pyqtSlot(object)
-    def update_peak_dynamics_plot(self, *args):
+    def _update_peak_dynamics(self, *args):
         """ """
         self.peak_dynamics_viewer.clear()
         
@@ -309,6 +295,7 @@ class PowderViewer(QtGui.QWidget):
         min_s, max_s = self.peak_dynamics_region.getRegion()
         i_min, i_max = n.argmin(n.abs(self.scattering_length - min_s)), n.argmin(n.abs(self.scattering_length - max_s)) + 1
         integrated = self.powder_data_block[:, i_min:i_max].sum(axis = 1)
+        integrated /= integrated.max() if integrated.max() > 0.0 else 1
 
         # Display and error bars
         colors = list(spectrum_colors(len(self.time_points)))
@@ -321,22 +308,49 @@ class PowderViewer(QtGui.QWidget):
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+
+class IrisStatusBar(QtGui.QStatusBar):
+    """
+    Status bar displaying a status message.
+
+    Slots
+    -----
+    update_status [str]
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.permanent_status_label = QtGui.QLabel('')
+        self.addPermanentWidget(self.permanent_status_label)
+
+    @QtCore.pyqtSlot(str)
+    def update_status(self, message):
+        """ Update the permanent status label with a message. """
+        self.permanent_status_label.setText(message)
+
+class DatasetInfoWidget(QtGui.QWidget):
+    # TODO: make into a QTable
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dataset_info = dict()
     
-    def _init_actions(self):
-        pass
+    @QtCore.pyqtSlot(dict)
+    def update_info(self, info):
+        """ Update the widget with dataset information """
+        self.dataset_info.update(info)
 
-    def _init_ui(self):
-        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+        self.master_layout = QtGui.QHBoxLayout()
+        self.keys_layout = QtGui.QVBoxLayout()
+        self.values_layout = QtGui.QVBoxLayout()
 
-        self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
-        
-        layout = QtGui.QVBoxLayout()
-        layout.addWidget(self.powder_pattern_viewer)
-        layout.addWidget(self.peak_dynamics_viewer)
-        self.setLayout(layout)
-    
-    def _connect_signals(self):
+        for key, value in info.items():
+            # Items like time_points and nscans are long lists. Summarize using length
+            if isinstance(value, Iterable) and not isinstance(value, str) and len(tuple(value)) > 3:
+                key += ' (len)'
+                value = len(tuple(value))
+            self.keys_layout.addWidget(QtGui.QLabel(str(key)))
+            self.values_layout.addWidget(QtGui.QLabel(str(value)))
 
-        # Powder dynamics
-        #TODO: if real-time is too hard, we could to sigRegionChangeFinished
-        self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics_plot)
+        self.master_layout.addLayout(self.keys_layout)
+        self.master_layout.addLayout(self.values_layout)
+        self.setLayout(self.master_layout)

@@ -88,9 +88,10 @@ class DiffractionDataset(h5py.File):
     _exp_params_group_name = '/'
     _pumpoff_pictures_group_name = '/pumpoff'
 
-    _exp_parameter_names = ('nscans', 'time_points', 'acquisition_date', 'fluence', 
-                            'current', 'exposure', 'energy', 'resolution', 'center',
-                            'sample_type', 'beamblock_rect')
+    experimental_parameter_names = ('nscans', 'time_points', 'acquisition_date', 'fluence', 
+                                    'current', 'exposure', 'energy', 'resolution', 'center',
+                                    'sample_type', 'beamblock_rect')
+
     
     # Experimental parameters as descriptors
     nscans = ExperimentalParameter('nscans', tuple)
@@ -193,6 +194,8 @@ class PowderDiffractionDataset(DiffractionDataset):
     ----------
     """
     _powder_group_name = '/powder'
+
+    analysis_parameter_names = ('first_stage', 'wavelet', 'level', 'baseline_removed')
 
     # Analysis parameters concerning the wavelet used
     # The dual-tree complex wavelet transform also uses 
@@ -325,10 +328,18 @@ class PowderDiffractionDataset(DiffractionDataset):
         """
         for timedelay in self.time_points:
             _, intensity, _ = self.powder_data(timedelay)
-            self.powder_group[timedelay]['baseline'] = baseline(array = intensity, max_iter = max_iter, 
-                                                                level = level, first_stage = first_stage,
-                                                                wavelet = wavelet, background_regions = tuple(),
-                                                                mask = None)
+            background = dualtree.baseline(array = intensity, max_iter = max_iter, 
+                                           level = level, first_stage = first_stage,
+                                           wavelet = wavelet, background_regions = tuple(),
+                                           mask = None)
+            # TODO: get compression options from other datasets?
+            # TODO: is there a nicer way to overwrite an existing dataset, without knowing
+            #       the shape in advance? Something like require_dataset...
+            if not self.baseline_removed:
+                self.powder_group[str(float(timedelay))].create_dataset(name = 'baseline', data = background)
+            else:
+                self.powder_group[str(float(timedelay))]['baseline'][:] = background
+        
         # Record parameters
         if level == 'max':
             level = dualtree.dualtree_max_level(data = self.scattering_length, 
