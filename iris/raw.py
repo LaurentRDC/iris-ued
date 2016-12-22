@@ -224,18 +224,6 @@ class RawDataset(object):
         """
         if callback is None:
             callback = lambda x: None
-
-        # truncate the sides of images along axes (0, 1) due to the
-        # window size of the center finder. Since the center can move by
-        # as much as 'window_size' pixels in both all directions, we can
-        # save space and avoid a lot of NaNs.
-        reduced_resolution = tuple(n.array(self.resolution) - 2*window_size)
-        def reduced(arr):
-            return arr[window_size:-window_size, window_size:-window_size]
-        
-        # Readjust parameters due to the reduced resolution
-        reduced_center = (center[0] - window_size, center[1] - window_size)
-        reduced_beamblock_rect = tuple(map(lambda x: max(0, x - window_size), beamblock_rect))
         
         # Prepare compression kwargs
         ckwargs = dict()
@@ -254,19 +242,19 @@ class RawDataset(object):
             processed.current = self.current
             processed.exposure = self.exposure
             processed.energy = self.energy
-            processed.resolution = reduced_resolution  # Will be modified later due to center finder
+            processed.resolution = self.resolution  # Will be modified later due to center finder
             processed.sample_type = sample_type
-            processed.center = reduced_center
-            processed.beamblock_rect = reduced_beamblock_rect
+            processed.center = center
+            processed.beamblock_rect = beamblock_rect
 
             # Copy pumpoff pictures
             # Subtract background from all pumpoff pictures
             pumpoff_image_list = glob.glob(join(self.raw_directory, 'data.nscan.*.pumpoff.tif'))
-            pumpoff_cube = n.empty(shape = reduced_resolution + (len(self.nscans),), dtype = n.uint16)
+            pumpoff_cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.uint16)
             for index, image_filename in enumerate(pumpoff_image_list):
                 scan_str = re.search('[.]\d+[.]', image_filename.split('\\')[-1]).group()
                 scan = int(scan_str.replace('.',''))
-                pumpoff_cube[:, :, scan - 1] = reduced(cast_to_16_bits(read(image_filename)))
+                pumpoff_cube[:, :, scan - 1] = cast_to_16_bits(read(image_filename))
             processed.pumpoff_pictures_group.create_dataset(name = 'pumpoff_pictures', data = pumpoff_cube, dtype = n.uint16, **ckwargs)
 
             # Average background images
@@ -275,27 +263,27 @@ class RawDataset(object):
                 pumpon_background = average_tiff(self.raw_directory, 'background.*.pumpon.tif', background = None)
             except ImageNotFoundError:
                 pumpon_background = n.zeros(shape = self.resolution, dtype = n.uint16)
-            processed.processed_measurements_group.create_dataset(name = 'background_pumpon', data = reduced(pumpon_background), dtype = n.uint16, **ckwargs)
+            processed.processed_measurements_group.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = n.uint16, **ckwargs)
 
             try:
                 pumpoff_background = average_tiff(self.raw_directory, 'background.*.pumpoff.tif', background = None)
             except ImageNotFoundError:
                 pumpoff_background = n.zeros(shape = self.resolution, dtype = n.uint16)
-            processed.processed_measurements_group.create_dataset(name = 'background_pumpoff', data = reduced(pumpoff_background), dtype = n.uint16, **ckwargs)
+            processed.processed_measurements_group.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = n.uint16, **ckwargs)
 
             # Create beamblock mask right now
             # Evaluates to TRUE on the beamblock
             # Only valid for images at the FULL RESOLUTION
-            x1,x2,y1,y2 = reduced_beamblock_rect
-            reduced_beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
-            reduced_beamblock_mask[y1:y2, x1:x2] = True
+            x1,x2,y1,y2 = beamblock_rect
+            beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
+            beamblock_mask[y1:y2, x1:x2] = True
             
             # truncate the sides of 'cube' along axes (0, 1) due to the
             # window size of the center finder. Since the center can move by
             # as much as 'window_size' pixels in both all directions, we can
             # save space and avoid a lot of NaNs.
-            cube = n.empty(shape = reduced_resolution + (len(self.nscans),), dtype = n.float)
-            averaged = n.empty(shape = reduced_resolution, dtype = n.float)
+            cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float)
+            averaged = n.empty(shape = self.resolution, dtype = n.float)
             deviation = n.empty_like(cube, dtype = n.float)
 
             # TODO: find best estimator. 3 std or 5 std?
@@ -324,26 +312,27 @@ class RawDataset(object):
                     
                     # adjust compared to center, not reduced_center, since image hasn't been reduced yet
                     corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius)
-
                     print('Center correction by {} pixels.'.format(n.sqrt(corr_i**2 + corr_j**2)))
-                    cube[:,:,slice_index] = reduced(shift(image, round(corr_i), round(corr_j), fill = n.nan))
+
+                    cube[:,:,slice_index] = shift(image, int(round(corr_i)), int(round(corr_j)), fill = n.nan)
                     slice_index += 1
                 
                 # cube possibly has some empty slices due to missing pictures
                 # Compress cube along the -1 axis
                 if missing_pictures > 0:
-                    cube = cube[:,:, 0:-missing_pictures]
+                    cube = cube[:, :, 0:-missing_pictures]
                     deviation = n.empty_like(cube, dtype = n.float)
                 # All pixels under the beamblock, after shifting the images around
                 # These pixels will not contribute to the integrated intensity later
-                cube[reduced_beamblock_mask, :] = 0
+                cube[beamblock_mask, :] = 0
 
                 # Perform statistical test for outliers using estimator function
                 # Pixels deemed outliers have their value replaced by NaN so that
                 # they will be ignored by nanmean
                 mean = n.nanmean(cube, axis = -1, dtype = n.float, keepdims = True)
+                mean[n.isnan(mean)] = n.inf         # Might be NaNs on the edges due to center correction
                 estimation = estimator(cube, axis = -1, dtype = n.float, keepdims = True)
-                n.abs(cube - mean, out = deviation) # Contains NaNs if missing pictures
+                n.abs(cube - mean, out = deviation) 
                 deviation[n.isnan(deviation)] = n.nanmax(estimation)
                 cube[deviation > estimation] = n.nan
 
@@ -359,7 +348,7 @@ class RawDataset(object):
                 # Averaged data is not uint16 anymore
                 n.nanmean(cube, axis = -1, dtype = n.float, out = averaged)
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
-                gp.create_dataset(name = 'intensity', data = averaged, shape = reduced_resolution, dtype = n.float)
+                gp.create_dataset(name = 'intensity', data = averaged, dtype = n.float)
                 # TODO: include error. Can we approximate the error as intensity/sqrt(nscans) ? Otherwise we
                 #       need to store an entire array for error, per timedelay... Doubles the size of dataset.
 
@@ -367,7 +356,7 @@ class RawDataset(object):
 
                 # If there were some missing pictures, arrays will have been resized. Return to original size
                 if missing_pictures > 0:
-                    cube = n.empty(shape = reduced_resolution + (len(self.nscans),), dtype = n.float)
+                    cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float)
                     deviation = n.empty_like(cube, dtype = n.float)
             
         # Extra step for powder data: angular average
