@@ -296,7 +296,8 @@ class PowderViewer(QtGui.QWidget):
         integrated /= integrated.max() if integrated.max() > 0.0 else 1
 
         # Errors add in quadrature
-        integrated_error = n.sqrt(n.sum(n.square(self.error_block[:, i_min:i_max]), axis = 1))
+        # TODO: check...
+        integrated_error = n.sqrt(n.sum(n.square(self.error_block[:, i_min:i_max]), axis = 1))/(i_max - i_min)
 
         # Display and error bars
         colors = list(spectrum_colors(len(self.time_points)))

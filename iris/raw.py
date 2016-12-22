@@ -186,12 +186,9 @@ class RawDataset(object):
         ------
         ImageNotFoundError
             Filename is not associated with a TIFF/does not exist.
-        
-        Notes
-        -----
-        Template filename looks like:
-            'data.timedelay.+1.00.nscan.04.pumpon.tif'
-        """
+        """ 
+        #Template filename looks like:
+        #    'data.timedelay.+1.00.nscan.04.pumpon.tif'
         sign = '' if float(timedelay) < 0 else '+'
         str_time = sign + '{0:.2f}'.format(float(timedelay))
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
@@ -292,8 +289,6 @@ class RawDataset(object):
             # as much as 'window_size' pixels in both all directions, we can
             # save space and avoid a lot of NaNs.
             cube = n.empty(shape = reduced_resolution + (len(self.nscans),), dtype = n.float)
-
-            int_intensities = n.zeros(shape = (len(self.nscans),), dtype = n.float)
             averaged = n.empty(shape = reduced_resolution, dtype = n.float)
             deviation = n.empty_like(cube, dtype = n.float)
 
@@ -311,48 +306,62 @@ class RawDataset(object):
                 # Last axis is the scan number
                 # Before concatenation, shift around for center
                 # Invalid pixels (such as border pixels, and beamblock pixels) are NaN
-                for index, scan in enumerate(self.nscans):
-                    
-                    try:    # Deal with missing pictures
+                missing_pictures = 0
+                slice_index = 0
+                for scan in self.nscans:
+                    # Deal with missing pictures
+                    try:
                         image = self.raw_data(timedelay, scan) - pumpon_background
-                        image[beamblock_mask] = n.nan       # Don't take into account pixels under the beamblock
-                        corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius)
                     except ImageNotFoundError:
                         warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
-                        image = n.empty(shape = self.resolution)        # Resolution will be reduced later
-                        image[:] = n.nan
-                        corr_i, corr_j = 0, 0
-                    cube[:,:,index] = reduced(shift(image, round(corr_i), round(corr_j), fill = n.nan))
+                        missing_pictures += 1
+                    
+                    corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius)
+                    #print('Center correction by {} pixels.'.format(n.sqrt(corr_i**2 + corr_j**2)))
+                    cube[:,:,slice_index] = reduced(shift(image, round(corr_i), round(corr_j), fill = n.nan))
+                    slice_index += 1
+                
+                # cube possibly has some empty slices due to missing pictures
+                # Compress cube along the -1 axis
+                if missing_pictures > 0:
+                    cube = cube[:,:, 0:-missing_pictures]
+                    deviation = n.empty_like(cube, dtype = n.float)
+                # All pixels under the beamblock, after shifting the images around
+                # These pixels will not contribute to the integrated intensity later
+                cube[reduced(beamblock_mask), :] = 0
 
                 # Perform statistical test for outliers using estimator function
                 # Pixels deemed outliers have their value replaced by NaN so that
                 # they will be ignored by nanmean
                 mean = n.nanmean(cube, axis = -1, dtype = n.float, keepdims = True)
                 estimation = estimator(cube, axis = -1, dtype = n.float, keepdims = True)
-                n.abs(cube - mean, out = deviation)
-
-                # Avoiding comparing NaNs
-                deviation[n.isnan(deviation)] = estimation.max() + 1
+                n.abs(cube - mean, out = deviation) # Contains NaNs if missing pictures
+                deviation[n.isnan(deviation)] = n.nanmax(estimation)
                 cube[deviation > estimation] = n.nan
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
                 # Then, the data cube is normalized such that each slice has the same integrated intensity
-                n.nansum(n.nansum(cube, axis = 0, dtype = n.float), axis = 0, dtype = n.float, out = int_intensities)
-                int_intensities /= n.mean(int_intensities, dtype = n.float)
-                int_intensities.reshape((1,1,len(self.nscans)))
+                # int_intensities might contain NaNs due to missing pictures
+                int_intensities = n.nansum(n.nansum(cube, axis = 0, dtype = n.float, keepdims = True), axis = 1, dtype = n.float, keepdims = True)
+                int_intensities /= n.nanmean(int_intensities, dtype = n.float)
+                int_intensities[int_intensities == 0] = 1       # nansum returns 0 if all NaNs, e.g. for missing pictures.
                 cube /= int_intensities   
 
                 # Store average along axis 2
                 # Averaged data is not uint16 anymore
                 n.nanmean(cube, axis = -1, dtype = n.float, out = averaged)
-                averaged[n.isnan(averaged)] = 0
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
                 gp.create_dataset(name = 'intensity', data = averaged, shape = reduced_resolution, dtype = n.float)
                 # TODO: include error. Can we approximate the error as intensity/sqrt(nscans) ? Otherwise we
                 #       need to store an entire array for error, per timedelay... Doubles the size of dataset.
 
                 callback(round(100*i / len(self.time_points)))
+
+                # If there were some missing pictures, arrays will have been resized. Return to original size
+                if missing_pictures > 0:
+                    cube = n.empty(shape = reduced_resolution + (len(self.nscans),), dtype = n.float)
+                    deviation = n.empty_like(cube, dtype = n.float)
             
         # Extra step for powder data: angular average
         # We already have the center + beamblock info

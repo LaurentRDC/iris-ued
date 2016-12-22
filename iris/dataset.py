@@ -375,8 +375,8 @@ class PowderDiffractionDataset(DiffractionDataset):
 
             # Error in the powder pattern = image_data / sqrt(nscans) * sqrt(# of pixels at this radius)
             # angular_average() doesn't know about nscans, so we must include it here
-            gp.create_dataset(name = 'intensity', data = intensity, dtype = n.float, **ckkwargs)
-            gp.create_dataset(name = 'error', data = error/n.sqrt(self.nscans), dtype = n.float, **ckwargs)
+            gp.create_dataset(name = 'intensity', data = intensity, dtype = n.float, **ckwargs)
+            gp.create_dataset(name = 'error', data = error/n.sqrt(len(self.nscans)), dtype = n.float, **ckwargs)
         
         # TODO: variable pixel_width and camera distance in the future
         s_length = scattering_length(px_radius, energy = self.energy)
