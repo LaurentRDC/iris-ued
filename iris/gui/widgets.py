@@ -1,8 +1,8 @@
 from collections.abc import Iterable
 from dualtree import ALL_FIRST_STAGE, ALL_COMPLEX_WAV
 from os.path import join, dirname
-import pyqtgraph as pg
-from pyqtgraph import QtGui, QtCore
+from . import pyqtgraph as pg
+from .pyqtgraph import QtGui, QtCore
 import numpy as n
 
 from .utils import spectrum_colors
@@ -318,16 +318,20 @@ class IrisStatusBar(QtGui.QStatusBar):
     -----
     update_status [str]
     """
+    base_message = 'Ready.'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.permanent_status_label = QtGui.QLabel('')
-        self.addPermanentWidget(self.permanent_status_label)
+        self.status_label = QtGui.QLabel(self.base_message)
+        self.addPermanentWidget(self.status_label)
+        self.timer = QtCore.QTimer(parent = self)
+        self.timer.setSingleShot(True)
 
     @QtCore.pyqtSlot(str)
     def update_status(self, message):
-        """ Update the permanent status label with a message. """
-        self.permanent_status_label.setText(message)
+        """ Update the permanent status label with a temporary message. """
+        self.status_label.setText(message)
+        self.timer.singleShot(1e5, lambda: self.update_status(self.base_message))
 
 class DatasetInfoWidget(QtGui.QWidget):
     # TODO: make into a QTable

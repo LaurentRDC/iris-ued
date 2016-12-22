@@ -8,8 +8,8 @@ import multiprocessing
 import numpy as n
 import os
 from os.path import join, dirname
-import pyqtgraph as pg
-from pyqtgraph import QtCore, QtGui
+from . import pyqtgraph as pg
+from .pyqtgraph import QtCore, QtGui
 
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 from .controller import IrisController, error_aware

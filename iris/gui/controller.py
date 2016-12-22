@@ -3,7 +3,7 @@ Controller behind Iris
 """
 
 import functools
-from pyqtgraph import QtCore
+from .pyqtgraph import QtCore
 import traceback
 
 from ..dataset import DiffractionDataset, PowderDiffractionDataset
@@ -74,19 +74,13 @@ class IrisController(QtCore.QObject):
 
     raw_data_signal = QtCore.pyqtSignal(object, name = 'raw_data_signal')
     averaged_data_signal = QtCore.pyqtSignal(object, name = 'averaged_data_signal')
-
-    # Powder data signal is different. For performance reasons, we cache the three important
-    # quantities when a new powder dataset is loaded:
-    #   scattering_length
-    #   powder_data_block
-    #   time_points (for powder dynamics)
     powder_data_signal = QtCore.pyqtSignal(object, object, object, name = 'powder_data_signal')
 
     processing_progress_signal = QtCore.pyqtSignal(int, name = 'processing_progress_signal')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        self.worker = None
         self.raw_dataset = None
         self.dataset = None
     
@@ -105,24 +99,25 @@ class IrisController(QtCore.QObject):
     def process_raw_dataset(self, info_dict):
         info_dict['callback'] = self.processing_progress_signal.emit
 
-        worker = WorkThread(function = self.raw_dataset.process, kwargs = info_dict)
-        worker.results_signal.connect(self.load_dataset)    # self.dataset.process returns a string path
-        worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
+        self.worker = WorkThread(function = self.raw_dataset.process, kwargs = info_dict)
+        self.worker.results_signal.connect(self.load_dataset)    # self.dataset.process returns a string path
+        self.worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
 
         def in_progress(boolean):
             if boolean: self.status_message_signal.emit('Dataset processing in progress.')
             else: self.status_message_signal.emit('Dataset processing done.')
         
-        worker.in_progress_signal.connect(in_progress)
-        worker.start()
+        self.worker.in_progress_signal.connect(in_progress)
+        self.worker.start()
     
     @error_aware('Powder baseline could not be computed.')
-    @QtCore.pyqtSlot(dict) # first stage, wavelet, level[int]
+    @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
-        # TODO: place this in a WorkThread? It seems pretty fast for now
-        self.dataset.compute_baseline(**params)
-        self.update_dataset_info()
-        self.powder_data_signal.emit(*self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
+        self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
+        self.worker.done_signal.connect(lambda boolean: self.update_dataset_info())
+        self.worker.done_signal.connect(lambda boolean: self.powder_data_signal.emit(*self.dataset.powder_data_block(bgr = self.dataset.baseline_removed)))
+        self.worker.done_signal.connect(lambda boolean: self.status_message_signal.emit('Baseline computed.'))
+        self.worker.start()
     
     @error_aware('Raw dataset could not be loaded.')
     @QtCore.pyqtSlot(str)

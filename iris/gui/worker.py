@@ -1,4 +1,4 @@
-from pyqtgraph import QtCore
+from .pyqtgraph import QtCore
 
 class WorkThread(QtCore.QThread):
     """

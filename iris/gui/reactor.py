@@ -1,18 +1,14 @@
 """
 Underlying Objects abstracting concurrent operations in the GUI.
 """
-from multiprocessing import Process, Pipe
+from multiprocessing import Process
 from multiprocessing import Queue as ProcessSafeQueue
 import numpy as np
 from threading import Thread
 from time import sleep
 
-try:
-    from queue import Queue as ThreadSafeQueue  # Python 3
-    from queue import Empty
-except ImportError:
-    from Queue import Queue as ThreadSafeQueue  # Python 2
-    from Queue import Empty
+from queue import Queue as ThreadSafeQueue  # Python 3
+from queue import Empty
 
 def _trivial_function(item):
     return item
