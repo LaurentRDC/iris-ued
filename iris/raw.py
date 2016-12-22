@@ -345,8 +345,7 @@ class RawDataset(object):
                 # int_intensities might contain NaNs due to missing pictures
                 int_intensities = n.nansum(n.nansum(cube, axis = 0, dtype = n.float, keepdims = True), axis = 1, dtype = n.float, keepdims = True)
                 int_intensities /= n.nanmean(int_intensities, dtype = n.float)
-                int_intensities[int_intensities == 0] = 1       # nansum returns 0 if all NaNs, e.g. for missing pictures.
-                cube /= int_intensities   
+                cube /= int_intensities
 
                 # Store average along axis 2
                 # Averaged data is not uint16 anymore
