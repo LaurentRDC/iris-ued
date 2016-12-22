@@ -3,11 +3,6 @@
 @author: Laurent P. René de Cotret
 """
 
-from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
-from .controller import IrisController, error_aware
-from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, RawDataViewer, PowderViewer
-from .utils import WorkThread
-
 import functools
 import multiprocessing
 import numpy as n
@@ -16,8 +11,12 @@ from os.path import join, dirname
 import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 
+from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
+from .controller import IrisController, error_aware
+from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, RawDataViewer, PowderViewer
+from .utils import WorkThread
+
 image_folder = join(dirname(__file__), 'images')
-config_path = join(dirname(__file__), 'config.txt')
 
 def run():
     import sys
@@ -29,8 +28,7 @@ def run():
     sys.exit(app.exec_())
 
 class Iris(QtGui.QMainWindow):
-    """
-    """
+    
     dataset_path_signal = QtCore.pyqtSignal(str, name = 'dataset_path_signal')
     raw_dataset_path_signal = QtCore.pyqtSignal(str, name = 'raw_dataset_path_signal')
 
@@ -49,7 +47,6 @@ class Iris(QtGui.QMainWindow):
         self.error_dialog = QtGui.QErrorMessage(parent = self)
         self.file_dialog = QtGui.QFileDialog(parent = self)      
         self.menu_bar = self.menuBar()
-        self.user_controls = None
         self.viewer_stack = QtGui.QTabWidget()
         self.setStatusBar(self.status_bar)
         
@@ -92,7 +89,7 @@ class Iris(QtGui.QMainWindow):
 
         # Processing raw dataset
         self.raw_data_viewer.process_dataset_signal.connect(self.controller.process_raw_dataset)
-        self.controller.processing_progress_signal.connect(print) #self.raw_data_viewer.processing_progress_bar.setValue)
+        self.controller.processing_progress_signal.connect(self.raw_data_viewer.processing_progress_bar.setValue)
 
         ######################################################################
         # PROCESSED DATA INTERACTION

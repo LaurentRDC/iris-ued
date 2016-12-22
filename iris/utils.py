@@ -65,24 +65,29 @@ def shift(arr, x, y, fill = n.nan):
     y : int
     fill : numeric
     """
-    canvas = n.empty_like(arr)
+    shifted = fill * n.ones_like(arr)
     if x > 0:
-        canvas[0:x, :] = fill
-        canvas[x::, :] = arr[0:-x, :]
+        x_source = slice(0, -x)
+        x_cast = slice(x, None)
     elif x < 0:
-        canvas[x::, :] = fill
-        canvas[0:x, :] = arr[-x::, :]
+        x_source = slice(-x, None)
+        x_cast = slice(0, x)
     else:
-        canvas[:,:] = arr
-    
+        x_source = slice(0, None)
+        x_cast = slice(0, None)
+
     if y > 0:
-        canvas[:, 0:y] = fill
-        canvas[:, y::] = arr[:, 0:-y]
+        y_source = slice(0, -y)
+        y_cast = slice(y, None)
     elif y < 0:
-        canvas[:, y::] = fill
-        canvas[:, 0:y] = arr[:, -y::]
+        y_source = slice(-y, None)
+        y_cast = slice(0, y)
+    else:
+        y_source = slice(0, None)
+        y_cast = slice(0, None)
     
-    return canvas
+    shifted[x_cast, y_cast] = arr[x_source, y_source]
+    return shifted
 
 def average_tiff(directory, wildcard, background = None):
     """
