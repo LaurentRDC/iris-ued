@@ -1,6 +1,6 @@
 
-import pyqtgraph as pg
-from pyqtgraph import QtCore
+from . import pyqtgraph as pg
+from .pyqtgraph import QtCore
 
 class WorkThread(QtCore.QThread):
     """
