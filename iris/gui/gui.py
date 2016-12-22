@@ -81,7 +81,7 @@ class Iris(QtGui.QMainWindow):
             lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.raw_data_viewer)) if x else None)
 
         self.raw_data_viewer.display_btn.clicked.connect(   
-            lambda x: self.controller.raw_data_signal.emit( 
+            lambda x: self.controller.display_raw_data( 
                 float(self.raw_data_viewer.timedelay_edit.text()),
                 int(self.raw_data_viewer.scan_edit.text())))
         

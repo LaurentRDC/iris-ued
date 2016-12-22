@@ -95,7 +95,7 @@ class RawDataViewer(QtGui.QWidget):
     @QtCore.pyqtSlot(object)
     def display(self, data):
         """ Display a single diffraction pattern. """
-        self.raw_viewer.setImage(data)
+        self.raw_viewer.setImage(data, autoLevels = False, autoRange = True)
     
     @QtCore.pyqtSlot(str)
     def process_dataset(self, sample_type):
