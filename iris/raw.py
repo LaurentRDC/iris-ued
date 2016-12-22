@@ -233,6 +233,10 @@ class RawDataset(object):
         def reduced(arr):
             return arr[window_size:-window_size, window_size:-window_size]
         
+        # Readjust parameters due to the reduced resolution
+        reduced_center = (center[0] - window_size, center[1] - window_size)
+        reduced_beamblock_rect = tuple(map(lambda x: max(0, x - window_size), beamblock_rect))
+        
         # Prepare compression kwargs
         ckwargs = dict()
         if compression:
@@ -241,6 +245,8 @@ class RawDataset(object):
         with DiffractionDataset(name = filename, mode = 'w') as processed:
 
             # Copy experimental parameters
+            # Center and beamblock_rect will be modified
+            # because of reduced resolution later
             processed.nscans = self.nscans
             processed.time_points = self.time_points
             processed.acquisition_date = self.acquisition_date
@@ -249,9 +255,9 @@ class RawDataset(object):
             processed.exposure = self.exposure
             processed.energy = self.energy
             processed.resolution = reduced_resolution  # Will be modified later due to center finder
-            processed.center = center
-            processed.beamblock_rect = beamblock_rect
             processed.sample_type = sample_type
+            processed.center = reduced_center
+            processed.beamblock_rect = reduced_beamblock_rect
 
             # Copy pumpoff pictures
             # Subtract background from all pumpoff pictures
@@ -280,9 +286,9 @@ class RawDataset(object):
             # Create beamblock mask right now
             # Evaluates to TRUE on the beamblock
             # Only valid for images at the FULL RESOLUTION
-            x1,x2,y1,y2 = beamblock_rect
-            beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
-            beamblock_mask[y1:y2, x1:x2] = True
+            x1,x2,y1,y2 = reduced_beamblock_rect
+            reduced_beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
+            reduced_beamblock_mask[y1:y2, x1:x2] = True
             
             # truncate the sides of 'cube' along axes (0, 1) due to the
             # window size of the center finder. Since the center can move by
@@ -316,8 +322,10 @@ class RawDataset(object):
                         warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
                         missing_pictures += 1
                     
+                    # adjust compared to center, not reduced_center, since image hasn't been reduced yet
                     corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius)
-                    #print('Center correction by {} pixels.'.format(n.sqrt(corr_i**2 + corr_j**2)))
+
+                    print('Center correction by {} pixels.'.format(n.sqrt(corr_i**2 + corr_j**2)))
                     cube[:,:,slice_index] = reduced(shift(image, round(corr_i), round(corr_j), fill = n.nan))
                     slice_index += 1
                 
@@ -328,7 +336,7 @@ class RawDataset(object):
                     deviation = n.empty_like(cube, dtype = n.float)
                 # All pixels under the beamblock, after shifting the images around
                 # These pixels will not contribute to the integrated intensity later
-                cube[reduced(beamblock_mask), :] = 0
+                cube[reduced_beamblock_mask, :] = 0
 
                 # Perform statistical test for outliers using estimator function
                 # Pixels deemed outliers have their value replaced by NaN so that
@@ -363,9 +371,9 @@ class RawDataset(object):
                     deviation = n.empty_like(cube, dtype = n.float)
             
         # Extra step for powder data: angular average
-        # We already have the center + beamblock info
+        # We already have the (reduced) center + beamblock info
         # scattering length is the same for all time-delays 
-        # if the center and beamblock_rect don't change.
+        # since the center and beamblock_rect don't change.
         if sample_type == 'powder':
             with PowderDiffractionDataset(name = filename, mode = 'r+') as processed:
                 processed._compute_angular_averages(**ckwargs)
