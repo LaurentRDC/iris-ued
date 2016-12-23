@@ -1,5 +1,5 @@
 
-from ..utils import angular_average, shift, find_center, _find_center_full
+from ..utils import angular_average, shift, find_center
 import numpy as n
 from scipy.ndimage import gaussian_filter
 import unittest
@@ -81,7 +81,8 @@ class TestFindCenter(unittest.TestCase):
         image[rr == 50] = 10
         image = gaussian_filter(image, 3)
 
-        corr_x, corr_y = _find_center_full(image, guess_center = (255, 251), radius = 50, window_size = 10)
+        corr_x, corr_y = find_center(image, guess_center = (255, 251), 
+                                    radius = 50, window_size = 10, reduced = False)
         self.assertEqual(xc, corr_x)
         self.assertEqual(yc, corr_y)
     
@@ -106,7 +107,7 @@ class TestFindCenter(unittest.TestCase):
         extent = n.arange(0, image.shape[0])
         xx, yy = n.meshgrid(extent, extent)
         rr = n.sqrt((xx - xc)**2 + (yy - yc)**2)
-        image[rr == 50] = 10
+        image[n.logical_and(rr < 51, rr > 49)] = 10
         image = gaussian_filter(image, 3)
 
         corr_x, corr_y = find_center(image, guess_center = (1023, 1027), radius = 50)

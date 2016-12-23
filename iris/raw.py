@@ -282,8 +282,6 @@ class RawDataset(object):
             # window size of the center finder. Since the center can move by
             # as much as 'window_size' pixels in both all directions
             image = n.empty(shape = self.resolution, dtype = n.uint16)
-            cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float, fill_value = 0.0)
-            deviation = n.ma.empty_like(cube, dtype = n.float)
 
             # TODO: parallelize this loop
             #       The only reason it is not right now is that
@@ -296,6 +294,8 @@ class RawDataset(object):
                 # Before concatenation, shift around for center
                 missing_pictures = 0
                 slice_index = 0
+                cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float, fill_value = 0.0)
+                deviation = n.ma.empty_like(cube, dtype = n.float)
                 for scan in self.nscans:
                     # Deal with missing pictures
                     try:
@@ -304,8 +304,13 @@ class RawDataset(object):
                         warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
                         missing_pictures += 1
                     
-                    corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
-                                                                          window_size = window_size, ring_width = 5)
+                    #corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
+                    #                                                      window_size = window_size, ring_width = 5)
+                    corr_i, corr_j = 0, 0
+                    print('Corrected center is disabled.')
+
+                    # Everything along the edges of cube might be invalid due to center correction
+                    # These edge values will have been set to ma.masked by the shift() function
                     cube[:,:,slice_index] = shift(image, int(round(corr_i)), int(round(corr_j)))
                     slice_index += 1
                 
@@ -333,7 +338,9 @@ class RawDataset(object):
 
                 # Store average along axis 2
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
-                gp.create_dataset(name = 'intensity', data = cube.mean(axis = -1), dtype = n.float)
+                mean = cube.mean(axis = -1)
+                mean[n.isnan(mean)] = 0.0   # Why are we finding NaNs in mean?
+                gp.create_dataset(name = 'intensity', data = mean, dtype = n.float)
                 # TODO: include error. Can we approximate the error as intensity/sqrt(nscans) ? Otherwise we
                 #       need to store an entire array for error, per timedelay... Doubles the size of dataset.
 
