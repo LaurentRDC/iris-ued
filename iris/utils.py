@@ -55,17 +55,23 @@ def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2
     diffraction_half_angle = n.arctan(radius/camera_distance)/2
     return n.sin(diffraction_half_angle)/electron_wavelength(energy, units = 'angstroms')
 
-def shift(arr, x, y, fill = n.nan):
+def shift(arr, x, y):
     """
     Shift an array to center.
 
     Parameters
     ----------
+    arr : ndarray
     x : int
     y : int
-    fill : numeric
+
+    Returns
+    -------
+    out : MaskedArray
     """
-    shifted = fill * n.ones_like(arr)
+    shifted = n.empty_like(arr)
+    shifted.fill(n.nan)
+
     if x > 0:
         x_source = slice(0, -x)
         x_cast = slice(x, None)
@@ -87,7 +93,7 @@ def shift(arr, x, y, fill = n.nan):
         y_cast = slice(0, None)
     
     shifted[x_cast, y_cast] = arr[x_source, y_source]
-    return shifted
+    return n.ma.masked_where(n.isnan(shifted), shifted)
 
 def average_tiff(directory, wildcard, background = None):
     """
