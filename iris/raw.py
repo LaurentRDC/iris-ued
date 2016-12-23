@@ -280,8 +280,7 @@ class RawDataset(object):
             
             # truncate the sides of 'cube' along axes (0, 1) due to the
             # window size of the center finder. Since the center can move by
-            # as much as 'window_size' pixels in both all directions, we can
-            # save space and avoid a lot of NaNs.
+            # as much as 'window_size' pixels in both all directions
             image = n.empty(shape = self.resolution, dtype = n.uint16)
             cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float, fill_value = 0.0)
             deviation = n.ma.empty_like(cube, dtype = n.float)
@@ -295,7 +294,6 @@ class RawDataset(object):
                 # Concatenate time-delay in data cube
                 # Last axis is the scan number
                 # Before concatenation, shift around for center
-                # Invalid pixels (such as border pixels, and beamblock pixels) are NaN
                 missing_pictures = 0
                 slice_index = 0
                 for scan in self.nscans:
@@ -308,7 +306,7 @@ class RawDataset(object):
                     
                     corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
                                                                           window_size = window_size, ring_width = 5)
-                    cube[:,:,slice_index] = shift(image, int(round(corr_i)), int(round(corr_j)), fill = n.nan)
+                    cube[:,:,slice_index] = shift(image, int(round(corr_i)), int(round(corr_j)))
                     slice_index += 1
                 
                 # cube possibly has some empty slices due to missing pictures
