@@ -359,3 +359,77 @@ class DatasetInfoWidget(QtGui.QWidget):
         self.master_layout.addLayout(self.keys_layout)
         self.master_layout.addLayout(self.values_layout)
         self.setLayout(self.master_layout)
+
+
+class ProcessingOptionsDialog(QtGui.QDialog):
+    """
+    Modal dialog used to select dataset processing options.
+    """
+    processing_options_signal = QtCore.pyqtSignal(dict, name = 'processing_options_signal')
+
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        parent : QWidget or None, optional
+        """
+        super().__init__(*args, **kwargs)
+
+        self.setModal(True)
+        self.save_btn = QtGui.QPushButton('Launch processing', self)
+        self.save_btn.clicked.connect(self.accept)
+
+        self.cancel_btn = QtGui.QPushButton('Cancel', self)
+        self.cancel_btn.clicked.connect(self.reject)
+        self.cancel_btn.setDefault(True)
+
+        # Determine settings
+        self.file_dialog = QtGui.QFileDialog(parent = self)
+
+        # HDF5 compression
+        # TODO: determine automatically?
+        self.compression_cb = QtGui.QComboBox(parent = self)
+        self.compression_cb.addItems(['None', 'lzf (fastest)', 'gzip (smallest)'])
+
+        # Click either of two mutually-exclusive btns
+        #
+        self.powder_type_btn = QtGui.QPushButton('Powder', parent = self)
+        self.sc_type_btn = QtGui.QPushButton('Single crystal', parent = self)
+        self.powder_type_btn.setCheckable(True)
+        self.sc_type_btn.setCheckable(True)
+        self.powder_type.toggled.connect(lambda boolean: self.sc_type_btn.setChecked(not boolean))
+        sample_type_layout = QtGui.QHBoxLayout()
+        sample_type_layout.addWidget(self.powder_type_btn)
+        sample_type_layout.addWidget(self.sc_type_btn)
+
+        # Window size
+        self.window_size_cb = QtGui.QComboBox(parent = self)
+        self.window_size_cb.addItems(list(range(0, 20, 1)))
+
+        items = QtGui.QVBoxLayout()
+        items.addWidget(self.compression_cb)
+        items.addLayout(sample_type_layout)
+        items.addWidget(self.window_size_cb)
+
+        buttons = QtGui.QHBoxLayout()
+        buttons.addWidget(self.save_btn)
+        buttons.addWidget(self.cancel_btn)
+
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addLayout(items)
+        self.layout.addLayout(buttons)
+        self.setLayout(self.layout)
+    
+    @QtCore.pyqtSlot()
+    def accept(self):
+        filename = self.file_dialog.getSaveFileName()
+        processing_options = {'filename':filename,
+                              'compression': self.compression_cb.currentText(),
+                              'sample_type': 'powder' if self.powder_type_btn.isChecked() else 'single_crystal',
+                              'window_size': int(self.window_size_cb.currentText())}
+        self.processing_options_signal.emit(processing_options)
+        super().accept()
+    
+    @QtCore.pyqtSlot()
+    def reject(self):
+        super(CameraFeatureDialog, self).reject()
