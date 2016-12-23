@@ -94,7 +94,7 @@ def shift(arr, x, y):
         y_cast = slice(0, None)
     
     shifted[x_cast, y_cast] = arr[x_source, y_source]
-    return n.ma.masked_where(n.isnan(shifted), shifted)
+    return n.ma.array(shifted, mask = n.isnan(shifted), fill_value = 0.0)
 
 def average_tiff(directory, wildcard, background = None):
     """
@@ -136,7 +136,7 @@ def average_tiff(directory, wildcard, background = None):
     # average - background
     return image/len(image_list) - background
 
-def find_center(image, guess_center, radius, window_size = 15, ring_width = 5, method = 'opt'):
+def find_center(image, guess_center, radius, window_size = 15, ring_width = 5, reduced = True):
     """
     Find the best guess for diffraction center.
 
@@ -152,45 +152,32 @@ def find_center(image, guess_center, radius, window_size = 15, ring_width = 5, m
     window_size : int, optional
 
     ring_width : int, optional
-
-    method : str {'brute', 'opt' (default)}
     """
-    # Reduce image size for performance
-    xc, yc = guess_center
-    extra = window_size + radius + ring_width
-    reduced = image[xc - extra : xc + extra + 1,
-                    yc - extra : yc + extra + 1]
-    
-    reduced_center = (xc - extra, yc - extra)
-    best_x, best_y = _find_center_full(image = reduced, guess_center = reduced_center, 
-                                       radius = radius, window_size = window_size, 
-                                       ring_width = ring_width, method = method)
+    import matplotlib.pyplot as plt
 
-    return best_x + extra + window_size, best_y + extra + window_size
-
-def _find_center_full(image, guess_center, radius, window_size = 10, ring_width = 5, method = 'opt'):
-    """ """
-    xc, yc = guess_center
+    extra = 0
     xx, yy = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
-    centers = product(range(-window_size + xc, window_size + xc + 1),
-                      range(-window_size + yc, window_size + yc + 1))
 
-    def integrated(center):
-        """ Integrate intensity over the ring """
-        rr = n.sqrt((xx - center[0])**2 + (yy - center[1])**2)
-        return image[n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)].sum()
-
-    best_center, _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
-    return best_center
+    # Reduce image size for performance
+    if reduced:
+        yc, xc = guess_center
+        extra = window_size + radius + ring_width
+        image = image[xc - extra : xc + extra, yc - extra : yc + extra + 1]
+        xx = xx[xc - extra : xc + extra, yc - extra : yc + extra + 1]
+        yy = yy[xc - extra : xc + extra, yc - extra : yc + extra + 1]
+        guess_center = (yc - extra, xc - extra)
     
-    #if method == 'brute':
-    #    best_x, best_y = brute(func = integrated,
-    #                           ranges = (slice(-window_size, window_size, 1), slice(-window_size, window_size, 1)))
-    #elif method == 'opt':
-    #    best_x, best_y = fmin_slsqp(func = integrated, 
-    #                                x0 = n.array((0,0)),
-    #                                bounds = [(-window_size, window_size), (-window_size, window_size)],
-    #                                iprint = 0)
+    yc, xc = guess_center
+    centers = product(range(yc, 2*window_size + yc + 1),
+                      range(xc, 2*window_size + xc + 1))
+    
+    def integrated(c):
+        """ Integrate intensity over the ring """
+        rr = n.sqrt((xx - c[0])**2 + (yy - c[1])**2)
+        return image[n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)].sum()
+    
+    best_center, _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
+    return best_center[0] + extra, best_center[1] + extra
 
 def angular_average(image, center, beamblock_rect, mask = None):
     """
