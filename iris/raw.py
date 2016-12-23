@@ -283,18 +283,9 @@ class RawDataset(object):
             # as much as 'window_size' pixels in both all directions, we can
             # save space and avoid a lot of NaNs.
             image = n.empty(shape = self.resolution, dtype = n.uint16)
-            cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float)
-            averaged = n.empty(shape = self.resolution, dtype = n.float)
-            deviation = n.empty_like(cube, dtype = n.float)
+            cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float, fill_value = 0.0)
+            deviation = n.ma.empty_like(cube, dtype = n.float)
 
-            # TODO: find best estimator. 3 std or 5 std?
-            def estimator(*args, **kwargs):
-                # Set 'estimator' to be 0 where all NaNs.
-                # Any comparison later will remove those pixels.
-                est = 3*n.nanstd(*args, **kwargs)
-                est[n.isnan(est)] = 0
-                return est
-            
             # TODO: parallelize this loop
             #       The only reason it is not right now is that
             #       each branch of the loop uses ~ 6GBs of RAM for
@@ -317,9 +308,6 @@ class RawDataset(object):
                     
                     corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
                                                                           window_size = window_size, ring_width = 5)
-                                                                          
-                    print('Center correction by {} pixels.'.format(n.sqrt(corr_i**2 + corr_j**2)))
-
                     cube[:,:,slice_index] = shift(image, int(round(corr_i)), int(round(corr_j)), fill = n.nan)
                     slice_index += 1
                 
@@ -327,35 +315,27 @@ class RawDataset(object):
                 # Compress cube along the -1 axis
                 if missing_pictures > 0:
                     cube = cube[:, :, 0:-missing_pictures]
-                    deviation = n.empty_like(cube, dtype = n.float)
+                    deviation = n.ma.empty_like(cube, dtype = n.float)
                 
                 # All pixels under the beamblock, after shifting the images around
                 # These pixels will not contribute to the integrated intensity later
-                cube[beamblock_mask, :] = 0
+                cube[beamblock_mask, :] = n.ma.masked
 
                 # Perform statistical test for outliers using estimator function
-                # Pixels deemed outliers have their value replaced by NaN so that
-                # they will be ignored by nanmean
-                n.nanmean(cube, axis = -1, dtype = n.float, keepdims = True, out = mean)
-                mean[n.isnan(mean)] = n.inf         # Might be NaNs on the edges due to center correction
-                estimation = estimator(cube, axis = -1, dtype = n.float, keepdims = True)
-                n.abs(cube - mean, out = deviation) 
-                deviation[n.isnan(deviation)] = n.nanmax(estimation)
-                cube[deviation > estimation] = n.nan
+                n.abs(cube - cube.mean(axis = -1, keepdims = True), out = deviation) 
+                cube[deviation > 3*cube.std(axis = -1, keepdims = True)] = n.ma.masked    # values beyond 3 std are invalid
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
                 # Then, the data cube is normalized such that each slice has the same integrated intensity
                 # int_intensities might contain NaNs due to missing pictures
-                int_intensities = n.nansum(n.nansum(cube, axis = 0, dtype = n.float, keepdims = True), axis = 1, dtype = n.float, keepdims = True)
-                int_intensities /= n.nanmean(int_intensities, dtype = n.float)
+                int_intensities = n.ma.sum(n.ma.sum(cube, axis = 0, dtype = n.float, keepdims = True), axis = 1, dtype = n.float, keepdims = True)
+                int_intensities /= n.ma.mean(int_intensities, dtype = n.float)
                 cube /= int_intensities
 
                 # Store average along axis 2
-                # Averaged data is not uint16 anymore
-                n.nanmean(cube, axis = -1, dtype = n.float, out = averaged)
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
-                gp.create_dataset(name = 'intensity', data = averaged, dtype = n.float)
+                gp.create_dataset(name = 'intensity', data = cube.mean(axis = -1), dtype = n.float)
                 # TODO: include error. Can we approximate the error as intensity/sqrt(nscans) ? Otherwise we
                 #       need to store an entire array for error, per timedelay... Doubles the size of dataset.
 
