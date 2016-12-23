@@ -295,6 +295,10 @@ class RawDataset(object):
                 est[n.isnan(est)] = 0
                 return est
             
+            # TODO: parallelize this loop
+            #       The only reason it is not right now is that
+            #       each branch of the loop uses ~ 6GBs of RAM for
+            #       a 30 scans dataset
             for i, timedelay in enumerate(self.time_points):
 
                 # Concatenate time-delay in data cube
@@ -324,6 +328,7 @@ class RawDataset(object):
                 if missing_pictures > 0:
                     cube = cube[:, :, 0:-missing_pictures]
                     deviation = n.empty_like(cube, dtype = n.float)
+                
                 # All pixels under the beamblock, after shifting the images around
                 # These pixels will not contribute to the integrated intensity later
                 cube[beamblock_mask, :] = 0
