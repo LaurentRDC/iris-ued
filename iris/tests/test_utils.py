@@ -23,15 +23,11 @@ class TestShift(unittest.TestCase):
     
     def test_shift_out_of_bounds(self):
         array = n.ones(shape = (256, 256), dtype = n.float)
-        shifted_x = shift(array, 300, 0, fill = n.nan)
-        self.assertTrue(n.isnan(shifted_x).sum() == array.size)  # Sum of number of NaNs is same as number of elements
+        shifted_x = shift(array, 300, 0)
+        self.assertTrue(shifted_x.mask.sum() == array.size)  # Sum of number of NaNs is same as number of elements
 
-        shifted_y = shift(array, 0, -451, fill = n.nan)
-        self.assertTrue(n.isnan(shifted_y).sum() == array.size)  # Sum of number of NaNs is same as number of elements
-    
-    def test_shift_non_int(self):
-        array = n.ones(shape = (256, 256), dtype = n.float)
-        shifted_x = shift(array, 34.5, -0.1, fill = n.nan)
+        shifted_y = shift(array, 0, -451)
+        self.assertTrue(shifted_y.mask.sum() == array.size)  # Sum of number of NaNs is same as number of elements
 
 class TestAngularAverage(unittest.TestCase):
 
