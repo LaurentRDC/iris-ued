@@ -196,7 +196,7 @@ class RawDataset(object):
         return read(join(self.raw_directory, filename)).astype(n.float)
     
     def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', 
-                sample_type = 'powder', callback = print, window_size = 10):
+                sample_type = 'powder', callback = None, window_size = 10):
         """
         Processes raw data into something useable by iris.
         
@@ -292,22 +292,22 @@ class RawDataset(object):
                 # Concatenate time-delay in data cube
                 # Last axis is the scan number
                 # Before concatenation, shift around for center
-                missing_pictures = 0
-                slice_index = 0
                 cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float, fill_value = 0.0)
                 deviation = n.ma.empty_like(cube, dtype = n.float)
+
+                missing_pictures = 0
+                slice_index = 0
                 for scan in self.nscans:
-                    # Deal with missing pictures
                     try:
                         image = self.raw_data(timedelay, scan) - pumpon_background
                     except ImageNotFoundError:
                         warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
                         missing_pictures += 1
                     
-                    #corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
-                    #                                                      window_size = window_size, ring_width = 5)
-                    corr_i, corr_j = 0, 0
-                    print('Corrected center is disabled.')
+                    corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
+                                                                          window_size = window_size, ring_width = 5)
+                    #corr_i, corr_j = 0, 0
+                    #print('Corrected center is disabled.')
 
                     # Everything along the edges of cube might be invalid due to center correction
                     # These edge values will have been set to ma.masked by the shift() function
@@ -325,7 +325,7 @@ class RawDataset(object):
                 cube[beamblock_mask, :] = n.ma.masked
 
                 # Perform statistical test for outliers using estimator function
-                n.abs(cube - cube.mean(axis = -1, keepdims = True), out = deviation) 
+                n.ma.abs(cube - cube.mean(axis = -1, keepdims = True), out = deviation) 
                 cube[deviation > 3*cube.std(axis = -1, keepdims = True)] = n.ma.masked    # values beyond 3 std are invalid
 
                 # Normalize data cube intensity
@@ -339,18 +339,11 @@ class RawDataset(object):
                 # Store average along axis 2
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
                 mean = cube.mean(axis = -1)
-                mean[n.isnan(mean)] = 0.0   # Why are we finding NaNs in mean?
-                gp.create_dataset(name = 'intensity', data = mean, dtype = n.float)
+                gp.create_dataset(name = 'intensity', data = n.ma.getdata(mean), dtype = n.float)
                 # TODO: include error. Can we approximate the error as intensity/sqrt(nscans) ? Otherwise we
                 #       need to store an entire array for error, per timedelay... Doubles the size of dataset.
 
                 callback(round(100*i / len(self.time_points)))
-
-                # If there were some missing pictures, arrays will have been resized. Return to original size
-                if missing_pictures > 0:
-                    cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float)
-                    deviation = n.empty_like(cube, dtype = n.float)
-            
         # Extra step for powder data: angular average
         # We already have the (reduced) center + beamblock info
         # scattering length is the same for all time-delays 
@@ -359,4 +352,5 @@ class RawDataset(object):
             with PowderDiffractionDataset(name = filename, mode = 'r+') as processed:
                 processed._compute_angular_averages(**ckwargs)
 
+        callback(100)
         return filename
