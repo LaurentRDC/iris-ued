@@ -6,6 +6,7 @@ from .pyqtgraph import QtGui, QtCore
 import numpy as n
 
 from .utils import spectrum_colors
+from ..nufft import nufft
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -187,11 +188,15 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_region.sigRegionChanged.connect(self._update_peak_dynamics)
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
 
+        self.time_series_analysis = pg.PlotWidget(title = 'Time-series analysis')
+
         # Cache
         self.dataset_info = dict()
         self.powder_data_block = None
         self.scattering_length = None
         self.error_block = None
+        self.peak_dynamics = None
+        self.peak_dynamics_errors = None
         
         # Buttons
         self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
@@ -231,12 +236,14 @@ class PowderViewer(QtGui.QWidget):
         command_layout.addWidget(self.first_stage_cb,  1,  1,  1,  1)
         command_layout.addWidget(wavelet_label,  0,  2,  1,  1)
         command_layout.addWidget(self.wavelet_cb,  1,  2,  1,  1)
-        
 
         layout = QtGui.QVBoxLayout()
         layout.addLayout(command_layout)
+        analysis_widget = QtGui.QTabWidget(parent = self)
+        analysis_widget.addTab(self.peak_dynamics_viewer, 'Peak dynamics')
+        analysis_widget.addTab(self.time_series_analysis, 'Time-series analysis')
         layout.addWidget(self.powder_pattern_viewer)
-        layout.addWidget(self.peak_dynamics_viewer)
+        layout.addWidget(analysis_widget)
         self.setLayout(layout)
     
     @QtCore.pyqtSlot(dict)
@@ -285,9 +292,7 @@ class PowderViewer(QtGui.QWidget):
     
     @QtCore.pyqtSlot(object)
     def _update_peak_dynamics(self, *args):
-        """ """
-        self.peak_dynamics_viewer.clear()
-        
+        """ """        
         # Integrate signal between bounds
         min_s, max_s = self.peak_dynamics_region.getRegion()
         i_min, i_max = n.argmin(n.abs(self.scattering_length - min_s)), n.argmin(n.abs(self.scattering_length - max_s)) + 1
@@ -299,15 +304,33 @@ class PowderViewer(QtGui.QWidget):
         # TODO: check...
         integrated_error = n.sqrt(n.sum(n.square(self.error_block[:, i_min:i_max]), axis = 1))/(i_max - i_min)
 
+        # Update all related thigs
+        self.peak_dynamics = integrated
+        self.peak_dynamics_errors = integrated_error
+
+        self._update_peak_dynamics_plot()
+        self._update_time_series()
+    
+    def _update_peak_dynamics_plot(self):
+        self.peak_dynamics_viewer.clear()
+
         # Display and error bars
+        # TODO: cache colors?
         colors = list(spectrum_colors(len(self.time_points)))
-        self.peak_dynamics_viewer.plot(self.time_points, integrated, pen = None, symbol = 'o', 
+        self.peak_dynamics_viewer.plot(self.time_points, self.peak_dynamics, pen = None, symbol = 'o', 
                                        symbolPen = [pg.mkPen(c) for c in colors], symbolBrush = [pg.mkBrush(c) for c in colors], symbolSize = 4)
         
-        error_bars = pg.ErrorBarItem(x = self.time_points, y = integrated, height = integrated_error)
+        error_bars = pg.ErrorBarItem(x = self.time_points, y = self.peak_dynamics, height = self.peak_dynamics_errors)
         self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
+        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+    
+    def _update_time_series(self):
+        self.time_series_analysis.clear()
+        spectrum = n.fft.fftshift(n.fft.fft(self.peak_dynamics))
+        self.time_series_analysis.plot(n.real(spectrum), pean = None, symbol = 'o',
+                                       symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 4)
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
 
 class IrisStatusBar(QtGui.QStatusBar):
@@ -359,7 +382,6 @@ class DatasetInfoWidget(QtGui.QWidget):
         self.master_layout.addLayout(self.keys_layout)
         self.master_layout.addLayout(self.values_layout)
         self.setLayout(self.master_layout)
-
 
 class ProcessingOptionsDialog(QtGui.QDialog):
     """
