@@ -31,49 +31,11 @@ class RawDataViewer(QtGui.QWidget):
         self.timedelay_edit = QtGui.QLineEdit()
         self.scan_edit = QtGui.QLineEdit()
         self.display_btn = QtGui.QPushButton('Display')
-
-        # Radial-averaging tools
         self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
 
-        self.command_bar = QtGui.QHBoxLayout()
-        self.command_bar.addWidget(QtGui.QLabel('Time-delay (ps):'))
-        self.command_bar.addWidget(self.timedelay_edit)
-        self.command_bar.addWidget(QtGui.QLabel('Scan number:'))
-        self.command_bar.addWidget(self.scan_edit)
-        self.command_bar.addWidget(self.display_btn)
-
-        # Menus
-        self.process_menu = self.menu_bar.addMenu('&Processing')
-
-        # Add handles to the beam block mask
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
-        
-        # Hide on instantiation
-        self.raw_viewer.getView().addItem(self.mask)
-        self.raw_viewer.getView().addItem(self.center_finder)
-        self.mask.hide(), self.center_finder.hide()
-
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(self.menu_bar)
-        self.layout.addWidget(self.processing_progress_bar)
-        self.layout.addWidget(self.raw_viewer)
-        self.layout.addLayout(self.command_bar)
-        self.setLayout(self.layout)
-    
-        self.show_centering_tools_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'diffraction.png')), '&Show centering tools', self)
-        self.show_centering_tools_action.setCheckable(True)
-        self.show_centering_tools_action.setChecked(False)
-        self.process_menu.addAction(self.show_centering_tools_action)
-
-        self.process_dataset_as_sc_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process dataset as single crystal', self)
-        self.process_dataset_as_sc_action.setDisabled(True)
-        self.process_menu.addAction(self.process_dataset_as_sc_action)
-        
-        self.process_dataset_as_powder_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process dataset as powder', self)
-        self.process_dataset_as_powder_action.setDisabled(True)
-        self.process_menu.addAction(self.process_dataset_as_powder_action)
 
         # Toggle view of tools
         def toggle_mask(t):
@@ -84,14 +46,46 @@ class RawDataViewer(QtGui.QWidget):
             if t: self.center_finder.show()
             else: self.center_finder.hide()
 
-        self.show_centering_tools_action.toggled.connect(toggle_mask)
-        self.show_centering_tools_action.toggled.connect(toggle_cf)
-        self.show_centering_tools_action.toggled.connect(self.process_dataset_as_sc_action.setEnabled)
-        self.show_centering_tools_action.toggled.connect(self.process_dataset_as_powder_action.setEnabled)
+        # Processing buttons
+        self.process_as_sc_btn = QtGui.QPushButton('Process as single-crystal')
+        self.process_as_sc_btn.clicked.connect(lambda : self.process_dataset(sample_type = 'single crystal'))
+        self.process_as_sc_btn.setEnabled(False)
 
-        # Process dataset
-        self.process_dataset_as_sc_action.triggered.connect(lambda : self.process_dataset(sample_type = 'single crystal'))
-        self.process_dataset_as_powder_action.triggered.connect(lambda : self.process_dataset(sample_type = 'powder'))
+        self.process_as_powder_btn = QtGui.QPushButton('Process as powder')
+        self.process_as_powder_btn.clicked.connect(lambda : self.process_dataset(sample_type = 'powder'))
+        self.process_as_powder_btn.setEnabled(False)
+
+        self.show_tools_btn = QtGui.QPushButton('Show centering tools')
+        self.show_tools_btn.setCheckable(True)
+        self.show_tools_btn.setChecked(False)
+        self.show_tools_btn.toggled.connect(self.process_as_sc_btn.setEnabled)
+        self.show_tools_btn.toggled.connect(self.process_as_powder_btn.setEnabled)
+        self.show_tools_btn.toggled.connect(toggle_mask)
+        self.show_tools_btn.toggled.connect(toggle_cf)
+
+        buttons = QtGui.QHBoxLayout()
+        buttons.addWidget(self.show_tools_btn)
+        buttons.addWidget(self.process_as_sc_btn)
+        buttons.addWidget(self.process_as_powder_btn)
+
+        command_bar = QtGui.QHBoxLayout()
+        command_bar.addWidget(QtGui.QLabel('Time-delay (ps):'))
+        command_bar.addWidget(self.timedelay_edit)
+        command_bar.addWidget(QtGui.QLabel('Scan number:'))
+        command_bar.addWidget(self.scan_edit)
+        command_bar.addWidget(self.display_btn)
+        
+        # Hide on instantiation
+        self.raw_viewer.getView().addItem(self.mask)
+        self.raw_viewer.getView().addItem(self.center_finder)
+        self.mask.hide(), self.center_finder.hide()
+
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addWidget(self.processing_progress_bar)
+        self.layout.addLayout(buttons)
+        self.layout.addWidget(self.raw_viewer)
+        self.layout.addLayout(command_bar)
+        self.setLayout(self.layout)
     
     @QtCore.pyqtSlot(object)
     def display(self, data):
@@ -154,13 +148,26 @@ class ProcessedDataViewer(QtGui.QWidget):
     
     @QtCore.pyqtSlot(dict)
     def update_info(self, info):
-        """ Update slider according to dataset info """
+        """
+        Update the widget with dataset information
+        
+        Parameters
+        ----------
+        info : dict 
+        """
         self.dataset_info.update(info)
         self.time_slider.setRange(0, len(self.dataset_info['time_points']) - 1)
         # TODO: set tick labels to time points
     
     @QtCore.pyqtSlot(object)
     def display(self, image):
+        """
+        Display an image in the form a an ndarray.
+
+        Parameters
+        ----------
+        image : ndarray
+        """
         # autoLevels = False ensures that the colormap stays the same
         # when 'sliding' through data. This makes it easier to compare
         # data at different time points.
@@ -249,6 +256,13 @@ class PowderViewer(QtGui.QWidget):
     
     @QtCore.pyqtSlot(dict)
     def update_info(self, info):
+        """ 
+        Update the widget with dataset information
+        
+        Parameters
+        ----------
+        info : dict 
+        """
         self.dataset_info.update(info)
 
         # Update GUI 
@@ -280,8 +294,11 @@ class PowderViewer(QtGui.QWidget):
         ----------
         scattering_length : ndarray, shape (1, N)
             Scattering length of the radial patterns
-        array : ndarray, shape (M, N)
-            Array for which each row is a radial pattern for a specific time-delay
+        powder_data_block : ndarray, shape (M, N)
+            Array for which each row is a radial pattern for a specific time-delay.
+        error_block : ndarray, shape (M,N)
+            Array for which each row is the error in diffracted intensity 
+            at each time-delay.
         """
         self.powder_data_block = powder_data_block
         self.scattering_length = scattering_length
