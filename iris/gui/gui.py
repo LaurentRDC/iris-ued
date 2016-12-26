@@ -8,9 +8,10 @@ import multiprocessing
 import numpy as n
 import os
 from os.path import join, dirname
+import sys
+
 from . import pyqtgraph as pg
 from .pyqtgraph import QtCore, QtGui
-
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 from .controller import IrisController, error_aware
 from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, RawDataViewer, PowderViewer
@@ -19,12 +20,9 @@ from .utils import WorkThread
 image_folder = join(dirname(__file__), 'images')
 
 def run():
-    import sys
-    
     app = QtGui.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
     gui = Iris()
-    
     sys.exit(app.exec_())
 
 class Iris(QtGui.QMainWindow):
@@ -32,9 +30,8 @@ class Iris(QtGui.QMainWindow):
     dataset_path_signal = QtCore.pyqtSignal(str, name = 'dataset_path_signal')
     raw_dataset_path_signal = QtCore.pyqtSignal(str, name = 'raw_dataset_path_signal')
 
-    def __init__(self):
-        
-        super(Iris, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         
         self.controller = IrisController(parent = self)
         self.dataset_info = DatasetInfoWidget()
@@ -96,30 +93,36 @@ class Iris(QtGui.QMainWindow):
         self.load_dataset_action.triggered.connect(self.load_dataset)
         self.dataset_path_signal.connect(self.controller.load_dataset)
 
-        self.controller.processed_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.processed_viewer), x))
-        self.controller.processed_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.processed_viewer)) if x else None)
+        self.controller.processed_dataset_loaded_signal.connect(
+            lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.processed_viewer), x))
+        self.controller.processed_dataset_loaded_signal.connect(
+            lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.processed_viewer)) if x else None)
         
-        self.processed_viewer.time_slider.sliderMoved.connect(lambda i: self.controller.display_averaged_data(self.controller.dataset.time_points[i]))
+        self.processed_viewer.time_slider.sliderMoved.connect(
+            lambda i: self.controller.display_averaged_data(self.controller.dataset.time_points[i]))
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
 
         ######################################################################
         # POWDER DATA INTERACTION
-        self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.powder_viewer), x))
-        self.controller.powder_dataset_loaded_signal.connect(lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.powder_viewer)) if x else None)
+        self.controller.powder_dataset_loaded_signal.connect(
+            lambda x: self.viewer_stack.setTabEnabled(self.viewer_stack.indexOf(self.powder_viewer), x))
+        self.controller.powder_dataset_loaded_signal.connect(
+            lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.powder_viewer)) if x else None)
         self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
         self.powder_viewer.baseline_parameters_signal.connect(self.controller.compute_baseline)
-        self.powder_viewer.baseline_removed_btn.toggled.connect(lambda x: self.controller.powder_data_signal.emit(*self.controller.dataset.powder_data_block(bgr = x)))
+        self.powder_viewer.baseline_removed_btn.toggled.connect(
+            lambda x: self.controller.powder_data_signal.emit(*self.controller.dataset.powder_data_block(bgr = x)))
 
         ######################################################################
         # Update when a new dataset is loaded
         # Switch tabs as well
-        self.controller.dataset_info_signal.connect(self.dataset_info.update)
+        self.controller.dataset_info_signal.connect(self.dataset_info.update_info)
         self.controller.dataset_info_signal.connect(self.processed_viewer.update_info)
         self.controller.dataset_info_signal.connect(self.powder_viewer.update_info)
         
-        self.layout = QtGui.QHBoxLayout()
-        self.layout.addWidget(self.dataset_info)
+        self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.viewer_stack)
+        self.layout.addWidget(self.dataset_info)
 
         self.central_widget = QtGui.QWidget()
         self.central_widget.setLayout(self.layout)
@@ -132,6 +135,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.status_message_signal.emit('Ready.')
         self.controller.processing_progress_signal.emit(0)
         self.viewer_stack.setCurrentWidget(self.raw_data_viewer)
+        self.dataset_info.hide()
 
         #Window settings ------------------------------------------------------
         self.setGeometry(500, 500, 800, 800)
