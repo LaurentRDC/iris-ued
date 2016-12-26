@@ -8,7 +8,7 @@ import traceback
 
 from ..dataset import DiffractionDataset, PowderDiffractionDataset
 from ..raw import RawDataset
-from .worker import WorkThread
+from .utils import WorkThread
 
 def error_aware(message):
     """
