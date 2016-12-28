@@ -71,7 +71,7 @@ class TestFindCenter(unittest.TestCase):
         self.assertTrue(0 <= xc < 512)
         self.assertTrue(0 <= yc < 512)
     
-    def test_find_center_full(self):
+    def test_find_center_wrong_guess(self):
         """ Finding the center on an image, without reducing the image size """
         image = n.zeros(shape = (512, 512), dtype = n.float)
         xc, yc = (258, 254)
@@ -82,37 +82,23 @@ class TestFindCenter(unittest.TestCase):
         image = gaussian_filter(image, 3)
 
         corr_x, corr_y = find_center(image, guess_center = (255, 251), 
-                                    radius = 50, window_size = 10, reduced = False)
-        self.assertEqual(xc, corr_x)
+                                    radius = 50, window_size = 10)
         self.assertEqual(yc, corr_y)
+        self.assertEqual(xc, corr_x)
     
     def test_perfect_guess(self):
         """ Using a perfect center guess """
-        image = n.zeros(shape = (256, 256), dtype = n.float)
-        xc, yc = (132, 155)
+        image = n.zeros(shape = (512, 512), dtype = n.float)
+        xc, yc = (232, 255)
         extent = n.arange(0, image.shape[0])
         xx, yy = n.meshgrid(extent, extent)
         rr = n.sqrt((xx - xc)**2 + (yy - yc)**2)
-        image[n.logical_and(24.5 < rr,rr < 25.5)] = 10
+        image[rr == 25] = 10
         image = gaussian_filter(image, 3)
 
         corr_x, corr_y = find_center(image, guess_center = (xc, yc), radius = 25)
-        self.assertEqual(xc, corr_x)
         self.assertEqual(yc, corr_y)
-    
-    def test_ring(self):
-        """ Finding the center on an image, reducing the image size """
-        image = n.zeros(shape = (2048, 2048), dtype = n.float)
-        xc, yc = (1024, 1024)
-        extent = n.arange(0, image.shape[0])
-        xx, yy = n.meshgrid(extent, extent)
-        rr = n.sqrt((xx - xc)**2 + (yy - yc)**2)
-        image[n.logical_and(rr < 51, rr > 49)] = 10
-        image = gaussian_filter(image, 3)
-
-        corr_x, corr_y = find_center(image, guess_center = (1023, 1027), radius = 50)
         self.assertEqual(xc, corr_x)
-        self.assertEqual(yc, corr_y)
 
 if __name__ == '__main__':
     unittest.main()

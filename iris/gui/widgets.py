@@ -20,6 +20,7 @@ class RawDataViewer(QtGui.QWidget):
 
     """
     process_dataset_signal = QtCore.pyqtSignal(dict, name = 'process_dataset_signal')
+    error_message_signal = QtCore.pyqtSignal(str, name = 'error_message_signal')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -103,8 +104,6 @@ class RawDataViewer(QtGui.QWidget):
         sample_type : str {'single crystal', 'powder'}
         """
         processing_info = dict()
-        processing_info['filename'] = self.file_dialog.getSaveFileName(parent = self, filter = '*.hdf5')[0]
-        processing_info['sample_type'] = sample_type
 
         corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2.0
@@ -121,7 +120,13 @@ class RawDataViewer(QtGui.QWidget):
         y2 = round(max(0, rect.y() + rect.height() ))
         processing_info['beamblock_rect'] = (y1, y2, x1, x2)       #Flip output since image viewer plots transpose
 
-        self.process_dataset_signal.emit(processing_info)
+        self.processing_options_dialog = ProcessingOptionsDialog(parent = self, info_dict = processing_info)
+        self.processing_options_dialog.processing_options_signal.connect(
+            lambda info_dict: self.process_dataset_signal.emit(info_dict))
+        
+        success = self.processing_options_dialog.exec_()
+        if not success:
+            self.error_message_signal.emit('Processing options could not be set.')
     
 class ProcessedDataViewer(QtGui.QWidget):
     """
@@ -188,7 +193,7 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
        
 
-        self.peak_dynamics_region = pg.LinearRegionItem()
+        self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
         self.peak_dynamics_region.sigRegionChanged.connect(self._update_peak_dynamics)
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
 
@@ -300,17 +305,19 @@ class PowderViewer(QtGui.QWidget):
             Array for which each row is the error in diffracted intensity 
             at each time-delay.
         """
+        # Cache
         self.powder_data_block = powder_data_block
         self.scattering_length = scattering_length
         self.error_block = error_block
 
-        self.powder_pattern_viewer.clear(), 
+        self.powder_pattern_viewer.clear() 
         self.powder_pattern_viewer.enableAutoRange()
         
         # Get timedelay colors and plot
         for pen, brush, curve in zip(self._pens, self._brushes, powder_data_block):
             self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
+        self.peak_dynamics_region.setBounds([self.scattering_length.min(), self.scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
         self._update_peak_dynamics()
     
@@ -327,7 +334,7 @@ class PowderViewer(QtGui.QWidget):
         integrated = self.powder_data_block[:, i_min:i_max].sum(axis = 1)
         self.peak_dynamics = integrated/integrated.max() if integrated.max() > 0.0 else integrated
         self.peak_dynamics_errors = n.zeros_like(integrated) #n.sqrt(n.sum(n.square(self.error_block[:, i_min:i_max]), axis = 1))
-
+        
         self._update_peak_dynamics_plot()
         self._update_time_series()
     
@@ -392,6 +399,9 @@ class DatasetInfoWidget(QtGui.QTableWidget):
         self.horizontalHeader().setVisible(False)
         self.verticalHeader().setVisible(False)
 
+        # Resize to content
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+
     @QtCore.pyqtSlot(dict)
     def update_info(self, info):
         """ 
@@ -411,6 +421,7 @@ class DatasetInfoWidget(QtGui.QTableWidget):
                 key += ' (len)'
                 value = str(len(tuple(value)))
             
+            # TODO: change font of key text to bold
             self.setItem(0, column, QtGui.QTableWidgetItem(key))
             self.setItem(1, column, QtGui.QTableWidgetItem(str(value)))
 
@@ -420,15 +431,17 @@ class ProcessingOptionsDialog(QtGui.QDialog):
     """
     processing_options_signal = QtCore.pyqtSignal(dict, name = 'processing_options_signal')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, parent, info_dict, **kwargs):
         """
         Parameters
         ----------
         parent : QWidget or None, optional
         """
-        super().__init__(*args, **kwargs)
-
+        super().__init__(parent = parent, **kwargs)
+        self.info_dict = info_dict
         self.setModal(True)
+        self.setWindowTitle('Processing options')
+
         self.save_btn = QtGui.QPushButton('Launch processing', self)
         self.save_btn.clicked.connect(self.accept)
 
@@ -442,26 +455,33 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         # HDF5 compression
         # TODO: determine automatically?
         self.compression_cb = QtGui.QComboBox(parent = self)
-        self.compression_cb.addItems(['None', 'lzf (fastest)', 'gzip (smallest)'])
+        self.compression_cb.addItems(['lzf', 'gzip'])
+        self.compression_cb.setCurrentText('lzf')
 
         # Click either of two mutually-exclusive btns
-        #
         self.powder_type_btn = QtGui.QPushButton('Powder', parent = self)
-        self.sc_type_btn = QtGui.QPushButton('Single crystal', parent = self)
         self.powder_type_btn.setCheckable(True)
+        self.sc_type_btn = QtGui.QPushButton('Single crystal', parent = self)
         self.sc_type_btn.setCheckable(True)
-        self.powder_type.toggled.connect(lambda boolean: self.sc_type_btn.setChecked(not boolean))
+
+        self.powder_type_btn.toggled.connect(lambda checked: self.sc_type_btn.setChecked(not checked))
+        self.sc_type_btn.toggled.connect(lambda checked: self.powder_type_btn.setChecked(not checked))
+        
         sample_type_layout = QtGui.QHBoxLayout()
         sample_type_layout.addWidget(self.powder_type_btn)
         sample_type_layout.addWidget(self.sc_type_btn)
 
-        # Window size
+        # center correction window size
         self.window_size_cb = QtGui.QComboBox(parent = self)
-        self.window_size_cb.addItems(list(range(0, 20, 1)))
+        self.window_size_cb.addItems(list(map(str, range(0, 20, 1))))
+        self.window_size_cb.setCurrentText('10')   # TODO: get default from somewhere?
 
         items = QtGui.QVBoxLayout()
+        items.addWidget(QtGui.QLabel('Select HDF5 Compression:', parent = self))
         items.addWidget(self.compression_cb)
+        items.addWidget(QtGui.QLabel('Select sample type:'))
         items.addLayout(sample_type_layout)
+        items.addWidget(QtGui.QLabel('Center-correction window size:'))
         items.addWidget(self.window_size_cb)
 
         buttons = QtGui.QHBoxLayout()
@@ -475,14 +495,10 @@ class ProcessingOptionsDialog(QtGui.QDialog):
     
     @QtCore.pyqtSlot()
     def accept(self):
-        filename = self.file_dialog.getSaveFileName()
-        processing_options = {'filename':filename,
-                              'compression': self.compression_cb.currentText(),
-                              'sample_type': 'powder' if self.powder_type_btn.isChecked() else 'single_crystal',
-                              'window_size': int(self.window_size_cb.currentText())}
-        self.processing_options_signal.emit(processing_options)
+        filename = self.file_dialog.getSaveFileName()[0]
+        self.info_dict.update( {'filename':filename,
+                                'compression': self.compression_cb.currentText(),
+                                'sample_type': 'powder' if self.powder_type_btn.isChecked() else 'single_crystal',
+                                'window_size': int(self.window_size_cb.currentText())} )
+        self.processing_options_signal.emit(self.info_dict)
         super().accept()
-    
-    @QtCore.pyqtSlot()
-    def reject(self):
-        super(CameraFeatureDialog, self).reject()
