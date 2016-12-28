@@ -136,7 +136,7 @@ def average_tiff(directory, wildcard, background = None):
     # average - background
     return image/len(image_list) - background
 
-def find_center(image, guess_center, radius, window_size = 15, ring_width = 5, reduced = True):
+def find_center(image, guess_center, radius, window_size = 10, ring_width = 5):
     """
     Find the best guess for diffraction center.
 
@@ -153,31 +153,27 @@ def find_center(image, guess_center, radius, window_size = 15, ring_width = 5, r
 
     ring_width : int, optional
     """
-    import matplotlib.pyplot as plt
-
-    extra = 0
     xx, yy = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
+    xc, yc = guess_center
+    centers = product(range(xc - window_size, window_size + xc + 1),
+                      range(yc - window_size, window_size + yc + 1))
+    
+    # Reduce image size down to the bounding box that encompasses
+    # all possible circles
+    extra = window_size + ring_width + radius
+    reduced = image[yc - extra:yc + extra, xc - extra:xc + extra]
+    xx = xx[yc - extra:yc + extra, xc - extra:xc + extra]
+    yy = yy[yc - extra:yc + extra, xc - extra:xc + extra]
+    rr = n.empty_like(xx)
 
-    # Reduce image size for performance
-    if reduced:
-        yc, xc = guess_center
-        extra = window_size + radius + ring_width
-        image = image[xc - extra : xc + extra, yc - extra : yc + extra + 1]
-        xx = xx[xc - extra : xc + extra, yc - extra : yc + extra + 1]
-        yy = yy[xc - extra : xc + extra, yc - extra : yc + extra + 1]
-        guess_center = (yc - extra, xc - extra)
-    
-    yc, xc = guess_center
-    centers = product(range(yc, 2*window_size + yc + 1),
-                      range(xc, 2*window_size + xc + 1))
-    
     def integrated(c):
         """ Integrate intensity over the ring """
-        rr = n.sqrt((xx - c[0])**2 + (yy - c[1])**2)
-        return image[n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)].sum()
+        rr[:] = n.sqrt((xx - c[0])**2 + (yy - c[1])**2)
+        return reduced[n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)].sum()
     
-    best_center, _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
-    return best_center[0] + extra, best_center[1] + extra
+    # TODO: average centers with the same max intensity
+    (best_x, best_y), _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
+    return best_x, best_y
 
 def angular_average(image, center, beamblock_rect, mask = None):
     """

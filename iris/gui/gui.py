@@ -65,6 +65,7 @@ class Iris(QtGui.QMainWindow):
 
         # Error handling
         self.controller.error_message_signal.connect(self.error_dialog.showMessage)
+        self.raw_data_viewer.error_message_signal.connect(self.error_dialog.showMessage)
 
         ######################################################################
         # RAW DATA INTERACTION

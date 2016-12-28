@@ -37,10 +37,12 @@ class WorkThread(QtCore.QThread):
     """
 
     results_signal = QtCore.pyqtSignal(str, name = 'results_signal')
-    
+    done_signal = QtCore.pyqtSignal(bool, name = 'done_signal')
+    in_progress_signal = QtCore.pyqtSignal(bool, name = 'in_progress_signal')
+
     def __init__(self, function, args = (), kwargs = {}):
         
-        super().__init__(self)
+        QtCore.QThread.__init__(self)
         self.function = function
         self.args = args
         self.kwargs = kwargs
@@ -50,7 +52,8 @@ class WorkThread(QtCore.QThread):
     
     def run(self):
         self.in_progress_signal.emit(True)
-        result = self.function(*self.args, **self.kwargs)     
+        result = self.function(*self.args, **self.kwargs)   
+        self.done_signal.emit(True)  
         self.results_signal.emit(result)
 
 def spectrum_colors(num_colors):
