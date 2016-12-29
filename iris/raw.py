@@ -180,7 +180,7 @@ class RawDataset(object):
         
         Returns
         -------
-        arr : ndarray, shape (N,M)
+        arr : ndarray, shape (N,M), dtype uint16
         
         Raises
         ------
@@ -193,7 +193,7 @@ class RawDataset(object):
         str_time = sign + '{0:.2f}'.format(float(timedelay))
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
         
-        return read(join(self.raw_directory, filename)).astype(n.float)
+        return cast_to_16_bits(read(join(self.raw_directory, filename)))
     
     def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', 
                 sample_type = 'powder', callback = None, window_size = 10):
@@ -292,8 +292,7 @@ class RawDataset(object):
                 # Concatenate time-delay in data cube
                 # Last axis is the scan number
                 # Before concatenation, shift around for center
-                cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.float, fill_value = 0.0)
-                deviation = n.ma.empty_like(cube, dtype = n.float)
+                cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.uint16, fill_value = 0.0)
 
                 missing_pictures = 0
                 slice_index = 0
@@ -318,28 +317,25 @@ class RawDataset(object):
                 # Compress cube along the -1 axis
                 if missing_pictures > 0:
                     cube = cube[:, :, 0:-missing_pictures]
-                    deviation = n.ma.empty_like(cube, dtype = n.float)
                 
                 # All pixels under the beamblock, after shifting the images around
                 # These pixels will not contribute to the integrated intensity later
                 cube[beamblock_mask, :] = n.ma.masked
 
                 # Perform statistical test for outliers using estimator function
-                n.ma.abs(cube - cube.mean(axis = -1, keepdims = True), out = deviation) 
-                cube[deviation > 3*cube.std(axis = -1, keepdims = True)] = n.ma.masked    # values beyond 3 std are invalid
+                # values beyond 3 std are invalid
+                cube[cube - cube.mean(axis = -1, keepdims = True) > 3*cube.std(axis = -1, keepdims = True)] = n.ma.masked
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
                 # Then, the data cube is normalized such that each slice has the same integrated intensity
                 # int_intensities might contain NaNs due to missing pictures
-                int_intensities = n.ma.sum(n.ma.sum(cube, axis = 0, dtype = n.float, keepdims = True), axis = 1, dtype = n.float, keepdims = True)
-                int_intensities /= n.ma.mean(int_intensities, dtype = n.float)
-                cube /= int_intensities
+                int_intensities = n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float), axis = 1, keepdims = True, dtype = n.float)
+                int_intensities /= n.ma.mean(int_intensities)
+                averaged = n.ma.average(cube, axis = 2, weights = 1/int_intensities.ravel())
 
-                # Store average along axis 2
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
-                mean = cube.mean(axis = -1)
-                gp.create_dataset(name = 'intensity', data = n.ma.getdata(mean), dtype = n.float)
+                gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float)
                 # TODO: include error. Can we approximate the error as intensity/sqrt(nscans) ? Otherwise we
                 #       need to store an entire array for error, per timedelay... Doubles the size of dataset.
 

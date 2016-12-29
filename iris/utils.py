@@ -136,6 +136,7 @@ def average_tiff(directory, wildcard, background = None):
     # average - background
     return image/len(image_list) - background
 
+MASK_CACHE = dict()
 def find_center(image, guess_center, radius, window_size = 10, ring_width = 5):
     """
     Find the best guess for diffraction center.
@@ -164,12 +165,13 @@ def find_center(image, guess_center, radius, window_size = 10, ring_width = 5):
     reduced = image[yc - extra:yc + extra, xc - extra:xc + extra]
     xx = xx[yc - extra:yc + extra, xc - extra:xc + extra]
     yy = yy[yc - extra:yc + extra, xc - extra:xc + extra]
-    rr = n.empty_like(xx)
 
     def integrated(c):
         """ Integrate intensity over the ring """
-        rr[:] = n.sqrt((xx - c[0])**2 + (yy - c[1])**2)
-        return reduced[n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)].sum()
+        if c not in MASK_CACHE:
+            rr = n.sqrt((xx - c[0])**2 + (yy - c[1])**2)
+            MASK_CACHE[c] = n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)
+        return reduced[MASK_CACHE[c]].sum()
     
     # TODO: average centers with the same max intensity
     (best_x, best_y), _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
