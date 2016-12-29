@@ -10,6 +10,7 @@ from os.path import join, isfile, isdir
 from os import listdir 
 import re
 import sys
+from datetime import datetime as dt
 from warnings import warn
 
 from . import cached_property
@@ -230,6 +231,7 @@ class RawDataset(object):
         if compression:
             ckwargs = {'compression' : compression, 'chunks' : True, 'shuffle' : True, 'fletcher32' : True}
         
+        start_time = dt.now()
         with DiffractionDataset(name = filename, mode = 'w') as processed:
 
             # Copy experimental parameters
@@ -294,8 +296,7 @@ class RawDataset(object):
                 # Before concatenation, shift around for center
                 cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.uint16, fill_value = 0.0)
 
-                missing_pictures = 0
-                slice_index = 0
+                missing_pictures, slice_index = 0, 0
                 for scan in self.nscans:
                     try:
                         image = self.raw_data(timedelay, scan) - pumpon_background
@@ -314,7 +315,7 @@ class RawDataset(object):
                     slice_index += 1
                 
                 # cube possibly has some empty slices due to missing pictures
-                # Compress cube along the -1 axis
+                # Compress cube along axis 2
                 if missing_pictures > 0:
                     cube = cube[:, :, 0:-missing_pictures]
                 
@@ -324,7 +325,7 @@ class RawDataset(object):
 
                 # Perform statistical test for outliers using estimator function
                 # values beyond 3 std are invalid
-                cube[cube - cube.mean(axis = -1, keepdims = True) > 3*cube.std(axis = -1, keepdims = True)] = n.ma.masked
+                cube[cube - cube.mean(axis = -1, keepdims = True) > 3*cube.std(axis = -1, keepdims = True, dtype = n.float)] = n.ma.masked
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
@@ -349,4 +350,5 @@ class RawDataset(object):
                 processed._compute_angular_averages(**ckwargs)
 
         callback(100)
+        print('Processing has taken {}'.format(str(dt.now() - start_time)))
         return filename

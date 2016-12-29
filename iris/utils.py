@@ -171,7 +171,7 @@ def find_center(image, guess_center, radius, window_size = 10, ring_width = 5):
         if c not in MASK_CACHE:
             rr = n.sqrt((xx - c[0])**2 + (yy - c[1])**2)
             MASK_CACHE[c] = n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)
-        return reduced[MASK_CACHE[c]].sum()
+        return 1/(1+reduced[MASK_CACHE[c]].sum())
     
     # TODO: average centers with the same max intensity
     (best_x, best_y), _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
