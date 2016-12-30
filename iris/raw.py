@@ -2,7 +2,6 @@
 """
 @author: Laurent P. René de Cotret
 """
-from datetime import datetime
 import glob
 import numpy as n
 from os.path import join, isfile, isdir
@@ -195,8 +194,8 @@ class RawDataset(object):
         
         return read(join(self.raw_directory, filename))
     
-    def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', 
-                sample_type = 'powder', callback = None, window_size = 10, cc = False):
+    def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', sample_type = 'powder', 
+                callback = None, cc = False, window_size = 10, ring_width = 5):
         """
         Processes raw data into something useable by iris.
         
@@ -215,11 +214,13 @@ class RawDataset(object):
         callback : callable or None, optional
             Callable with one argument executed at the end of each time-delay processing.
             Argument will be the progress as an integer between 0 and 100.
-        window_size : int, optional
-            Number of pixels the center is allowed to vary.
         cc : bool, optional
             Center correction flag. If True, images are shifted before
             processing to account for electron beam drift.
+        window_size : int, optional
+            Number of pixels the center is allowed to vary.
+        ring_width : int, optional
+            Width of the ring over which the intensity integral is calculated.
         
         Returns
         -------
@@ -304,7 +305,7 @@ class RawDataset(object):
                     corr_i, corr_j = 0, 0
                     if cc:
                         corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
-                                                                       window_size = window_size, ring_width = 5)
+                                                                       window_size = window_size, ring_width = ring_width)
 
                     # Everything along the edges of cube might be invalid due to center correction
                     # These edge values will have been set to ma.masked by the shift() function

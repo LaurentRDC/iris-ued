@@ -7,6 +7,7 @@ import numpy as n
 
 from .utils import spectrum_colors
 from ..nufft import nufft
+from ..utils import fluence
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -47,27 +48,20 @@ class RawDataViewer(QtGui.QWidget):
             if t: self.center_finder.show()
             else: self.center_finder.hide()
 
-        # Processing buttons
-        self.process_as_sc_btn = QtGui.QPushButton('Process as single-crystal')
-        self.process_as_sc_btn.clicked.connect(lambda : self.process_dataset(sample_type = 'single crystal'))
-        self.process_as_sc_btn.setEnabled(False)
-
-        self.process_as_powder_btn = QtGui.QPushButton('Process as powder')
-        self.process_as_powder_btn.clicked.connect(lambda : self.process_dataset(sample_type = 'powder'))
-        self.process_as_powder_btn.setEnabled(False)
+        self.process_btn = QtGui.QPushButton('Processing')
+        self.process_btn.clicked.connect(self.process_dataset)
+        self.process_btn.setEnabled(False)
 
         self.show_tools_btn = QtGui.QPushButton('Show centering tools')
         self.show_tools_btn.setCheckable(True)
         self.show_tools_btn.setChecked(False)
-        self.show_tools_btn.toggled.connect(self.process_as_sc_btn.setEnabled)
-        self.show_tools_btn.toggled.connect(self.process_as_powder_btn.setEnabled)
+        self.show_tools_btn.toggled.connect(self.process_btn.setEnabled)
         self.show_tools_btn.toggled.connect(toggle_mask)
         self.show_tools_btn.toggled.connect(toggle_cf)
 
         buttons = QtGui.QHBoxLayout()
         buttons.addWidget(self.show_tools_btn)
-        buttons.addWidget(self.process_as_sc_btn)
-        buttons.addWidget(self.process_as_powder_btn)
+        buttons.addWidget(self.process_btn)
 
         command_bar = QtGui.QHBoxLayout()
         command_bar.addWidget(QtGui.QLabel('Time-delay (ps):'))
@@ -93,8 +87,8 @@ class RawDataViewer(QtGui.QWidget):
         """ Display a single diffraction pattern. """
         self.raw_viewer.setImage(data, autoLevels = False, autoRange = True)
     
-    @QtCore.pyqtSlot(str)
-    def process_dataset(self, sample_type):
+    @QtCore.pyqtSlot()
+    def process_dataset(self):
         """ 
         Assemble filename and processing information (center, etc.) and send a request
         to process a dataset.
@@ -466,23 +460,38 @@ class ProcessingOptionsDialog(QtGui.QDialog):
 
         self.powder_type_btn.toggled.connect(lambda checked: self.sc_type_btn.setChecked(not checked))
         self.sc_type_btn.toggled.connect(lambda checked: self.powder_type_btn.setChecked(not checked))
+        self.powder_type_btn.setChecked(True)
         
         sample_type_layout = QtGui.QHBoxLayout()
         sample_type_layout.addWidget(self.powder_type_btn)
         sample_type_layout.addWidget(self.sc_type_btn)
 
-        # center correction window size
+        self.center_correction_checkbox = QtGui.QCheckBox('Enable center-correction', parent = self)
+
         self.window_size_cb = QtGui.QComboBox(parent = self)
         self.window_size_cb.addItems(list(map(str, range(0, 20, 1))))
         self.window_size_cb.setCurrentText('10')   # TODO: get default from somewhere?
+        self.window_size_cb.setEnabled(self.center_correction_checkbox.isChecked()) # Initialization
+
+        self.ring_width_cb = QtGui.QComboBox(parent = self)
+        self.ring_width_cb.addItems(list(map(str, range(3, 20, 1))))
+        self.ring_width_cb.setCurrentText('5')   # TODO: get default from somewhere?
+        self.ring_width_cb.setEnabled(self.center_correction_checkbox.isChecked()) # Initialization
+
+        self.center_correction_checkbox.toggled.connect(self.window_size_cb.setEnabled)
+        self.center_correction_checkbox.toggled.connect(self.ring_width_cb.setEnabled)
 
         items = QtGui.QVBoxLayout()
+        items.setAlignment(QtCore.Qt.AlignCenter)
         items.addWidget(QtGui.QLabel('Select HDF5 Compression:', parent = self))
         items.addWidget(self.compression_cb)
-        items.addWidget(QtGui.QLabel('Select sample type:'))
+        items.addWidget(QtGui.QLabel('Select sample type:', parent = self))
         items.addLayout(sample_type_layout)
-        items.addWidget(QtGui.QLabel('Center-correction window size:'))
+        items.addWidget(self.center_correction_checkbox)
+        items.addWidget(QtGui.QLabel('Center-correction window size:', parent = self))
         items.addWidget(self.window_size_cb)
+        items.addWidget(QtGui.QLabel('Center-correction ring width:', parent = self))
+        items.addWidget(self.ring_width_cb)
 
         buttons = QtGui.QHBoxLayout()
         buttons.addWidget(self.save_btn)
@@ -495,10 +504,69 @@ class ProcessingOptionsDialog(QtGui.QDialog):
     
     @QtCore.pyqtSlot()
     def accept(self):
-        filename = self.file_dialog.getSaveFileName()[0]
+        filename = self.file_dialog.getSaveFileName(filter = '*.hdf5')[0]
         self.info_dict.update( {'filename':filename,
                                 'compression': self.compression_cb.currentText(),
                                 'sample_type': 'powder' if self.powder_type_btn.isChecked() else 'single_crystal',
-                                'window_size': int(self.window_size_cb.currentText())} )
+                                'window_size': int(self.window_size_cb.currentText()),
+                                'ring_width': int(self.ring_width_cb.currentText()),
+                                'cc': self.center_correction_checkbox.isChecked()} )
         self.processing_options_signal.emit(self.info_dict)
         super().accept()
+
+class FluenceCalculatorDialog(QtGui.QDialog):
+    """
+    Modal dialog to calculate fluence from laser power
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        parent : QWidget or None, optional
+        """
+        super().__init__(*args, **kwargs)
+        self.setModal(True)
+        self.setWindowTitle('Fluence calculator')
+
+        self.beam_size_x_edit = QtGui.QLineEdit('FWHM x [um]', parent = self)
+        self.beam_size_y_edit = QtGui.QLineEdit('FHMM y [um]', parent = self)
+        self.beam_size_x_edit.textChanged.connect(self.update)
+        self.beam_size_y_edit.textChanged.connect(self.update)
+        beam_size = QtGui.QHBoxLayout()
+        beam_size.addWidget(self.beam_size_x_edit)
+        beam_size.addWidget(self.beam_size_y_edit)
+
+        self.laser_rep_rate_cb = QtGui.QComboBox(parent = self)
+        self.laser_rep_rate_cb.addItems(['50', '100', '200', '250', '500', '1000'])
+        self.laser_rep_rate_cb.setCurrentText('1000')
+        self.laser_rep_rate_cb.currentIndexChanged.connect(self.update)
+
+        self.incident_laser_power_edit = QtGui.QLineEdit('Laser power [mW]', parent = self)
+        self.incident_laser_power_edit.textChanged.connect(self.update)
+
+        self.fluence = QtGui.QLineEdit('Fluence (mJ/cm2)', parent = self)
+        self.fluence.setReadOnly(True)
+
+        self.done_btn = QtGui.QPushButton('Done', self)
+        self.done_btn.clicked.connect(self.accept)
+        self.done_btn.setDefault(True)
+
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addLayout(beam_size)
+        self.layout.addWidget(self.laser_rep_rate_cb)
+        self.layout.addWidget(self.incident_laser_power_edit)
+        self.layout.addWidget(self.fluence)
+        self.layout.addWidget(self.done_btn)
+        self.setLayout(self.layout)
+    
+    @QtCore.pyqtSlot(str)
+    @QtCore.pyqtSlot(int)
+    def update(self, *args):
+        try:
+            f = fluence(float(self.incident_laser_power_edit.text()),
+                        int(self.laser_rep_rate_cb.currentText()),
+                        FWHM = [int(self.beam_size_x_edit.text()), int(self.beam_size_y_edit.text())])
+        except ValueError:  # Could not parse 
+            f = '---'
+        self.fluence.setText(str(f) + ' mJ / cm^2')

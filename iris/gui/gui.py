@@ -14,7 +14,8 @@ from . import pyqtgraph as pg
 from .pyqtgraph import QtCore, QtGui
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 from .controller import IrisController, error_aware
-from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, RawDataViewer, PowderViewer
+from .widgets import (IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, 
+                      RawDataViewer, PowderViewer, FluenceCalculatorDialog)
 from .utils import WorkThread
 
 image_folder = join(dirname(__file__), 'images')
@@ -39,6 +40,7 @@ class Iris(QtGui.QMainWindow):
         self.processed_viewer = ProcessedDataViewer()
         self.powder_viewer = PowderViewer()
         self.status_bar = IrisStatusBar()
+        self.fluence_calculator = FluenceCalculatorDialog(parent = self)
 
         # UI components
         self.error_dialog = QtGui.QErrorMessage(parent = self)
@@ -47,18 +49,22 @@ class Iris(QtGui.QMainWindow):
         self.viewer_stack = QtGui.QTabWidget()
         self.setStatusBar(self.status_bar)
         
-        # Assemble menu from previously-defined actions
-        self.file_menu = self.menu_bar.addMenu('&File')
         
         self.viewer_stack.addTab(self.raw_data_viewer, 'View raw dataset')
         self.viewer_stack.addTab(self.processed_viewer, 'View processed dataset')
         self.viewer_stack.addTab(self.powder_viewer, 'View radial averages')
+        
 
         self.load_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load raw dataset', self)
         self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
-        
+        self.file_menu = self.menu_bar.addMenu('&File')
         self.file_menu.addAction(self.load_raw_dataset_action)
         self.file_menu.addAction(self.load_dataset_action)
+
+        self.fluence_calculator_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Fluence calculator', self)
+        self.fluence_calculator_action.triggered.connect(lambda x: self.fluence_calculator.exec_())
+        self.tools_menu = self.menu_bar.addMenu('&Tools')
+        self.tools_menu.addAction(self.fluence_calculator_action)
 
         # Status bar
         self.controller.status_message_signal.connect(self.status_bar.update_status)

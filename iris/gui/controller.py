@@ -108,6 +108,7 @@ class IrisController(QtCore.QObject):
             else: self.status_message_signal.emit('Dataset processing done.')
         
         self.worker.in_progress_signal.connect(in_progress)
+        self.processing_progress_signal.emit(0)
         self.worker.start()
     
     @error_aware('Powder baseline could not be computed.')
