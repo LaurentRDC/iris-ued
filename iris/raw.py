@@ -2,7 +2,6 @@
 """
 @author: Laurent P. René de Cotret
 """
-
 from datetime import datetime
 import glob
 import numpy as n
@@ -194,10 +193,10 @@ class RawDataset(object):
         str_time = sign + '{0:.2f}'.format(float(timedelay))
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
         
-        return cast_to_16_bits(read(join(self.raw_directory, filename)))
+        return read(join(self.raw_directory, filename))
     
     def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', 
-                sample_type = 'powder', callback = None, window_size = 10):
+                sample_type = 'powder', callback = None, window_size = 10, cc = False):
         """
         Processes raw data into something useable by iris.
         
@@ -218,6 +217,9 @@ class RawDataset(object):
             Argument will be the progress as an integer between 0 and 100.
         window_size : int, optional
             Number of pixels the center is allowed to vary.
+        cc : bool, optional
+            Center correction flag. If True, images are shifted before
+            processing to account for electron beam drift.
         
         Returns
         -------
@@ -279,11 +281,6 @@ class RawDataset(object):
             x1,x2,y1,y2 = beamblock_rect
             beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
             beamblock_mask[y1:y2, x1:x2] = True
-            
-            # truncate the sides of 'cube' along axes (0, 1) due to the
-            # window size of the center finder. Since the center can move by
-            # as much as 'window_size' pixels in both all directions
-            image = n.empty(shape = self.resolution, dtype = n.uint16)
 
             # TODO: parallelize this loop
             #       The only reason it is not right now is that
@@ -294,7 +291,7 @@ class RawDataset(object):
                 # Concatenate time-delay in data cube
                 # Last axis is the scan number
                 # Before concatenation, shift around for center
-                cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.uint16, fill_value = 0.0)
+                cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
 
                 missing_pictures, slice_index = 0, 0
                 for scan in self.nscans:
@@ -304,10 +301,10 @@ class RawDataset(object):
                         warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
                         missing_pictures += 1
                     
-                    corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
-                                                                          window_size = window_size, ring_width = 5)
-                    #corr_i, corr_j = 0, 0
-                    #print('Corrected center is disabled.')
+                    corr_i, corr_j = 0, 0
+                    if cc:
+                        corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
+                                                                       window_size = window_size, ring_width = 5)
 
                     # Everything along the edges of cube might be invalid due to center correction
                     # These edge values will have been set to ma.masked by the shift() function
@@ -325,13 +322,13 @@ class RawDataset(object):
 
                 # Perform statistical test for outliers using estimator function
                 # values beyond 3 std are invalid
-                cube[cube - cube.mean(axis = -1, keepdims = True) > 3*cube.std(axis = -1, keepdims = True, dtype = n.float)] = n.ma.masked
+                cube[cube - cube.mean(axis = -1, keepdims = True, dtype = n.float32) > 3*cube.std(axis = -1, keepdims = True, dtype = n.float32)] = n.ma.masked
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
                 # Then, the data cube is normalized such that each slice has the same integrated intensity
                 # int_intensities might contain NaNs due to missing pictures
-                int_intensities = n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float), axis = 1, keepdims = True, dtype = n.float)
+                int_intensities = n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float32), axis = 1, keepdims = True, dtype = n.float32)
                 int_intensities /= n.ma.mean(int_intensities)
                 averaged = n.ma.average(cube, axis = 2, weights = 1/int_intensities.ravel())
 
