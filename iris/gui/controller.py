@@ -162,5 +162,4 @@ class IrisController(QtCore.QObject):
         if isinstance(self.dataset, PowderDiffractionDataset):
             for attr in PowderDiffractionDataset.analysis_parameter_names:
                 info[attr] = getattr(self.dataset, attr)
-
         self.dataset_info_signal.emit(info)

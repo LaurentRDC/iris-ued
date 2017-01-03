@@ -31,6 +31,33 @@ def log(message, file):
     print(time_stamped)
     print(time_stamped, file = file)
 
+def mask_outliers(arr, axis):
+    """ 
+    Mask outliers estimated by median absolute difference.
+
+    Parameters
+    ----------
+    cube : MaskedArray
+    
+    axis : int, optional
+    
+    Returns
+    -------
+    out : MaskedArray
+    """
+    kwds = {'keepdims': True, 'axis': axis}
+
+    # Consistency constant of 1.4826 due to underlying normal distribution
+    # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
+    med = n.ma.median(arr, **kwds)
+    absdiff = n.ma.abs(arr - med)
+    mad = 1.4826*n.ma.median(absdiff, **kwds)
+    deviations = absdiff/mad
+    deviations[n.isnan(deviations)] = 0
+    arr[deviations > 3] = n.ma.masked
+
+    return arr
+
 class RawDataset(object):
     """
     Wrapper around raw dataset as produced by UEDbeta.
@@ -247,7 +274,7 @@ class RawDataset(object):
             processed.current = self.current
             processed.exposure = self.exposure
             processed.energy = self.energy
-            processed.resolution = self.resolution  # Will be modified later due to center finder
+            processed.resolution = self.resolution
             processed.sample_type = sample_type
             processed.center = center
             processed.beamblock_rect = beamblock_rect
@@ -278,7 +305,6 @@ class RawDataset(object):
 
             # Create beamblock mask right now
             # Evaluates to TRUE on the beamblock
-            # Only valid for images at the FULL RESOLUTION
             x1,x2,y1,y2 = beamblock_rect
             beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
             beamblock_mask[y1:y2, x1:x2] = True
@@ -293,6 +319,7 @@ class RawDataset(object):
                 # Last axis is the scan number
                 # Before concatenation, shift around for center
                 cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
+                cube[beamblock_mask, :] = n.ma.masked
 
                 missing_pictures, slice_index = 0, 0
                 for scan in self.nscans:
@@ -302,14 +329,14 @@ class RawDataset(object):
                         warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
                         missing_pictures += 1
                     
-                    corr_i, corr_j = 0, 0
                     if cc:
                         corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
                                                                        window_size = window_size, ring_width = ring_width)
+                        image = shift(image, int(round(corr_i)), int(round(corr_j)))
 
                     # Everything along the edges of cube might be invalid due to center correction
                     # These edge values will have been set to ma.masked by the shift() function
-                    cube[:,:,slice_index] = shift(image, int(round(corr_i)), int(round(corr_j)))
+                    cube[:,:,slice_index] = image
                     slice_index += 1
                 
                 # cube possibly has some empty slices due to missing pictures
@@ -317,13 +344,8 @@ class RawDataset(object):
                 if missing_pictures > 0:
                     cube = cube[:, :, 0:-missing_pictures]
                 
-                # All pixels under the beamblock, after shifting the images around
-                # These pixels will not contribute to the integrated intensity later
-                cube[beamblock_mask, :] = n.ma.masked
-
-                # Perform statistical test for outliers using estimator function
-                # values beyond 3 std are invalid
-                cube[cube - cube.mean(axis = -1, keepdims = True, dtype = n.float32) > 3*cube.std(axis = -1, keepdims = True, dtype = n.float32)] = n.ma.masked
+                # Mask outliers according to the median-absolute-difference criterion
+                cube = mask_outliers(cube, axis = 2)
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
