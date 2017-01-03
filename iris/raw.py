@@ -7,6 +7,7 @@ import numpy as n
 from os.path import join, isfile, isdir
 from os import listdir 
 import re
+from scipy.stats.mstats import sem
 import sys
 from datetime import datetime as dt
 from warnings import warn
@@ -354,11 +355,12 @@ class RawDataset(object):
                 int_intensities = n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float32), axis = 1, keepdims = True, dtype = n.float32)
                 int_intensities /= n.ma.mean(int_intensities)
                 averaged = n.ma.average(cube, axis = 2, weights = 1/int_intensities.ravel())
+                error = sem(cube/int_intensities, axis = 2)
 
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
-                gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float)
-                # TODO: include error. Can we approximate the error as intensity/sqrt(nscans) ? Otherwise we
-                #       need to store an entire array for error, per timedelay... Doubles the size of dataset.
+                gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float32)
+                gp.create_dataset(name = 'error', data = n.ma.filled(error, 0), dtype = n.float32)
+                # Do we really need to store an entire array for the error?
 
                 callback(round(100*i / len(self.time_points)))
         # Extra step for powder data: angular average
