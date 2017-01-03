@@ -148,9 +148,31 @@ class DiffractionDataset(h5py.File):
         arr : ndarray or None
             Time-delay data. If out is provided, None is returned.
         """
-        # TODO: return error somehow
         timedelay = str(float(timedelay))
         dataset = self.processed_measurements_group[timedelay]['intensity']
+        if out:
+            return dataset.read_direct(array = out, source_sel = n.s_[:,:], dest_sel = n.s_[:,:])
+        return n.array(dataset)
+    
+    def averaged_error(self, timedelay, out = None):
+        """ 
+        Returns error in measurement.
+
+        Parameters
+        ----------
+        timdelay : float
+            Timedelay [ps]
+        out : ndarray or None, optional
+            If an out ndarray is provided, h5py can avoid
+            making intermediate copies.
+        
+        Returns
+        -------
+        arr : ndarray or None
+            Time-delay error. If out is provided, None is returned.
+        """
+        timedelay = str(float(timedelay))
+        dataset = self.processed_measurements_group[timedelay]['error']
         if out:
             return dataset.read_direct(array = out, source_sel = n.s_[:,:], dest_sel = n.s_[:,:])
         return n.array(dataset)
