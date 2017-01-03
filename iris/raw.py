@@ -32,33 +32,6 @@ def log(message, file):
     print(time_stamped)
     print(time_stamped, file = file)
 
-def mask_outliers(arr, axis):
-    """ 
-    Mask outliers estimated by median absolute difference.
-
-    Parameters
-    ----------
-    cube : MaskedArray
-    
-    axis : int, optional
-    
-    Returns
-    -------
-    out : MaskedArray
-    """
-    kwds = {'keepdims': True, 'axis': axis}
-
-    # Consistency constant of 1.4826 due to underlying normal distribution
-    # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
-    med = n.ma.median(arr, **kwds)
-    absdiff = n.ma.abs(arr - med)
-    mad = 1.4826*n.ma.median(absdiff, **kwds)
-    deviations = absdiff/mad
-    deviations[n.isnan(deviations)] = 0
-    arr[deviations > 3] = n.ma.masked
-
-    return arr
-
 class RawDataset(object):
     """
     Wrapper around raw dataset as produced by UEDbeta.
@@ -223,7 +196,7 @@ class RawDataset(object):
         return read(join(self.raw_directory, filename))
     
     def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', sample_type = 'powder', 
-                callback = None, cc = False, window_size = 10, ring_width = 5):
+                callback = None, cc = True, window_size = 10, ring_width = 5):
         """
         Processes raw data into something useable by iris.
         
@@ -346,25 +319,30 @@ class RawDataset(object):
                     cube = cube[:, :, 0:-missing_pictures]
                 
                 # Mask outliers according to the median-absolute-difference criterion
-                cube = mask_outliers(cube, axis = 2)
+                # Consistency constant of 1.4826 due to underlying normal distribution
+                # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
+                absdiff = n.ma.abs(cube - n.ma.median(cube, axis = 2, keepdims = True))
+                mad = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)
+                cube[absdiff > 3*mad] = n.ma.masked
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
                 # Then, the data cube is normalized such that each slice has the same integrated intensity
-                # int_intensities might contain NaNs due to missing pictures
                 int_intensities = n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float32), axis = 1, keepdims = True, dtype = n.float32)
                 int_intensities /= n.ma.mean(int_intensities)
-                averaged = n.ma.average(cube, axis = 2, weights = 1/int_intensities.ravel())
-                error = sem(cube/int_intensities, axis = 2)
+                equalized = cube / int_intensities
 
+                # TODO: Do we really need to store an entire array for the error?
+                averaged = n.ma.mean(equalized, axis = 2)
+                error = sem(equalized, axis = 2)
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
                 gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float32)
                 gp.create_dataset(name = 'error', data = n.ma.filled(error, 0), dtype = n.float32)
-                # Do we really need to store an entire array for the error?
 
                 callback(round(100*i / len(self.time_points)))
+
         # Extra step for powder data: angular average
-        # We already have the (reduced) center + beamblock info
+        # We already have the center + beamblock info
         # scattering length is the same for all time-delays 
         # since the center and beamblock_rect don't change.
         if sample_type == 'powder':
