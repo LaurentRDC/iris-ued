@@ -12,6 +12,7 @@ import sys
 
 from . import pyqtgraph as pg
 from .pyqtgraph import QtCore, QtGui
+from .qdarkstyle import load_stylesheet_pyqt5
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 from .controller import IrisController, error_aware
 from .widgets import (IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, 
@@ -22,6 +23,7 @@ image_folder = join(dirname(__file__), 'images')
 
 def run():
     app = QtGui.QApplication(sys.argv)
+    app.setStyleSheet(load_stylesheet_pyqt5())
     app.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
     gui = Iris()
     sys.exit(app.exec_())
