@@ -51,11 +51,9 @@ class Iris(QtGui.QMainWindow):
         self.viewer_stack = QtGui.QTabWidget()
         self.setStatusBar(self.status_bar)
         
-        
         self.viewer_stack.addTab(self.raw_data_viewer, 'View raw dataset')
         self.viewer_stack.addTab(self.processed_viewer, 'View processed dataset')
         self.viewer_stack.addTab(self.powder_viewer, 'View radial averages')
-        
 
         self.load_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load raw dataset', self)
         self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
@@ -65,8 +63,11 @@ class Iris(QtGui.QMainWindow):
 
         self.fluence_calculator_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Fluence calculator', self)
         self.fluence_calculator_action.triggered.connect(lambda x: self.fluence_calculator.exec_())
+        self.autoindexing_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Autoindexing', self)
+        self.autoindexing_action.setEnabled(False)
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.tools_menu.addAction(self.fluence_calculator_action)
+        self.tools_menu.addAction(self.autoindexing_action)
 
         # Status bar
         self.controller.status_message_signal.connect(self.status_bar.update_status)
