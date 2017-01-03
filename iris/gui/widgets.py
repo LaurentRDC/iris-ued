@@ -262,23 +262,26 @@ class PowderViewer(QtGui.QWidget):
         ----------
         info : dict 
         """
+        if info['sample_type'] != 'powder':
+            return
+
         self.dataset_info.update(info)
 
-        # Update GUI 
         self.compute_baseline_btn.setEnabled(True)  # info is updated as soon as a dataset is available
         self.first_stage_cb.setEnabled(True)
-        self.first_stage_cb.setCurrentText(self.dataset_info['first_stage'])
-
         self.wavelet_cb.setEnabled(True)
-        self.wavelet_cb.setCurrentText(self.dataset_info['wavelet'])
+
+        self.baseline_removed_btn.setEnabled(self.dataset_info['baseline_removed'])
+        self.baseline_removed_btn.setChecked(self.dataset_info['baseline_removed'])
+
+        if self.dataset_info['baseline_removed']:
+            self.first_stage_cb.setCurrentText(self.dataset_info['first_stage'])
+            self.wavelet_cb.setCurrentText(self.dataset_info['wavelet'])
 
         # Cache some info
         self._colors = list(spectrum_colors(len(info['time_points'])))
         self._pens = list(map(pg.mkPen, self._colors))
         self._brushes = list(map(pg.mkBrush, self._colors))
-
-        self.baseline_removed_btn.setEnabled(self.dataset_info['baseline_removed'])
-        self.baseline_removed_btn.setChecked(self.dataset_info['baseline_removed'])
     
     @property
     def time_points(self):
@@ -447,7 +450,7 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         self.file_dialog = QtGui.QFileDialog(parent = self)
 
         # HDF5 compression
-        # TODO: determine automatically?
+        # TODO: determine automatically legal values?
         self.compression_cb = QtGui.QComboBox(parent = self)
         self.compression_cb.addItems(['lzf', 'gzip'])
         self.compression_cb.setCurrentText('lzf')
@@ -458,8 +461,8 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         self.sc_type_btn = QtGui.QPushButton('Single crystal', parent = self)
         self.sc_type_btn.setCheckable(True)
 
-        self.powder_type_btn.toggled.connect(lambda checked: self.sc_type_btn.setChecked(not checked))
-        self.sc_type_btn.toggled.connect(lambda checked: self.powder_type_btn.setChecked(not checked))
+        self.powder_type_btn.clicked.connect(lambda checked: self.sc_type_btn.setChecked(not checked))
+        self.sc_type_btn.clicked.connect(lambda checked: self.powder_type_btn.setChecked(not checked))
         self.powder_type_btn.setChecked(True)
         
         sample_type_layout = QtGui.QHBoxLayout()
