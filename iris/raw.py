@@ -283,6 +283,20 @@ class RawDataset(object):
             beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
             beamblock_mask[y1:y2, x1:x2] = True
 
+            # Preallocation
+            # The following arrays might be resized if there are missing pictures
+            # but preventing copying can save about 10%
+            cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
+            equalized = n.ma.empty_like(cube, dtype = n.float32)
+            absdiff = n.ma.empty_like(cube, dtype = n.float32)
+            int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
+            averaged = n.ma.empty(shape = self.resolution, dtype = n.float32)
+            error = n.ma.empty_like(averaged)
+            mad = n.ma.empty(shape = self.resolution + (1,), dtype = n.float32)
+
+            equalized[beamblock_mask, :] = n.ma.masked
+            averaged[beamblock_mask] = n.ma.masked
+
             # TODO: parallelize this loop
             #       The only reason it is not right now is that
             #       each branch of the loop uses ~ 6GBs of RAM for
@@ -292,9 +306,6 @@ class RawDataset(object):
                 # Concatenate time-delay in data cube
                 # Last axis is the scan number
                 # Before concatenation, shift around for center
-                cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
-                cube[beamblock_mask, :] = n.ma.masked
-
                 missing_pictures, slice_index = 0, 0
                 for scan in self.nscans:
                     try:
@@ -312,33 +323,48 @@ class RawDataset(object):
                     # These edge values will have been set to ma.masked by the shift() function
                     cube[:,:,slice_index] = image
                     slice_index += 1
-                
+                    
                 # cube possibly has some empty slices due to missing pictures
                 # Compress cube along axis 2
                 if missing_pictures > 0:
                     cube = cube[:, :, 0:-missing_pictures]
+                    equalized = n.ma.empty_like(cube, dtype = n.float32)
+                    absdiff = n.ma.empty_like(cube, dtype = n.float32)
+                    int_intensities = n.empty(shape = (1,1,len(self.nscans) - missing_pictures), dtype = n.float32)
+                
+                # Setting elements inside cube will reset the mask
+                # Therefore, we assign it again
+                cube[beamblock_mask, :] = n.ma.masked
+                equalized[beamblock_mask, :] = n.ma.masked
                 
                 # Mask outliers according to the median-absolute-difference criterion
                 # Consistency constant of 1.4826 due to underlying normal distribution
                 # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
-                absdiff = n.ma.abs(cube - n.ma.median(cube, axis = 2, keepdims = True))
-                mad = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)
+                n.ma.abs(cube - n.ma.median(cube, axis = 2, keepdims = True), out = absdiff)
+                mad[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug
                 cube[absdiff > 3*mad] = n.ma.masked
 
                 # Normalize data cube intensity
                 # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
                 # Then, the data cube is normalized such that each slice has the same integrated intensity
-                int_intensities = n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float32), axis = 1, keepdims = True, dtype = n.float32)
+                n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float32), axis = 1, keepdims = True, dtype = n.float32, out = int_intensities)
                 int_intensities /= n.ma.mean(int_intensities)
-                equalized = cube / int_intensities
+                equalized[:] = cube / int_intensities   # Cannot do this in place on cube, as cube.dtype = n.int32
 
                 # TODO: Do we really need to store an entire array for the error?
-                averaged = n.ma.mean(equalized, axis = 2)
-                error = sem(equalized, axis = 2)
+                averaged[:] = n.ma.mean(equalized, axis = 2) # out = averaged bug
+                error[:] = sem(equalized, axis = 2)
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
                 gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float32)
                 gp.create_dataset(name = 'error', data = n.ma.filled(error, 0), dtype = n.float32)
 
+                # Resize arrays back to most probable shape
+                if missing_pictures > 0:
+                    cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
+                    equalized = n.ma.empty_like(cube, dtype = n.float32)
+                    absdiff = n.ma.empty_like(cube, dtype = n.float32)
+                    int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
+                
                 callback(round(100*i / len(self.time_points)))
 
         # Extra step for powder data: angular average
