@@ -190,46 +190,25 @@ def angular_average(image, center, beamblock_rect, error = None, mask = None):
     beamblock_rect : Tuple, shape (4,)
         Tuple containing x- and y-bounds (in pixels) for the beamblock mask
         mast_rect = (x1, x2, y1, y2)
-    error : ndarray or None, optional
-        Error in pixel counts.
-    mask : ndarray or None, optional
-        Array of booleans that evaluates to False on pixels that should be discarded.
-        If None (default), all pixels are treated as valid (except for beamblock)
         
     Returns
     -------
     radius : ndarray, shape (N,)
     intensity : ndarray, shape (N,)
     error : ndarray, shape (N,)
-    
-    Raises
-    ------
-    ValueError
-        If 'mask' is an array of a different shape than the image shape.
     """    
-    #preliminaries
-    if error is None:
-        error = n.zeros_like(image, dtype = n.float)
-
-    if mask is None:
-        mask = n.ones_like(image, dtype = n.bool)
-    elif mask.shape != image.shape:
-        raise ValueError("'mask' array (shape {}) must have the same shape as 'image' (shape {})".format(mask.shape, image.shape))
-    
     image = image.astype(n.float)
-    mask = mask.astype(n.bool)
     
     xc, yc = center     #Center coordinates
     x1, x2, y1, y2 = beamblock_rect     
     
     #Create meshgrid and compute radial positions of the data
     X, Y = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
-    R = n.sqrt( (X - xc)**2 + (Y - yc)**2 )
+    R = n.rint(n.sqrt( (X - xc)**2 + (Y - yc)**2 )).astype(n.int)
     
     #radii beyond r_max don't fit a full circle within the image
     r_max = min((X.max()/2, Y.max()/2))           #Maximal radius that fits completely in the image
-    
-    r_min = 0 # = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
+    r_min = 0
     if x1 < xc < x2 and y1 < yc < y2:
         r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
 
@@ -238,25 +217,28 @@ def angular_average(image, center, beamblock_rect, error = None, mask = None):
     # values are used as weights in numpy.bincount
     # Create a composite mask that uses the pixels mask, beamblock mask, and maximum/minimum
     # radii     
-    composite_mask = n.array(mask, dtype = n.bool)      # start from the pixel mask
-    composite_mask[R > r_max] = False
-    composite_mask[R < r_min] = False
-    composite_mask[x1:x2, y1:y2] = False
-    image[ n.logical_not(composite_mask) ] = 0    # composite_mask is false where pixels should be disregarded
+    composite_mask = n.zeros_like(image, dtype = n.bool)
+    composite_mask[R > r_max] = True
+    composite_mask[R < r_min] = True
+    composite_mask[x1:x2, y1:y2] = True
+    image[ composite_mask ] = 0
     
-    #average
-    px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
-    r_bin = n.bincount(R.ravel().astype(n.int))  
+    # Angular average
+    px_bin = n.bincount(R.ravel(), weights = image.ravel())
+    r_bin = n.bincount(R.ravel())
     radial_intensity = px_bin/r_bin
-    
-    # Compute the error as square-root-N
-    radial_intensity_error = n.sqrt(px_bin)/r_bin
-    
+
+    # Error as the standard error in the mean, at each pixel
+    # Standard error = std / sqrt(N)
+    # std = sqrt(var - mean**2)
+    # take a look here: http://bit.ly/2hRk3O4
+    var_bin = n.bincount(R.ravel(), weights = image.ravel()**2)/r_bin
+    radial_intensity_error = n.sqrt(var_bin - radial_intensity**2)/n.sqrt(r_bin)
+
     # Only return values with radius between r_min and r_max
-    radius = n.unique(R.ravel().astype(n.int))      # Round up to integer number of pixel
+    radius = n.unique(R)
     r_max_index = n.argmin(n.abs(r_max - radius))
     r_min_index = n.argmin(n.abs(r_min - radius))
-    
     return radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index], radial_intensity_error[r_min_index + 1:r_max_index]
 
 def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2235):

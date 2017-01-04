@@ -344,6 +344,10 @@ class RawDataset(object):
             mad[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug
             cube[absdiff > 3*mad] = n.ma.masked
 
+            # Get error from counting statistics
+            # This must be done before normalization of intensity
+            error[:] = n.ma.sqrt(n.ma.sum(cube, axis = 2, dtype = n.int32))/n.sum(n.logical_not(cube.mask), axis = 2)
+
             # Normalize data cube intensity
             # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
             # Then, the data cube is normalized such that each slice has the same integrated intensity
@@ -351,9 +355,7 @@ class RawDataset(object):
             int_intensities /= n.ma.mean(int_intensities)
             equalized[:] = cube / int_intensities   # Cannot do this in place on cube, as cube.dtype = n.int32
 
-            # TODO: Do we really need to store an entire array for the error?
             averaged[:] = n.ma.mean(equalized, axis = 2) # out = averaged bug
-            error[:] = sem(equalized, axis = 2)
             with DiffractionDataset(name = filename, mode = 'r+') as processed:
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
                 gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float32, **ckwargs)
