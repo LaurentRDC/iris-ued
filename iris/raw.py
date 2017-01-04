@@ -376,7 +376,7 @@ class RawDataset(object):
         # since the center and beamblock_rect don't change.
         if sample_type == 'powder':
             with PowderDiffractionDataset(name = filename, mode = 'r+') as processed:
-                processed._compute_angular_averages(**ckwargs)
+                processed._compute_angular_averages()
 
         callback(100)
         print('Processing has taken {}'.format(str(dt.now() - start_time)))
