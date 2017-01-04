@@ -241,9 +241,9 @@ class PowderDiffractionDataset(DiffractionDataset):
     def scattering_length(self):
         return n.array(self.powder_group['scattering_length'])
 
-    def powder_data(self, timedelay, bgr = False):
+    def powder_data(self, timedelay, bgr = False, out = None):
         """
-        Returns the radial average data from scan-averaged diffraction patterns.
+        Returns the angular average data from scan-averaged diffraction patterns.
 
         Parameters
         ----------
@@ -251,12 +251,47 @@ class PowderDiffractionDataset(DiffractionDataset):
             Time-delay [ps].
         bgr : bool
             If True, background is removed.
+        out : ndarray or None, optional
+            If an out ndarray is provided, h5py can avoid
+            making intermediate copies.
         
         Returns
         -------
-        s, I, e : ndarrays, shapes (N,)
-            1D arrays for the scattering length [1/Angs], 
-            diffracted intensity [counts] and error [counts].
+        I : ndarray, shape (N,)
+            Diffracted intensity [counts]
+        
+        See also
+        --------
+        powder_data_block
+            All time-delay powder diffraction data into 2D arrays.
+        """
+        # I'm not sure how to handle out parameter if bgr is True
+        # out has no effect if bgr = True
+        timedelay = str(float(timedelay))
+        dataset = self.powder_group[timedelay]['intensity']
+        if not bgr and out:
+            return dataset.read_direct(array = out)
+        elif bgr:
+            return n.array(dataset) - self.baseline(timedelay)
+        else:
+            return n.array(dataset)
+    
+    def powder_error(self, timedelay, out = None):
+        """
+        Returns the angular average error from scan-averaged diffraction patterns.
+
+        Parameters
+        ----------
+        timdelay : float
+            Time-delay [ps].
+        out : ndarray or None, optional
+            If an out ndarray is provided, h5py can avoid
+            making intermediate copies.
+        
+        Returns
+        -------
+        out : ndarray, shape (N,)
+            Error in diffracted intensity [counts].
         
         See also
         --------
@@ -264,12 +299,28 @@ class PowderDiffractionDataset(DiffractionDataset):
             All time-delay powder diffraction data into 2D arrays.
         """
         timedelay = str(float(timedelay))
-        gp = self.powder_group[timedelay]
-        if bgr:
-            return (self.scattering_length,
-                    n.array(gp['intensity']) - self.baseline(timedelay),
-                    n.array(gp['error']))
-        return self.scattering_length, n.array(gp['intensity']), n.array(gp['error'])
+        dataset = self.powder_group[timedelay]['error']
+        if out:
+            return dataset.read_direct(array = out)
+        return n.array(dataset)
+
+    def baseline(self, timedelay):
+        """ 
+        Returns the baseline data 
+
+        Parameters
+        ----------
+        timdelay : float
+            Time-delay [ps].
+        
+        Returns
+        -------
+        out : ndarray
+        """
+        try:
+            return n.array(self.powder_group[str(float(timedelay))]['baseline'])
+        except KeyError:
+            return n.zeros_like(self.scattering_length)
     
     def powder_dynamics(self, s1, s2, bgr = False):
         """ 
@@ -298,7 +349,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         dynamics = n.empty(shape = (i_max - i_min, len(self.time_points)), dtype = n.float)
         for index, timedelay in enumerate(self.time_points):
-            dynamics[:, index] = self.powder_data(timedelay, bgr)[1][i_min:i_max]
+            dynamics[:, index] = self.powder_data(timedelay, bgr)[i_min:i_max]
         
         # Integral over scattering length range
         ds = (s2 - s1)/(i_max - i_min)
@@ -315,33 +366,17 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         Returns
         -------
-        s, I, e : ndarrays, shapes (N, M)
+        s : ndarray, shape (N,)
+        I, e : ndarrays, shapes (N, M)
         """
         data_block = n.empty(shape = (len(self.time_points), self.scattering_length.size), dtype = n.float)
         error_block = n.empty_like(data_block)
 
         for row, timedelay in enumerate(self.time_points):
-            _, data_block[row, :], error_block[row, :] = self.powder_data(timedelay, bgr = bgr)
+            data_block[row, :] = self.powder_data(timedelay, bgr = bgr)
+            error_block[row, :] = self.powder_error(timedelay)
         
         return self.scattering_length, data_block, error_block
-    
-    def baseline(self, timedelay):
-        """ 
-        Returns the baseline data 
-
-        Parameters
-        ----------
-        timdelay : float
-            Time-delay [ps].
-        
-        Returns
-        -------
-        out : ndarray
-        """
-        try:
-            return n.array(self.powder_group[str(float(timedelay))]['baseline'])
-        except KeyError:
-            return n.zeros_like(self.scattering_length)
     
     def compute_baseline(self, first_stage, wavelet, max_iter = 100, level = 'max'):
         """
@@ -359,8 +394,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         level : int or 'max', optional
         """
         for timedelay in self.time_points:
-            _, intensity, _ = self.powder_data(timedelay)
-            background = dualtree.baseline(array = intensity, max_iter = max_iter, 
+            background = dualtree.baseline(array = self.powder_data(timdelay), max_iter = max_iter, 
                                            level = level, first_stage = first_stage,
                                            wavelet = wavelet, background_regions = tuple(),
                                            mask = None)
