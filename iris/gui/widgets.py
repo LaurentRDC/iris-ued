@@ -59,9 +59,10 @@ class RawDataViewer(QtGui.QWidget):
         self.show_tools_btn.toggled.connect(toggle_mask)
         self.show_tools_btn.toggled.connect(toggle_cf)
 
-        buttons = QtGui.QHBoxLayout()
-        buttons.addWidget(self.show_tools_btn)
-        buttons.addWidget(self.process_btn)
+        process_bar = QtGui.QGridLayout()
+        process_bar.addWidget(self.show_tools_btn,0,0)
+        process_bar.addWidget(self.process_btn,0,1)
+        process_bar.addWidget(self.processing_progress_bar, 0, 2, 1, 4)
 
         command_bar = QtGui.QHBoxLayout()
         command_bar.addWidget(QtGui.QLabel('Time-delay (ps):'))
@@ -76,8 +77,7 @@ class RawDataViewer(QtGui.QWidget):
         self.mask.hide(), self.center_finder.hide()
 
         self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(self.processing_progress_bar)
-        self.layout.addLayout(buttons)
+        self.layout.addLayout(process_bar)
         self.layout.addWidget(self.raw_viewer)
         self.layout.addLayout(command_bar)
         self.setLayout(self.layout)

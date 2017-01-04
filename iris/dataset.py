@@ -394,7 +394,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         level : int or 'max', optional
         """
         for timedelay in self.time_points:
-            background = dualtree.baseline(array = self.powder_data(timdelay), max_iter = max_iter, 
+            background = dualtree.baseline(array = self.powder_data(timedelay), max_iter = max_iter, 
                                            level = level, first_stage = first_stage,
                                            wavelet = wavelet, background_regions = tuple(),
                                            mask = None)
@@ -425,8 +425,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         Compute the angular averages. This method is only called by RawDataset.process
         """
         for timedelay in self.time_points:
-            px_radius, intensity, error = angular_average(n.array(self.averaged_data(timedelay)), 
-                                                            center = self.center, beamblock_rect = self.beamblock_rect)
+            px_radius, intensity, error = angular_average(self.averaged_data(timedelay), 
+                                                            center = self.center, beamblock_rect = self.beamblock_rect, 
+                                                            error = self.averaged_error(timedelay))
             gp = self.powder_group.create_group(name = str(timedelay))
 
             # Error in the powder pattern = image_data / sqrt(nscans) * sqrt(# of pixels at this radius)
