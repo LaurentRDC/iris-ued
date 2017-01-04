@@ -119,6 +119,7 @@ class RawDataViewer(QtGui.QWidget):
             lambda info_dict: self.process_dataset_signal.emit(info_dict))
         
         success = self.processing_options_dialog.exec_()
+        self.show_tools_btn.setChecked(False)   # Remove tools from view
         if not success:
             self.error_message_signal.emit('Processing options could not be set.')
     
@@ -314,6 +315,7 @@ class PowderViewer(QtGui.QWidget):
         for pen, brush, curve in zip(self._pens, self._brushes, powder_data_block):
             self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
+        
         self.peak_dynamics_region.setBounds([self.scattering_length.min(), self.scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
         self._update_peak_dynamics()
@@ -329,8 +331,9 @@ class PowderViewer(QtGui.QWidget):
         i_min, i_max = n.argmin(n.abs(self.scattering_length - min_s)), n.argmin(n.abs(self.scattering_length - max_s)) + 1
 
         integrated = self.powder_data_block[:, i_min:i_max].sum(axis = 1)
+        integrated_error =  n.sqrt(n.square(self.error_block[:, i_min:i_max]).sum(axis = 1))/(i_max - i_min)
+        self.peak_dynamics_errors = integrated_error/integrated.max() if integrated.max() > 0.0 else integrated_error
         self.peak_dynamics = integrated/integrated.max() if integrated.max() > 0.0 else integrated
-        self.peak_dynamics_errors = n.zeros_like(integrated) #n.sqrt(n.sum(n.square(self.error_block[:, i_min:i_max]), axis = 1))
         
         self._update_peak_dynamics_plot()
         self._update_time_series()
@@ -474,15 +477,14 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         self.window_size_cb = QtGui.QComboBox(parent = self)
         self.window_size_cb.addItems(list(map(str, range(0, 20, 1))))
         self.window_size_cb.setCurrentText('10')   # TODO: get default from somewhere?
-        self.window_size_cb.setEnabled(self.center_correction_checkbox.isChecked()) # Initialization
 
         self.ring_width_cb = QtGui.QComboBox(parent = self)
         self.ring_width_cb.addItems(list(map(str, range(3, 20, 1))))
         self.ring_width_cb.setCurrentText('5')   # TODO: get default from somewhere?
-        self.ring_width_cb.setEnabled(self.center_correction_checkbox.isChecked()) # Initialization
 
         self.center_correction_checkbox.toggled.connect(self.window_size_cb.setEnabled)
         self.center_correction_checkbox.toggled.connect(self.ring_width_cb.setEnabled)
+        self.center_correction_checkbox.setChecked(True)    # Default
 
         items = QtGui.QVBoxLayout()
         items.setAlignment(QtCore.Qt.AlignCenter)

@@ -60,7 +60,6 @@ class TestAngularAverage(unittest.TestCase):
         beamblock_rect = (120, 136, 120, 136)
 
         s, i, e = angular_average(image, (xc, yc), beamblock_rect)
-        self.assertTrue(len(i) + 2 == 120)  # angular_average omits the largest and smallest radii
 
 class TestFindCenter(unittest.TestCase):
 
