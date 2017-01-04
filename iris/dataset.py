@@ -76,12 +76,6 @@ class AnalysisParameter(object):
 class DiffractionDataset(h5py.File):
     """
     Abstraction of an HDF5 file to represent diffraction datasets.
-
-    Attributes
-    ----------
-    experimental_parameters_group
-
-    processed_measurements_group
     """
 
     _processed_group_name = '/processed'
@@ -91,7 +85,6 @@ class DiffractionDataset(h5py.File):
     experimental_parameter_names = ('nscans', 'time_points', 'acquisition_date', 'fluence', 
                                     'current', 'exposure', 'energy', 'resolution', 'center',
                                     'sample_type', 'beamblock_rect')
-
     
     # Experimental parameters as descriptors
     nscans = ExperimentalParameter('nscans', tuple)
@@ -124,11 +117,14 @@ class DiffractionDataset(h5py.File):
     @cached_property
     def compression_opts(self):
         """ Compression options in the form of a dictionary """
+        dataset = self.processed_measurements_group[str(float(self.time_points[0]))]['intensity']
         ckwargs = dict()
-        first_td = min(self.time_points)
-        dataset = self.processed_measurements_group[str(float(first_td))]
         ckwargs['compression'] = dataset.compression
-        ckwargs.update(dataset.compression_opts)
+        ckwargs['fletcher32'] = dataset.fletcher32
+        ckwargs['shuffle'] = dataset.shuffle
+        ckwargs['chunks'] = True if dataset.chunks else False
+        if dataset.compression_opts:
+            ckwargs.update(dataset.compression_opts)
         return ckwargs
         
     def averaged_data(self, timedelay, out = None):
@@ -222,21 +218,23 @@ class DiffractionDataset(h5py.File):
 
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
-    Attributes
-    ----------
+    Abstraction of HDF5 files for powder diffraction datasets.
     """
     _powder_group_name = '/powder'
-
-    analysis_parameter_names = ('first_stage', 'wavelet', 'level', 'baseline_removed')
 
     # Analysis parameters concerning the wavelet used
     # The dual-tree complex wavelet transform also uses 
     # first stage wavelet
+    analysis_parameter_names = ('first_stage', 'wavelet', 'level', 'baseline_removed')
     first_stage = AnalysisParameter(name = 'first_stage', output = str, group_name = _powder_group_name)
     wavelet = AnalysisParameter(name = 'wavelet', output = str, group_name = _powder_group_name)
     level = AnalysisParameter(name = 'level', output = int, group_name = _powder_group_name)
     baseline_removed = AnalysisParameter(name = 'baseline_removed', output = bool, group_name = _powder_group_name)
 
+    @property
+    def powder_group(self):
+        return self.require_group(name = self._powder_group_name)
+    
     @property
     def scattering_length(self):
         return n.array(self.powder_group['scattering_length'])
@@ -321,39 +319,6 @@ class PowderDiffractionDataset(DiffractionDataset):
             return n.array(self.powder_group[str(float(timedelay))]['baseline'])
         except KeyError:
             return n.zeros_like(self.scattering_length)
-    
-    def powder_dynamics(self, s1, s2, bgr = False):
-        """ 
-        Returns the time-dynamics of a region in the powder data.
-
-        Parameters
-        ----------
-        s1, s2 : floats
-            Scattering length bounds of the region of interest.
-        bgr : bool
-            If True, background is removed.
-        
-        Returns
-        -------
-        t, dyn : ndarrays, shape (N,)
-            Time points and integral of diffracted intensity in range (s1, s2) over time.
-        """
-        s1, s2 = min([s1,s2]), max([s1,s2])
-        s_length = n.array(self.powder_group['scattering_length'])
-
-        # Indices of the scattering length bounds
-        # Include the upper bound
-        # This will also take care of the case where
-        # s1 == s2, because then i_max = i_min + 1
-        i_min, i_max = n.argmin(n.abs(s_length - s1)), n.argmin(n.abs(s_length - s2)) + 1
-        
-        dynamics = n.empty(shape = (i_max - i_min, len(self.time_points)), dtype = n.float)
-        for index, timedelay in enumerate(self.time_points):
-            dynamics[:, index] = self.powder_data(timedelay, bgr)[i_min:i_max]
-        
-        # Integral over scattering length range
-        ds = (s2 - s1)/(i_max - i_min)
-        return n.array(self.time_points), dynamics.sum(axis = 0)*ds
         
     def powder_data_block(self, bgr = False):
         """ 
@@ -398,11 +363,11 @@ class PowderDiffractionDataset(DiffractionDataset):
                                            level = level, first_stage = first_stage,
                                            wavelet = wavelet, background_regions = tuple(),
                                            mask = None)
-            # TODO: get compression options from other datasets?
-            # TODO: is there a nicer way to overwrite an existing dataset, without knowing
-            #       the shape in advance? Something like require_dataset...
+
             if not self.baseline_removed:
-                self.powder_group[str(float(timedelay))].create_dataset(name = 'baseline', data = background)
+                self.powder_group[str(float(timedelay))].create_dataset(name = 'baseline', 
+                                                                        data = background, 
+                                                                        **self.compression_opts)
             else:
                 self.powder_group[str(float(timedelay))]['baseline'][:] = background
         
@@ -415,15 +380,12 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.first_stage = first_stage
         self.wavelet = wavelet
         self.baseline_removed = True
-
-    @property
-    def powder_group(self):
-        return self.require_group(name = self._powder_group_name)
     
-    def _compute_angular_averages(self, **ckwargs):
+    def _compute_angular_averages(self):
         """
         Compute the angular averages. This method is only called by RawDataset.process
         """
+        ckwargs = self.compression_opts
         for timedelay in self.time_points:
             px_radius, intensity, error = angular_average(self.averaged_data(timedelay), 
                                                             center = self.center, beamblock_rect = self.beamblock_rect, 
