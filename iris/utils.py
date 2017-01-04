@@ -177,7 +177,7 @@ def find_center(image, guess_center, radius, window_size = 10, ring_width = 10):
     (best_x, best_y), _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
     return best_x, best_y
 
-def angular_average(image, center, beamblock_rect, mask = None):
+def angular_average(image, center, beamblock_rect, error = None, mask = None):
     """
     This function returns a radially-averaged pattern computed from a TIFF image.
     
@@ -190,6 +190,8 @@ def angular_average(image, center, beamblock_rect, mask = None):
     beamblock_rect : Tuple, shape (4,)
         Tuple containing x- and y-bounds (in pixels) for the beamblock mask
         mast_rect = (x1, x2, y1, y2)
+    error : ndarray or None, optional
+        Error in pixel counts.
     mask : ndarray or None, optional
         Array of booleans that evaluates to False on pixels that should be discarded.
         If None (default), all pixels are treated as valid (except for beamblock)
@@ -206,6 +208,9 @@ def angular_average(image, center, beamblock_rect, mask = None):
         If 'mask' is an array of a different shape than the image shape.
     """    
     #preliminaries
+    if error is None:
+        error = n.zeros_like(image, dtype = n.float)
+
     if mask is None:
         mask = n.ones_like(image, dtype = n.bool)
     elif mask.shape != image.shape:
@@ -239,7 +244,7 @@ def angular_average(image, center, beamblock_rect, mask = None):
     composite_mask[x1:x2, y1:y2] = False
     image[ n.logical_not(composite_mask) ] = 0    # composite_mask is false where pixels should be disregarded
     
-    #Radial average
+    #average
     px_bin = n.bincount(R.ravel().astype(n.int), weights = image.ravel())
     r_bin = n.bincount(R.ravel().astype(n.int))  
     radial_intensity = px_bin/r_bin
