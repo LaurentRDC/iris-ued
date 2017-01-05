@@ -112,21 +112,8 @@ class DiffractionDataset(h5py.File):
         return '< DiffractionDataset object. \
                   Sample type: {}, \n \
                   Acquisition date : {}, \n \
-                  fluence {} mj/cm2 >'.format(self.sample_type,self.acquisition_date, self.fluence)
-    
-    @cached_property
-    def compression_opts(self):
-        """ Compression options in the form of a dictionary """
-        dataset = self.processed_measurements_group[str(float(self.time_points[0]))]['intensity']
-        ckwargs = dict()
-        ckwargs['compression'] = dataset.compression
-        ckwargs['fletcher32'] = dataset.fletcher32
-        ckwargs['shuffle'] = dataset.shuffle
-        ckwargs['chunks'] = True if dataset.chunks else False
-        if dataset.compression_opts:
-            ckwargs.update(dataset.compression_opts)
-        return ckwargs
-        
+                  fluence {} mj/cm**2 >'.format(self.sample_type,self.acquisition_date, self.fluence)
+            
     def averaged_data(self, timedelay, out = None):
         """
         Returns data at a specific time-delay.
@@ -215,6 +202,19 @@ class DiffractionDataset(h5py.File):
     @property
     def pumpoff_pictures_group(self):
         return self.require_group(name = self._pumpoff_pictures_group_name)
+    
+    @cached_property
+    def compression_params(self):
+        """ Compression options in the form of a dictionary """
+        dataset = self.processed_measurements_group[str(float(self.time_points[0]))]['intensity']
+        ckwargs = dict()
+        ckwargs['compression'] = dataset.compression
+        ckwargs['fletcher32'] = dataset.fletcher32
+        ckwargs['shuffle'] = dataset.shuffle
+        ckwargs['chunks'] = True if dataset.chunks else False
+        if dataset.compression_opts: #could be None
+            ckwargs.update(dataset.compression_opts)
+        return ckwargs
 
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
@@ -382,10 +382,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.baseline_removed = True
     
     def _compute_angular_averages(self):
-        """
-        Compute the angular averages. This method is only called by RawDataset.process
-        """
-        ckwargs = self.compression_opts
+        """ Compute the angular averages. This method is 
+        only called by RawDataset.process """
+        ckwargs = self.compression_params
         for timedelay in self.time_points:
             px_radius, intensity, error = angular_average(self.averaged_data(timedelay), 
                                                             center = self.center, beamblock_rect = self.beamblock_rect, 
