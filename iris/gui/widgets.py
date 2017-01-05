@@ -171,7 +171,8 @@ class ProcessedDataViewer(QtGui.QWidget):
         # autoLevels = False ensures that the colormap stays the same
         # when 'sliding' through data. This makes it easier to compare
         # data at different time points.
-        self.image_viewer.setImage(image, autoLevels = False, autoRange = True)
+        # Similarly for autoRange = False
+        self.image_viewer.setImage(image, autoLevels = False, autoRange = False)
 
 class PowderViewer(QtGui.QWidget):
     baseline_parameters_signal = QtCore.pyqtSignal(dict, name = 'baseline_parameters_signal')
@@ -191,8 +192,6 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
         self.peak_dynamics_region.sigRegionChanged.connect(self._update_peak_dynamics)
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
-
-        self.time_series_analysis = pg.PlotWidget(title = 'Time-series analysis')
 
         # Cache
         self.dataset_info = dict()
@@ -247,11 +246,8 @@ class PowderViewer(QtGui.QWidget):
 
         layout = QtGui.QVBoxLayout()
         layout.addLayout(command_layout)
-        analysis_widget = QtGui.QTabWidget(parent = self)
-        analysis_widget.addTab(self.peak_dynamics_viewer, 'Peak dynamics')
-        analysis_widget.addTab(self.time_series_analysis, 'Time-series analysis')
         layout.addWidget(self.powder_pattern_viewer)
-        layout.addWidget(analysis_widget)
+        layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(layout)
     
     @QtCore.pyqtSlot(dict)
@@ -336,7 +332,6 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics = integrated/integrated.max() if integrated.max() > 0.0 else integrated
         
         self._update_peak_dynamics_plot()
-        self._update_time_series()
     
     def _update_peak_dynamics_plot(self):
         self.peak_dynamics_viewer.clear()
@@ -348,13 +343,6 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
-        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
-    
-    def _update_time_series(self):
-        self.time_series_analysis.clear()
-        spectrum = n.fft.fftshift(n.fft.fft(self.peak_dynamics))
-        self.time_series_analysis.plot(n.real(spectrum), pen = None, symbol = 'o',
-                                       symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 4)
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
 
 class IrisStatusBar(QtGui.QStatusBar):
@@ -394,7 +382,7 @@ class DatasetInfoWidget(QtGui.QTableWidget):
         super().__init__(*args, **kwargs)
         self.dataset_info = dict()
         self.setRowCount(2) # This will always be true, but the number of
-                            # rows will change depending on the dataset
+                            # columns will change depending on the dataset
 
         self.horizontalHeader().setVisible(False)
         self.verticalHeader().setVisible(False)
@@ -417,13 +405,21 @@ class DatasetInfoWidget(QtGui.QTableWidget):
         self.setColumnCount(len(self.dataset_info))
         for column, (key, value) in enumerate(self.dataset_info.items()):
             # Items like time_points and nscans are long lists. Summarize using length
+            key = key.replace('_', ' ')
             if isinstance(value, Iterable) and not isinstance(value, str) and len(tuple(value)) > 3:
                 key += ' (len)'
                 value = str(len(tuple(value)))
             
             # TODO: change font of key text to bold
-            self.setItem(0, column, QtGui.QTableWidgetItem(key))
+            key_item = QtGui.QTableWidgetItem(str(key))
+            ft = key_item.font()
+            ft.setBold(True)
+            key_item.setFont(ft)
+            self.setItem(0, column, key_item)
             self.setItem(1, column, QtGui.QTableWidgetItem(str(value)))
+        
+        self.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        self.verticalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
 
 class ProcessingOptionsDialog(QtGui.QDialog):
     """
