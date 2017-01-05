@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from setuptools import setup
+from setuptools import setup, find_packages
 import glob
 
 #To create a Windows installer for this, run:
@@ -9,13 +9,13 @@ import glob
 image_list = glob.glob('App\\images\\*.png')
 
 setup(
-    name = 'Iris', 
+    name = 'iris', 
     version = 'v2.0',
-    packages = ['iris', 'iris.tifffile','iris.gui'],
+    packages = find_packages(),
     description = 'UED data exploration', 
     author = 'Laurent P. René de Cotret',
     author_email = 'laurent.renedecotret@mail.mcgill.ca',
     url = 'www.physics.mcgill.ca/siwicklab',
-    install_requires = ['numpy', 'scipy', 'h5py', 'pyqt', 'dualtree'],
+    install_requires = ['numpy', 'scipy', 'h5py', 'PyWavelets', 'tifffile'],
     data_files = [('App\\images', image_list)]
     )
