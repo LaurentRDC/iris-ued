@@ -358,6 +358,7 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         level : int or 'max', optional
         """
+        ckwargs = self.compression_params
         for timedelay in self.time_points:
             background = dualtree.baseline(array = self.powder_data(timedelay), max_iter = max_iter, 
                                            level = level, first_stage = first_stage,
@@ -367,7 +368,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             if not self.baseline_removed:
                 self.powder_group[str(float(timedelay))].create_dataset(name = 'baseline', 
                                                                         data = background, 
-                                                                        **self.compression_opts)
+                                                                        **ckwargs)
             else:
                 self.powder_group[str(float(timedelay))]['baseline'][:] = background
         

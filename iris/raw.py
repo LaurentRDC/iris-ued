@@ -287,15 +287,11 @@ class RawDataset(object):
         # The following arrays might be resized if there are missing pictures
         # but preventing copying can save about 10%
         cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
-        equalized = n.ma.empty_like(cube, dtype = n.float32)
         absdiff = n.ma.empty_like(cube, dtype = n.float32)
         int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
         averaged = n.ma.empty(shape = self.resolution, dtype = n.float32)
         error = n.ma.empty_like(averaged)
         mad = n.ma.empty(shape = self.resolution + (1,), dtype = n.float32)
-
-        equalized[beamblock_mask, :] = n.ma.masked
-        averaged[beamblock_mask] = n.ma.masked
 
         # TODO: parallelize this loop
         #       The only reason it is not right now is that
@@ -328,34 +324,31 @@ class RawDataset(object):
             # Compress cube along axis 2
             if missing_pictures > 0:
                 cube = cube[:, :, 0:-missing_pictures]
-                equalized = n.ma.empty_like(cube, dtype = n.float32)
                 absdiff = n.ma.empty_like(cube, dtype = n.float32)
                 int_intensities = n.empty(shape = (1,1,len(self.nscans) - missing_pictures), dtype = n.float32)
             
             # Setting elements inside cube will reset the mask
             # Therefore, we assign it again
             cube[beamblock_mask, :] = n.ma.masked
-            equalized[beamblock_mask, :] = n.ma.masked
             
             # Mask outliers according to the median-absolute-difference criterion
             # Consistency constant of 1.4826 due to underlying normal distribution
             # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
             n.ma.abs(cube - n.ma.median(cube, axis = 2, keepdims = True), out = absdiff)
-            mad[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug
+            mad[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug with keepdims = True
             cube[absdiff > 3*mad] = n.ma.masked
-
-            # Get error from counting statistics
-            # This must be done before normalization of intensity
-            error[:] = n.ma.sqrt(n.ma.sum(cube, axis = 2, dtype = n.int32))/n.sum(n.logical_not(cube.mask), axis = 2)
 
             # Normalize data cube intensity
             # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
             # Then, the data cube is normalized such that each slice has the same integrated intensity
             n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float32), axis = 1, keepdims = True, dtype = n.float32, out = int_intensities)
             int_intensities /= n.ma.mean(int_intensities)
-            equalized[:] = cube / int_intensities   # Cannot do this in place on cube, as cube.dtype = n.int32
+            averaged[:] = n.ma.mean(cube / int_intensities, axis = 2) # out = averaged bug
 
-            averaged[:] = n.ma.mean(equalized, axis = 2) # out = averaged bug
+            # TODO: figure out error
+            # Counting statistics account for very little
+            error[:] = n.zeros_like(averaged, dtype = n.float32)
+
             with DiffractionDataset(name = filename, mode = 'r+') as processed:
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
                 gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float32, **ckwargs)
@@ -364,7 +357,6 @@ class RawDataset(object):
             # Resize arrays back to most probable shape
             if missing_pictures > 0:
                 cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
-                equalized = n.ma.empty_like(cube, dtype = n.float32)
                 absdiff = n.ma.empty_like(cube, dtype = n.float32)
                 int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
             
