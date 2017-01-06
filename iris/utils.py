@@ -215,7 +215,7 @@ def angular_average(image, center, beamblock_rect, error = None, mask = None):
     # Replace all values in the image corresponding to beamblock or other irrelevant
     # data by 0: this way, it will never count in any calculation because image
     # values are used as weights in numpy.bincount
-    # Create a composite mask that uses the pixels mask, beamblock mask, and maximum/minimum
+    # Create a composite mask that uses beamblock mask, and maximum/minimum
     # radii     
     composite_mask = n.zeros_like(image, dtype = n.bool)
     composite_mask[R > r_max] = True
@@ -255,6 +255,11 @@ def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2
         CCD pixel width [m]
     camera_distance : float, optional
         Sample-to-CCD distance [m]
+
+    Returns
+    -------
+    out : ndarray, shape (N,)
+        Scattering length
         
     Notes
     -----
