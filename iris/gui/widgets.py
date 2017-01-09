@@ -274,11 +274,6 @@ class PowderViewer(QtGui.QWidget):
         if self.dataset_info['baseline_removed']:
             self.first_stage_cb.setCurrentText(self.dataset_info['first_stage'])
             self.wavelet_cb.setCurrentText(self.dataset_info['wavelet'])
-
-        # Cache some info
-        self._colors = list(spectrum_colors(len(info['time_points'])))
-        self._pens = list(map(pg.mkPen, self._colors))
-        self._brushes = list(map(pg.mkBrush, self._colors))
     
     @property
     def time_points(self):
@@ -303,6 +298,11 @@ class PowderViewer(QtGui.QWidget):
         self.powder_data_block = powder_data_block
         self.scattering_length = scattering_length
         self.error_block = error_block
+
+        # Cache some info
+        self._colors = list(spectrum_colors(powder_data_block.shape[0]))
+        self._pens = list(map(pg.mkPen, self._colors))
+        self._brushes = list(map(pg.mkBrush, self._colors))
 
         self.powder_pattern_viewer.clear() 
         self.powder_pattern_viewer.enableAutoRange()
