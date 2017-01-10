@@ -6,7 +6,6 @@ from .pyqtgraph import QtGui, QtCore
 import numpy as n
 
 from .utils import spectrum_colors
-from ..nufft import nufft
 from ..utils import fluence
 
 image_folder = join(dirname(__file__), 'images')

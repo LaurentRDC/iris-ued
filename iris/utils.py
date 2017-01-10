@@ -5,56 +5,7 @@ import glob
 from itertools import product
 import numpy as n
 from os.path import join
-from scipy.optimize import brute, fmin_slsqp
 from .io import RESOLUTION, ImageNotFoundError, read
-
-def electron_wavelength(kV, units = 'meters'):
-    """ 
-    Returns the relativistic wavelength of an electron.
-        
-    Parameters
-    ----------
-    kV : float
-        Voltage in kilovolts of the instrument
-    units : str, optional
-        Acceptable units are 'meters' or 'm', and 'angstroms' or 'A'.
-    """
-    m = 9.109*10**(-31)     #in kg
-    e = 1.602*10**(-19)     #in C
-    c = 299792458*(10**10)  #in m/s
-    h = 6.63*10**(-34)      #in J*s
-    V = kV * 1000
-    
-    #from: en.wikipedia.org/wiki/Electron_diffraction#Wavelength_of_electrons
-    wavelength_meters = n.sqrt((h**2*c**2)/(e*V*(2*m*c**2+e*V)))
-    if units == 'meters' or units == 'm':
-        return wavelength_meters
-    elif units == 'angstroms' or units.lower() == 'a':
-        return wavelength_meters*(10**10)
-    else:
-        raise ValueError('Invalid units')
-
-def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2235):
-    """
-    Returns the scattering length s = G/4pi for an array of radius data in pixels.
-    
-    Parameters
-    ----------
-    radius : array-like, shape (N,)
-        Radius from center of diffraction pattern, in units of pixels.
-    pixel_width : numerical
-        CCD pixel width in meters.
-    energy : numerical
-        Electron energy in keV.
-        
-    Notes
-    -----
-    Default values for pixel width and camera distance correspond to experimental
-    values for the Siwick diffractometer as of April 2016.
-    """
-    radius = n.array(radius) * pixel_width
-    diffraction_half_angle = n.arctan(radius/camera_distance)/2
-    return n.sin(diffraction_half_angle)/electron_wavelength(energy, units = 'angstroms')
 
 def shift(arr, x, y):
     """
