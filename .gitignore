@@ -1,7 +1,5 @@
 *.pyc
-*.pyc
-*.pyc
-core.py
-*.pyc
-*.pyc
 *.hdf5
+/build/
+/dist/
+/iris.egg-info/
