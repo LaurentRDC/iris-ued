@@ -1,6 +1,6 @@
 
 import numpy as n
-from uediff.parallel import parallel_map, parallel_sum, shared_array
+from uediff.parallel import parallel_map, parallel_sum
 import unittest
 
 def identity(obj, *args, **kwargs):
