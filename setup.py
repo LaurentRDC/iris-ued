@@ -15,7 +15,7 @@ rc = chain.from_iterable([glob.glob('iris\\gui\\qdarkstyle\\*.qrc'),
 
 setup(
     name = 'iris', 
-    version = 'v2.0',
+    version = '2.0.1',
     packages = find_packages(),
     description = 'UED data exploration', 
     author = 'Laurent P. René de Cotret',

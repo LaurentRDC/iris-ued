@@ -14,9 +14,6 @@ from .optimizations import cached_property
 from .io import RESOLUTION, read, cast_to_16_bits
 from .utils import angular_average, scattering_length
 
-__author__ = 'Laurent P. René de Cotret'
-__version__ = '2.0'
-
 class ExperimentalParameter(object):
     """ Descriptor to experimental parameters. """
     def __init__(self, name, output):
