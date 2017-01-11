@@ -309,6 +309,7 @@ class RawDataset(object):
                 except ImageNotFoundError:
                     warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
                     missing_pictures += 1
+                    continue
                 
                 if cc:
                     corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
