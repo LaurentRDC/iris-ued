@@ -21,7 +21,7 @@ setup(
     author = 'Laurent P. René de Cotret',
     author_email = 'laurent.renedecotret@mail.mcgill.ca',
     url = 'www.physics.mcgill.ca/siwicklab',
-    install_requires = ['numpy', 'scipy', 'h5py', 'PyWavelets', 'tifffile'],
+    install_requires = ['numpy', 'scipy', 'h5py', 'PyWavelets', 'tifffile', 'pyopengl'],    # PyOpenGL useful for PyQtgraph?
     data_files = [('iris\\gui\\images', image_list),
                   ('iris\\dualtree\\data', wavelets),
                   ('iris\\gui\\qdarkstyle', rc)]

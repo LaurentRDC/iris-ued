@@ -16,7 +16,7 @@ __all__ = ['dualtree_wavelet', 'dualtree_first_stage']
 DATADIR = join(dirname(__file__), 'data')
 ALL_QSHIFT = ('qshift1', 'qshift2', 'qshift3', 'qshift4', 'qshift5', 'qshift6')
 ALL_COMPLEX_WAV = ('kingsbury99',) + ALL_QSHIFT
-ALL_FIRST_STAGE = ('kingsbury99_fs',) + tuple([wav for wav in wavelist() if wav != 'dmey'])
+ALL_FIRST_STAGE = ('kingsbury99_fs',) + tuple([wav for wav in wavelist(kind = 'discrete') if wav != 'dmey'])
 
 # lru_cache only exists as of Python 3.2
 # In case it cannot be found, use a trivial decorator

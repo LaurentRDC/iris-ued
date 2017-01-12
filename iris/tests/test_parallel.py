@@ -28,7 +28,7 @@ class ParallelSumTest(unittest.TestCase):
         self.assertEqual(serial, parallel)
     
     def test_numpy_sum(self):
-        arrays = [shared_array(n.ones((10,10))) for i in range(10)]
+        arrays = [n.ones((10,10)) for i in range(10)]
         serial = sum(arrays)
         parallel = parallel_sum(sum, arrays)
         self.assertTrue(n.allclose(serial, parallel))

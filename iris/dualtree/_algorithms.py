@@ -84,7 +84,7 @@ def baseline(array, max_iter, level = 'max', first_stage = DEFAULT_FIRST_STAGE, 
             signal[index] = array[index]
         
         # Wavelet reconstruction using approximation coefficients
-        background = approx_rec(array = signal, level = level, first_stage = first_stage, wavelet = wavelet)
+        background[:] = approx_rec(array = signal, level = level, first_stage = first_stage, wavelet = wavelet)
         
         # Modify the signal so it cannot be more than the background
         # This reduces the influence of the peaks in the wavelet decomposition

@@ -90,7 +90,7 @@ class Test1D(TestDualTree, unittest.TestCase):
 
 class Test2D(TestDualTree, unittest.TestCase):
     def setUp(self):
-        self.array = n.random.random(size = (100,100))
+        self.array = n.random.random(size = (50,50))
 
 class Test3D(TestDualTree, unittest.TestCase):
     def setUp(self):
