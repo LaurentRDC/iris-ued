@@ -15,13 +15,13 @@ rc = chain.from_iterable([glob.glob('iris\\gui\\qdarkstyle\\*.qrc'),
 
 setup(
     name = 'iris', 
-    version = '2.0.1',
+    version = '2.0.2',
     packages = find_packages(),
     description = 'UED data exploration', 
     author = 'Laurent P. René de Cotret',
     author_email = 'laurent.renedecotret@mail.mcgill.ca',
     url = 'www.physics.mcgill.ca/siwicklab',
-    install_requires = ['numpy', 'scipy', 'h5py', 'PyWavelets', 'tifffile', 'pyopengl'],    # PyOpenGL useful for PyQtgraph?
+    install_requires = ['numpy', 'scipy', 'h5py', 'PyWavelets >= 0.5.1', 'tifffile', 'pyopengl'],    # PyOpenGL useful for PyQtgraph?
     data_files = [('iris\\gui\\images', image_list),
                   ('iris\\dualtree\\data', wavelets),
                   ('iris\\gui\\qdarkstyle', rc)]
