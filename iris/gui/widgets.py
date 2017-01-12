@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from dualtree import ALL_FIRST_STAGE, ALL_COMPLEX_WAV
+from ..dualtree import ALL_FIRST_STAGE, ALL_COMPLEX_WAV
 from os.path import join, dirname
 from . import pyqtgraph as pg
 from .pyqtgraph import QtGui, QtCore
