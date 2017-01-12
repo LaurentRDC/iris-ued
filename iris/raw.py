@@ -286,6 +286,7 @@ class RawDataset(object):
         # Preallocation
         # The following arrays might be resized if there are missing pictures
         # but preventing copying can save about 10%
+        image = n.empty(shape = self.resolution, dtype = n.int32)
         cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
         absdiff = n.ma.empty_like(cube, dtype = n.float32)
         int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
@@ -305,7 +306,7 @@ class RawDataset(object):
             missing_pictures, slice_index = 0, 0
             for scan in self.nscans:
                 try:
-                    image = self.raw_data(timedelay, scan) - pumpon_background
+                    image[:] = self.raw_data(timedelay, scan) - pumpon_background
                 except ImageNotFoundError:
                     warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
                     missing_pictures += 1
@@ -314,11 +315,12 @@ class RawDataset(object):
                 if cc:
                     corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
                                                                     window_size = window_size, ring_width = ring_width)
-                    image = shift(image, int(round(corr_i)), int(round(corr_j)))
-
+                else:
+                    corr_i, corr_j = 0,0
+                
                 # Everything along the edges of cube might be invalid due to center correction
                 # These edge values will have been set to ma.masked by the shift() function
-                cube[:,:,slice_index] = image
+                cube[:,:,slice_index] = shift(image, int(round(corr_i)), int(round(corr_j)))
                 slice_index += 1
                 
             # cube possibly has some empty slices due to missing pictures
