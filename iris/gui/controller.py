@@ -87,7 +87,7 @@ class IrisController(QtCore.QObject):
     @error_aware('Raw data could not be displayed.')
     @QtCore.pyqtSlot(float, int)
     def display_raw_data(self, timedelay, scan):
-        self.raw_data_signal.emit(self.raw_dataset.raw_data(timedelay, scan))
+        self.raw_data_signal.emit(self.raw_dataset.raw_data(timedelay, scan) - self.raw_dataset.pumpon_background)
     
     @error_aware('Processed data could not be displayed.')
     @QtCore.pyqtSlot(float)
