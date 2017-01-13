@@ -179,8 +179,11 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
-       
 
+        self.fourier_dynamics_viewer = pg.PlotWidget(title = 'Fourier transform', 
+                                                     labels = {'left': 'Power Spectrum (a. u.)', 'bottom': ('Frequency', '1/ps?')})
+        self.fourier_dynamics_viewer.getPlotItem().enableAutoRange()
+       
         self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
         self.peak_dynamics_region.sigRegionChanged.connect(self._update_peak_dynamics)
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
@@ -236,10 +239,14 @@ class PowderViewer(QtGui.QWidget):
         command_layout.addWidget(wavelet_label,  0,  2,  1,  1)
         command_layout.addWidget(self.wavelet_cb,  1,  2,  1,  1)
 
+        tabs = QtGui.QTabWidget(parent = self)
+        tabs.addTab(self.peak_dynamics_viewer, 'Peak dynamics')
+        tabs.addTab(self.fourier_dynamics_viewer, 'Fourier domain')
+
         layout = QtGui.QVBoxLayout()
         layout.addLayout(command_layout)
         layout.addWidget(self.powder_pattern_viewer)
-        layout.addWidget(self.peak_dynamics_viewer)
+        layout.addWidget(tabs)
         self.setLayout(layout)
     
     @QtCore.pyqtSlot(dict)
@@ -322,8 +329,14 @@ class PowderViewer(QtGui.QWidget):
         integrated_error =  n.sqrt(n.square(self.error_block[:, i_min:i_max]).sum(axis = 1))/(i_max - i_min)
         self.peak_dynamics_errors = integrated_error/integrated.max() if integrated.max() > 0.0 else integrated_error
         self.peak_dynamics = integrated/integrated.max() if integrated.max() > 0.0 else integrated
+
+        # compute fourier dynamics
+        # TODO: THIS
+        self.frequencies = n.linspace(0, 10, len(self.time_points))
+        self.fourier_dynamics = n.zeros_like(self.frequencies)
         
         self._update_peak_dynamics_plot()
+        self._update_fourier_dynamics_plot()
     
     def _update_peak_dynamics_plot(self):
         self.peak_dynamics_viewer.clear()
@@ -334,6 +347,15 @@ class PowderViewer(QtGui.QWidget):
         error_bars = pg.ErrorBarItem(x = self.time_points, y = self.peak_dynamics, height = self.peak_dynamics_errors)
         self.peak_dynamics_viewer.addItem(error_bars)
         
+        # If the use has zoomed on the previous frame, auto range might be disabled.
+        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+    
+    def _update_fourier_dynamics_plot(self):
+        self.fourier_dynamics_viewer.clear()
+
+        self.fourier_dynamics_viewer.plot(self.frequencies, self.fourier_dynamics, pen = None, symbol = 'o',
+                                          symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 4)
+
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
 
@@ -380,7 +402,7 @@ class DatasetInfoWidget(QtGui.QTableWidget):
         self.verticalHeader().setVisible(False)
 
         # Resize to content
-        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
 
     @QtCore.pyqtSlot(dict)
     def update_info(self, info):
