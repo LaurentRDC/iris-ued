@@ -17,9 +17,6 @@ from .io import read, save, RESOLUTION, ImageNotFoundError, cast_to_16_bits
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .utils import shift, find_center, average_tiff, angular_average
 
-# Info
-__author__ = 'Laurent P. René de Cotret'
-__version__ = '2.0 unreleased'
 TEST_PATH = 'C:\\test_data\\2016.10.18.11.10.VO2_vb_16.2mJ'
 
 def log(message, file):
@@ -286,7 +283,6 @@ class RawDataset(object):
         # Preallocation
         # The following arrays might be resized if there are missing pictures
         # but preventing copying can save about 10%
-        image = n.empty(shape = self.resolution, dtype = n.int32)
         cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
         absdiff = n.ma.empty_like(cube, dtype = n.float32)
         int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
@@ -296,7 +292,7 @@ class RawDataset(object):
 
         # TODO: parallelize this loop
         #       The only reason it is not right now is that
-        #       each branch of the loop uses ~ 6GBs of RAM for
+        #       each branch of the loop uses ~ 4-6GBs of RAM for
         #       a 30 scans dataset
         for i, timedelay in enumerate(self.time_points):
 
@@ -306,7 +302,7 @@ class RawDataset(object):
             missing_pictures, slice_index = 0, 0
             for scan in self.nscans:
                 try:
-                    image[:] = self.raw_data(timedelay, scan) - pumpon_background
+                    image = self.raw_data(timedelay, scan) - pumpon_background
                 except ImageNotFoundError:
                     warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
                     missing_pictures += 1

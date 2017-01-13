@@ -11,14 +11,7 @@ from ..utils import fluence
 image_folder = join(dirname(__file__), 'images')
 
 class RawDataViewer(QtGui.QWidget):
-    """
-    Slots
-    -----
-    display [object]
 
-    process_dataset [str]
-
-    """
     process_dataset_signal = QtCore.pyqtSignal(dict, name = 'process_dataset_signal')
     error_message_signal = QtCore.pyqtSignal(str, name = 'error_message_signal')
 
