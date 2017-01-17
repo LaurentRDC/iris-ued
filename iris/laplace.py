@@ -1,6 +1,6 @@
 
 import numpy as n
-from scipy.fftpack import fftfreq, fft, fftshift, ifftshift
+from scipy.fftpack import fft, fftshift
 
 def heaviside(x):
     """ 
@@ -20,14 +20,14 @@ def laplace(x, y, sigma = 0):
     ----------
     x, y : ndarrays, shapes (N,)
         Input y = f(x).
-    sigma : float
-        Real-part of the Laplace transform variable s.
-        Default is 0, which makes the Laplace transform equivalent to the
-        Fourier transform.
+    sigma : float or ndarray, optional
+        Real-part of the Laplace transform variable s. Default is 0, which makes 
+        the Laplace transform equivalent to theFourier transform.
 
     Returns
     -------
     out : ndarray, shape (M,N) , dtype complex
+        Laplace transform. If sigma is a float, M = 1.
 
     Raises
     ------
