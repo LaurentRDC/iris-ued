@@ -243,7 +243,7 @@ class PowderViewer(QtGui.QWidget):
         tabs = QtGui.QTabWidget(parent = self)
         tabs.addTab(self.peak_dynamics_viewer, 'Peak dynamics')
         tabs.addTab(self.fourier_dynamics_viewer, 'Fourier domain')
-        tabs.setTabEnabled(1, False)
+        tabs.setTabEnabled(1, False)    # Disable fourier domain as changing tabs resize the viewer...
 
         layout = QtGui.QVBoxLayout()
         layout.addLayout(command_layout)
@@ -334,7 +334,7 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics = integrated/integrated.max() if integrated.max() > 0.0 else integrated
 
         # compute fourier dynamics
-        # TODO: This
+        # TODO: Lomb-Scargle from scipy.signal
         self.frequencies = n.fft.fftfreq(len(self._uniform_time_points))
         self.fourier_dynamics = n.fft.fft(n.interp(self._uniform_time_points, 
                                                     xp = self.time_points, 
