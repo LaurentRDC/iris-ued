@@ -70,6 +70,7 @@ class RawDataset(object):
     def _exp_params_filename(self):
         return join(self.raw_directory, 'tagfile.txt')
     
+    #TODO: replace by descriptors
     def _read_experimental_parameter(self, key):
         """
         Reads an experimental parameter from the DiffractionDataset's
@@ -156,12 +157,12 @@ class RawDataset(object):
     
     @property
     def pumpon_background(self):
-        backgrounds = (read(filename) for filename in glob.glob(join(self.raw_directory, 'background.*.pumpon.tif')))
+        backgrounds = [read(filename) for filename in glob.glob(join(self.raw_directory, 'background.*.pumpon.tif'))]
         return sum(backgrounds)/len(backgrounds)
     
     @property
     def pumpoff_background(self):
-        backgrounds = (read(filename) for filename in glob.glob(join(self.raw_directory, 'background.*.pumpoff.tif')))
+        backgrounds = [read(filename) for filename in glob.glob(join(self.raw_directory, 'background.*.pumpoff.tif'))]
         return sum(backgrounds)/len(backgrounds)
         
     def raw_data(self, timedelay, scan):
