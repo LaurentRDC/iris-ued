@@ -121,7 +121,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
         self.powder_viewer.baseline_parameters_signal.connect(self.controller.compute_baseline)
         self.powder_viewer.baseline_removed_btn.toggled.connect(
-            lambda x: self.controller.powder_data_signal.emit(*self.controller.dataset.powder_data_block(bgr = x)))
+            lambda x: self.controller.powder_data_signal.emit(self.controller.dataset.scattering_length, *self.controller.dataset.powder_data_block(bgr = x)))
 
         ######################################################################
         # Update when a new dataset is loaded

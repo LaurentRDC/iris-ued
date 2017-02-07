@@ -37,16 +37,14 @@ class RawDataset(object):
     ----------
     directory : str or path
     
-    nscans : int
-    
+    nscans : list of ints
+        Container of the available scans.
     acquisition_date : str
     
     time_points_str : list of str
         Time-points of the dataset as strings. As recorded in the TIFF filenames.
     
     time_points : list of floats
-    
-    processed : bool
     
     pumpon_background : ndarray
     
@@ -56,7 +54,8 @@ class RawDataset(object):
     
     Methods
     -------
-    raw_image
+    raw_data
+        Retrieve a raw image from a specific scan and time-delay.
     
     process
     """
@@ -204,6 +203,8 @@ class RawDataset(object):
             Filename for the DiffractionDataset object
         center : 2-tuple
 
+        radius : float
+
         beamblock_rect : 4-tuple
 
         compression : str, optional
@@ -338,16 +339,15 @@ class RawDataset(object):
             mad[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug with keepdims = True
             cube[absdiff > 3*mad] = n.ma.masked
 
+            # Counting statistics account for very little
+            error[:] = sem(cube, axis = 2)
+
             # Normalize data cube intensity
             # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
             # Then, the data cube is normalized such that each slice has the same integrated intensity
             n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float32), axis = 1, keepdims = True, dtype = n.float32, out = int_intensities)
             int_intensities /= n.ma.mean(int_intensities)
             averaged[:] = n.ma.mean(cube / int_intensities, axis = 2) # out = averaged bug
-
-            # TODO: figure out error
-            # Counting statistics account for very little
-            error[:] = n.zeros_like(averaged, dtype = n.float32)
 
             with DiffractionDataset(name = filename, mode = 'r+') as processed:
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))

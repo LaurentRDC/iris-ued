@@ -116,7 +116,7 @@ class IrisController(QtCore.QObject):
     def compute_baseline(self, params):
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
         self.worker.done_signal.connect(lambda boolean: self.update_dataset_info())
-        self.worker.done_signal.connect(lambda boolean: self.powder_data_signal.emit(*self.dataset.powder_data_block(bgr = self.dataset.baseline_removed)))
+        self.worker.done_signal.connect(lambda boolean: self.powder_data_signal.emit(self.dataset.scattering_length, *self.dataset.powder_data_block(bgr = self.dataset.baseline_removed)))
         self.worker.done_signal.connect(lambda boolean: self.status_message_signal.emit('Baseline computed.'))
         self.worker.start()
     
@@ -144,7 +144,7 @@ class IrisController(QtCore.QObject):
         self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
 
         if isinstance(self.dataset, PowderDiffractionDataset):
-            self.powder_data_signal.emit(*self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
+            self.powder_data_signal.emit(self.dataset.scattering_length, *self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
             self.powder_dataset_loaded_signal.emit(True)
     
     def update_dataset_info(self):

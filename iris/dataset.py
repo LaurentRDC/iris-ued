@@ -328,8 +328,8 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         Returns
         -------
-        s : ndarray, shape (N,)
         I, e : ndarrays, shapes (N, M)
+            Diffracted intensity and associated error
         """
         data_block = n.empty(shape = (len(self.time_points), self.scattering_length.size), dtype = n.float)
         error_block = n.empty_like(data_block)
@@ -338,7 +338,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             data_block[row, :] = self.powder_data(timedelay, bgr = bgr)
             error_block[row, :] = self.powder_error(timedelay)
         
-        return self.scattering_length, data_block, error_block
+        return data_block, error_block
     
     def compute_baseline(self, first_stage, wavelet, max_iter = 100, level = 'max'):
         """
