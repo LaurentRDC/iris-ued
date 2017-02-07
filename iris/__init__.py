@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Laurent P. René de Cotret'
-__version__ = '2.0.4'
+__version__ = '2.0.5'
 
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .optimizations import cached_property, parallel_map, parallel_sum
