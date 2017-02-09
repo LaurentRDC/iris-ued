@@ -316,6 +316,31 @@ class PowderDiffractionDataset(DiffractionDataset):
             return n.array(self.powder_group[str(float(timedelay))]['baseline'])
         except KeyError:
             return n.zeros_like(self.scattering_length)
+    
+    def time_series(self, smin, smax, bgr = False):
+        """
+        Integrated intensity in a scattering angle range, over time.
+        Diffracted intensity is integrated in the closed interval [smin, smax]
+
+        Parameters
+        ----------
+        smin : float
+            Lower integral bound [rad/A]
+        smax : float
+            Higher integral bound [rad/A]. 
+        bgr : bool, optional
+            If True, background is removed. Default is False.
+        
+        Returns
+        -------
+        out : ndarray, shape (N,)
+            Integrated diffracted intensity over time.
+        """
+        i_min, i_max = n.argmin(n.abs(smin - self.scattering_length)), n.argmin(n.abs(smax - self.scattering_length))
+        block, *_ = self.powder_data_block(bgr = bgr)
+        # Python slices are semi-open by design, therefore i_max + 1 is used
+        # so that the integration interval is closed.
+        return block[:, i_min:i_max + 1].sum(axis = 1)
         
     def powder_data_block(self, bgr = False):
         """ 
