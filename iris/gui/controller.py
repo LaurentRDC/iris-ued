@@ -76,6 +76,9 @@ class IrisController(QtCore.QObject):
     averaged_data_signal = QtCore.pyqtSignal(object, name = 'averaged_data_signal')
     powder_data_signal = QtCore.pyqtSignal(object, object, object, name = 'powder_data_signal')
 
+    time_series_signal = QtCore.pyqtSignal(object, object)
+    powder_time_series_signal = QtCore.pyqtSignal(object)
+
     processing_progress_signal = QtCore.pyqtSignal(int, name = 'processing_progress_signal')
 
     def __init__(self, *args, **kwargs):
@@ -110,6 +113,28 @@ class IrisController(QtCore.QObject):
         self.worker.in_progress_signal.connect(in_progress)
         self.processing_progress_signal.emit(0)
         self.worker.start()
+    
+    @error_aware('Single-crystal time-series could not be computed')
+    @QtCore.pyqtSlot(object)
+    def time_series_from_ROI(self, ROI):
+        """" 
+        Single-crystal time-series as the integrated diffracted intensity inside a rectangular ROI
+
+        Parameters
+        ----------
+        ROI: PyQtGraph.ROI object
+        """
+
+        rect = ROI.parentBounds().toRect()
+
+        #If coordinate is negative, return 0
+        x1 = round(max(0, rect.topLeft().x() ))
+        x2 = round(max(0, rect.x() + rect.width() ))
+        y1 = round(max(0, rect.topLeft().y() ))
+        y2 = round(max(0, rect.y() + rect.height() ))
+
+        integrated = self.dataset.time_series( (x1,x2,y1,y2) )
+        self.time_series_signal.emit(self.dataset.time_points, integrated)
     
     @error_aware('Powder baseline could not be computed.')
     @QtCore.pyqtSlot(dict)

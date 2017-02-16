@@ -17,17 +17,51 @@ from .io import read, save, RESOLUTION, ImageNotFoundError, cast_to_16_bits
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .utils import shift, find_center, average_tiff, angular_average
 
-TEST_PATH = 'C:\\test_data\\2016.10.18.11.10.VO2_vb_16.2mJ'
-
-def log(message, file):
-    """
-    Writes a time-stamped message into a log file. Also print to the interpreter
-    for debugging purposes.
-    """
-    now = datetime.now().strftime('[%Y-%m-%d  %H:%M:%S]')
-    time_stamped = '{0} {1}'.format(now, str(message))
-    print(time_stamped)
-    print(time_stamped, file = file)
+class ExperimentalParameter(object):
+    """ Descriptor to experimental parameters for raw diffraction datasets. """
+    def __init__(self, name, output, default):
+        """ 
+        Parameters
+        ----------
+        name : str
+        output : callable
+            Callable to format output.
+            e.g. numpy.array, tuple, float, ...
+        """
+        self.name = name
+        self.output = output
+        self.default = default
+    
+    def __get__(self, instance, cls):
+        """
+        Reads an experimental parameter from the DiffractionDataset's
+        experimental parameter file.
+        
+        Parameters
+        ----------
+        key : str
+            Name of the parameter
+        """
+        with open(instance._exp_params_filename, 'r') as exp_params:
+            for line in exp_params:
+                if line.startswith(self.name): 
+                    value = line.split('=')[-1]
+                    break
+            return self.default
+        
+        value = value.replace(' ','')
+        value = value.replace('s','')                   # For exposure values with units
+        value = value.strip('\n')
+        try:
+            return self.output(value)
+        except: # Might be 'BLANK', can't cast
+            return self.default
+    
+    def __set__(self, instance, value):
+        raise AttributeError('Attribute {} is read-only.'.format(self.name))
+    
+    def __delete__(self, instance):
+        pass
 
 class RawDataset(object):
     """
@@ -59,6 +93,13 @@ class RawDataset(object):
     
     process
     """
+
+    resolution = RESOLUTION
+    fluence = ExperimentalParameter('Fluence', float, 0)
+    current = ExperimentalParameter('Current', float, 0)
+    exposure = ExperimentalParameter('Exposure', float, 0)
+    energy = ExperimentalParameter('Energy', float, 0)
+
     def __init__(self, directory):
         if isdir(directory):
             self.raw_directory = directory
@@ -68,57 +109,6 @@ class RawDataset(object):
     @cached_property
     def _exp_params_filename(self):
         return join(self.raw_directory, 'tagfile.txt')
-    
-    #TODO: replace by descriptors
-    def _read_experimental_parameter(self, key):
-        """
-        Reads an experimental parameter from the DiffractionDataset's
-        experimental parameter file.
-        
-        Parameters
-        ----------
-        key : str
-            Name of the parameter
-        """
-        with open(self._exp_params_filename, 'r') as exp_params:
-            for line in exp_params:
-                if line.startswith(key): 
-                    value = line.split('=')[-1]
-                    break
-        
-        value = value.replace(' ','')
-        value = value.replace('s','')                   # For exposure values with units
-        if key == 'Acquisition date': 
-            return value.strip('\n')
-        else:
-            try:
-                return float(value)
-            except: #Value might be an invalid number. E.g. 'BLANK'
-                return 0.0
-
-    @cached_property
-    def resolution(self):
-        return RESOLUTION
-        
-    @cached_property
-    def fluence(self):
-        return self._read_experimental_parameter('Fluence')
-    
-    @cached_property
-    def current(self):
-        return self._read_experimental_parameter('Current')
-    
-    @cached_property
-    def exposure(self):
-        return self._read_experimental_parameter('Exposure')
-    
-    @cached_property
-    def energy(self):
-        return self._read_experimental_parameter('Energy')
-        
-    @cached_property    
-    def acquisition_date(self):
-        return self._read_experimental_parameter('Acquisition date')
     
     @cached_property
     def nscans(self):
