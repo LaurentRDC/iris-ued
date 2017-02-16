@@ -3,6 +3,9 @@ from itertools import chain
 from setuptools import setup, find_packages
 import glob
 
+__version__ = '2.0.5'
+__author__ = 'Laurent P. René de Cotret'
+
 #To create a Windows installer for this, run:
 # >>> python setup.py bdist_wininst
 
@@ -14,15 +17,16 @@ rc = chain.from_iterable([glob.glob('iris\\gui\\qdarkstyle\\*.qrc'),
 
 setup(
     name = 'iris', 
-    version = '2.0.4',
+    version = __version__,
     packages = find_packages(),
     description = 'UED data exploration', 
-    author = 'Laurent P. René de Cotret',
+    author = __author__,
     author_email = 'laurent.renedecotret@mail.mcgill.ca',
     url = 'www.physics.mcgill.ca/siwicklab',
     install_requires = ['numpy >= 1.11.2', 
                         'scipy', 
-                        'h5py', 
+                        'h5py',
+                        'scikit-image', 
                         'PyWavelets >= 0.5.1', 
                         'tifffile'],
     data_files = [('iris\\gui\\images', image_list),

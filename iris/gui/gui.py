@@ -112,6 +112,11 @@ class Iris(QtGui.QMainWindow):
             lambda i: self.controller.display_averaged_data(self.controller.dataset.time_points[i]))
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
 
+        # Single crystal peak dynamics
+        # TODO: use the same code structure for powder peak dynamics
+        self.processed_viewer.peak_dynamics_region.sigRegionChangeFinished.connect(self.controller.time_series_from_ROI)
+        self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
+
         ######################################################################
         # POWDER DATA INTERACTION
         self.controller.powder_dataset_loaded_signal.connect(

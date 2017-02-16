@@ -134,6 +134,19 @@ class DiffractionDataset(h5py.File):
             return dataset.read_direct(array = out, source_sel = n.s_[:,:], dest_sel = n.s_[:,:])
         return n.array(dataset)
     
+    def averaged_data_block(self):
+        """
+        Array containing all time-delay (averaged) data.
+
+        Returns
+        -------
+        out : ndarray, ndim 3
+        """
+        block = n.empty(shape = self.resolution + (len(self.time_points),), dtype = n.float)
+        for i, time in enumerate(self.time_points):
+            block[:,:,i] = self.averaged_data(time)
+        return block
+    
     def averaged_error(self, timedelay, out = None):
         """ 
         Returns error in measurement.
@@ -156,6 +169,29 @@ class DiffractionDataset(h5py.File):
         if out:
             return dataset.read_direct(array = out, source_sel = n.s_[:,:], dest_sel = n.s_[:,:])
         return n.array(dataset)
+    
+    def time_series(self, rect):
+        """
+        Integrated intensity over time inside bounds.
+
+        Parameters
+        ----------
+        rect : 4-tuple of ints
+            Bounds of the region in px.
+        
+        Returns
+        -------
+        out : ndarray, ndim 1
+        """
+        x1, x2, y1, y2 = rect
+        series = n.empty(shape = len(self.time_points), dtype = n.float)
+
+        # Don't use self.averaged_data because then the entire picture is loaded
+        for index, time in enumerate(self.time_points):
+            data = self.processed_measurements_group[str(float(time))]['intensity'][y1:y2, x1:x2]  # Numpy axes are transposed
+            series[index] = n.sum(data)
+        
+        return series
 
     def pumpoff_data(self, scan, out = None):
         """
@@ -317,7 +353,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         except KeyError:
             return n.zeros_like(self.scattering_length)
     
-    def time_series(self, smin, smax, bgr = False):
+    def powder_time_series(self, smin, smax, bgr = False):
         """
         Integrated intensity in a scattering angle range, over time.
         Diffracted intensity is integrated in the closed interval [smin, smax]
@@ -325,9 +361,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         Parameters
         ----------
         smin : float
-            Lower integral bound [rad/A]
+            Lower scattering angle bound [rad/A]
         smax : float
-            Higher integral bound [rad/A]. 
+            Higher scattering angle bound [rad/A]. 
         bgr : bool, optional
             If True, background is removed. Default is False.
         
@@ -380,25 +416,20 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         level : int or 'max', optional
         """
-        ckwargs = self.compression_params
         for timedelay in self.time_points:
-            background = baseline(array = self.powder_data(timedelay), max_iter = max_iter, 
-                                  level = level, first_stage = first_stage,
-                                  wavelet = wavelet, background_regions = tuple(),
+            background = baseline(array = self.powder_data(timedelay), max_iter = max_iter, level = level, 
+                                  first_stage = first_stage, wavelet = wavelet, background_regions = tuple(),
                                   mask = None)
 
             if not self.baseline_removed:
-                self.powder_group[str(float(timedelay))].create_dataset(name = 'baseline', 
-                                                                        data = background, 
-                                                                        **ckwargs)
+                self.powder_group[str(float(timedelay))].create_dataset(name = 'baseline', data = background, 
+                                                                        **self.compression_params)
             else:
                 self.powder_group[str(float(timedelay))]['baseline'][:] = background
         
         # Record parameters
         if level == 'max':
-            level = dualtree_max_level(data = self.scattering_length, 
-                                       first_stage = first_stage, 
-                                       wavelet = wavelet)
+            level = dualtree_max_level(data = self.scattering_length, first_stage = first_stage, wavelet = wavelet)
         self.level = level
         self.first_stage = first_stage
         self.wavelet = wavelet
@@ -409,9 +440,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         only called by RawDataset.process """
         ckwargs = self.compression_params
         for timedelay in self.time_points:
-            px_radius, intensity, error = angular_average(self.averaged_data(timedelay), 
-                                                            center = self.center, beamblock_rect = self.beamblock_rect, 
-                                                            error = self.averaged_error(timedelay))
+            px_radius, intensity, error = angular_average(self.averaged_data(timedelay), center = self.center, 
+                                                          beamblock_rect = self.beamblock_rect, 
+                                                          error = self.averaged_error(timedelay))
             gp = self.powder_group.create_group(name = str(timedelay))
 
             # Error in the powder pattern = image_data / sqrt(nscans) * sqrt(# of pixels at this radius)

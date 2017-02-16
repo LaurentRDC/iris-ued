@@ -31,15 +31,6 @@ class RawDataViewer(QtGui.QWidget):
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
 
-        # Toggle view of tools
-        def toggle_mask(t):
-            if t: self.mask.show()
-            else: self.mask.hide()
-        
-        def toggle_cf(t):
-            if t: self.center_finder.show()
-            else: self.center_finder.hide()
-
         self.process_btn = QtGui.QPushButton('Processing')
         self.process_btn.clicked.connect(self.process_dataset)
         self.process_btn.setEnabled(False)
@@ -48,8 +39,8 @@ class RawDataViewer(QtGui.QWidget):
         self.show_tools_btn.setCheckable(True)
         self.show_tools_btn.setChecked(False)
         self.show_tools_btn.toggled.connect(self.process_btn.setEnabled)
-        self.show_tools_btn.toggled.connect(toggle_mask)
-        self.show_tools_btn.toggled.connect(toggle_cf)
+        self.show_tools_btn.toggled.connect(self.mask.setVisible)
+        self.show_tools_btn.toggled.connect(self.center_finder.setVisible)
 
         process_bar = QtGui.QGridLayout()
         process_bar.addWidget(self.show_tools_btn,0,0)
@@ -125,17 +116,39 @@ class ProcessedDataViewer(QtGui.QWidget):
 
         self.image_viewer = pg.ImageView(parent = self)
         self.dataset_info = dict()
-        
+        self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
+                                                  labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
+        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+        self.peak_dynamics_viewer.hide()
+
+        # Single-crystal peak dynamics
+        self.peak_dynamics_region = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
+        self.peak_dynamics_region.addScaleHandle([1, 1], [0, 0])
+        self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
+        self.image_viewer.getView().addItem(self.peak_dynamics_region)
+        self.peak_dynamics_region.hide()
+
         # QSlider properties
         self.time_slider = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.time_slider.setTickPosition(QtGui.QSlider.TicksBelow)
         self.time_slider.setTickInterval(1)
         self.time_slider.setValue(0)
 
+        self.show_pd_btn = QtGui.QPushButton('Show/hide peak dynamics', parent = self)
+        self.show_pd_btn.setCheckable(True)
+        self.show_pd_btn.setChecked(False)
+        self.show_pd_btn.toggled.connect(self.peak_dynamics_viewer.setVisible)
+        self.show_pd_btn.toggled.connect(self.peak_dynamics_region.setVisible)
+
         # Final assembly
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.image_viewer)
-        self.layout.addWidget(self.time_slider)
+        self.layout.addWidget(self.peak_dynamics_viewer)
+
+        cmd_bar = QtGui.QHBoxLayout()
+        cmd_bar.addWidget(self.show_pd_btn)
+        cmd_bar.addWidget(self.time_slider)
+        self.layout.addLayout(cmd_bar)
         self.setLayout(self.layout)
     
     @QtCore.pyqtSlot(dict)
@@ -149,7 +162,15 @@ class ProcessedDataViewer(QtGui.QWidget):
         """
         self.dataset_info.update(info)
         self.time_slider.setRange(0, len(self.dataset_info['time_points']) - 1)
+
         # TODO: set tick labels to time points
+    
+    @QtCore.pyqtSlot(object, object)
+    def update_peak_dynamics(self, time_points, integrated_intensity):
+        pens = list(map(pg.mkPen, spectrum_colors(len(time_points))))
+        brushes = list(map(pg.mkBrush, spectrum_colors(len(time_points))))
+        self.peak_dynamics_viewer.plot(time_points, integrated_intensity, pen = None, symbol = 'o', 
+                                       symbolPen = pens, symbolBrush = brushes, symbolSize = 4, clear = True)
     
     @QtCore.pyqtSlot(object)
     def display(self, image):
