@@ -8,6 +8,7 @@ from os.path import join, isfile, isdir
 from os import listdir 
 import re
 from scipy.stats.mstats import sem
+from skimage.feature import register_translation
 import sys
 from datetime import datetime as dt
 from warnings import warn
@@ -182,6 +183,7 @@ class RawDataset(object):
         
         return read(join(self.raw_directory, filename))
     
+    # TODO: for single crystals, align images using skimage.feature.register_translations
     def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', sample_type = 'powder', 
                 callback = None, cc = True, window_size = 10, ring_width = 5):
         """
@@ -274,13 +276,16 @@ class RawDataset(object):
 
         # Preallocation
         # The following arrays might be resized if there are missing pictures
-        # but preventing copying can save about 10%
+        # but preventing copying can save about 10% time
         cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
         absdiff = n.ma.empty_like(cube, dtype = n.float32)
         int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
         averaged = n.ma.empty(shape = self.resolution, dtype = n.float32)
         error = n.ma.empty_like(averaged)
         mad = n.ma.empty(shape = self.resolution + (1,), dtype = n.float32)
+
+        # Get reference image for aligning single-crystal images
+        ref_im = self.raw_data(self.time_points[0], self.nscans[0]) - pumpoff_background
 
         # TODO: parallelize this loop
         #       The only reason it is not right now is that
@@ -300,9 +305,13 @@ class RawDataset(object):
                     missing_pictures += 1
                     continue
                 
-                if cc:
+                if cc and sample_type == 'powder':
                     corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
                                                                     window_size = window_size, ring_width = ring_width)
+                # Single crystal alignment is done at a precision of 1 pixel
+                # due to the ease of shifting images.                                                    
+                elif cc and sample_type == 'single_crystal':
+                    corr_i, corr_j = register_translation(ref_im, image, upsample_factor = 1, space = 'real')
                 else:
                     corr_i, corr_j = 0,0
                 
@@ -330,6 +339,8 @@ class RawDataset(object):
             cube[absdiff > 3*mad] = n.ma.masked
 
             # Counting statistics account for very little
+            # TODO: Would it be possible to compute the error at the same time as
+            # computing the mean?
             error[:] = sem(cube, axis = 2)
 
             # Normalize data cube intensity

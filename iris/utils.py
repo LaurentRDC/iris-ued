@@ -8,9 +8,9 @@ from os.path import join
 from .io import RESOLUTION, ImageNotFoundError, read
 
 def shift(arr, x, y):
-    """
-    Shift an array to center.
-
+    """ 
+    Shift an image on at a 1-pixel resolution.
+    
     Parameters
     ----------
     arr : ndarray
@@ -21,30 +21,12 @@ def shift(arr, x, y):
     -------
     out : MaskedArray
     """
+    non = lambda s: s if s < 0 else None
+    mom = lambda s: max(0,s)
+
     shifted = n.empty_like(arr)
     shifted.fill(n.nan)
-
-    if x > 0:
-        x_source = slice(0, -x)
-        x_cast = slice(x, None)
-    elif x < 0:
-        x_source = slice(-x, None)
-        x_cast = slice(0, x)
-    else:
-        x_source = slice(0, None)
-        x_cast = slice(0, None)
-
-    if y > 0:
-        y_source = slice(0, -y)
-        y_cast = slice(y, None)
-    elif y < 0:
-        y_source = slice(-y, None)
-        y_cast = slice(0, y)
-    else:
-        y_source = slice(0, None)
-        y_cast = slice(0, None)
-    
-    shifted[x_cast, y_cast] = arr[x_source, y_source]
+    shifted[mom(y):non(y), mom(x):non(x)] = arr[mom(-y):non(-y), mom(-x):non(-x)]
     return n.ma.array(shifted, mask = n.isnan(shifted), fill_value = 0.0)
 
 def average_tiff(directory, wildcard, background = None):
@@ -110,7 +92,7 @@ def find_center(image, guess_center, radius, window_size = 10, ring_width = 10):
     centers = product(range(xc - window_size, window_size + xc + 1),
                       range(yc - window_size, window_size + yc + 1))
     
-    # Reduce image size down to the bounding box that encompasses
+    # Reduce image size down to the bounding bx that encompasses
     # all possible circles
     extra = window_size + ring_width + radius
     reduced = image[yc - extra:yc + extra, xc - extra:xc + extra]
