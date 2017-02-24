@@ -3,7 +3,7 @@ from itertools import chain
 from setuptools import setup, find_packages
 import glob
 
-__version__ = '2.0.5'
+__version__ = '2.0.6'
 __author__ = 'Laurent P. René de Cotret'
 
 #To create a Windows installer for this, run:
