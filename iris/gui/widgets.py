@@ -604,6 +604,9 @@ class FluenceCalculatorDialog(QtGui.QDialog):
             f = fluence(float(self.incident_laser_power_edit.text()),
                         int(self.laser_rep_rate_cb.currentText()),
                         FWHM = [int(self.beam_size_x_edit.text()), int(self.beam_size_y_edit.text())])
+            self.fluence.setText('{:2f}'.format(str(f)) + ' mJ / cm^2')
         except ValueError:  # Could not parse 
-            f = '---'
-        self.fluence.setText(str(f) + ' mJ / cm^2')
+            self.fluence.setText('-----')
+
+
+        
