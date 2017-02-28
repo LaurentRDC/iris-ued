@@ -150,7 +150,7 @@ class IrisController(QtCore.QObject):
     def load_raw_dataset(self, path):
         self.raw_dataset = RawDataset(path)
         self.raw_dataset_loaded_signal.emit(True)
-        self.display_raw_data(timedelay = min(map(abs, self.raw_dataset.time_points)), 
+        self.display_raw_data(timedelay = min(self.raw_dataset.time_points), 
                               scan = min(self.raw_dataset.nscans))
         
     @error_aware('Processed dataset could not be loaded.')
