@@ -505,6 +505,7 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         sample_type_layout.addWidget(self.sc_type_btn)
 
         self.mad_checkbox = QtGui.QCheckBox('Enable MAD filtering', parent = self)
+        self.mad_checkbox.setChecked(True)
         self.center_correction_checkbox = QtGui.QCheckBox('Enable center-correction', parent = self)
 
         self.window_size_cb = QtGui.QComboBox(parent = self)
@@ -525,6 +526,7 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         items.addWidget(self.compression_cb)
         items.addWidget(QtGui.QLabel('Select sample type:', parent = self))
         items.addLayout(sample_type_layout)
+        items.addWidget(self.mad_checkbox)
         items.addWidget(self.center_correction_checkbox)
         items.addWidget(QtGui.QLabel('Center-correction window size:', parent = self))
         items.addWidget(self.window_size_cb)
