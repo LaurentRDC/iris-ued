@@ -185,7 +185,7 @@ class RawDataset(object):
     
     # TODO: for single crystals, align images using skimage.feature.register_translations
     def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', sample_type = 'powder', 
-                callback = None, cc = True, window_size = 10, ring_width = 5):
+                callback = None, cc = True, window_size = 10, ring_width = 5, mad = True):
         """
         Processes raw data into something useable by iris.
         
@@ -213,16 +213,20 @@ class RawDataset(object):
             Number of pixels the center is allowed to vary.
         ring_width : int, optional
             Width of the ring over which the intensity integral is calculated.
+        mad : bool, optional
+            If True (default), the distributions of pixel intensities across scans are included based on a median absolute difference (MAD)
+            approach. Set to False for faster performance.
         
         Returns
         -------
         path
         """
 
-        # Preliminary check:
+        # Preliminary check. If energy is 0kV, then the scattering length calculation will
+        # fail at the end of processing, crashing iris.
         if self.energy == 0:
             raise AttributeError('Energy is 0 kV')
-            
+
         if callback is None:
             callback = lambda x: None
         
@@ -336,12 +340,13 @@ class RawDataset(object):
             # Therefore, we assign it again
             cube[beamblock_mask, :] = n.ma.masked
             
-            # Mask outliers according to the median-absolute-difference criterion
-            # Consistency constant of 1.4826 due to underlying normal distribution
-            # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
-            n.ma.abs(cube - n.ma.median(cube, axis = 2, keepdims = True), out = absdiff)
-            mad[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug with keepdims = True
-            cube[absdiff > 3*mad] = n.ma.masked
+            if mad:
+                # Mask outliers according to the median-absolute-difference criterion
+                # Consistency constant of 1.4826 due to underlying normal distribution
+                # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
+                n.ma.abs(cube - n.ma.median(cube, axis = 2, keepdims = True), out = absdiff)
+                mad[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug with keepdims = True
+                cube[absdiff > 3*mad] = n.ma.masked
 
             # Counting statistics account for very little
             # TODO: Would it be possible to compute the error at the same time as
