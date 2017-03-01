@@ -218,6 +218,11 @@ class RawDataset(object):
         -------
         path
         """
+
+        # Preliminary check:
+        if self.energy == 0:
+            raise AttributeError('Energy is 0 kV')
+            
         if callback is None:
             callback = lambda x: None
         
