@@ -291,7 +291,7 @@ class RawDataset(object):
         int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
         averaged = n.ma.empty(shape = self.resolution, dtype = n.float32)
         error = n.ma.empty_like(averaged)
-        mad = n.ma.empty(shape = self.resolution + (1,), dtype = n.float32)
+        MAD = n.ma.empty(shape = self.resolution + (1,), dtype = n.float32)
 
         # Get reference image for aligning single-crystal images
         ref_im = self.raw_data(self.time_points[0], self.nscans[0]) - pumpoff_background
@@ -345,8 +345,8 @@ class RawDataset(object):
                 # Consistency constant of 1.4826 due to underlying normal distribution
                 # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
                 n.ma.abs(cube - n.ma.median(cube, axis = 2, keepdims = True), out = absdiff)
-                mad[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug with keepdims = True
-                cube[absdiff > 3*mad] = n.ma.masked
+                MAD[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug with keepdims = True
+                cube[absdiff > 3*MAD] = n.ma.masked
 
             # Counting statistics account for very little
             # TODO: Would it be possible to compute the error at the same time as
@@ -364,7 +364,7 @@ class RawDataset(object):
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
                 gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float32, **ckwargs)
                 gp.create_dataset(name = 'error', data = n.ma.filled(error, 0), dtype = n.float32, **ckwargs)
-
+                
             # Resize arrays back to most probable shape
             if missing_pictures > 0:
                 cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
