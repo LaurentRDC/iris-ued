@@ -56,7 +56,7 @@ class ExperimentalParameter(object):
         try:
             return self.output(value)
         except: # Might be 'BLANK', can't cast
-            return self.default
+            return self.output(self.default)
     
     def __set__(self, instance, value):
         raise AttributeError('Attribute {} is read-only.'.format(self.name))
@@ -99,7 +99,7 @@ class RawDataset(object):
     fluence = ExperimentalParameter('Fluence', float, 0)
     current = ExperimentalParameter('Current', float, 0)
     exposure = ExperimentalParameter('Exposure', float, 0)
-    energy = ExperimentalParameter('Energy', float, 0)
+    energy = ExperimentalParameter('Energy', float, 90)
 
     def __init__(self, directory):
         if isdir(directory):
