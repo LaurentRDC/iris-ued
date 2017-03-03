@@ -16,7 +16,7 @@ from .utils import angular_average, scattering_length
 
 class ExperimentalParameter(object):
     """ Descriptor to experimental parameters. """
-    def __init__(self, name, output):
+    def __init__(self, name, output, default = None):
         """ 
         Parameters
         ----------
@@ -27,9 +27,15 @@ class ExperimentalParameter(object):
         """
         self.name = name
         self.output = output
+        self.default = default
     
     def __get__(self, instance, cls):
-        return self.output(instance.experimental_parameters_group.attrs[self.name])
+        try:
+            return self.output(instance.experimental_parameters_group.attrs[self.name])
+        except:
+            # Some parameters might have a default value, others not.
+            if self.default is not None:
+                return self.default
     
     def __set__(self, instance, value):
         instance.experimental_parameters_group.attrs[self.name] = value
@@ -78,10 +84,6 @@ class DiffractionDataset(h5py.File):
     _processed_group_name = '/processed'
     _exp_params_group_name = '/'
     _pumpoff_pictures_group_name = '/pumpoff'
-
-    experimental_parameter_names = ('nscans', 'time_points', 'acquisition_date', 'fluence', 
-                                    'current', 'exposure', 'energy', 'resolution', 'center',
-                                    'sample_type', 'beamblock_rect')
     
     # Experimental parameters as descriptors
     nscans = ExperimentalParameter('nscans', tuple)
@@ -91,10 +93,11 @@ class DiffractionDataset(h5py.File):
     current = ExperimentalParameter('current', float)
     exposure = ExperimentalParameter('exposure', float)
     energy = ExperimentalParameter('energy', float)
-    resolution = ExperimentalParameter('resolution', tuple)
+    resolution = ExperimentalParameter('resolution', tuple, default = (2048, 2048))
     center = ExperimentalParameter('center', tuple)
     beamblock_rect = ExperimentalParameter('beamblock_rect', tuple)
     sample_type = ExperimentalParameter('sample_type', str)
+    time_zero_shift = ExperimentalParameter('time_zero_shift', float, default = 0.0)
 
     def __init__(self, name, mode = 'r', **kwargs):
         """
@@ -110,8 +113,13 @@ class DiffractionDataset(h5py.File):
                   Sample type: {}, \n \
                   Acquisition date : {}, \n \
                   fluence {} mj/cm**2 >'.format(self.sample_type,self.acquisition_date, self.fluence)
+    
+    @property
+    def corrected_time_points(self):
+        """ Time points corrected for time-zero shift. """
+        return tuple(n.array(self.time_points) - self.time_zero_shift)
             
-    def averaged_data(self, timedelay, out = None):
+    def averaged_data(self, timedelay, tcor = False, out = None):
         """
         Returns data at a specific time-delay.
 
@@ -119,6 +127,9 @@ class DiffractionDataset(h5py.File):
         ----------
         timdelay : float
             Timedelay [ps]
+        tcor : bool, optional
+            If True, the time-zero shift corrected time-points are used
+            instead of experimental time-points.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -128,11 +139,11 @@ class DiffractionDataset(h5py.File):
         arr : ndarray or None
             Time-delay data. If out is provided, None is returned.
         """
-        timedelay = str(float(timedelay))
-        dataset = self.processed_measurements_group[timedelay]['intensity']
+        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
+        dataset = self.processed_measurements_group['intensity']
         if out:
-            return dataset.read_direct(array = out, source_sel = n.s_[:,:], dest_sel = n.s_[:,:])
-        return n.array(dataset)
+            return dataset.read_direct(array = out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
+        return n.array(dataset[:,:,time_index])
     
     def averaged_data_block(self):
         """
@@ -142,12 +153,9 @@ class DiffractionDataset(h5py.File):
         -------
         out : ndarray, ndim 3
         """
-        block = n.empty(shape = self.resolution + (len(self.time_points),), dtype = n.float)
-        for i, time in enumerate(self.time_points):
-            block[:,:,i] = self.averaged_data(time)
-        return block
+        return n.array(self.processed_measurements_group['intensity'])
     
-    def averaged_error(self, timedelay, out = None):
+    def averaged_error(self, timedelay, tcor = False, out = None):
         """ 
         Returns error in measurement.
 
@@ -155,6 +163,9 @@ class DiffractionDataset(h5py.File):
         ----------
         timdelay : float
             Timedelay [ps]
+        tcor : bool, optional
+            If True, the time-zero shift corrected time-points are used
+            instead of experimental time-points.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -164,11 +175,11 @@ class DiffractionDataset(h5py.File):
         arr : ndarray or None
             Time-delay error. If out is provided, None is returned.
         """
-        timedelay = str(float(timedelay))
-        dataset = self.processed_measurements_group[timedelay]['error']
+        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
+        dataset = self.processed_measurements_group['error']
         if out:
-            return dataset.read_direct(array = out, source_sel = n.s_[:,:], dest_sel = n.s_[:,:])
-        return n.array(dataset)
+            return dataset.read_direct(array = out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
+        return n.array(dataset[:,:,time_index])
     
     def time_series(self, rect):
         """
@@ -184,14 +195,9 @@ class DiffractionDataset(h5py.File):
         out : ndarray, ndim 1
         """
         x1, x2, y1, y2 = rect
-        series = n.empty(shape = len(self.time_points), dtype = n.float)
 
-        # Don't use self.averaged_data because then the entire picture is loaded
-        for index, time in enumerate(self.time_points):
-            data = self.processed_measurements_group[str(float(time))]['intensity'][y1:y2, x1:x2]  # Numpy axes are transposed
-            series[index] = n.sum(data)
-        
-        return series
+        data = n.array(self.processed_measurements_group['intensity'][y1:y2, x1:x2, :])  # Numpy axes are transposed
+        return n.sum(n.sum(data, axis = 0), axis = 0)
 
     def pumpoff_data(self, scan, out = None):
         """
@@ -258,7 +264,6 @@ class PowderDiffractionDataset(DiffractionDataset):
     # Analysis parameters concerning the wavelet used
     # The dual-tree complex wavelet transform also uses 
     # first stage wavelet
-    analysis_parameter_names = ('first_stage', 'wavelet', 'level', 'baseline_removed')
     first_stage = AnalysisParameter(name = 'first_stage', output = str, group_name = _powder_group_name)
     wavelet = AnalysisParameter(name = 'wavelet', output = str, group_name = _powder_group_name)
     level = AnalysisParameter(name = 'level', output = int, group_name = _powder_group_name)
@@ -272,7 +277,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     def scattering_length(self):
         return n.array(self.powder_group['scattering_length'])
 
-    def powder_data(self, timedelay, bgr = False, out = None):
+    def powder_data(self, timedelay, tcor = False, bgr = False, out = None):
         """
         Returns the angular average data from scan-averaged diffraction patterns.
 
@@ -280,6 +285,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         ----------
         timdelay : float
             Time-delay [ps].
+        tcor : bool, optional
+            If True, the time-zero shift corrected time-points are used
+            instead of experimental time-points.
         bgr : bool
             If True, background is removed.
         out : ndarray or None, optional
@@ -307,7 +315,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         else:
             return n.array(dataset)
     
-    def powder_error(self, timedelay, out = None):
+    def powder_error(self, timedelay, tcor = False, out = None):
         """
         Returns the angular average error from scan-averaged diffraction patterns.
 
@@ -315,6 +323,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         ----------
         timdelay : float
             Time-delay [ps].
+        tcor : bool, optional
+            If True, the time-zero shift corrected time-points are used
+            instead of experimental time-points.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -335,7 +346,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             return dataset.read_direct(array = out)
         return n.array(dataset)
 
-    def baseline(self, timedelay):
+    def baseline(self, timedelay, tcor = False):
         """ 
         Returns the baseline data 
 
@@ -343,6 +354,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         ----------
         timdelay : float
             Time-delay [ps].
+        tcor : bool, optional
+            If True, the time-zero shift corrected time-points are used
+            instead of experimental time-points.
         
         Returns
         -------
@@ -401,6 +415,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         return data_block, error_block
     
+    # TODO: store baseline as a single block, like angular averages
     def compute_baseline(self, first_stage, wavelet, max_iter = 100, level = 'max'):
         """
         Compute and save the baseline computed from the dualtree package.
@@ -437,20 +452,28 @@ class PowderDiffractionDataset(DiffractionDataset):
     
     def _compute_angular_averages(self):
         """ Compute the angular averages. This method is 
-        only called by RawDataset.process """
-        ckwargs = self.compression_params
-        for timedelay in self.time_points:
-            px_radius, intensity, error = angular_average(self.averaged_data(timedelay), center = self.center, 
-                                                          beamblock_rect = self.beamblock_rect, 
-                                                          error = self.averaged_error(timedelay))
-            gp = self.powder_group.create_group(name = str(timedelay))
+        only called by RawDataset.process once"""
 
-            # Error in the powder pattern = image_data / sqrt(nscans) * sqrt(# of pixels at this radius)
-            # angular_average() doesn't know about nscans, so we must include it here
-            gp.create_dataset(name = 'intensity', data = intensity, dtype = n.float, **ckwargs)
-            gp.create_dataset(name = 'error', data = error/n.sqrt(len(self.nscans)), dtype = n.float, **ckwargs)
+        # Because it is difficult to know the angular averaged data's shape in advance, 
+        # we calculate it first and store it next
+        results = list()
+        for timedelay in self.time_points:
+            results.append( angular_average(self.averaged_data(timedelay), center = self.center, 
+                                            beamblock_rect = self.beamblock_rect, 
+                                            error = self.averaged_error(timedelay)) )
+        
+        # Concatenate arrays for intensity and error
+        rintensity = n.stack([I for _, I, _ in results], axis = 1)
+        rerror =  n.stack([e for _, _, e in results], axis = 1)
+        
+        dataset = self.powder_group.require_dataset(name = 'intensity', shape = rintensity.shape, dtype = rintensity.dtype)
+        dataset[:,:] = rintensity
+
+        dataset = self.powder_group.require_dataset(name = 'error', shape = rerror.shape, dtype = rerror.dtype)
+        dataset[:,:] = rerror
         
         # TODO: variable pixel_width and camera distance in the future
+        px_radius = results[0][0]
         s_length = scattering_length(px_radius, energy = self.energy)
-        self.powder_group.create_dataset(name = 'scattering_length', data = s_length, dtype = n.float, **ckwargs)
+        self.powder_group.create_dataset(name = 'scattering_length', data = s_length, dtype = n.float)
         self.baseline_removed = False
