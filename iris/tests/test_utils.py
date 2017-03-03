@@ -1,34 +1,8 @@
 
-from ..utils import angular_average, shift, find_center
+from ..utils import angular_average, find_center
 import numpy as n
 from scipy.ndimage import gaussian_filter
 import unittest
-
-class TestShift(unittest.TestCase):
-    
-    def test_no_shift(self):
-        """ Shift by 0 pixels """
-        array = n.ones(shape = (256, 256), dtype = n.float)
-        self.assertTrue(n.allclose(array, shift(array, 0, 0)))
-    
-    def test_no_shift_in_each_direction(self):
-        array = n.ones(shape = (256, 256), dtype = n.float)
-        self.assertEqual(array.shape, shift(array, 0, -1).shape)
-        self.assertEqual(array.shape, shift(array, 1, 0).shape)
-    
-    def test_output_format(self):
-        array = n.ones(shape = (256, 256), dtype = n.float)
-        shifted = shift(array, 1, 23)
-        self.assertEqual(array.shape, shifted.shape)
-        self.assertEqual(array.dtype, shifted.dtype)
-    
-    def test_shift_out_of_bounds(self):
-        array = n.ones(shape = (256, 256), dtype = n.float)
-        shifted_x = shift(array, 300, 0)
-        self.assertTrue(shifted_x.mask.sum() == array.size)
-
-        shifted_y = shift(array, 0, -451)
-        self.assertTrue(shifted_y.mask.sum() == array.size)
 
 class TestAngularAverage(unittest.TestCase):
 

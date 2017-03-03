@@ -40,7 +40,7 @@ def chunked(iterable, chunksize = 1):
     for ndx in range(0, length, chunksize):
         yield iterable[ndx:min(ndx + chunksize, length)]
 
-def parallel_map(func, iterable, args = tuple(), kwargs = {}, processes = None):
+def pmap(func, iterable, args = tuple(), kwargs = {}, processes = None):
     """
     Parallel application of a function with keyword arguments.
 
@@ -71,32 +71,3 @@ def parallel_map(func, iterable, args = tuple(), kwargs = {}, processes = None):
         return map_func(func = partial(func, **kwargs), 
                         iterable = iterable, 
                         chunksize = chunksize)
-
-def parallel_sum(func, iterable, args = tuple(), kwargs = {}, processes = None):
-    """
-    Parallel sum that accumulates the result.
-
-    Parameters
-    ----------
-    func : callable
-        Callable of the form func(iterable, *args, **kwargs) that returns a single value.
-        func must be callable on iterables of any length.
-    iterable : iterable
-    
-    args : tuple
-
-    kwargs : dictionary, optional
-
-    processes : int or None, optional
-    """
-    if not isinstance(iterable, Sized):
-        iterable = tuple(iterable)
-    
-    results = list()
-    with mp.Pool(processes) as pool:
-        chunksize = max(1, int(len(iterable)/pool._processes))
-        for batch in chunked(iterable = iterable, chunksize = chunksize):
-            # batch has to be embedded into a tuple because pool.apply unpacks arguments
-            results.append(pool.apply_async(func, args = (batch,) + args, kwds = kwargs))
-        
-        return sum((r.get() for r in results))

@@ -16,7 +16,8 @@ from warnings import warn
 from . import cached_property
 from .io import read, save, RESOLUTION, ImageNotFoundError, cast_to_16_bits
 from .dataset import DiffractionDataset, PowderDiffractionDataset
-from .utils import shift, find_center, average_tiff, angular_average
+from .subroutines import diff_avg, diff_align, powder_align, shift_image
+from .utils import find_center, average_tiff, angular_average
 
 class ExperimentalParameter(object):
     """ Descriptor to experimental parameters for raw diffraction datasets. """
@@ -283,17 +284,7 @@ class RawDataset(object):
         beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
         beamblock_mask[y1:y2, x1:x2] = True
 
-        # Preallocation
-        # The following arrays might be resized if there are missing pictures
-        # but preventing copying can save about 10% time
-        cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
-        absdiff = n.ma.empty_like(cube, dtype = n.float32)
-        int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
-        averaged = n.ma.empty(shape = self.resolution, dtype = n.float32)
-        error = n.ma.empty_like(averaged)
-        MAD = n.ma.empty(shape = self.resolution + (1,), dtype = n.float32)
-
-        # Get reference image for aligning single-crystal images
+        # Get reference image for aligning all images
         ref_im = self.raw_data(self.time_points[0], self.nscans[0]) - pumpoff_background
 
         # TODO: parallelize this loop
@@ -302,74 +293,34 @@ class RawDataset(object):
         #       a 30 scans dataset
         for i, timedelay in enumerate(self.time_points):
 
-            # Concatenate time-delay in data cube
-            # Last axis is the scan number
-            # Before concatenation, shift around for center
-            missing_pictures, slice_index = 0, 0
+            images = list()
             for scan in self.nscans:
                 try:
-                    image = self.raw_data(timedelay, scan) - pumpon_background
+                    images.append( self.raw_data(timedelay, scan) - pumpon_background )
                 except ImageNotFoundError:
                     warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
-                    missing_pictures += 1
-                    continue
-                
-                if cc and sample_type == 'powder':
-                    corr_i, corr_j = n.array(center) - find_center(image, guess_center = center, radius = radius, 
-                                                                    window_size = window_size, ring_width = ring_width)
-                # Single crystal alignment is done at a precision of 1 pixel
-                # due to the ease of shifting images.                                                    
-                elif cc and sample_type == 'single_crystal':
-                    corr_i, corr_j = register_translation(ref_im, image, upsample_factor = 1, space = 'real')
-                else:
-                    corr_i, corr_j = 0,0
-                
-                # Everything along the edges of cube might be invalid due to center correction
-                # These edge values will have been set to ma.masked by the shift() function
-                cube[:,:,slice_index] = shift(image, int(round(corr_i)), int(round(corr_j)))
-                slice_index += 1
-                
-            # cube possibly has some empty slices due to missing pictures
-            # Compress cube along axis 2
-            if missing_pictures > 0:
-                cube = cube[:, :, 0:-missing_pictures]
-                absdiff = n.ma.empty_like(cube, dtype = n.float32)
-                int_intensities = n.empty(shape = (1,1,len(self.nscans) - missing_pictures), dtype = n.float32)
+            
+            # Center correction is built as a subroutine
+            #
+            if cc and sample_type == 'single_crystal':
+                images = diff_align(images, reference = ref_im)
+            elif cc and sample_type == 'powder':
+                images = powder_align(images, guess_center = center, radius = radius, 
+                                      window_size = window_size, ring_width = ring_width)
             
             # Setting elements inside cube will reset the mask
             # Therefore, we assign it again
+            images = n.stack(images, axis = 2)
+            cube = n.ma.masked_array(images, dtype = n.int32, fill_value = 0.0)
             cube[beamblock_mask, :] = n.ma.masked
-            
-            if mad:
-                # Mask outliers according to the median-absolute-difference criterion
-                # Consistency constant of 1.4826 due to underlying normal distribution
-                # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
-                n.ma.abs(cube - n.ma.median(cube, axis = 2, keepdims = True), out = absdiff)
-                MAD[:] = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug with keepdims = True
-                cube[absdiff > 3*MAD] = n.ma.masked
 
-            # Counting statistics account for very little
-            # TODO: Would it be possible to compute the error at the same time as
-            # computing the mean?
-            error[:] = sem(cube, axis = 2)
-
-            # Normalize data cube intensity
-            # Integrated intensities are computed for each "picture" (each slice in axes (0, 1))
-            # Then, the data cube is normalized such that each slice has the same integrated intensity
-            n.ma.sum(n.ma.sum(cube, axis = 0, keepdims = True, dtype = n.float32), axis = 1, keepdims = True, dtype = n.float32, out = int_intensities)
-            int_intensities /= n.ma.mean(int_intensities)
-            averaged[:] = n.ma.mean(cube / int_intensities, axis = 2) # out = averaged bug
+            # Average appropriately using subroutine
+            averaged, error = diff_avg(cube, mad = mad, mad_dist = 3)
 
             with DiffractionDataset(name = filename, mode = 'r+') as processed:
                 gp = processed.processed_measurements_group.create_group(name = str(timedelay))
                 gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float32, **ckwargs)
                 gp.create_dataset(name = 'error', data = n.ma.filled(error, 0), dtype = n.float32, **ckwargs)
-                
-            # Resize arrays back to most probable shape
-            if missing_pictures > 0:
-                cube = n.ma.empty(shape = self.resolution + (len(self.nscans),), dtype = n.int32, fill_value = 0.0)
-                absdiff = n.ma.empty_like(cube, dtype = n.float32)
-                int_intensities = n.empty(shape = (1,1,len(self.nscans)), dtype = n.float32)
             
             callback(round(100*i / len(self.time_points)))
 
