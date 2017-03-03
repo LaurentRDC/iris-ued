@@ -8,7 +8,8 @@ import numpy as n
 
 __all__ = ['baseline', 'denoise']
 
-def baseline(array, max_iter, level = 'max', first_stage = DEFAULT_FIRST_STAGE, wavelet = DEFAULT_CMP_WAV, background_regions = [], mask = None):
+def baseline(array, max_iter, level = 'max', first_stage = DEFAULT_FIRST_STAGE, wavelet = DEFAULT_CMP_WAV, 
+             background_regions = [], mask = None, axis = -1):
     """
     Iterative method of baseline determination based on the dual-tree complex wavelet transform. Modified from [1]
     
@@ -43,6 +44,8 @@ def baseline(array, max_iter, level = 'max', first_stage = DEFAULT_FIRST_STAGE, 
     
     mask : ndarray, dtype bool, optional
         Mask array that evaluates to True for pixels that are invalid. 
+    axis : int, optional
+        Axis over which to compute the wavelet transform. Default is -1
     
     Returns
     -------
@@ -58,18 +61,15 @@ def baseline(array, max_iter, level = 'max', first_stage = DEFAULT_FIRST_STAGE, 
         
     References
     ----------
-    [1] Galloway et al. 'An Iterative Algorithm for Background Removal in Spectroscopy by Wavelet Transforms', Applied Spectroscopy pp. 1370 - 1376, September 2009.
+    [1] Galloway et al. 'An Iterative Algorithm for Background Removal in Spectroscopy by Wavelet Transforms', 
+        Applied Spectroscopy pp. 1370 - 1376, September 2009.
     """   
     array = n.asarray(array, dtype = n.float)
-    if array.ndim == 2:
-        raise NotImplementedError('2D baseline determination is planned but not supported.')
-    elif array.ndim > 2:
-        raise ValueError('{}D baseline determination is not supported.'.format(array.ndim))
 
     # Since dualtree() only works on even-length signals, we might have to extend.
-    original_shape = array.shape[-1]    # Valid for 1D signals
-    if original_shape % 2 == 1:         # Odd length array
-        array = n.concatenate((array, [array[-1]]), axis = -1)
+    original_shape = array.shape
+    if original_shape[axis] % 2 == 1:         # Odd length array
+        array = n.concatenate((array, [array[axis]]), axis = axis)
 
     if mask is None:
         mask = n.zeros_like(array, dtype = n.bool)
@@ -84,7 +84,8 @@ def baseline(array, max_iter, level = 'max', first_stage = DEFAULT_FIRST_STAGE, 
             signal[index] = array[index]
         
         # Wavelet reconstruction using approximation coefficients
-        background[:] = approx_rec(array = signal, level = level, first_stage = first_stage, wavelet = wavelet)
+        background[:] = approx_rec(array = signal, level = level, first_stage = first_stage, 
+                                   wavelet = wavelet, axis = axis)
         
         # Modify the signal so it cannot be more than the background
         # This reduces the influence of the peaks in the wavelet decomposition

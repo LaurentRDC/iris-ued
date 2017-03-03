@@ -253,6 +253,7 @@ class RawDataset(object):
             processed.sample_type = sample_type
             processed.center = center
             processed.beamblock_rect = beamblock_rect
+            processed.time_zero_shift = 0.0
 
             # Copy pumpoff pictures
             # Subtract background from all pumpoff pictures
@@ -283,6 +284,13 @@ class RawDataset(object):
         x1,x2,y1,y2 = beamblock_rect
         beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
         beamblock_mask[y1:y2, x1:x2] = True
+
+        # Prepare container for the large array of averaged pictures
+        shape = self.resolution + (len(self.time_points),)
+        with DiffractionDataset(name = filename, mode = 'r+') as processed:
+            gp = processed.processed_measurements_group
+            gp.create_dataset(name = 'intensity', shape = shape, dtype = n.float32, **ckwargs)
+            gp.create_dataset(name = 'error', shape = shape, dtype = n.float32, **ckwargs)
 
         # Get reference image for aligning all images
         ref_im = self.raw_data(self.time_points[0], self.nscans[0]) - pumpoff_background
@@ -318,9 +326,8 @@ class RawDataset(object):
             averaged, error = diff_avg(cube, mad = mad, mad_dist = 3)
 
             with DiffractionDataset(name = filename, mode = 'r+') as processed:
-                gp = processed.processed_measurements_group.create_group(name = str(timedelay))
-                gp.create_dataset(name = 'intensity', data = n.ma.filled(averaged, 0), dtype = n.float32, **ckwargs)
-                gp.create_dataset(name = 'error', data = n.ma.filled(error, 0), dtype = n.float32, **ckwargs)
+                processed.processed_measurements_group['intensity'][:,:,i] = n.ma.filled(averaged, 0)
+                processed.processed_measurements_group['error'][:,:,i] = n.ma.filled(error, 0)
             
             callback(round(100*i / len(self.time_points)))
 

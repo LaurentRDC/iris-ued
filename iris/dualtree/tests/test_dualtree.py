@@ -104,5 +104,10 @@ class TestBaseline(unittest.TestCase):
         background = baseline(array = self.array, max_iter = 100)
         self.assertTrue(self.array.shape == background.shape)
     
+    def test_baseline_along_axis(self):
+        array = n.random.random(size = (99, 99))
+        background = baseline(array = array, max_iter = 100, axis = 0)
+        self.assertSequenceEqual(array.shape, background.shape)
+    
 if __name__ == '__main__':
     unittest.main()

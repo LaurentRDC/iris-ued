@@ -5,7 +5,7 @@ Author: Laurent P. René de Cotret
 """
 from itertools import cycle
 import numpy as n
-from pywt import dwt, idwt, dwt_max_level
+from pywt import dwt, idwt, dwt2, idwt2, dwt_max_level
 from ._wavelets import dualtree_wavelet, dualtree_first_stage
 
 __all__ = ['dualtree', 'idualtree', 'dualtree_max_level', 'approx_rec', 'detail_rec']
@@ -77,8 +77,8 @@ def dualtree(data, first_stage = DEFAULT_FIRST_STAGE, wavelet = DEFAULT_CMP_WAV,
     real_wavelet, imag_wavelet = dualtree_wavelet(wavelet)
     real_first, imag_first = dualtree_first_stage(first_stage)
     
-    real_coeffs = _single_tree_analysis(data = data, first_stage = real_first, wavelet = (real_wavelet, imag_wavelet), level = level, mode = mode, axis = axis)
-    imag_coeffs = _single_tree_analysis(data = data, first_stage = imag_first, wavelet = (imag_wavelet, real_wavelet), level = level, mode = mode, axis = axis)
+    real_coeffs = _single_tree_analysis_1d(data = data, first_stage = real_first, wavelet = (real_wavelet, imag_wavelet), level = level, mode = mode, axis = axis)
+    imag_coeffs = _single_tree_analysis_1d(data = data, first_stage = imag_first, wavelet = (imag_wavelet, real_wavelet), level = level, mode = mode, axis = axis)
 
     # Combine coefficients into complex form
     # TODO: This is slow
@@ -132,12 +132,91 @@ def idualtree(coeffs, first_stage = DEFAULT_FIRST_STAGE, wavelet = DEFAULT_CMP_W
         real_wavelet, imag_wavelet = dualtree_wavelet(wavelet)
         real_first, imag_first = dualtree_first_stage(first_stage)
 
-        real = _single_tree_synthesis(coeffs = [coeff.real for coeff in coeffs], first_stage = real_first, 
+        real = _single_tree_synthesis_1d(coeffs = [coeff.real for coeff in coeffs], first_stage = real_first, 
                                       wavelet = (real_wavelet, imag_wavelet), mode = mode, axis = axis)
-        imag = _single_tree_synthesis(coeffs = [coeff.imag for coeff in coeffs], first_stage = imag_first, 
+        imag = _single_tree_synthesis_1d(coeffs = [coeff.imag for coeff in coeffs], first_stage = imag_first, 
                                       wavelet = (imag_wavelet, real_wavelet), mode = mode, axis = axis)
     
     return n.sqrt(2)*(real + imag)/2
+
+def dualtree2d(data, wavelet = DEFAULT_CMP_WAV, level = 'max', mode = DEFAULT_MODE, axes = (-2, -1)):
+    """
+    Dual-tree complex wavelet transform, implemented from [1], along an axis. 
+
+    Parameters
+    ----------
+    data: array_like, ndim 2
+        Input data. The length along both axes must be even.
+    wavelet : str, optional
+        Must be appropriate for the dual-tree complex wavelet transform. See dualtree.ALL_COMPLEX_WAV for possible
+    level : int or 'max', optional
+        Decomposition level (must be >= 0). If level is 'max' (default) then it
+        will be calculated using the ``dualtree_max_level`` function.
+    mode : str, optional
+        Signal extension mode, see pywt.Modes.
+    axes : 2-tuple of ints
+        Axes over which the 2D transform is to be performed.
+
+    Returns
+    -------
+    [cA_n, cD_n, cD_n-1, ..., cD2, cD1] : list
+        Ordered list of coefficients arrays
+        where `n` denotes the level of decomposition. The first element
+        (`cA_n`) of the result is approximation coefficients array and the
+        following elements (`cD_n` - `cD_1`) are details coefficients arrays.
+        Arrays have the same number of dimensions as the input.
+    
+    References
+    ----------
+    [1] Selesnick, I. W. et al. 'The Dual-tree Complex Wavelet Transform', IEEE Signal Processing Magazine pp. 123 - 151, November 2005.
+    """
+    raise NotImplementedError
+    
+    data = n.asarray(data, dtype = n.float)
+
+    if level == 'max':
+        level = dualtree_max_level(data = data, first_stage = first_stage, wavelet = wavelet, axis = axis)
+    elif level == 0:
+        return [data]
+        
+    realw, imagw = dualtree_wavelet(wavelet)
+    
+    axes = tuple(axes)
+    if len(axes) != 2:
+        raise ValueError("Expected 2 axes")
+    if len(axes) != len(set(axes)):
+        raise ValueError("The axes passed to wavedec2 must be unique.")
+    try:
+        axes_sizes = [data.shape[ax] for ax in axes]
+    except IndexError:
+        raise ValueError("Axis greater than data dimensions")
+
+    hh_coeffs_list = list()
+    hg_coeffs_list = list()
+    gh_coeffs_list = list()
+    gg_coeffs_list = list()
+
+    hh_a = hg_a = gh_a = gg_a = data
+    for i in range(level):
+        hh_a, hh_ds = dwt2(hh_a, wavelet = (realw, realw), mode = mode, axes = axes)
+        hg_a, hg_ds = dwt2(hg_a, wavelet = (realw, imagw), mode = mode, axes = axes)
+        gh_a, gh_ds = dwt2(gh_a, wavelet = (imagw, realw), mode = mode, axes = axes)
+        gg_a, gg_ds = dwt2(gg_a, wavelet = (imagw, imagw), mode = mode, axes = axes)
+
+        hh_coeffs_list.append(hh_ds)
+        hg_coeffs_list.append(hg_ds)
+        gh_coeffs_list.append(gh_ds)
+        gg_coeffs_list.append(gg_ds)
+    
+    hh_coeffs_list.append(hh_a)
+    hg_coeffs_list.append(hg_a)
+    gh_coeffs_list.append(gh_a)
+    gg_coeffs_list.append(gg_a)
+
+    coeffs_list.append(a)
+    coeffs_list.reverse()
+
+    return coeffs_list
 
 def approx_rec(array, level, first_stage = DEFAULT_FIRST_STAGE, wavelet = DEFAULT_CMP_WAV, mode = DEFAULT_MODE, axis = -1):
     """
@@ -164,7 +243,7 @@ def approx_rec(array, level, first_stage = DEFAULT_FIRST_STAGE, wavelet = DEFAUL
         Approximated reconstruction of the input array.
     """
     coeffs = dualtree(data = array, first_stage = first_stage, wavelet = wavelet, level = level, mode = mode, axis = axis)
-    app_coeffs, *det_coeffs = coeffs        # Python 3 only
+    app_coeffs, *det_coeffs = coeffs
     
     det_coeffs = [n.zeros_like(det, dtype = n.complex) for det in det_coeffs]
     reconstructed = idualtree(coeffs = [app_coeffs] + det_coeffs, first_stage = first_stage, wavelet = wavelet, mode = mode, axis = axis)
@@ -246,7 +325,7 @@ def _normalize_size_axis(approx, detail, axis):
     # >>> approx = approx[:-1] 
     return n.swapaxes( n.swapaxes(approx, axis, 0)[:-1] ,0, axis)
 
-def _single_tree_analysis(data, first_stage, wavelet, level, mode, axis):
+def _single_tree_analysis_1d(data, first_stage, wavelet, level, mode, axis):
     """
     Single tree of the forward dual-tree complex wavelet transform.
     
@@ -277,7 +356,7 @@ def _single_tree_analysis(data, first_stage, wavelet, level, mode, axis):
     coeffs_list.append(approx)
     return list(reversed(coeffs_list))
 
-def _single_tree_synthesis(coeffs, first_stage, wavelet, mode, axis):
+def _single_tree_synthesis_1d(coeffs, first_stage, wavelet, mode, axis):
     """
     Single tree of the inverse dual-tree complex wavelet transform.
 
