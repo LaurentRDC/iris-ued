@@ -161,13 +161,21 @@ class Iris(QtGui.QMainWindow):
     
     @QtCore.pyqtSlot()
     def load_raw_dataset(self):
-        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
-        self.raw_dataset_path_signal.emit(path)
+        try:
+            path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
+        except:
+            pass
+        else:
+            self.raw_dataset_path_signal.emit(path)
 
     @QtCore.pyqtSlot()
     def load_dataset(self):
-        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset', filter = '*.hdf5')[0]
-        self.dataset_path_signal.emit(path)
+        try:
+            path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset', filter = '*.hdf5')[0]
+        except:
+            pass
+        else:
+            self.dataset_path_signal.emit(path)
             
     def center_window(self):
         qr = self.frameGeometry()
