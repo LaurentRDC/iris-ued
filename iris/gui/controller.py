@@ -74,7 +74,7 @@ class IrisController(QtCore.QObject):
 
     raw_data_signal = QtCore.pyqtSignal(object, name = 'raw_data_signal')
     averaged_data_signal = QtCore.pyqtSignal(object, name = 'averaged_data_signal')
-    powder_data_signal = QtCore.pyqtSignal(object, object, object, name = 'powder_data_signal')
+    powder_data_signal = QtCore.pyqtSignal(object, object, name = 'powder_data_signal')
 
     time_series_signal = QtCore.pyqtSignal(object, object)
     powder_time_series_signal = QtCore.pyqtSignal(object)
@@ -96,6 +96,11 @@ class IrisController(QtCore.QObject):
     @QtCore.pyqtSlot(float)
     def display_averaged_data(self, timedelay):
         self.averaged_data_signal.emit(self.dataset.averaged_data(timedelay))
+    
+    @error_aware('Powder data could not be displayed.')
+    @QtCore.pyqtSlot()
+    def display_powder_data(self):
+        self.powder_data_signal.emit(self.dataset.scattering_length, self.dataset.powder_data_block)
     
     @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
@@ -141,7 +146,7 @@ class IrisController(QtCore.QObject):
     def compute_baseline(self, params):
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
         self.worker.done_signal.connect(lambda boolean: self.update_dataset_info())
-        self.worker.done_signal.connect(lambda boolean: self.powder_data_signal.emit(self.dataset.scattering_length, *self.dataset.powder_data_block(bgr = self.dataset.baseline_removed)))
+        self.worker.done_signal.connect(lambda boolean: self.powder_data_signal.emit(self.dataset.scattering_length, self.dataset.powder_data_block(bgr = self.dataset.baseline_removed)))
         self.worker.done_signal.connect(lambda boolean: self.status_message_signal.emit('Baseline computed.'))
         self.worker.start()
     
@@ -169,7 +174,7 @@ class IrisController(QtCore.QObject):
         self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
 
         if isinstance(self.dataset, PowderDiffractionDataset):
-            self.powder_data_signal.emit(self.dataset.scattering_length, *self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
+            self.powder_data_signal.emit(self.dataset.scattering_length, self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
             self.powder_dataset_loaded_signal.emit(True)
     
     def update_dataset_info(self):
@@ -179,12 +184,12 @@ class IrisController(QtCore.QObject):
         """
         # Emit dataset information such as fluence, time-points, ...
         info = dict()
-        for attr in DiffractionDataset.experimental_parameter_names:
+        for attr in ('fluence', 'time_points', 'nscans', 'resolution', 'acquisition_date', 'sample_type'):
             info[attr] = getattr(self.dataset, attr)
         
         # PowderDiffractionDataset has some specific parameters
         # like wavelet, decomp. level, etc.
         if isinstance(self.dataset, PowderDiffractionDataset):
-            for attr in PowderDiffractionDataset.analysis_parameter_names:
+            for attr in ('first_stage', 'wavelet', 'level', 'baseline_removed'):
                 info[attr] = getattr(self.dataset, attr)
         self.dataset_info_signal.emit(info)

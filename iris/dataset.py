@@ -245,7 +245,7 @@ class DiffractionDataset(h5py.File):
     @cached_property
     def compression_params(self):
         """ Compression options in the form of a dictionary """
-        dataset = self.processed_measurements_group[str(float(self.time_points[0]))]['intensity']
+        dataset = self.processed_measurements_group['intensity']
         ckwargs = dict()
         ckwargs['compression'] = dataset.compression
         ckwargs['fletcher32'] = dataset.fletcher32
@@ -306,14 +306,14 @@ class PowderDiffractionDataset(DiffractionDataset):
         """
         # I'm not sure how to handle out parameter if bgr is True
         # out has no effect if bgr = True
-        timedelay = str(float(timedelay))
-        dataset = self.powder_group[timedelay]['intensity']
+        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
+        dataset = self.powder_group['intensity']
         if not bgr and out:
-            return dataset.read_direct(array = out)
+            return dataset.read_direct(array = out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
         elif bgr:
-            return n.array(dataset) - self.baseline(timedelay)
+            return n.array(dataset[time_index, :]) - self.baseline(timedelay)
         else:
-            return n.array(dataset)
+            return n.array(dataset[time_index, :])
     
     def powder_error(self, timedelay, tcor = False, out = None):
         """
@@ -340,13 +340,18 @@ class PowderDiffractionDataset(DiffractionDataset):
         powder_data_block
             All time-delay powder diffraction data into 2D arrays.
         """
-        timedelay = str(float(timedelay))
-        dataset = self.powder_group[timedelay]['error']
-        if out:
-            return dataset.read_direct(array = out)
-        return n.array(dataset)
+        # I'm not sure how to handle out parameter if bgr is True
+        # out has no effect if bgr = True
+        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
+        dataset = self.powder_group['error']
+        if not bgr and out:
+            return dataset.read_direct(array = out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
+        elif bgr:
+            return n.array(dataset[time_index, :]) - self.baseline(timedelay)
+        else:
+            return n.array(dataset[time_index, :])
 
-    def baseline(self, timedelay, tcor = False):
+    def baseline(self, timedelay, tcor = False, out = None):
         """ 
         Returns the baseline data 
 
@@ -357,15 +362,25 @@ class PowderDiffractionDataset(DiffractionDataset):
         tcor : bool, optional
             If True, the time-zero shift corrected time-points are used
             instead of experimental time-points.
+        out : ndarray or None, optional
+            If an out ndarray is provided, h5py can avoid
+            making intermediate copies.
         
         Returns
         -------
         out : ndarray
         """
-        try:
-            return n.array(self.powder_group[str(float(timedelay))]['baseline'])
-        except KeyError:
+        if not self.baseline_removed:
             return n.zeros_like(self.scattering_length)
+
+        # I'm not sure how to handle out parameter if bgr is True
+        # out has no effect if bgr = True
+        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
+        dataset = self.powder_group['baseline']
+        if out:
+            return dataset.read_direct(array = out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
+        else:
+            return n.array(dataset[time_index, :])
     
     def powder_time_series(self, smin, smax, bgr = False):
         """
@@ -386,11 +401,14 @@ class PowderDiffractionDataset(DiffractionDataset):
         out : ndarray, shape (N,)
             Integrated diffracted intensity over time.
         """
-        i_min, i_max = n.argmin(n.abs(smin - self.scattering_length)), n.argmin(n.abs(smax - self.scattering_length))
-        block, *_ = self.powder_data_block(bgr = bgr)
         # Python slices are semi-open by design, therefore i_max + 1 is used
         # so that the integration interval is closed.
-        return block[:, i_min:i_max + 1].sum(axis = 1)
+        i_min, i_max = n.argmin(n.abs(smin - self.scattering_length)), n.argmin(n.abs(smax - self.scattering_length))
+        trace = n.array(self.powder_group['intensity'][:, i_min:i_max + 1])
+        if bgr :
+            trace -= n.array(self.powder_group['baseline'][:, i_min:i_max + 1])
+
+        return n.squeeze(n.sum(trace, axis = 1))
         
     def powder_data_block(self, bgr = False):
         """ 
@@ -403,19 +421,14 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         Returns
         -------
-        I, e : ndarrays, shapes (N, M)
-            Diffracted intensity and associated error
+        I : ndarray, shapes (N, M)
+            Diffracted intensity
         """
-        data_block = n.empty(shape = (len(self.time_points), self.scattering_length.size), dtype = n.float)
-        error_block = n.empty_like(data_block)
-
-        for row, timedelay in enumerate(self.time_points):
-            data_block[row, :] = self.powder_data(timedelay, bgr = bgr)
-            error_block[row, :] = self.powder_error(timedelay)
-        
-        return data_block, error_block
+        data = n.array(self.powder_group['intensity'])
+        if bgr:
+            data -= n.array(self.powder_group['baseline'])
+        return data
     
-    # TODO: store baseline as a single block, like angular averages
     def compute_baseline(self, first_stage, wavelet, max_iter = 100, level = 'max'):
         """
         Compute and save the baseline computed from the dualtree package.
@@ -431,16 +444,14 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         level : int or 'max', optional
         """
-        for timedelay in self.time_points:
-            background = baseline(array = self.powder_data(timedelay), max_iter = max_iter, level = level, 
-                                  first_stage = first_stage, wavelet = wavelet, background_regions = tuple(),
-                                  mask = None)
-
-            if not self.baseline_removed:
-                self.powder_group[str(float(timedelay))].create_dataset(name = 'baseline', data = background, 
-                                                                        **self.compression_params)
-            else:
-                self.powder_group[str(float(timedelay))]['baseline'][:] = background
+        background = baseline(array = self.powder_data_block(bgr = False), max_iter = max_iter, level = level, 
+                              first_stage = first_stage, wavelet = wavelet, background_regions = tuple(),
+                              mask = None, axis = 1)
+        
+        if not self.baseline_removed:
+            self.powder_group.create_dataset(name = 'baseline', data = background, **self.compression_params)
+        else:
+            self.powder_group['baseline'][:] = background
         
         # Record parameters
         if level == 'max':
@@ -463,8 +474,8 @@ class PowderDiffractionDataset(DiffractionDataset):
                                             error = self.averaged_error(timedelay)) )
         
         # Concatenate arrays for intensity and error
-        rintensity = n.stack([I for _, I, _ in results], axis = 1)
-        rerror =  n.stack([e for _, _, e in results], axis = 1)
+        rintensity = n.stack([I for _, I, _ in results], axis = 0)
+        rerror =  n.stack([e for _, _, e in results], axis = 0)
         
         dataset = self.powder_group.require_dataset(name = 'intensity', shape = rintensity.shape, dtype = rintensity.dtype)
         dataset[:,:] = rintensity
