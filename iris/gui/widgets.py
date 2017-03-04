@@ -302,8 +302,8 @@ class PowderViewer(QtGui.QWidget):
     def time_points(self):
         return self.dataset_info['time_points']
     
-    @QtCore.pyqtSlot(object, object, object)
-    def display_powder_data(self, scattering_length, powder_data_block, error_block):
+    @QtCore.pyqtSlot(object, object)
+    def display_powder_data(self, scattering_length, powder_data_block):
         """ 
         Display the radial averages of a dataset.
 
@@ -313,24 +313,17 @@ class PowderViewer(QtGui.QWidget):
             Scattering length of the radial patterns
         powder_data_block : ndarray, shape (M, N)
             Array for which each row is a radial pattern for a specific time-delay.
-        error_block : ndarray, shape (M,N)
-            Array for which each row is the error in diffracted intensity 
-            at each time-delay.
         """
-        # Cache
-        self.powder_data_block = powder_data_block
-        self.scattering_length = scattering_length
-        self.error_block = error_block
 
         # Cache some info
-        self._colors = list(spectrum_colors(powder_data_block.shape[0]))
-        self._pens = list(map(pg.mkPen, self._colors))
-        self._brushes = list(map(pg.mkBrush, self._colors))
+        colors = list(spectrum_colors(powder_data_block.shape[-1]))
+        pens = list(map(pg.mkPen, colors))
+        brushes = list(map(pg.mkBrush, colors))
 
         self.powder_pattern_viewer.enableAutoRange()
-        
-        # Get timedelay colors and plot
         self.powder_pattern_viewer.clear()
+
+        # Time
         for pen, brush, curve in zip(self._pens, self._brushes, powder_data_block):
             self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
@@ -350,34 +343,17 @@ class PowderViewer(QtGui.QWidget):
         i_min, i_max = n.argmin(n.abs(self.scattering_length - min_s)), n.argmin(n.abs(self.scattering_length - max_s)) + 1
 
         integrated = self.powder_data_block[:, i_min:i_max].sum(axis = 1)
-        integrated_error =  n.sqrt(n.square(self.error_block[:, i_min:i_max]).sum(axis = 1))/(i_max - i_min)
-        self.peak_dynamics_errors = integrated_error/integrated.max() if integrated.max() > 0.0 else integrated_error
         self.peak_dynamics = integrated/integrated.max() if integrated.max() > 0.0 else integrated
-
-        # compute fourier dynamics
-        # TODO: Lomb-Scargle from scipy.signal
-        self.frequencies = n.fft.fftfreq(len(self._uniform_time_points))
-        self.fourier_dynamics = n.fft.fft(n.interp(self._uniform_time_points, 
-                                                    xp = self.time_points, 
-                                                    fp = self.peak_dynamics)).real
         
         self._update_peak_dynamics_plot()
-        self._update_fourier_dynamics_plot()
     
     def _update_peak_dynamics_plot(self):
         # Display and error bars
         self.peak_dynamics_viewer.plot(self.time_points, self.peak_dynamics, pen = None, symbol = 'o', 
                                        symbolPen = self._pens, symbolBrush = self._brushes, symbolSize = 4, clear = True)
-        error_bars = pg.ErrorBarItem(x = self.time_points, y = self.peak_dynamics, height = self.peak_dynamics_errors)
-        self.peak_dynamics_viewer.addItem(error_bars)
+        #error_bars = pg.ErrorBarItem(x = self.time_points, y = self.peak_dynamics, height = self.peak_dynamics_errors)
+        #self.peak_dynamics_viewer.addItem(error_bars)
         
-        # If the use has zoomed on the previous frame, auto range might be disabled.
-        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
-    
-    def _update_fourier_dynamics_plot(self):
-        self.fourier_dynamics_viewer.plot(self.frequencies, self.fourier_dynamics, pen = None, symbol = 'o',
-                                          symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 4, clear = True)
-
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
 

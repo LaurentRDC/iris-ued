@@ -67,9 +67,12 @@ def baseline(array, max_iter, level = 'max', first_stage = DEFAULT_FIRST_STAGE, 
     array = n.asarray(array, dtype = n.float)
 
     # Since dualtree() only works on even-length signals, we might have to extend.
+    # See numpy.pad docs for a formatting of the padding tuple constructed below
     original_shape = array.shape
-    if original_shape[axis] % 2 == 1:         # Odd length array
-        array = n.concatenate((array, [array[axis]]), axis = axis)
+    if original_shape[axis] % 2 == 1:
+        padding = [(0,0) for dim in original_shape]     # e.g. 2D : padding = [ (0,0), (0,0) ]
+        padding[axis] = (0, 1)
+        array = n.pad(array, tuple(padding), mode = 'constant')
 
     if mask is None:
         mask = n.zeros_like(array, dtype = n.bool)
