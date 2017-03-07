@@ -30,56 +30,24 @@ def error_aware(message):
 class IrisController(QtCore.QObject):
     """
     Controller behind Iris.
-
-    Slots
-    -----
-    display_raw_data
-
-    display_averaged_data
-
-    process_raw_dataset
-
-    load_raw_dataset
-
-    load_dataset
-
-    Signals
-    -------
-    raw_dataset_loaded_signal
-
-    processed_dataset_loaded_signal
-
-    powder_dataset_loaded_signal
-
-    status_message_loaded_signal
-
-    dataset_info_signal
-
-    error_message_signal
-
-    raw_data_signal
-
-    averaged_data_signal
-
-    powder_data_signal
     """
 
-    raw_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'raw_dataset_loaded_signal')
-    processed_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'processed_dataset_loaded_signal')
-    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'powder_dataset_loaded_signal')
+    raw_dataset_loaded_signal = QtCore.pyqtSignal(bool)
+    processed_dataset_loaded_signal = QtCore.pyqtSignal(bool)
+    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool)
 
-    status_message_signal = QtCore.pyqtSignal(str, name = 'status_message_signal')
-    dataset_info_signal = QtCore.pyqtSignal(dict, name = 'dataset_info_signal')
-    error_message_signal = QtCore.pyqtSignal(str, name = 'error_message_signal')
+    status_message_signal = QtCore.pyqtSignal(str)
+    dataset_info_signal = QtCore.pyqtSignal(dict)
+    error_message_signal = QtCore.pyqtSignal(str)
 
-    raw_data_signal = QtCore.pyqtSignal(object, name = 'raw_data_signal')
-    averaged_data_signal = QtCore.pyqtSignal(object, name = 'averaged_data_signal')
-    powder_data_signal = QtCore.pyqtSignal(object, object, name = 'powder_data_signal')
+    raw_data_signal = QtCore.pyqtSignal(object)
+    averaged_data_signal = QtCore.pyqtSignal(object)
+    powder_data_signal = QtCore.pyqtSignal(object, object)
 
     time_series_signal = QtCore.pyqtSignal(object, object)
-    powder_time_series_signal = QtCore.pyqtSignal(object)
+    powder_time_series_signal = QtCore.pyqtSignal(object, object)
 
-    processing_progress_signal = QtCore.pyqtSignal(int, name = 'processing_progress_signal')
+    processing_progress_signal = QtCore.pyqtSignal(int)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -102,6 +70,12 @@ class IrisController(QtCore.QObject):
     def display_powder_data(self):
         self.powder_data_signal.emit(self.dataset.scattering_length, self.dataset.powder_data_block)
     
+    @error_aware('Powder time-series could not be calculated.')
+    @QtCore.pyqtSlot(float, float, bool)
+    def powder_time_series(self, smin, smax, bgr):
+        self.powder_time_series_signal.emit(
+            self.dataset.time_points, self.dataset.powder_time_series(smin = smin, smax = smax, bgr = bgr))
+    
     @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
@@ -119,7 +93,7 @@ class IrisController(QtCore.QObject):
         self.processing_progress_signal.emit(0)
         self.worker.start()
     
-    @error_aware('Single-crystal time-series could not be computed')
+    @error_aware('Single-crystal time-series could not be computed.')
     @QtCore.pyqtSlot(object)
     def time_series_from_ROI(self, ROI):
         """" 
@@ -146,7 +120,8 @@ class IrisController(QtCore.QObject):
     def compute_baseline(self, params):
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
         self.worker.done_signal.connect(lambda boolean: self.update_dataset_info())
-        self.worker.done_signal.connect(lambda boolean: self.powder_data_signal.emit(self.dataset.scattering_length, self.dataset.powder_data_block(bgr = self.dataset.baseline_removed)))
+        self.worker.done_signal.connect(lambda boolean: self.powder_data_signal.emit(self.dataset.scattering_length, 
+                                                                                     self.dataset.powder_data_block(bgr = True)))
         self.worker.done_signal.connect(lambda boolean: self.status_message_signal.emit('Baseline computed.'))
         self.worker.start()
     
@@ -192,4 +167,4 @@ class IrisController(QtCore.QObject):
         if isinstance(self.dataset, PowderDiffractionDataset):
             for attr in ('first_stage', 'wavelet', 'level', 'baseline_removed'):
                 info[attr] = getattr(self.dataset, attr)
-        self.dataset_info_signal.emit(info)
+        self.dataset_info_signal.emit(info) 

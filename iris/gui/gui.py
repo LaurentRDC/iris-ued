@@ -15,8 +15,9 @@ from .pyqtgraph import QtCore, QtGui
 from .qdarkstyle import load_stylesheet_pyqt5
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 from .controller import IrisController, error_aware
-from .widgets import (IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, 
-                      RawDataViewer, PowderViewer, FluenceCalculatorDialog)
+from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, FluenceCalculatorDialog
+from .raw_viewer import RawDataViewer
+from .powder_viewer import PowderViewer
 from .utils import WorkThread
 
 image_folder = join(dirname(__file__), 'images')
@@ -87,11 +88,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.raw_dataset_loaded_signal.connect(  
             lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.raw_data_viewer)) if x else None)
 
-        self.raw_data_viewer.display_btn.clicked.connect(   
-            lambda x: self.controller.display_raw_data( 
-                float(self.raw_data_viewer.timedelay_edit.text()),
-                int(self.raw_data_viewer.scan_edit.text())))
-        
+        self.raw_data_viewer.display_raw_data_signal.connect(self.controller.display_raw_data)
         self.controller.raw_data_signal.connect(self.raw_data_viewer.display)
 
         # Processing raw dataset
@@ -128,12 +125,15 @@ class Iris(QtGui.QMainWindow):
         self.powder_viewer.baseline_removed_btn.toggled.connect(
             lambda x: self.controller.powder_data_signal.emit(self.controller.dataset.scattering_length, self.controller.dataset.powder_data_block(bgr = x)))
 
+        # Peak dynamics region of interest
+        self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
+        self.controller.powder_time_series_signal.connect(self.powder_viewer.display_peak_dynamics)
         ######################################################################
         # Update when a new dataset is loaded
         # Switch tabs as well
         self.controller.dataset_info_signal.connect(self.dataset_info.update_info)
         self.controller.dataset_info_signal.connect(self.processed_viewer.update_info)
-        self.controller.dataset_info_signal.connect(self.powder_viewer.update_info)
+        self.controller.dataset_info_signal.connect(self.raw_data_viewer.update_dataset_info)
         
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.viewer_stack)

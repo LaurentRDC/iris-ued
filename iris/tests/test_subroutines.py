@@ -4,6 +4,8 @@ from skimage import data
 from ..subroutines import diff_avg, diff_align, powder_align, shift_image
 import unittest
 
+import matplotlib.pyplot as plt
+
 class TestDiffAvg(unittest.TestCase):
 
     def test_trivial(self):
@@ -23,6 +25,16 @@ class TestDiffAvg(unittest.TestCase):
         avg, err = diff_avg(arr, weights = n.ones((30,)), mad = False)
 
         self.assertTrue(n.allclose(n.mean(arr, axis = 2), avg))
+    
+    def test_outliers(self):
+        """ Average 9 identical pictures + 1 outlier picture together. """
+        arr = n.stack([data.camera() for _ in range(10)], axis = 2)
+        arr = arr.astype(n.float)
+        arr[:,:,5] = data.camera() + 1e4   # outliers
+
+        avg, err = diff_avg(arr, weights = n.ones((10,)), mad = True, mad_dist = 1)
+        self.assertTrue(n.allclose(avg, data.camera()))
+        
     
 class TestDiffAlign(unittest.TestCase):
 
