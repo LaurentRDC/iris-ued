@@ -316,11 +316,12 @@ class RawDataset(object):
                 images = powder_align(images, guess_center = center, radius = radius, 
                                       window_size = window_size, ring_width = ring_width)
             
-            # Setting elements inside cube will reset the mask
-            # Therefore, we assign it again
+            # Creation of the image 'cube' with appropriate mask
             images = n.stack(images, axis = 2)
-            cube = n.ma.masked_array(images, dtype = n.int32, fill_value = 0.0)
+            cube = n.ma.masked_array(images, dtype = n.float32, fill_value = 0.0)
             cube[beamblock_mask, :] = n.ma.masked
+            cube[cube < 0] = n.ma.masked
+            cube[cube > 2**16] = n.ma.masked    # Camera is 16 bits
 
             # Average appropriately using subroutine
             averaged, error = diff_avg(cube, mad = mad, mad_dist = 3)

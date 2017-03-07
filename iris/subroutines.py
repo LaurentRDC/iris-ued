@@ -4,17 +4,10 @@ Array manipulation subroutines
 @author: Laurent P. Rene de Cotret
 """
 import numpy as n
-from scipy.stats.mstats import sem  #Standard error in mean
-from scipy.ndimage import fourier_shift
 from skimage.feature import register_translation
 
 from .optimizations import pmap
 from .utils import find_center
-
-try:
-    from numpy.fft_intel import fft2, ifft2, fftshift
-except ImportError:
-    from numpy.fft import fft2, ifft2, fftshift
 
 def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
     """
@@ -28,13 +21,14 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
     arr : ndarray or MaskedArray
         Array to be averaged.
     weights : ndarray or None, optional
-        Array representing how over-estimated each image is. If None (default),
-        total picture intensity is used to weight each picture.
+        Array representing how much an image should be 'worth'. E.g.: a weight below 1 means that
+        a picture is not bright enough, and therefore it should count more in the averaging.
+        If None (default), total picture intensity is used to weight each picture.
     mad : bool, optional
-        If True (default), the distributions of pixel intensities across scans are included based on a median absolute difference (MAD)
-        approach. Set to False for faster performance.
+        If True (default), the distributions of pixel intensities across scans are included based on a 
+        mean absolute difference (MAD) approach. Set to False for faster performance.
     mad_dist : float, optional
-        The number of median-absolute-differences allowable inside the pixel intensity distribution.
+        The number of mean-absolute-differences allowable inside the pixel intensity distribution.
         Setting this number lower will 'filter' out more pixels.
     
     Returns
@@ -45,61 +39,82 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
         Standard error in the mean.
     """
     # Making sure it is a masked array
-    arr = n.ma.masked_array(arr)
+    # Remove unphysical pixel values, e.g. pixel intensities below zero
+    arr = n.ma.masked_array(arr, fill_value = 0.0)
 
-    if mad:
-        # Mask outliers according to the median-absolute-difference criterion
-        # Consistency constant of 1.4826 due to underlying normal distribution
-        # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
-        absdiff = n.ma.abs(arr - n.ma.median(arr, axis = 2, keepdims = True))
-        MAD = 1.4826*n.ma.median(absdiff, axis = 2, keepdims = True)     # out = mad bug with keepdims = True
-        arr[absdiff > mad_dist*MAD] = n.ma.masked
-    
+    # Handle weights of images
+    # The sum of weights should be equal to 1 per picture
     if weights is None:
-        integrated = n.ma.sum(n.ma.sum(arr, axis = 0), axis = 0)
-        weights = n.ma.mean(integrated) / integrated
+        integrated = n.ma.sum(n.ma.sum(arr, axis = 0), axis = 0).compressed()
+        weights = n.mean(integrated) / integrated
+    weights *= arr.shape[2] / n.sum(weights)    # Normalize weights
+    arr *= weights
     
-    avg = n.ma.average(arr, axis = 2, weights = weights)
-    err = sem(arr, axis = 2)
+    # Median absolute deviation outliers test
+    # Robust estimator of outliers, as explained here:
+    # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
+    if mad:
+        absdiff = n.ma.abs(arr - n.ma.median(arr, axis = 2, keepdims = True))
+        estimator = mad_dist*n.ma.median(absdiff, axis = 2, keepdims = True)
+        arr[absdiff > estimator] = n.ma.masked
+    
+    # Final averaging
+    # Error in the mean is only approximate, but much faster.
+    # For a true measure of error, see scipy.mstats.sem
+    avg = n.ma.mean(arr, axis = 2)
+    err = n.ma.std(arr, axis = 2) / n.sqrt(arr.shape[2])    # APPROXIMATE Standard error in mean
     return avg, err
 
 def shift_image(arr, shift):
-    """
-    Shift array with subpixel accuracy.
+    """ 
+    Shift an image on at a 1-pixel resolution.
 
     Parameters
     ----------
     arr : ndarray
-        Image to be shifted
     shift : ndarray
 
     Returns
     -------
-    shifted : ndarray
+    out : MaskedArray
     """
-    return n.real(ifft2(fourier_shift(fft2(arr), shift = shift)))
+    non = lambda s: s if s < 0 else None
+    mom = lambda s: max(0, s)
 
-def powder_align(images, guess_center, radius, window_size = 10, ring_width = 10):
+    x, y = tuple(shift)
+    x, y = int(x), int(y)
+
+    shifted = n.empty_like(arr)
+    shifted.fill(n.nan)
+    shifted[mom(y):non(y), mom(x):non(x)] = arr[mom(-y):non(-y), mom(-x):non(-x)]
+    return n.ma.array(shifted, mask = n.isnan(shifted), fill_value = 0.0)
+
+def powder_align(images, guess_center, radius, window_size = 10, ring_width = 5):
     """
     Align powder diffraction images together, making use of the azimuthal symmetry
     of the patterns to speed up computations.
 
     Parameters
     ----------
-    image : ndarray, ndim 2
-
-    guess_center : 2-tuple
-
-    radius : int
+    images : iterable
+        Iterable of ndarrays
+    guess_center : array_like, shape (2,)
+        Initial guess for a center
+    radius : int    
 
     window_size : int, optional
 
     ring_width : int, optional
+        
+    
+    Returns
+    -------
+    aligned : tuple of ndarrays, ndim 2
+        Aligned images
     """
     images = iter(images)
     center = n.array(guess_center, dtype = n.float)
     
-    # TODO: parallelize?
     aligned = list()
     for image in images:
         shift = center - find_center(image, guess_center = center, radius = radius, 
@@ -129,8 +144,9 @@ def diff_align(images, reference = None, upsample_factor = 1, processes = None):
     aligned : tuple of ndarrays, ndim 2
         Aligned images
     """
-    images = iter(images)   # Making sure we have an iterator here
+    images = iter(images)
 
+    # TODO: crop images to a subimage, that is used for alignment
     aligned = list()
     if reference is None:
         reference = next(images)
