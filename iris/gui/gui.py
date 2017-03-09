@@ -110,7 +110,6 @@ class Iris(QtGui.QMainWindow):
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
 
         # Single crystal peak dynamics
-        # TODO: use the same code structure for powder peak dynamics
         self.processed_viewer.peak_dynamics_region.sigRegionChangeFinished.connect(self.controller.time_series_from_ROI)
         self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
 
@@ -122,8 +121,7 @@ class Iris(QtGui.QMainWindow):
             lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.powder_viewer)) if x else None)
         self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
         self.powder_viewer.baseline_parameters_signal.connect(self.controller.compute_baseline)
-        self.powder_viewer.baseline_removed_btn.toggled.connect(
-            lambda x: self.controller.powder_data_signal.emit(self.controller.dataset.scattering_length, self.controller.dataset.powder_data_block(bgr = x)))
+        self.powder_viewer.baseline_removed_btn.toggled.connect(self.controller.display_powder_data)
 
         # Peak dynamics region of interest
         self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
@@ -133,7 +131,7 @@ class Iris(QtGui.QMainWindow):
         # Switch tabs as well
         self.controller.dataset_info_signal.connect(self.dataset_info.update_info)
         self.controller.dataset_info_signal.connect(self.processed_viewer.update_info)
-        self.controller.dataset_info_signal.connect(self.raw_data_viewer.update_dataset_info)
+        self.controller.raw_dataset_info_signal.connect(self.raw_data_viewer.update_dataset_info)
         
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.viewer_stack)
@@ -161,21 +159,13 @@ class Iris(QtGui.QMainWindow):
     
     @QtCore.pyqtSlot()
     def load_raw_dataset(self):
-        try:
-            path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
-        except:
-            pass
-        else:
-            self.raw_dataset_path_signal.emit(path)
+        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
+        self.raw_dataset_path_signal.emit(path)
 
     @QtCore.pyqtSlot()
     def load_dataset(self):
-        try:
-            path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset', filter = '*.hdf5')[0]
-        except:
-            pass
-        else:
-            self.dataset_path_signal.emit(path)
+        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset', filter = '*.hdf5')[0]
+        self.dataset_path_signal.emit(path)
             
     def center_window(self):
         qr = self.frameGeometry()

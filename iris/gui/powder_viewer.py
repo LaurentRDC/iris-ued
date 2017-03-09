@@ -1,6 +1,4 @@
-from collections.abc import Iterable
 from ..dualtree import ALL_FIRST_STAGE, ALL_COMPLEX_WAV
-from os.path import join, dirname
 from . import pyqtgraph as pg
 from .pyqtgraph import QtGui, QtCore
 import numpy as n
@@ -8,11 +6,9 @@ import numpy as n
 from .utils import spectrum_colors
 from ..utils import fluence
 
-image_folder = join(dirname(__file__), 'images')
-
 class PowderViewer(QtGui.QWidget):
 
-    baseline_parameters_signal = QtCore.pyqtSignal(dict, name = 'baseline_parameters_signal')
+    baseline_parameters_signal = QtCore.pyqtSignal(dict)
     peak_dynamics_roi_signal = QtCore.pyqtSignal(float, float, bool)  #left pos, right pos, background_removed
 
     def __init__(self, *args, **kwargs):
@@ -20,32 +16,25 @@ class PowderViewer(QtGui.QWidget):
         super().__init__(*args, **kwargs)
                 
         self.powder_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
-                                                   labels = {'left': 'Intensity (counts)', 'bottom': 'Scattering length (1/A)'})
-
+                                                   labels = {'left': 'Intensity (counts)', 
+                                                             'bottom': 'Scattering length (1/A)'})
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
-                                                  labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
+                                                  labels = {'left': 'Intensity (a. u.)', 
+                                                            'bottom': ('time', 'ps')})
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
        
+        # Peak dynamics region-of-interest
         self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
+        self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
         # Buttons
         self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
-        self.compute_baseline_btn.clicked.connect(
-            lambda x: self.baseline_parameters_signal.emit(
-                {'first_stage': self.first_stage_cb.currentText(),
-                 'wavelet': self.wavelet_cb.currentText(),
-                 'level': 'max',
-                 'max_iter': 100}))
+        self.compute_baseline_btn.clicked.connect(self.baseline_parameters)
 
         self.baseline_removed_btn = QtGui.QPushButton('Show baseline-removed', parent = self)
         self.baseline_removed_btn.setCheckable(True)
         self.baseline_removed_btn.setChecked(False)
-
-        # Connect internal ROI signals
-        self.peak_dynamics_region.sigRegionChanged.connect(lambda x: 
-                        self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion(), 
-                                                           self.baseline_removed_btn.isChecked()))
 
         # Scroll lists for wavelet parameters
         self.first_stage_cb = QtGui.QComboBox()
@@ -74,6 +63,19 @@ class PowderViewer(QtGui.QWidget):
         layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(layout)
     
+    @QtCore.pyqtSlot()
+    def baseline_parameters(self):
+        params = {'first_stage': self.first_stage_cb.currentText(),
+                  'wavelet': self.wavelet_cb.currentText(),
+                  'level': 'max',
+                  'max_iter': 100}
+        self.baseline_parameters_signal.emit(params)
+    
+    @QtCore.pyqtSlot()
+    def update_peak_dynamics(self):
+        """ Update powder peak dynamics settings on demand. """
+        self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion(), self.baseline_removed_btn.isChecked())
+    
     @QtCore.pyqtSlot(object, object)
     @QtCore.pyqtSlot(object, object, object) # Maybe there's an error to display, maybe not
     def display_powder_data(self, scattering_length, powder_data_block, powder_error_block = None):
@@ -85,7 +87,9 @@ class PowderViewer(QtGui.QWidget):
         scattering_length : ndarray, shape (1, N)
             Scattering length of the radial patterns
         powder_data_block : ndarray, shape (M, N)
-            Array for which each row is a radial pattern for a specific time-delay.
+            Array for which each row is an azimuthal pattern for a specific time-delay.
+        powder_error_block : ndarray, shape (M, N), optional
+            Array for which each row is the error for the corresponding azimuthal pattern.
         """
 
         colors = list(spectrum_colors(powder_data_block.shape[0]))  # number of time-points
@@ -101,6 +105,7 @@ class PowderViewer(QtGui.QWidget):
         
         self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
+        self.update_peak_dynamics() #Update peak dynamics plot if background has been changed, for example
     
     @QtCore.pyqtSlot(object, object)
     @QtCore.pyqtSlot(object, object, object)    # Maybe there's an error to display, maybe not
@@ -109,15 +114,17 @@ class PowderViewer(QtGui.QWidget):
         Display the time series associated with the integral between the bounds 
         of the ROI
         """
+        intensities /= intensities.max()
+
         colors = list(spectrum_colors(len(times)))
         pens, brushes = map(pg.mkPen, colors), map(pg.mkBrush, colors)
-        self.peak_dynamics_viewer.plot(times, intensities/intensities.max(), 
+        self.peak_dynamics_viewer.plot(times, intensities, 
                                        pen = None, symbol = 'o', 
                                        symbolPen = list(pens), symbolBrush = list(brushes), 
                                        symbolSize = 4, clear = True)
         
         if errors is not None:
-            error_bars = pg.ErrorBarItem(x = times, y = intensities/intensities.max(), height = errors)
+            error_bars = pg.ErrorBarItem(x = times, y = intensities, height = errors)
             self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.

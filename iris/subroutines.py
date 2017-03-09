@@ -3,6 +3,7 @@ Array manipulation subroutines
 
 @author: Laurent P. Rene de Cotret
 """
+from functools import partial
 import numpy as n
 from skimage.feature import register_translation
 
@@ -39,16 +40,19 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
         Standard error in the mean.
     """
     # Making sure it is a masked array
-    # Remove unphysical pixel values, e.g. pixel intensities below zero
-    arr = n.ma.masked_array(arr, fill_value = 0.0)
+    # Remove unphysical pixel values
+    arr = n.ma.array(arr, fill_value = 0.0, copy = False, keep_mask = True)
+    arr = n.ma.masked_invalid(arr, copy = False)    # Due to shifting the images
+    arr = n.ma.masked_outside(arr, 0, 2**16, copy = False) # Camera is 16 bits
 
     # Handle weights of images
     # The sum of weights should be equal to 1 per picture
     if weights is None:
-        integrated = n.ma.sum(n.ma.sum(arr, axis = 0), axis = 0).compressed()
-        weights = n.mean(integrated) / integrated
+        weights = n.sum(n.ma.filled(arr, fill_value = 0), axis = (0, 1))
     weights *= arr.shape[2] / n.sum(weights)    # Normalize weights
-    arr *= weights
+
+    # Apply weights along axis 2
+    arr *= weights[None, None, :]
     
     # Median absolute deviation outliers test
     # Robust estimator of outliers, as explained here:
@@ -56,15 +60,17 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
     if mad:
         absdiff = n.ma.abs(arr - n.ma.median(arr, axis = 2, keepdims = True))
         estimator = mad_dist*n.ma.median(absdiff, axis = 2, keepdims = True)
-        arr[absdiff > estimator] = n.ma.masked
+        arr = n.ma.masked_where(absdiff > estimator, arr, copy = False)
     
     # Final averaging
     # Error in the mean is only approximate, but much faster.
     # For a true measure of error, see scipy.mstats.sem
-    avg = n.ma.mean(arr, axis = 2)
-    err = n.ma.std(arr, axis = 2) / n.sqrt(arr.shape[2])    # APPROXIMATE Standard error in mean
+    avg = n.ma.mean(arr, axis = 2), 
+    err = n.ma.std(arr, axis = 2) / n.sqrt(arr.shape[2])
     return avg, err
 
+non = lambda s: s if s < 0 else None
+mom = lambda s: max(0, s)
 def shift_image(arr, shift):
     """ 
     Shift an image on at a 1-pixel resolution.
@@ -78,16 +84,13 @@ def shift_image(arr, shift):
     -------
     out : MaskedArray
     """
-    non = lambda s: s if s < 0 else None
-    mom = lambda s: max(0, s)
-
     x, y = tuple(shift)
     x, y = int(x), int(y)
 
     shifted = n.empty_like(arr)
     shifted.fill(n.nan)
     shifted[mom(y):non(y), mom(x):non(x)] = arr[mom(-y):non(-y), mom(-x):non(-x)]
-    return n.ma.array(shifted, mask = n.isnan(shifted), fill_value = 0.0)
+    return n.ma.masked_invalid(shifted, copy = False)   # Edges will be masked
 
 def powder_align(images, guess_center, radius, window_size = 10, ring_width = 5):
     """

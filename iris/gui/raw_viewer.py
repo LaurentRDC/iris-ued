@@ -46,13 +46,19 @@ class RawDataViewer(QtGui.QWidget):
         process_bar.addWidget(self.processing_progress_bar, 0, 2, 1, 4)
 
         # Navigating through raw data
-        self.timedelay_widget = QtGui.QComboBox(parent = self)
-        self.timedelay_widget.setEditable(False)
-        self.scan_widget = QtGui.QSpinBox(parent = self)
+        self.timedelay_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
+        self.timedelay_widget.setMinimum(0)
+        self.timedelay_widget.setTracking(True)
+        self.timedelay_widget.setTickPosition(QtGui.QSlider.TicksBelow)
+        self.timedelay_widget.setTickInterval(1)
+        self.timedelay_widget.sliderMoved.connect(lambda x: self.update_display())
 
-        # When scan widget or timedelay_widget are updated, get a new image
-        self.timedelay_widget.currentIndexChanged.connect(lambda x: self.update_display)
-        self.scan_widget.valueChanged.connect(lambda x: self.update_display)
+        self.scan_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
+        self.scan_widget.setMinimum(0)
+        self.scan_widget.setTracking(True)
+        self.scan_widget.setTickPosition(QtGui.QSlider.TicksBelow)
+        self.scan_widget.setTickInterval(1)
+        self.scan_widget.sliderMoved.connect(lambda x: self.update_display())
 
         command_bar = QtGui.QHBoxLayout()
         command_bar.addWidget(QtGui.QLabel('Time-delay (ps):'))
@@ -78,27 +84,20 @@ class RawDataViewer(QtGui.QWidget):
         self.dataset_info.update(info_dict)
 
         # Update range of timedelay and scan
-        self.timedelay_widget.clear()
-        self.timedelay_widget.addItems(list(map(str, self.dataset_info['time_points'])))
-
-        nscans = self.dataset_info['nscans']
-        self.scan_widget.setRange(min(nscans), max(nscans))
+        self.timedelay_widget.setMaximum(len(self.dataset_info['time_points']) - 1)
+        self.scan_widget.setMaximum(len(self.dataset_info['nscans']) - 1)
     
     @QtCore.pyqtSlot()
     def update_display(self):
         """ Request an update on the raw data display """
-        try:
-            timedelay = float(self.timedelay_widget.currentText())
-            scan = self.scan_widget.value()
-        except:
-            timedelay = float(self.dataset_info['time_points'][0])
-            scan = int(self.dataset_info['nscans'][0])
-            
-        self.display_raw_data_signal.emit(timedelay, scan)
+        timedelay = self.dataset_info['time_points'][self.timedelay_widget.value()]
+        scan = self.dataset_info['nscans'][self.scan_widget.value()]
+        self.display_raw_data_signal.emit(float(timedelay), int(scan))
         
     @QtCore.pyqtSlot(object)
     def display(self, data):
         """ Display a single diffraction pattern. """
+        data[data < 0] = 0
         self.raw_viewer.setImage(data, autoLevels = False, autoRange = True)
     
     @QtCore.pyqtSlot()
@@ -185,7 +184,7 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         sample_type_layout.addWidget(self.sc_type_btn)
 
         self.mad_checkbox = QtGui.QCheckBox('Enable MAD filtering', parent = self)
-        self.mad_checkbox.setChecked(True)
+        self.mad_checkbox.setChecked(False)
         self.center_correction_checkbox = QtGui.QCheckBox('Enable center-correction', parent = self)
 
         self.window_size_cb = QtGui.QComboBox(parent = self)
