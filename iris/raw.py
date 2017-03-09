@@ -184,7 +184,6 @@ class RawDataset(object):
         
         return read(join(self.raw_directory, filename))
     
-    # TODO: for single crystals, align images using skimage.feature.register_translations
     def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', sample_type = 'powder', 
                 callback = None, cc = True, window_size = 10, ring_width = 5, mad = True):
         """
@@ -279,12 +278,6 @@ class RawDataset(object):
                 pumpoff_background = n.zeros(shape = self.resolution, dtype = n.uint16)
             processed.processed_measurements_group.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = n.uint16, **ckwargs)
 
-        # Create beamblock mask right now
-        # Evaluates to TRUE on the beamblock
-        x1,x2,y1,y2 = beamblock_rect
-        beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
-        beamblock_mask[y1:y2, x1:x2] = True
-
         # Prepare container for the large array of averaged pictures
         shape = self.resolution + (len(self.time_points),)
         with DiffractionDataset(name = filename, mode = 'r+') as processed:
@@ -292,7 +285,7 @@ class RawDataset(object):
             gp.create_dataset(name = 'intensity', shape = shape, dtype = n.float32, **ckwargs)
             gp.create_dataset(name = 'error', shape = shape, dtype = n.float32, **ckwargs)
 
-        # Get reference image for aligning all images
+        # Get reference image for aligning all single crystal images
         ref_im = self.raw_data(self.time_points[0], self.nscans[0]) - pumpoff_background
 
         # TODO: parallelize this loop
@@ -317,11 +310,15 @@ class RawDataset(object):
                                       window_size = window_size, ring_width = ring_width)
             
             # Creation of the image 'cube' with appropriate mask
-            images = n.stack(images, axis = 2)
-            cube = n.ma.masked_array(images, dtype = n.float32, fill_value = 0.0)
+            # Create beamblock mask right now
+            # Evaluates to TRUE on the beamblock
+            x1,x2,y1,y2 = beamblock_rect
+            beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
+            beamblock_mask[y1:y2, x1:x2] = True
+
+            cube = n.ma.masked_array(n.stack(images, axis = 2), fill_value = 0.0)
             cube[beamblock_mask, :] = n.ma.masked
-            cube[cube < 0] = n.ma.masked
-            cube[cube > 2**16] = n.ma.masked    # Camera is 16 bits
+            cube = n.ma.masked_invalid(cube, copy = False)  # Due to shifting the images, NaNs may appear
 
             # Average appropriately using subroutine
             averaged, error = diff_avg(cube, mad = mad, mad_dist = 3)
