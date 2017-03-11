@@ -429,6 +429,17 @@ class PowderDiffractionDataset(DiffractionDataset):
             data -= n.array(self.powder_group['baseline'])
         return data
     
+    def powder_error_block(self):
+        """
+        Return powder diffraction data for all time delays as a single block. 
+
+        Returns
+        -------
+        e : ndarray, shapes (N, M)
+            Error in diffracted intensity
+        """
+        return n.array(self.powder_group['error'])
+    
     def compute_baseline(self, first_stage, wavelet, max_iter = 100, level = 'max'):
         """
         Compute and save the baseline computed from the dualtree package.
