@@ -42,7 +42,7 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
     # Making sure it is a masked array
     # Remove unphysical pixel values
     arr = n.ma.array(arr, fill_value = 0.0, copy = False, keep_mask = True)
-    arr = n.ma.masked_invalid(arr, copy = False)    # Due to shifting the images
+    arr = n.ma.masked_invalid(arr, copy = False)           # Due to shifting the images
     arr = n.ma.masked_outside(arr, 0, 2**16, copy = False) # Camera is 16 bits
 
     # Handle weights of images

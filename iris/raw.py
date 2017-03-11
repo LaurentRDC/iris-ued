@@ -316,7 +316,7 @@ class RawDataset(object):
             beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
             beamblock_mask[y1:y2, x1:x2] = True
 
-            cube = n.ma.masked_array(n.stack(images, axis = 2), fill_value = 0.0)
+            cube = n.ma.masked_array(n.ma.dstack(images), fill_value = 0.0)
             cube[beamblock_mask, :] = n.ma.masked
             cube = n.ma.masked_invalid(cube, copy = False)  # Due to shifting the images, NaNs may appear
 

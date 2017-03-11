@@ -121,7 +121,7 @@ class Iris(QtGui.QMainWindow):
             lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.powder_viewer)) if x else None)
         self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
         self.powder_viewer.baseline_parameters_signal.connect(self.controller.compute_baseline)
-        self.powder_viewer.baseline_removed_btn.toggled.connect(self.controller.display_powder_data)
+        self.powder_viewer.baseline_removed_btn.clicked.connect(self.controller.display_powder_data)
 
         # Peak dynamics region of interest
         self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)

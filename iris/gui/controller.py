@@ -43,7 +43,7 @@ class IrisController(QtCore.QObject):
 
     raw_data_signal = QtCore.pyqtSignal(object)
     averaged_data_signal = QtCore.pyqtSignal(object)
-    powder_data_signal = QtCore.pyqtSignal(object, object)
+    powder_data_signal = QtCore.pyqtSignal(object, object, object, bool)
 
     time_series_signal = QtCore.pyqtSignal(object, object)
     powder_time_series_signal = QtCore.pyqtSignal(object, object)
@@ -70,7 +70,10 @@ class IrisController(QtCore.QObject):
     @QtCore.pyqtSlot(bool)
     def display_powder_data(self, bgr):
         """ Emit a powder data signal with/out background """
-        self.powder_data_signal.emit(self.dataset.scattering_length, self.dataset.powder_data_block(bgr = bgr))
+        self.powder_data_signal.emit(self.dataset.scattering_length, 
+                                     self.dataset.powder_data_block(bgr = bgr), 
+                                     self.dataset.powder_error_block(),
+                                     bgr)
     
     @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
@@ -122,7 +125,6 @@ class IrisController(QtCore.QObject):
     def compute_baseline(self, params):
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
         self.worker.done_signal.connect(lambda boolean: self.update_dataset_info())
-        self.worker.done_signal.connect(self.display_powder_data)
         self.worker.done_signal.connect(lambda boolean: self.status_message_signal.emit('Baseline computed.'))
         self.worker.start()
     
@@ -157,7 +159,10 @@ class IrisController(QtCore.QObject):
         self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
 
         if isinstance(self.dataset, PowderDiffractionDataset):
-            self.powder_data_signal.emit(self.dataset.scattering_length, self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
+            self.powder_data_signal.emit(self.dataset.scattering_length, 
+                                         self.dataset.powder_data_block(bgr = self.dataset.baseline_removed),
+                                         self.dataset.powder_error_block(),
+                                         self.dataset.baseline_removed)
             self.powder_dataset_loaded_signal.emit(True)
         
     def update_raw_dataset_info(self):

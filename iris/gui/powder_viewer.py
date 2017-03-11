@@ -76,33 +76,35 @@ class PowderViewer(QtGui.QWidget):
         """ Update powder peak dynamics settings on demand. """
         self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion(), self.baseline_removed_btn.isChecked())
     
-    @QtCore.pyqtSlot(object, object)
-    @QtCore.pyqtSlot(object, object, object) # Maybe there's an error to display, maybe not
-    def display_powder_data(self, scattering_length, powder_data_block, powder_error_block = None):
+    @QtCore.pyqtSlot(object, object, object, bool)
+    def display_powder_data(self, scattering_length, powder_data_block, powder_error_block, bgr):
         """ 
         Display the radial averages of a dataset.
 
         Parameters
         ----------
-        scattering_length : ndarray, shape (1, N)
+        scattering_length : ndarray, shape (N,)
             Scattering length of the radial patterns
         powder_data_block : ndarray, shape (M, N)
             Array for which each row is an azimuthal pattern for a specific time-delay.
-        powder_error_block : ndarray, shape (M, N), optional
+        powder_error_block : ndarray, shape (M, N)
             Array for which each row is the error for the corresponding azimuthal pattern.
+        bgr : bool  
+            Describes whether the powder_data_block is baseline-corrected (True) or not (False).
         """
-
         colors = list(spectrum_colors(powder_data_block.shape[0]))  # number of time-points
         pens, brushes = map(pg.mkPen, colors), map(pg.mkBrush, colors)
 
         self.powder_pattern_viewer.enableAutoRange()
         self.powder_pattern_viewer.clear()
 
-        # TODO: error if provided
-        for pen, brush, curve in zip(pens, brushes, powder_data_block):
+        for pen, brush, curve, error in zip(pens, brushes, powder_data_block, powder_error_block):
             self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
+            error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error)
+            self.powder_pattern_viewer.addItem(error_bars)
         
+        self.baseline_removed_btn.setChecked(bgr)
         self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
         self.update_peak_dynamics() #Update peak dynamics plot if background has been changed, for example
