@@ -88,8 +88,7 @@ def read(filename, normalize = False):
     
     Returns
     -------
-    mask : ndarray, dtype numpy.bool
-        Numpy array of the valid pixels. Only returned if return_mask is True
+    image : ndarray, dtype float
         
     Raises
     ------
@@ -101,12 +100,7 @@ def read(filename, normalize = False):
         raise ImageNotFoundError('Image {} not found.'.format(filename))
     if image.shape != RESOLUTION:
         image = resize(image, RESOLUTION)
-    
-    # Deal with saturated pixels
-    mask = image < _HOT_PIXEL_THRESHOLD   # Mask evaluated to False on hot pixels
-    # Set hot pixels to _HOT_PIXEL_VALUE
-    image[n.logical_not(mask)] = _HOT_PIXEL_VALUE
-    image[image < 0] = 0
+
     # Normalize to total counts
     if normalize is True:
         image = image/n.sum(image)

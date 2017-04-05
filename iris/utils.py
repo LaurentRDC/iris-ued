@@ -7,28 +7,6 @@ import numpy as n
 from os.path import join
 from .io import RESOLUTION, ImageNotFoundError, read
 
-def shift(arr, x, y):
-    """ 
-    Shift an image on at a 1-pixel resolution.
-    
-    Parameters
-    ----------
-    arr : ndarray
-    x : int
-    y : int
-
-    Returns
-    -------
-    out : MaskedArray
-    """
-    non = lambda s: s if s < 0 else None
-    mom = lambda s: max(0,s)
-
-    shifted = n.empty_like(arr)
-    shifted.fill(n.nan)
-    shifted[mom(y):non(y), mom(x):non(x)] = arr[mom(-y):non(-y), mom(-x):non(-x)]
-    return n.ma.array(shifted, mask = n.isnan(shifted), fill_value = 0.0)
-
 def average_tiff(directory, wildcard, background = None):
     """
     Averages images matching a filename template within the dataset directory.
@@ -78,8 +56,7 @@ def find_center(image, guess_center, radius, window_size = 10, ring_width = 10):
     ----------
     image : ndarray, ndim 2
         Invalid pixels (such as pixels under the beamblock) should be represented by NaN
-
-    center : 2-tuple
+    guess_center : 2-tuple
 
     radius : int
 
@@ -89,6 +66,7 @@ def find_center(image, guess_center, radius, window_size = 10, ring_width = 10):
     """
     xx, yy = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
     xc, yc = guess_center
+    xc, yc = int(round(xc)), int(round(yc))
     centers = product(range(xc - window_size, window_size + xc + 1),
                       range(yc - window_size, window_size + yc + 1))
     
@@ -106,8 +84,8 @@ def find_center(image, guess_center, radius, window_size = 10, ring_width = 10):
             MASK_CACHE[c] = n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)
         return reduced[MASK_CACHE[c]].sum()
     
-    # TODO: average centers with the same max intensity
-    (best_x, best_y), _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
+    # TODO: average centers that give the same integrated intensity? Pretty rare case maybe...
+    (best_x, best_y), _ = max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
     return best_x, best_y
 
 def angular_average(image, center, beamblock_rect, error = None, mask = None):
