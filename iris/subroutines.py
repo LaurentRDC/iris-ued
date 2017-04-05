@@ -6,6 +6,7 @@ Array manipulation subroutines
 from functools import partial
 import numpy as n
 from skimage.feature import register_translation
+from warnings import catch_warnings, simplefilter
 
 from .optimizations import pmap
 from .utils import find_center
@@ -19,7 +20,7 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
 
     Parameters
     ----------
-    arr : ndarray or MaskedArray
+    arr : ndarray
         Array to be averaged.
     weights : ndarray or None, optional
         Array representing how much an image should be 'worth'. E.g.: a weight below 1 means that
@@ -39,16 +40,15 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
     err : ndarray, ndim 2
         Standard error in the mean.
     """
-    # Making sure it is a masked array
-    # Remove unphysical pixel values
-    arr = n.ma.array(arr, fill_value = 0.0, copy = False, keep_mask = True)
-    arr = n.ma.masked_invalid(arr, copy = False)           # Due to shifting the images
-    arr = n.ma.masked_outside(arr, 0, 2**16, copy = False) # Camera is 16 bits
+    # Making sure it is an array
+    # Remove unphysical pixel values by replacing with NaN
+    arr = n.array(arr, copy = False)
+    arr[n.logical_or(n.isfinite(arr) < 0, n.isfinite(arr) > 2**16)] = n.nan
 
     # Handle weights of images
     # The sum of weights should be equal to 1 per picture
     if weights is None:
-        weights = n.sum(n.ma.filled(arr, fill_value = 0), axis = (0, 1))
+        weights = n.nansum(arr, axis = (0, 1))
     weights *= arr.shape[2] / n.sum(weights)    # Normalize weights
 
     # Apply weights along axis 2
@@ -58,15 +58,17 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
     # Robust estimator of outliers, as explained here:
     # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
     if mad:
-        absdiff = n.ma.abs(arr - n.ma.median(arr, axis = 2, keepdims = True))
-        estimator = mad_dist*n.ma.median(absdiff, axis = 2, keepdims = True)
-        arr = n.ma.masked_where(absdiff > estimator, arr, copy = False)
+        absdiff = n.abs(arr - n.nanmedian(arr, axis = 2, keepdims = True))
+        estimator = mad_dist*n.median(absdiff, axis = 2, keepdims = True)
+        arr[absdiff > estimator] = n.nan
     
     # Final averaging
     # Error in the mean is only approximate, but much faster.
-    # For a true measure of error, see scipy.mstats.sem (masked standard error in mean)
-    avg = n.ma.mean(arr, axis = 2) 
-    err = n.ma.std(arr, axis = 2) / n.sqrt(arr.shape[2])
+    # For a true measure of error, see scipy.stats.sem (masked standard error in mean)
+    with catch_warnings():
+        simplefilter('ignore')
+        avg = n.nanmean(arr, axis = 2) 
+        err = n.nanstd(arr, axis = 2) / n.sqrt(arr.shape[2])
     return avg, err
 
 non = lambda s: s if s < 0 else None
@@ -82,15 +84,15 @@ def shift_image(arr, shift):
 
     Returns
     -------
-    out : MaskedArray
+    out : ndarray
+        Invalid pixels are set to NaN
     """
     x, y = tuple(shift)
     x, y = int(x), int(y)
 
-    shifted = n.empty_like(arr)
-    shifted.fill(n.nan)
+    shifted = n.full_like(arr, n.nan)
     shifted[mom(y):non(y), mom(x):non(x)] = arr[mom(-y):non(-y), mom(-x):non(-x)]
-    return n.ma.masked_invalid(shifted, copy = False)   # Edges will be masked
+    return shifted
 
 def powder_align(images, guess_center, radius, window_size = 10, ring_width = 5):
     """
@@ -116,7 +118,7 @@ def powder_align(images, guess_center, radius, window_size = 10, ring_width = 5)
         Aligned images
     """
     images = iter(images)
-    center = n.array(guess_center, dtype = n.float)
+    center = n.array(guess_center, dtype = n.float, copy = False)
     
     aligned = list()
     for image in images:
