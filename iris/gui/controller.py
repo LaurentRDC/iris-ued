@@ -21,7 +21,7 @@ def error_aware(message):
         def aware_func(self, *args, **kwargs):
             try:
                 return func(self, *args, **kwargs)
-            except: # TODO: get traceback message and add to message?
+            except:
                 exc = traceback.format_exc()
                 self.error_message_signal.emit(message + '\n \n \n' + exc)
         return aware_func
@@ -30,56 +30,25 @@ def error_aware(message):
 class IrisController(QtCore.QObject):
     """
     Controller behind Iris.
-
-    Slots
-    -----
-    display_raw_data
-
-    display_averaged_data
-
-    process_raw_dataset
-
-    load_raw_dataset
-
-    load_dataset
-
-    Signals
-    -------
-    raw_dataset_loaded_signal
-
-    processed_dataset_loaded_signal
-
-    powder_dataset_loaded_signal
-
-    status_message_loaded_signal
-
-    dataset_info_signal
-
-    error_message_signal
-
-    raw_data_signal
-
-    averaged_data_signal
-
-    powder_data_signal
     """
 
-    raw_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'raw_dataset_loaded_signal')
-    processed_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'processed_dataset_loaded_signal')
-    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool, name = 'powder_dataset_loaded_signal')
+    raw_dataset_loaded_signal = QtCore.pyqtSignal(bool)
+    processed_dataset_loaded_signal = QtCore.pyqtSignal(bool)
+    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool)
 
-    status_message_signal = QtCore.pyqtSignal(str, name = 'status_message_signal')
-    dataset_info_signal = QtCore.pyqtSignal(dict, name = 'dataset_info_signal')
-    error_message_signal = QtCore.pyqtSignal(str, name = 'error_message_signal')
+    status_message_signal = QtCore.pyqtSignal(str)
+    dataset_info_signal = QtCore.pyqtSignal(dict)
+    raw_dataset_info_signal = QtCore.pyqtSignal(dict)
+    error_message_signal = QtCore.pyqtSignal(str)
 
-    raw_data_signal = QtCore.pyqtSignal(object, name = 'raw_data_signal')
-    averaged_data_signal = QtCore.pyqtSignal(object, name = 'averaged_data_signal')
-    powder_data_signal = QtCore.pyqtSignal(object, object, object, name = 'powder_data_signal')
+    raw_data_signal = QtCore.pyqtSignal(object)
+    averaged_data_signal = QtCore.pyqtSignal(object)
+    powder_data_signal = QtCore.pyqtSignal(object, object, object, bool)
 
     time_series_signal = QtCore.pyqtSignal(object, object)
-    powder_time_series_signal = QtCore.pyqtSignal(object)
+    powder_time_series_signal = QtCore.pyqtSignal(object, object)
 
-    processing_progress_signal = QtCore.pyqtSignal(int, name = 'processing_progress_signal')
+    processing_progress_signal = QtCore.pyqtSignal(int)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -97,6 +66,15 @@ class IrisController(QtCore.QObject):
     def display_averaged_data(self, timedelay):
         self.averaged_data_signal.emit(self.dataset.averaged_data(timedelay))
     
+    @error_aware('Powder data could not be displayed.')
+    @QtCore.pyqtSlot(bool)
+    def display_powder_data(self, bgr):
+        """ Emit a powder data signal with/out background """
+        self.powder_data_signal.emit(self.dataset.scattering_length, 
+                                     self.dataset.powder_data_block(bgr = bgr), 
+                                     self.dataset.powder_error_block(),
+                                     bgr)
+    
     @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
@@ -113,8 +91,14 @@ class IrisController(QtCore.QObject):
         self.worker.in_progress_signal.connect(in_progress)
         self.processing_progress_signal.emit(0)
         self.worker.start()
+
+    @error_aware('Powder time-series could not be calculated.')
+    @QtCore.pyqtSlot(float, float, bool)
+    def powder_time_series(self, smin, smax, bgr):
+        self.powder_time_series_signal.emit(
+            self.dataset.time_points, self.dataset.powder_time_series(smin = smin, smax = smax, bgr = bgr))
     
-    @error_aware('Single-crystal time-series could not be computed')
+    @error_aware('Single-crystal time-series could not be computed.')
     @QtCore.pyqtSlot(object)
     def time_series_from_ROI(self, ROI):
         """" 
@@ -141,15 +125,18 @@ class IrisController(QtCore.QObject):
     def compute_baseline(self, params):
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
         self.worker.done_signal.connect(lambda boolean: self.update_dataset_info())
-        self.worker.done_signal.connect(lambda boolean: self.powder_data_signal.emit(self.dataset.scattering_length, *self.dataset.powder_data_block(bgr = self.dataset.baseline_removed)))
         self.worker.done_signal.connect(lambda boolean: self.status_message_signal.emit('Baseline computed.'))
         self.worker.start()
     
     @error_aware('Raw dataset could not be loaded.')
     @QtCore.pyqtSlot(str)
     def load_raw_dataset(self, path):
-        self.raw_dataset = RawDataset(path)
+        try: # Path might be invalid
+            self.raw_dataset = RawDataset(path)
+        except:
+            return
         self.raw_dataset_loaded_signal.emit(True)
+        self.update_raw_dataset_info()
         self.display_raw_data(timedelay = min(self.raw_dataset.time_points), 
                               scan = min(self.raw_dataset.nscans))
         
@@ -159,9 +146,12 @@ class IrisController(QtCore.QObject):
     def load_dataset(self, path):
         # Dispatch between DiffractionDataset and PowderDiffractionDataset
         cls = DiffractionDataset        # Most general case
-        with DiffractionDataset(path, mode = 'r') as d:
-            if d.sample_type == 'powder':
-                cls = PowderDiffractionDataset
+        try: # Path might be invalid
+            with DiffractionDataset(path, mode = 'r') as d:
+                if d.sample_type == 'powder':
+                    cls = PowderDiffractionDataset
+        except:
+            return
         
         self.dataset = cls(path, mode = 'r+')
         self.update_dataset_info()
@@ -169,22 +159,28 @@ class IrisController(QtCore.QObject):
         self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
 
         if isinstance(self.dataset, PowderDiffractionDataset):
-            self.powder_data_signal.emit(self.dataset.scattering_length, *self.dataset.powder_data_block(bgr = self.dataset.baseline_removed))
+            self.powder_data_signal.emit(self.dataset.scattering_length, 
+                                         self.dataset.powder_data_block(bgr = self.dataset.baseline_removed),
+                                         self.dataset.powder_error_block(),
+                                         self.dataset.baseline_removed)
             self.powder_dataset_loaded_signal.emit(True)
+        
+    def update_raw_dataset_info(self):
+        info = dict()
+        for attr in ('time_points', 'nscans', 'resolution', 'acquisition_date'):
+            info[attr] = getattr(self.raw_dataset, attr)
+        self.raw_dataset_info_signal.emit(info)
     
     def update_dataset_info(self):
-        """
-        Update the dataset info and emits the dataset_info_signal
-        to update all widgets.
-        """
+        """ Update the dataset info and emits the dataset_info_signal to update all widgets. """
         # Emit dataset information such as fluence, time-points, ...
         info = dict()
-        for attr in DiffractionDataset.experimental_parameter_names:
+        for attr in ('fluence', 'time_points', 'nscans', 'resolution', 'acquisition_date', 'sample_type'):
             info[attr] = getattr(self.dataset, attr)
         
         # PowderDiffractionDataset has some specific parameters
         # like wavelet, decomp. level, etc.
         if isinstance(self.dataset, PowderDiffractionDataset):
-            for attr in PowderDiffractionDataset.analysis_parameter_names:
+            for attr in ('first_stage', 'wavelet', 'level', 'baseline_removed'):
                 info[attr] = getattr(self.dataset, attr)
-        self.dataset_info_signal.emit(info)
+        self.dataset_info_signal.emit(info) 

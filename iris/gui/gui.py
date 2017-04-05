@@ -10,13 +10,16 @@ import os
 from os.path import join, dirname
 import sys
 
+from .fluence_calculator import FluenceCalculatorDialog
+from .knife_edge_tool import KnifeEdgeToolDialog
 from . import pyqtgraph as pg
 from .pyqtgraph import QtCore, QtGui
 from .qdarkstyle import load_stylesheet_pyqt5
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 from .controller import IrisController, error_aware
-from .widgets import (IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, 
-                      RawDataViewer, PowderViewer, FluenceCalculatorDialog)
+from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer
+from .raw_viewer import RawDataViewer
+from .powder_viewer import PowderViewer
 from .utils import WorkThread
 
 image_folder = join(dirname(__file__), 'images')
@@ -42,7 +45,6 @@ class Iris(QtGui.QMainWindow):
         self.processed_viewer = ProcessedDataViewer()
         self.powder_viewer = PowderViewer()
         self.status_bar = IrisStatusBar()
-        self.fluence_calculator = FluenceCalculatorDialog(parent = self)
 
         # UI components
         self.error_dialog = QtGui.QErrorMessage(parent = self)
@@ -62,12 +64,15 @@ class Iris(QtGui.QMainWindow):
         self.file_menu.addAction(self.load_dataset_action)
 
         self.fluence_calculator_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Fluence calculator', self)
-        self.fluence_calculator_action.triggered.connect(lambda x: self.fluence_calculator.exec_())
+        self.fluence_calculator_action.triggered.connect(self.launch_fluence_calculator_tool)
         self.autoindexing_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Autoindexing', self)
         self.autoindexing_action.setEnabled(False)
+        self.knife_edge_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Knife-edge analysis', self)
+        self.knife_edge_action.triggered.connect(self.launch_knife_edge_tool)
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.tools_menu.addAction(self.fluence_calculator_action)
         self.tools_menu.addAction(self.autoindexing_action)
+        self.tools_menu.addAction(self.knife_edge_action)
 
         # Status bar
         self.controller.status_message_signal.connect(self.status_bar.update_status)
@@ -87,11 +92,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.raw_dataset_loaded_signal.connect(  
             lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.raw_data_viewer)) if x else None)
 
-        self.raw_data_viewer.display_btn.clicked.connect(   
-            lambda x: self.controller.display_raw_data( 
-                float(self.raw_data_viewer.timedelay_edit.text()),
-                int(self.raw_data_viewer.scan_edit.text())))
-        
+        self.raw_data_viewer.display_raw_data_signal.connect(self.controller.display_raw_data)
         self.controller.raw_data_signal.connect(self.raw_data_viewer.display)
 
         # Processing raw dataset
@@ -113,7 +114,6 @@ class Iris(QtGui.QMainWindow):
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
 
         # Single crystal peak dynamics
-        # TODO: use the same code structure for powder peak dynamics
         self.processed_viewer.peak_dynamics_region.sigRegionChangeFinished.connect(self.controller.time_series_from_ROI)
         self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
 
@@ -125,15 +125,17 @@ class Iris(QtGui.QMainWindow):
             lambda x: self.viewer_stack.setCurrentIndex(self.viewer_stack.indexOf(self.powder_viewer)) if x else None)
         self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
         self.powder_viewer.baseline_parameters_signal.connect(self.controller.compute_baseline)
-        self.powder_viewer.baseline_removed_btn.toggled.connect(
-            lambda x: self.controller.powder_data_signal.emit(self.controller.dataset.scattering_length, *self.controller.dataset.powder_data_block(bgr = x)))
+        self.powder_viewer.baseline_removed_btn.clicked.connect(self.controller.display_powder_data)
 
+        # Peak dynamics region of interest
+        self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
+        self.controller.powder_time_series_signal.connect(self.powder_viewer.display_peak_dynamics)
         ######################################################################
         # Update when a new dataset is loaded
         # Switch tabs as well
         self.controller.dataset_info_signal.connect(self.dataset_info.update_info)
         self.controller.dataset_info_signal.connect(self.processed_viewer.update_info)
-        self.controller.dataset_info_signal.connect(self.powder_viewer.update_info)
+        self.controller.raw_dataset_info_signal.connect(self.raw_data_viewer.update_dataset_info)
         
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.viewer_stack)
@@ -174,3 +176,13 @@ class Iris(QtGui.QMainWindow):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+    
+    @QtCore.pyqtSlot()
+    def launch_knife_edge_tool(self):
+        window = KnifeEdgeToolDialog(parent = self)
+        return window.exec_()
+    
+    @QtCore.pyqtSlot()
+    def launch_fluence_calculator_tool(self):
+        window = FluenceCalculatorDialog(parent = self)
+        return window.exec_()
