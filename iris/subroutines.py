@@ -64,8 +64,8 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
     
     # Final averaging
     # Error in the mean is only approximate, but much faster.
-    # For a true measure of error, see scipy.mstats.sem
-    avg = n.ma.mean(arr, axis = 2), 
+    # For a true measure of error, see scipy.mstats.sem (masked standard error in mean)
+    avg = n.ma.mean(arr, axis = 2) 
     err = n.ma.std(arr, axis = 2) / n.sqrt(arr.shape[2])
     return avg, err
 
