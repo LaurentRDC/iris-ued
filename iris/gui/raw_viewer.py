@@ -183,7 +183,7 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         sample_type_layout.addWidget(self.powder_type_btn)
         sample_type_layout.addWidget(self.sc_type_btn)
 
-        self.mad_checkbox = QtGui.QCheckBox('Enable MAD filtering', parent = self)
+        self.mad_checkbox = QtGui.QCheckBox('Enable MAD filtering (slow)', parent = self)
         self.mad_checkbox.setChecked(False)
         self.center_correction_checkbox = QtGui.QCheckBox('Enable center-correction', parent = self)
 
