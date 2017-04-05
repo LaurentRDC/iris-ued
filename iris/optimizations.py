@@ -1,5 +1,6 @@
 from collections.abc import Sized
 from functools import partial
+from itertools import starmap
 import multiprocessing as mp
 import numpy as n
 
@@ -42,32 +43,26 @@ def chunked(iterable, chunksize = 1):
 
 def pmap(func, iterable, args = tuple(), kwargs = {}, processes = None):
     """
-    Parallel application of a function with keyword arguments.
+    Parallel application of a function with keyword arguments. The function is applied as
+    func(i, *args, **kwargs) for each item in iterable.
 
-    Parameters
-    ----------
-    func : callable
+    If processes = 1, pmap reduces to map(func, iterable) or equivalent with args and kwargs. Therefore,
+    pmap can be used as a drop-in replacement for map() and parallel behavior can be turned on later.
 
-    iterable : iterable
-    
-    args : tuple
+    pmap returns an iterator in general, but no further assumptions should be made on the nature of this
+    iterator.
+    """  
+    # TODO: are itertools.starmap and pool.starmap significantly slower than their map counterparts,
+    #       in which case it would be beneficial to discriminate between the case where args = tuple()?
 
-    kwargs : dictionary, optional
+    # Map and others will only with with functools.partial in Python 3.5+ I believe
+    func = partial(func, **kwargs)
+    iterable = tuple( (i,) + args for i in iterable )
 
-    processes : int or None, optional
-    """
-    if not isinstance(iterable, Sized):
-        iterable = tuple(iterable)
+    if processes == 1:
+        # No point in spinning up a process pool for a single process
+        return starmap(func, iterable)
     
     with mp.Pool(processes) as pool:
-        # Best chunking is largest possible chunking
-        chunksize = max(1, int(len(iterable)/pool._processes))
-        
-        map_func = pool.map
-        if args:
-            map_func = pool.starmap
-            iterable = ((i,) + args for i in iterable)
-
-        return map_func(func = partial(func, **kwargs), 
-                        iterable = iterable, 
-                        chunksize = chunksize)
+        chunksize = max(1, int(len(iterable)/pool._processes)) # Best chunking is largest possible chunking
+        return pool.starmap(func = func, iterable = iterable, chunksize = chunksize)
