@@ -30,14 +30,9 @@ def knife_edge(x, y, fit_parameters = dict()):
     """
     # TODO: handle knife edge measurements made in increasing x but decreasing y
     x, y = n.asfarray(x, dtype = n.float), n.asfarray(y, n.float)
-    x -= x.min()
-    y -= y.min()
     
     (amplitude, std, center, offset), *_ = curve_fit(cdf, xdata = x, ydata = y, 
-                                                     p0 = [y.max(), x.max()/2, n.median(x), y.min()],
-                                                     bounds = ([0, 0, 0, -2*y.min()], 
-                                                               [2*y.max(), 2*x.max(), x.max(), y.max()]))
-    
+                                                     p0 = [y.max(), x.max()/2, n.median(x), y.min()])
     # Modify the provided dictionary
     fit_parameters.update( {'amplitude': amplitude, 'std': std, 'center':center, 'offset': offset} )
     
