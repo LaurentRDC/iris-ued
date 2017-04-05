@@ -10,13 +10,14 @@ import os
 from os.path import join, dirname
 import sys
 
+from .fluence_calculator import FluenceCalculatorDialog
 from .knife_edge_tool import KnifeEdgeToolDialog
 from . import pyqtgraph as pg
 from .pyqtgraph import QtCore, QtGui
 from .qdarkstyle import load_stylesheet_pyqt5
 from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
 from .controller import IrisController, error_aware
-from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer, FluenceCalculatorDialog
+from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer
 from .raw_viewer import RawDataViewer
 from .powder_viewer import PowderViewer
 from .utils import WorkThread
