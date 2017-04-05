@@ -7,11 +7,10 @@ import numpy as n
 from os.path import join, isfile, isdir
 from os import listdir 
 import re
-from scipy.stats.mstats import sem
 from skimage.feature import register_translation
 import sys
 from datetime import datetime as dt
-from warnings import warn
+from warnings import warn, catch_warnings
 
 from . import cached_property
 from .io import read, save, RESOLUTION, ImageNotFoundError, cast_to_16_bits
@@ -221,7 +220,6 @@ class RawDataset(object):
         -------
         path
         """
-
         # Preliminary check. If energy is 0kV, then the scattering length calculation will
         # fail at the end of processing, crashing iris.
         if self.energy == 0:
@@ -313,19 +311,15 @@ class RawDataset(object):
             # Create beamblock mask right now
             # Evaluates to TRUE on the beamblock
             x1,x2,y1,y2 = beamblock_rect
-            beamblock_mask = n.zeros(shape = self.resolution, dtype = n.bool)
-            beamblock_mask[y1:y2, x1:x2] = True
-
-            cube = n.ma.masked_array(n.ma.dstack(images), fill_value = 0.0)
-            cube[beamblock_mask, :] = n.ma.masked
-            cube = n.ma.masked_invalid(cube, copy = False)  # Due to shifting the images, NaNs may appear
+            cube = n.dstack(images)
+            cube[y1:y2, x1:x2, :] = n.nan
 
             # Average appropriately using subroutine
             averaged, error = diff_avg(cube, mad = mad, mad_dist = 3)
 
             with DiffractionDataset(name = filename, mode = 'r+') as processed:
-                processed.processed_measurements_group['intensity'][:,:,i] = n.ma.filled(averaged, 0)
-                processed.processed_measurements_group['error'][:,:,i] = n.ma.filled(error, 0)
+                processed.processed_measurements_group['intensity'][:,:,i] = n.nan_to_num(averaged)
+                processed.processed_measurements_group['error'][:,:,i] = n.nan_to_num(error)
             
             callback(round(100*i / len(self.time_points)))
 
