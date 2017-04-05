@@ -10,6 +10,7 @@ import os
 from os.path import join, dirname
 import sys
 
+from .knife_edge_tool import KnifeEdgeToolDialog
 from . import pyqtgraph as pg
 from .pyqtgraph import QtCore, QtGui
 from .qdarkstyle import load_stylesheet_pyqt5
@@ -43,7 +44,6 @@ class Iris(QtGui.QMainWindow):
         self.processed_viewer = ProcessedDataViewer()
         self.powder_viewer = PowderViewer()
         self.status_bar = IrisStatusBar()
-        self.fluence_calculator = FluenceCalculatorDialog(parent = self)
 
         # UI components
         self.error_dialog = QtGui.QErrorMessage(parent = self)
@@ -63,12 +63,15 @@ class Iris(QtGui.QMainWindow):
         self.file_menu.addAction(self.load_dataset_action)
 
         self.fluence_calculator_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Fluence calculator', self)
-        self.fluence_calculator_action.triggered.connect(lambda x: self.fluence_calculator.exec_())
+        self.fluence_calculator_action.triggered.connect(self.launch_fluence_calculator_tool)
         self.autoindexing_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Autoindexing', self)
         self.autoindexing_action.setEnabled(False)
+        self.knife_edge_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Knife-edge analysis', self)
+        self.knife_edge_action.triggered.connect(self.launch_knife_edge_tool)
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.tools_menu.addAction(self.fluence_calculator_action)
         self.tools_menu.addAction(self.autoindexing_action)
+        self.tools_menu.addAction(self.knife_edge_action)
 
         # Status bar
         self.controller.status_message_signal.connect(self.status_bar.update_status)
@@ -172,3 +175,13 @@ class Iris(QtGui.QMainWindow):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+    
+    @QtCore.pyqtSlot()
+    def launch_knife_edge_tool(self):
+        window = KnifeEdgeToolDialog(parent = self)
+        return window.exec_()
+    
+    @QtCore.pyqtSlot()
+    def launch_fluence_calculator_tool(self):
+        window = FluenceCalculatorDialog(parent = self)
+        return window.exec_()

@@ -25,8 +25,8 @@ class TestKnifeEdge(unittest.TestCase):
     
     def test_fit_parameters_recovery(self):
         """ Test that fit parameters can recovered if a perfect function is provided"""
-        x = n.linspace(0, 20, num = 50)
-        correct_params = {'amplitude': 1, 'std': 2, 'center': 10, 'offset':0}
+        x = n.linspace(-20, 20, num = 50)
+        correct_params = {'amplitude': 1, 'std': 2, 'center': -5, 'offset':4}
         y = cdf(x, **correct_params)
         
         params = dict()
