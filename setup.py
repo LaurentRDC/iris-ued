@@ -3,7 +3,7 @@ from itertools import chain
 from setuptools import setup, find_packages
 import glob
 
-__version__ = '3.0'
+__version__ = '3.1'
 __author__ = 'Laurent P. René de Cotret'
 
 #To create a Windows installer for this, run:
@@ -25,7 +25,7 @@ setup(
     url = 'www.physics.mcgill.ca/siwicklab',
     install_requires = ['numpy >= 1.11.2', 
                         'scipy', 
-                        'h5py',
+                        'h5py >= 2.6.0',
                         'scikit-image', 
                         'PyWavelets >= 0.5.1', 
                         'tifffile'],

@@ -71,8 +71,8 @@ class IrisController(QtCore.QObject):
     def display_powder_data(self, bgr):
         """ Emit a powder data signal with/out background """
         self.powder_data_signal.emit(self.dataset.scattering_length, 
-                                     self.dataset.powder_data_block(bgr = bgr), 
-                                     self.dataset.powder_error_block(),
+                                     self.dataset.powder_data(timedelay = None, bgr = bgr), 
+                                     self.dataset.powder_error(timedelay = None),
                                      bgr)
     
     @error_aware('Raw dataset could not be processed.')
@@ -140,18 +140,15 @@ class IrisController(QtCore.QObject):
         self.display_raw_data(timedelay = min(self.raw_dataset.time_points), 
                               scan = min(self.raw_dataset.nscans))
         
-    @error_aware('Processed dataset could not be loaded.')
+    @error_aware('Processed dataset could not be loaded. The path might not be valid')
     @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
     @QtCore.pyqtSlot(str)
     def load_dataset(self, path):
         # Dispatch between DiffractionDataset and PowderDiffractionDataset
         cls = DiffractionDataset        # Most general case
-        try: # Path might be invalid
-            with DiffractionDataset(path, mode = 'r') as d:
-                if d.sample_type == 'powder':
-                    cls = PowderDiffractionDataset
-        except:
-            return
+        with DiffractionDataset(path, mode = 'r') as d:
+            if d.sample_type == 'powder':
+                cls = PowderDiffractionDataset
         
         self.dataset = cls(path, mode = 'r+')
         self.update_dataset_info()
@@ -160,8 +157,9 @@ class IrisController(QtCore.QObject):
 
         if isinstance(self.dataset, PowderDiffractionDataset):
             self.powder_data_signal.emit(self.dataset.scattering_length, 
-                                         self.dataset.powder_data_block(bgr = self.dataset.baseline_removed),
-                                         self.dataset.powder_error_block(),
+                                         self.dataset.powder_data(timedelay = None, 
+                                                                  bgr = self.dataset.baseline_removed),
+                                         self.dataset.powder_error(timedelay = None),
                                          self.dataset.baseline_removed)
             self.powder_dataset_loaded_signal.emit(True)
         
