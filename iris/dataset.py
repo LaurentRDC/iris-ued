@@ -8,6 +8,7 @@ import numpy as n
 import os
 from os.path import join
 import re
+from warnings import warn
 
 from .dualtree import baseline, dualtree_max_level
 from .optimizations import cached_property
@@ -118,18 +119,26 @@ class DiffractionDataset(h5py.File):
     def corrected_time_points(self):
         """ Time points corrected for time-zero shift. """
         return tuple(n.array(self.time_points) - self.time_zero_shift)
+    
+    def shift_time_zero(self, shift):
+        """
+        Shift time-zero uniformly across time-points.
+
+        Parameters
+        ----------
+        shift : float
+            Shift [ps].
+        """
+        self.time_zero_shift = shift
             
-    def averaged_data(self, timedelay, tcor = False, out = None):
+    def averaged_data(self, timedelay, out = None):
         """
         Returns data at a specific time-delay.
 
         Parameters
         ----------
-        timdelay : float
-            Timedelay [ps]
-        tcor : bool, optional
-            If True, the time-zero shift corrected time-points are used
-            instead of experimental time-points.
+        timdelay : float or None
+            Timedelay [ps]. If None, the entire block is returned.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -139,33 +148,29 @@ class DiffractionDataset(h5py.File):
         arr : ndarray or None
             Time-delay data. If out is provided, None is returned.
         """
-        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
         dataset = self.processed_measurements_group['intensity']
-        if out:
-            return dataset.read_direct(array = out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
-        return n.array(dataset[:,:,time_index])
-    
-    def averaged_data_block(self):
-        """
-        Array containing all time-delay (averaged) data.
 
-        Returns
-        -------
-        out : ndarray, ndim 3
-        """
-        return n.array(self.processed_measurements_group['intensity'])
-    
-    def averaged_error(self, timedelay, tcor = False, out = None):
+        if timedelay is None:
+            if not out:
+                out = n.empty_like(dataset)
+            dataset.read_direct(out)
+
+        else:
+            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
+            if not out:
+                out = n.empty(self.resolution)
+            dataset.read_direct(out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
+
+        return out
+
+    def averaged_error(self, timedelay, out = None):
         """ 
         Returns error in measurement.
 
         Parameters
         ----------
-        timdelay : float
-            Timedelay [ps]
-        tcor : bool, optional
-            If True, the time-zero shift corrected time-points are used
-            instead of experimental time-points.
+        timdelay : float or None
+            Timedelay [ps]. If None, the entire block is returned.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -175,11 +180,20 @@ class DiffractionDataset(h5py.File):
         arr : ndarray or None
             Time-delay error. If out is provided, None is returned.
         """
-        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
         dataset = self.processed_measurements_group['error']
-        if out:
-            return dataset.read_direct(array = out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
-        return n.array(dataset[:,:,time_index])
+
+        if timedelay is None:
+            if not out:
+                out = n.empty_like(dataset)
+            dataset.read_direct(out)
+
+        else:
+            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
+            if not out:
+                out = n.empty(self.resolution)
+            dataset.read_direct(out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
+        
+        return out
     
     def time_series(self, rect):
         """
@@ -194,8 +208,8 @@ class DiffractionDataset(h5py.File):
         -------
         out : ndarray, ndim 1
         """
+        # TODO: out parameter?
         x1, x2, y1, y2 = rect
-
         data = n.array(self.processed_measurements_group['intensity'][y1:y2, x1:x2, :])  # Numpy axes are transposed
         return n.sum(n.sum(data, axis = 0), axis = 0)
 
@@ -205,8 +219,8 @@ class DiffractionDataset(h5py.File):
 
         Parameters
         ----------
-        scan : int
-
+        scan : int or None
+            If None, the entire block (i.e. for all scans) is returned.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -218,9 +232,16 @@ class DiffractionDataset(h5py.File):
         """
         #Scans start at 1, ndarray indices start at 0
         dataset = self.pumpoff_pictures_group['pumpoff_pictures']
-        if out:
-            return dataset.read_direct(array = out, source_sel = n.s_[:,:,scan - 1], dest_sel = n.s_[:,:])
-        return n.array(dataset[:,:,scan - 1])
+        if scan:
+            if not out:
+                out = n.empty(self.resolution)
+            dataset.read_direct(out, source_sel = n.s_[:,:,scan - 1], dest_sel = n.s_[:,:])
+        else:
+            if not out:
+                out = n.empty_like(dataset)
+            dataset.read_direct(out)
+        
+        return out
        
     @property
     def background_pumpon(self):
@@ -277,17 +298,14 @@ class PowderDiffractionDataset(DiffractionDataset):
     def scattering_length(self):
         return n.array(self.powder_group['scattering_length'])
 
-    def powder_data(self, timedelay, tcor = False, bgr = False, out = None):
+    def powder_data(self, timedelay, bgr = False, out = None):
         """
         Returns the angular average data from scan-averaged diffraction patterns.
 
         Parameters
         ----------
-        timdelay : float
-            Time-delay [ps].
-        tcor : bool, optional
-            If True, the time-zero shift corrected time-points are used
-            instead of experimental time-points.
+        timdelay : float or None
+            Time-delay [ps]. If None, the entire block is returned.
         bgr : bool
             If True, background is removed.
         out : ndarray or None, optional
@@ -298,34 +316,32 @@ class PowderDiffractionDataset(DiffractionDataset):
         -------
         I : ndarray, shape (N,)
             Diffracted intensity [counts]
-        
-        See also
-        --------
-        powder_data_block
-            All time-delay powder diffraction data into 2D arrays.
         """
-        # I'm not sure how to handle out parameter if bgr is True
-        # out has no effect if bgr = True
-        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
         dataset = self.powder_group['intensity']
-        if not bgr and out:
-            return dataset.read_direct(array = out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
-        elif bgr:
-            return n.array(dataset[time_index, :]) - self.baseline(timedelay)
+
+        if timedelay is None:
+            if not out:
+                out = n.empty_like(dataset)
+            dataset.read_direct(out)
+
         else:
-            return n.array(dataset[time_index, :])
+            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
+            if not out:
+                out = n.empty_like(self.scattering_length)
+            dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
+
+        if bgr:
+            out -= self.baseline(timedelay)
+        return out     
     
-    def powder_error(self, timedelay, tcor = False, out = None):
+    def powder_error(self, timedelay, out = None):
         """
         Returns the angular average error from scan-averaged diffraction patterns.
 
         Parameters
         ----------
-        timdelay : float
-            Time-delay [ps].
-        tcor : bool, optional
-            If True, the time-zero shift corrected time-points are used
-            instead of experimental time-points.
+        timdelay : float or None
+            Time-delay [ps]. If None, the entire block is returned.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -334,34 +350,29 @@ class PowderDiffractionDataset(DiffractionDataset):
         -------
         out : ndarray, shape (N,)
             Error in diffracted intensity [counts].
-        
-        See also
-        --------
-        powder_data_block
-            All time-delay powder diffraction data into 2D arrays.
         """
-        # I'm not sure how to handle out parameter if bgr is True
-        # out has no effect if bgr = True
-        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
         dataset = self.powder_group['error']
-        if not bgr and out:
-            return dataset.read_direct(array = out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
-        elif bgr:
-            return n.array(dataset[time_index, :]) - self.baseline(timedelay)
-        else:
-            return n.array(dataset[time_index, :])
 
-    def baseline(self, timedelay, tcor = False, out = None):
+        if timedelay is None:
+            if not out:
+                out = n.empty_like(dataset)
+            dataset.read_direct(out)
+        
+        else:
+            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
+            if not out:
+                out = n.empty_like(self.scattering_length)
+            dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])  
+        return out
+
+    def baseline(self, timedelay, out = None):
         """ 
-        Returns the baseline data 
+        Returns the baseline data. 
 
         Parameters
         ----------
-        timdelay : float
-            Time-delay [ps].
-        tcor : bool, optional
-            If True, the time-zero shift corrected time-points are used
-            instead of experimental time-points.
+        timdelay : float or None
+            Time-delay [ps]. If None, the entire block is returned.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -369,18 +380,26 @@ class PowderDiffractionDataset(DiffractionDataset):
         Returns
         -------
         out : ndarray
+            If a baseline hasn't been computed yet, the returned
+            array is an array of zeros.
         """
         if not self.baseline_removed:
             return n.zeros_like(self.scattering_length)
 
-        # I'm not sure how to handle out parameter if bgr is True
-        # out has no effect if bgr = True
-        time_index = n.argwhere(n.array(self.time_points) == float(timedelay))
         dataset = self.powder_group['baseline']
-        if out:
-            return dataset.read_direct(array = out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
+
+        if timedelay is None:
+            if not out:
+                out = n.empty_like(dataset)
+            dataset.read_direct(out)
+        
         else:
-            return n.array(dataset[time_index, :])
+            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
+            if not out:
+                out = n.empty_like(self.scattering_length)
+            dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:]) 
+        
+        return out
     
     def powder_time_series(self, smin, smax, bgr = False):
         """
@@ -409,36 +428,6 @@ class PowderDiffractionDataset(DiffractionDataset):
             trace -= n.array(self.powder_group['baseline'][:, i_min:i_max + 1])
 
         return n.squeeze(n.sum(trace, axis = 1))
-        
-    def powder_data_block(self, bgr = False):
-        """ 
-        Return powder diffraction data for all time delays as a single block. 
-
-        Parameters
-        ----------
-        bgr : bool
-            If True, background is removed.
-
-        Returns
-        -------
-        I : ndarray, shapes (N, M)
-            Diffracted intensity
-        """
-        data = n.array(self.powder_group['intensity'])
-        if bgr:
-            data -= n.array(self.powder_group['baseline'])
-        return data
-    
-    def powder_error_block(self):
-        """
-        Return powder diffraction data for all time delays as a single block. 
-
-        Returns
-        -------
-        e : ndarray, shapes (N, M)
-            Error in diffracted intensity
-        """
-        return n.array(self.powder_group['error'])
     
     def compute_baseline(self, first_stage, wavelet, max_iter = 100, level = 'max'):
         """
@@ -455,14 +444,14 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         level : int or 'max', optional
         """
-        background = baseline(array = self.powder_data_block(bgr = False), max_iter = max_iter, level = level, 
-                              first_stage = first_stage, wavelet = wavelet, background_regions = tuple(),
+        background = baseline(array = self.powder_data(timedelay = None, bgr = False), max_iter = max_iter, 
+                              level = level, first_stage = first_stage, wavelet = wavelet, background_regions = tuple(),
                               mask = None, axis = 1)
         
         if not self.baseline_removed:
             self.powder_group.create_dataset(name = 'baseline', data = background, **self.compression_params)
         else:
-            self.powder_group['baseline'][:] = background
+            self.powder_group['baseline'].write_direct(background)
         
         # Record parameters
         if level == 'max':
