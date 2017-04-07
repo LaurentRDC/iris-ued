@@ -1,0 +1,543 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">PyQtGraph - Scientific Graphics and GUI Library for Python</span>
+<span class="sd">www.pyqtgraph.org</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;0.10.0&#39;</span>
+
+<span class="c1">### import all the goodies and add some helper functions for easy CLI use</span>
+
+<span class="c1">## &#39;Qt&#39; is a local module; it is intended mainly to cover up the differences</span>
+<span class="c1">## between PyQt4 and PySide.</span>
+<span class="kn">from</span> <span class="nn">.Qt</span> <span class="k">import</span> <span class="n">QtGui</span>
+
+<span class="c1">## not really safe--If we accidentally create another QApplication, the process hangs (and it is very difficult to trace the cause)</span>
+<span class="c1">#if QtGui.QApplication.instance() is None:</span>
+    <span class="c1">#app = QtGui.QApplication([])</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>  <span class="c1">## pyqtgraph requires numpy</span>
+              <span class="c1">## (import here to avoid massive error dump later on if numpy is not available)</span>
+
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+
+<span class="c1">## check python version</span>
+<span class="c1">## Allow anything &gt;= 2.7</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">6</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Pyqtgraph requires Python version 2.6 or greater (this is </span><span class="si">%d</span><span class="s2">.</span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+<span class="c1">## helpers for 2/3 compatibility</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">python2_3</span>
+
+<span class="c1">## install workarounds for numpy bugs</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">numpy_fix</span>
+
+<span class="c1">## in general openGL is poorly supported with Qt+GraphicsView.</span>
+<span class="c1">## we only enable it where the performance benefit is critical.</span>
+<span class="c1">## Note this only applies to 2D graphics; 3D graphics always use OpenGL.</span>
+<span class="k">if</span> <span class="s1">&#39;linux&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">:</span>  <span class="c1">## linux has numerous bugs in opengl implementation</span>
+    <span class="n">useOpenGL</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">elif</span> <span class="s1">&#39;darwin&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">:</span> <span class="c1">## openGL can have a major impact on mac, but also has serious bugs</span>
+    <span class="n">useOpenGL</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Warning: QApplication was created before pyqtgraph was imported; there may be problems (to avoid bugs, call QApplication.setGraphicsSystem(&quot;raster&quot;) before the QApplication is created).&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">setGraphicsSystem</span><span class="p">:</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">setGraphicsSystem</span><span class="p">(</span><span class="s1">&#39;raster&#39;</span><span class="p">)</span>  <span class="c1">## work around a variety of bugs in the native graphics system </span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">useOpenGL</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1">## on windows there&#39;s a more even performance / bugginess tradeoff. </span>
+                
+<span class="n">CONFIG_OPTIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;useOpenGL&#39;</span><span class="p">:</span> <span class="n">useOpenGL</span><span class="p">,</span> <span class="c1">## by default, this is platform-dependent (see widgets/GraphicsView). Set to True or False to explicitly enable/disable opengl.</span>
+    <span class="s1">&#39;leftButtonPan&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1">## if false, left button drags a rubber band for zooming in viewbox</span>
+    <span class="c1"># foreground/background take any arguments to the &#39;mkColor&#39; in /pyqtgraph/functions.py</span>
+    <span class="s1">&#39;foreground&#39;</span><span class="p">:</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span>  <span class="c1">## default foreground color for axes, labels, etc.</span>
+    <span class="s1">&#39;background&#39;</span><span class="p">:</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span>        <span class="c1">## default background for GraphicsWidget</span>
+    <span class="s1">&#39;antialias&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s1">&#39;editorCommand&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1">## command used to invoke code editor from ConsoleWidgets</span>
+    <span class="s1">&#39;useWeave&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>       <span class="c1">## Use weave to speed up some operations, if it is available</span>
+    <span class="s1">&#39;weaveDebug&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>    <span class="c1">## Print full error message if weave compile fails</span>
+    <span class="s1">&#39;exitCleanup&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>    <span class="c1">## Attempt to work around some exit crash bugs in PyQt and PySide</span>
+    <span class="s1">&#39;enableExperimental&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="c1">## Enable experimental features (the curious can search for this key in the code)</span>
+    <span class="s1">&#39;crashWarning&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># If True, print warnings about situations that may result in a crash</span>
+    <span class="s1">&#39;imageAxisOrder&#39;</span><span class="p">:</span> <span class="s1">&#39;col-major&#39;</span><span class="p">,</span>  <span class="c1"># For &#39;row-major&#39;, image data is expected in the standard (row, col) order.</span>
+                                 <span class="c1"># For &#39;col-major&#39;, image data is expected in reversed (col, row) order.</span>
+                                 <span class="c1"># The default is &#39;col-major&#39; for backward compatibility, but this may</span>
+                                 <span class="c1"># change in the future.</span>
+<span class="p">}</span> 
+
+
+<div class="viewcode-block" id="setConfigOption"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.setConfigOption">[docs]</a><span class="k">def</span> <span class="nf">setConfigOption</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">CONFIG_OPTIONS</span>
+    <span class="k">if</span> <span class="n">opt</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CONFIG_OPTIONS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Unknown configuration option &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span> <span class="o">%</span> <span class="n">opt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span> <span class="s1">&#39;imageAxisOrder&#39;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;row-major&#39;</span><span class="p">,</span> <span class="s1">&#39;col-major&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;imageAxisOrder must be either &quot;row-major&quot; or &quot;col-major&quot;&#39;</span><span class="p">)</span>
+    <span class="n">CONFIG_OPTIONS</span><span class="p">[</span><span class="n">opt</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="setConfigOptions"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.setConfigOptions">[docs]</a><span class="k">def</span> <span class="nf">setConfigOptions</span><span class="p">(</span><span class="o">**</span><span class="n">opts</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Set global configuration options. </span>
+<span class="sd">    </span>
+<span class="sd">    Each keyword argument sets one global option. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">opts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">setConfigOption</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="getConfigOption"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.getConfigOption">[docs]</a><span class="k">def</span> <span class="nf">getConfigOption</span><span class="p">(</span><span class="n">opt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the value of a single global configuration option.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">CONFIG_OPTIONS</span><span class="p">[</span><span class="n">opt</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="systemInfo"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.systemInfo">[docs]</a><span class="k">def</span> <span class="nf">systemInfo</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;sys.platform: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;sys.version: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">.Qt</span> <span class="k">import</span> <span class="n">VERSION_INFO</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;qt bindings: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">VERSION_INFO</span><span class="p">)</span>
+    
+    <span class="k">global</span> <span class="n">__version__</span>
+    <span class="n">rev</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">__version__</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1">## this code was probably checked out from bzr; look up the last-revision file</span>
+        <span class="n">lastRevFile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;.bzr&#39;</span><span class="p">,</span> <span class="s1">&#39;branch&#39;</span><span class="p">,</span> <span class="s1">&#39;last-revision&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">lastRevFile</span><span class="p">):</span>
+            <span class="n">rev</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">lastRevFile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;pyqtgraph: </span><span class="si">%s</span><span class="s2">; </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">__version__</span><span class="p">,</span> <span class="n">rev</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;config:&quot;</span><span class="p">)</span>
+    <span class="kn">import</span> <span class="nn">pprint</span>
+    <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">CONFIG_OPTIONS</span><span class="p">)</span></div>
+
+<span class="c1">## Rename orphaned .pyc files. This is *probably* safe :)</span>
+<span class="c1">## We only do this if __version__ is None, indicating the code was probably pulled</span>
+<span class="c1">## from the repository. </span>
+<div class="viewcode-block" id="renamePyc"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.renamePyc">[docs]</a><span class="k">def</span> <span class="nf">renamePyc</span><span class="p">(</span><span class="n">startDir</span><span class="p">):</span>
+    <span class="c1">### Used to rename orphaned .pyc files</span>
+    <span class="c1">### When a python file changes its location in the repository, usually the .pyc file</span>
+    <span class="c1">### is left behind, possibly causing mysterious and difficult to track bugs. </span>
+
+    <span class="c1">### Note that this is no longer necessary for python 3.2; from PEP 3147:</span>
+    <span class="c1">### &quot;If the py source file is missing, the pyc file inside __pycache__ will be ignored. </span>
+    <span class="c1">### This eliminates the problem of accidental stale pyc file imports.&quot;</span>
+    
+    <span class="n">printed</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">startDir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">startDir</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">startDir</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;__pycache__&#39;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="n">fileName</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+            <span class="n">base</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>
+            <span class="n">py</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="s2">&quot;.py&quot;</span>
+            <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="s1">&#39;.pyc&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">py</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">printed</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;NOTE: Renaming orphaned .pyc files:&quot;</span><span class="p">)</span>
+                    <span class="n">printed</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">name2</span> <span class="o">=</span> <span class="n">fileName</span> <span class="o">+</span> <span class="s2">&quot;.renamed</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">name2</span><span class="p">):</span>
+                        <span class="k">break</span>
+                    <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  &quot;</span> <span class="o">+</span> <span class="n">fileName</span> <span class="o">+</span> <span class="s2">&quot;  ==&gt;&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  &quot;</span> <span class="o">+</span> <span class="n">name2</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="n">name2</span><span class="p">)</span></div>
+                
+<span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">__file__</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">if</span> <span class="n">__version__</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s1">&#39;frozen&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span> <span class="c1">## If we are frozen, there&#39;s a good chance we don&#39;t have the original .py files anymore.</span>
+    <span class="n">renamePyc</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+
+<span class="c1">## Import almost everything to make it available from a single namespace</span>
+<span class="c1">## don&#39;t import the more complex systems--canvas, parametertree, flowchart, dockarea</span>
+<span class="c1">## these must be imported separately.</span>
+<span class="c1">#from . import frozenSupport</span>
+<span class="c1">#def importModules(path, globals, locals, excludes=()):</span>
+    <span class="c1">#&quot;&quot;&quot;Import all modules residing within *path*, return a dict of name: module pairs.</span>
+    
+    <span class="c1">#Note that *path* MUST be relative to the module doing the import.    </span>
+    <span class="c1">#&quot;&quot;&quot;</span>
+    <span class="c1">#d = os.path.join(os.path.split(globals[&#39;__file__&#39;])[0], path)</span>
+    <span class="c1">#files = set()</span>
+    <span class="c1">#for f in frozenSupport.listdir(d):</span>
+        <span class="c1">#if frozenSupport.isdir(os.path.join(d, f)) and f not in [&#39;__pycache__&#39;, &#39;tests&#39;]:</span>
+            <span class="c1">#files.add(f)</span>
+        <span class="c1">#elif f[-3:] == &#39;.py&#39; and f != &#39;__init__.py&#39;:</span>
+            <span class="c1">#files.add(f[:-3])</span>
+        <span class="c1">#elif f[-4:] == &#39;.pyc&#39; and f != &#39;__init__.pyc&#39;:</span>
+            <span class="c1">#files.add(f[:-4])</span>
+        
+    <span class="c1">#mods = {}</span>
+    <span class="c1">#path = path.replace(os.sep, &#39;.&#39;)</span>
+    <span class="c1">#for modName in files:</span>
+        <span class="c1">#if modName in excludes:</span>
+            <span class="c1">#continue</span>
+        <span class="c1">#try:</span>
+            <span class="c1">#if len(path) &gt; 0:</span>
+                <span class="c1">#modName = path + &#39;.&#39; + modName</span>
+            <span class="c1">#print( &quot;from .%s import * &quot; % modName)</span>
+            <span class="c1">#mod = __import__(modName, globals, locals, [&#39;*&#39;], 1)</span>
+            <span class="c1">#mods[modName] = mod</span>
+        <span class="c1">#except:</span>
+            <span class="c1">#import traceback</span>
+            <span class="c1">#traceback.print_stack()</span>
+            <span class="c1">#sys.excepthook(*sys.exc_info())</span>
+            <span class="c1">#print(&quot;[Error importing module: %s]&quot; % modName)</span>
+            
+    <span class="c1">#return mods</span>
+
+<span class="c1">#def importAll(path, globals, locals, excludes=()):</span>
+    <span class="c1">#&quot;&quot;&quot;Given a list of modules, import all names from each module into the global namespace.&quot;&quot;&quot;</span>
+    <span class="c1">#mods = importModules(path, globals, locals, excludes)</span>
+    <span class="c1">#for mod in mods.values():</span>
+        <span class="c1">#if hasattr(mod, &#39;__all__&#39;):</span>
+            <span class="c1">#names = mod.__all__</span>
+        <span class="c1">#else:</span>
+            <span class="c1">#names = [n for n in dir(mod) if n[0] != &#39;_&#39;]</span>
+        <span class="c1">#for k in names:</span>
+            <span class="c1">#if hasattr(mod, k):</span>
+                <span class="c1">#globals[k] = getattr(mod, k)</span>
+
+<span class="c1"># Dynamic imports are disabled. This causes too many problems.</span>
+<span class="c1">#importAll(&#39;graphicsItems&#39;, globals(), locals())</span>
+<span class="c1">#importAll(&#39;widgets&#39;, globals(), locals(),</span>
+          <span class="c1">#excludes=[&#39;MatplotlibWidget&#39;, &#39;RawImageWidget&#39;, &#39;RemoteGraphicsView&#39;])</span>
+
+<span class="kn">from</span> <span class="nn">.graphicsItems.VTickGroup</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GraphicsWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ScaleBar</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.PlotDataItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GraphItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.TextItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GraphicsLayout</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.UIGraphicsItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GraphicsObject</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.PlotItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ROI</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.InfiniteLine</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.HistogramLUTItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GridItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GradientLegend</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GraphicsItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.BarGraphItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ViewBox</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ArrowItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ImageItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.AxisItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.LabelItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.CurvePoint</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GraphicsWidgetAnchor</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.PlotCurveItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ButtonItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.GradientEditorItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.MultiPlotItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ErrorBarItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.IsocurveItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.LinearRegionItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.FillBetweenItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.LegendItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ScatterPlotItem</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.graphicsItems.ItemGroup</span> <span class="k">import</span> <span class="o">*</span> 
+
+<span class="kn">from</span> <span class="nn">.widgets.MultiPlotWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.ScatterPlotWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.ColorMapWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.FileDialog</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.ValueLabel</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.HistogramLUTWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.CheckTable</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.BusyCursor</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.PlotWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.ComboBox</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.GradientWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.DataFilterWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.SpinBox</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.JoystickButton</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.GraphicsLayoutWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.TreeWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.PathButton</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.VerticalLabel</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.FeedbackButton</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.ColorButton</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.DataTreeWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.GraphicsView</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.LayoutWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.TableWidget</span> <span class="k">import</span> <span class="o">*</span> 
+<span class="kn">from</span> <span class="nn">.widgets.ProgressDialog</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="kn">from</span> <span class="nn">.imageview</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.WidgetGroup</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.Point</span> <span class="k">import</span> <span class="n">Point</span>
+<span class="kn">from</span> <span class="nn">.Vector</span> <span class="k">import</span> <span class="n">Vector</span>
+<span class="kn">from</span> <span class="nn">.SRTTransform</span> <span class="k">import</span> <span class="n">SRTTransform</span>
+<span class="kn">from</span> <span class="nn">.Transform3D</span> <span class="k">import</span> <span class="n">Transform3D</span>
+<span class="kn">from</span> <span class="nn">.SRTTransform3D</span> <span class="k">import</span> <span class="n">SRTTransform3D</span>
+<span class="kn">from</span> <span class="nn">.functions</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.graphicsWindows</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.SignalProxy</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.colormap</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.ptime</span> <span class="k">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">.Qt</span> <span class="k">import</span> <span class="n">isQObjectAlive</span>
+
+
+<span class="c1">##############################################################</span>
+<span class="c1">## PyQt and PySide both are prone to crashing on exit. </span>
+<span class="c1">## There are two general approaches to dealing with this:</span>
+<span class="c1">##  1. Install atexit handlers that assist in tearing down to avoid crashes.</span>
+<span class="c1">##     This helps, but is never perfect.</span>
+<span class="c1">##  2. Terminate the process before python starts tearing down</span>
+<span class="c1">##     This is potentially dangerous</span>
+
+<span class="c1">## Attempts to work around exit crashes:</span>
+<span class="kn">import</span> <span class="nn">atexit</span>
+<span class="n">_cleanupCalled</span> <span class="o">=</span> <span class="kc">False</span>
+<div class="viewcode-block" id="cleanup"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.cleanup">[docs]</a><span class="k">def</span> <span class="nf">cleanup</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">_cleanupCalled</span>
+    <span class="k">if</span> <span class="n">_cleanupCalled</span><span class="p">:</span>
+        <span class="k">return</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">getConfigOption</span><span class="p">(</span><span class="s1">&#39;exitCleanup&#39;</span><span class="p">):</span>
+        <span class="k">return</span>
+    
+    <span class="n">ViewBox</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>  <span class="c1">## tell ViewBox that it doesn&#39;t need to deregister views anymore.</span>
+    
+    <span class="c1">## Workaround for Qt exit crash:</span>
+    <span class="c1">## ALL QGraphicsItems must have a scene before they are deleted.</span>
+    <span class="c1">## This is potentially very expensive, but preferred over crashing.</span>
+    <span class="c1">## Note: this appears to be fixed in PySide as of 2012.12, but it should be left in for a while longer..</span>
+    <span class="k">if</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="kn">import</span> <span class="nn">gc</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">gc</span><span class="o">.</span><span class="n">get_objects</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsItem</span><span class="p">)</span> <span class="ow">and</span> <span class="n">isQObjectAlive</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="ow">and</span> <span class="n">o</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">getConfigOption</span><span class="p">(</span><span class="s1">&#39;crashWarning&#39;</span><span class="p">):</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;Error: graphics item without scene. &#39;</span>
+                        <span class="s1">&#39;Make sure ViewBox.close() and GraphicsView.close() &#39;</span>
+                        <span class="s1">&#39;are properly called before app shutdown (</span><span class="si">%s</span><span class="s1">)</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">o</span><span class="p">,))</span>
+                
+                <span class="n">s</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>  <span class="c1">## occurs if a python wrapper no longer has its underlying C++ object</span>
+            <span class="k">continue</span>
+    <span class="n">_cleanupCalled</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">cleanup</span><span class="p">)</span>
+
+<span class="c1"># Call cleanup when QApplication quits. This is necessary because sometimes</span>
+<span class="c1"># the QApplication will quit before the atexit callbacks are invoked.</span>
+<span class="c1"># Note: cannot connect this function until QApplication has been created, so</span>
+<span class="c1"># instead we have GraphicsView.__init__ call this for us.</span>
+<span class="n">_cleanupConnected</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">def</span> <span class="nf">_connectCleanup</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">_cleanupConnected</span>
+    <span class="k">if</span> <span class="n">_cleanupConnected</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">aboutToQuit</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">cleanup</span><span class="p">)</span>
+    <span class="n">_cleanupConnected</span> <span class="o">=</span> <span class="kc">True</span>
+
+
+<span class="c1">## Optional function for exiting immediately (with some manual teardown)</span>
+<div class="viewcode-block" id="exit"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.exit">[docs]</a><span class="k">def</span> <span class="nf">exit</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Causes python to exit without garbage-collecting any objects, and thus avoids</span>
+<span class="sd">    calling object destructor methods. This is a sledgehammer workaround for </span>
+<span class="sd">    a variety of bugs in PyQt and Pyside that cause crashes on exit.</span>
+<span class="sd">    </span>
+<span class="sd">    This function does the following in an attempt to &#39;safely&#39; terminate</span>
+<span class="sd">    the process:</span>
+<span class="sd">    </span>
+<span class="sd">    * Invoke atexit callbacks</span>
+<span class="sd">    * Close all open file handles</span>
+<span class="sd">    * os._exit()</span>
+<span class="sd">    </span>
+<span class="sd">    Note: there is some potential for causing damage with this function if you</span>
+<span class="sd">    are using objects that _require_ their destructors to be called (for example,</span>
+<span class="sd">    to properly terminate log files, disconnect from devices, etc). Situations</span>
+<span class="sd">    like this are probably quite rare, but use at your own risk.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1">## first disable our own cleanup function; won&#39;t be needing it.</span>
+    <span class="n">setConfigOptions</span><span class="p">(</span><span class="n">exitCleanup</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+    <span class="c1">## invoke atexit callbacks</span>
+    <span class="n">atexit</span><span class="o">.</span><span class="n">_run_exitfuncs</span><span class="p">()</span>
+    
+    <span class="c1">## close file handles</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s1">&#39;darwin&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">fd</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4096</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">fd</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">7</span><span class="p">]:</span>  <span class="c1"># trying to close 7 produces an illegal instruction on the Mac.</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">closerange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span> <span class="c1">## just guessing on the maximum descriptor count..</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">_exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+    
+
+
+<span class="c1">## Convenience functions for command-line use</span>
+
+<span class="n">plots</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">QAPP</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="plot"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.plot">[docs]</a><span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create and return a :class:`PlotWindow &lt;pyqtgraph.PlotWindow&gt;` </span>
+<span class="sd">    (this is just a window with :class:`PlotWidget &lt;pyqtgraph.PlotWidget&gt;` inside), plot data in it.</span>
+<span class="sd">    Accepts a *title* argument to set the title of the window.</span>
+<span class="sd">    All other arguments are used to plot data. (see :func:`PlotItem.plot() &lt;pyqtgraph.PlotItem.plot&gt;`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mkQApp</span><span class="p">()</span>
+    <span class="c1">#if &#39;title&#39; in kargs:</span>
+        <span class="c1">#w = PlotWindow(title=kargs[&#39;title&#39;])</span>
+        <span class="c1">#del kargs[&#39;title&#39;]</span>
+    <span class="c1">#else:</span>
+        <span class="c1">#w = PlotWindow()</span>
+    <span class="c1">#if len(args)+len(kargs) &gt; 0:</span>
+        <span class="c1">#w.plot(*args, **kargs)</span>
+        
+    <span class="n">pwArgList</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">,</span> <span class="s1">&#39;labels&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="s1">&#39;background&#39;</span><span class="p">]</span>
+    <span class="n">pwArgs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">dataArgs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">pwArgList</span><span class="p">:</span>
+            <span class="n">pwArgs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataArgs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        
+    <span class="n">w</span> <span class="o">=</span> <span class="n">PlotWindow</span><span class="p">(</span><span class="o">**</span><span class="n">pwArgs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataArgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">w</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">dataArgs</span><span class="p">)</span>
+    <span class="n">plots</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+    <span class="n">w</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">w</span></div>
+    
+<div class="viewcode-block" id="image"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.image">[docs]</a><span class="k">def</span> <span class="nf">image</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create and return an :class:`ImageWindow &lt;pyqtgraph.ImageWindow&gt;` </span>
+<span class="sd">    (this is just a window with :class:`ImageView &lt;pyqtgraph.ImageView&gt;` widget inside), show image data inside.</span>
+<span class="sd">    Will show 2D or 3D image data.</span>
+<span class="sd">    Accepts a *title* argument to set the title of the window.</span>
+<span class="sd">    All other arguments are used to show data. (see :func:`ImageView.setImage() &lt;pyqtgraph.ImageView.setImage&gt;`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mkQApp</span><span class="p">()</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">ImageWindow</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+    <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+    <span class="n">w</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">w</span></div>
+<span class="n">show</span> <span class="o">=</span> <span class="n">image</span>  <span class="c1">## for backward compatibility</span>
+
+<div class="viewcode-block" id="dbg"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.dbg">[docs]</a><span class="k">def</span> <span class="nf">dbg</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a console window and begin watching for exceptions.</span>
+<span class="sd">    </span>
+<span class="sd">    All arguments are passed to :func:`ConsoleWidget.__init__() &lt;pyqtgraph.console.ConsoleWidget.__init__&gt;`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mkQApp</span><span class="p">()</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">console</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">console</span><span class="o">.</span><span class="n">ConsoleWidget</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+    <span class="n">c</span><span class="o">.</span><span class="n">catchAllExceptions</span><span class="p">()</span>
+    <span class="n">c</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">global</span> <span class="n">consoles</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">consoles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">consoles</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">c</span></div>
+    
+    
+<div class="viewcode-block" id="mkQApp"><a class="viewcode-back" href="../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.mkQApp">[docs]</a><span class="k">def</span> <span class="nf">mkQApp</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">QAPP</span>
+    <span class="n">inst</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">inst</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">QAPP</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="p">([])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">QAPP</span> <span class="o">=</span> <span class="n">inst</span>
+    <span class="k">return</span> <span class="n">QAPP</span></div>
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

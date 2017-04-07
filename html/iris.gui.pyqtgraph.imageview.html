@@ -1,0 +1,523 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.imageview package &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iris.gui.pyqtgraph.metaarray package" href="iris.gui.pyqtgraph.metaarray.html" />
+    <link rel="prev" title="iris.gui.pyqtgraph.graphicsItems.ViewBox package" href="iris.gui.pyqtgraph.graphicsItems.ViewBox.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iris-gui-pyqtgraph-imageview-package">
+<h1>iris.gui.pyqtgraph.imageview package<a class="headerlink" href="#iris-gui-pyqtgraph-imageview-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.imageview.ImageView">
+<span id="iris-gui-pyqtgraph-imageview-imageview-module"></span><h2>iris.gui.pyqtgraph.imageview.ImageView module<a class="headerlink" href="#module-iris.gui.pyqtgraph.imageview.ImageView" title="Permalink to this headline">¶</a></h2>
+<p>ImageView.py -  Widget for basic image dispay and analysis
+Copyright 2010  Luke Campagnola
+Distributed under MIT/X11 license. See license.txt for more infomation.</p>
+<dl class="docutils">
+<dt>Widget used for displaying 2D or 3D data. Features:</dt>
+<dd><ul class="first last simple">
+<li>float or int (including 16-bit int) image display via ImageItem</li>
+<li>zoom/pan via GraphicsView</li>
+<li>black/white level controls</li>
+<li>time slider for 3D data sets</li>
+<li>ROI plotting</li>
+<li>Image normalization through a variety of methods</li>
+</ul>
+</dd>
+</dl>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.imageview.ImageView.</code><code class="descname">ImageView</code><span class="sig-paren">(</span><em>parent=None</em>, <em>name='ImageView'</em>, <em>view=None</em>, <em>imageItem=None</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<p>Widget used for display and analysis of image data.
+Implements many features:</p>
+<ul>
+<li><p class="first">Displays 2D and 3D image data. For 3D data, a z-axis
+slider is displayed allowing the user to select which frame is displayed.</p>
+</li>
+<li><p class="first">Displays histogram of image data with movable region defining the dark/light levels</p>
+</li>
+<li><p class="first">Editable gradient provides a color lookup table</p>
+</li>
+<li><p class="first">Frame slider may also be moved using left/right arrow keys as well as pgup, pgdn, home, and end.</p>
+</li>
+<li><p class="first">Basic analysis features including:</p>
+<blockquote>
+<div><ul class="simple">
+<li>ROI and embedded plot for measuring image values across frames</li>
+<li>Image normalization / background subtraction</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<p>Basic Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">imv</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">ImageView</span><span class="p">()</span>
+<span class="n">imv</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">imv</span><span class="o">.</span><span class="n">setImage</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Keyboard interaction</strong></p>
+<ul class="simple">
+<li>left/right arrows step forward/backward 1 frame when pressed,
+seek at 20fps when held.</li>
+<li>up/down arrows seek at 100fps</li>
+<li>pgup/pgdn seek at 1000fps</li>
+<li>home/end seek immediately to the first/last frame</li>
+<li>space begins playing frames. If time values (in seconds) are given 
+for each frame, then playback is in realtime.</li>
+</ul>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.autoLevels">
+<code class="descname">autoLevels</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.autoLevels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.autoLevels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the min/max intensity levels automatically to match the image data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.autoRange">
+<code class="descname">autoRange</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.autoRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.autoRange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auto scale and pan the view around the image such that the image fills the view.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.buildMenu">
+<code class="descname">buildMenu</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.buildMenu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.buildMenu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes the widget nicely, making sure to clear the graphics scene and release memory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.evalKeyState">
+<code class="descname">evalKeyState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.evalKeyState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.evalKeyState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.export">
+<code class="descname">export</code><span class="sig-paren">(</span><em>fileName</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export data from the ImageView to a file, or to a stack of files if
+the data is 3D. Saving an image stack will result in index numbers
+being added to the file name. Images are saved as they would appear
+onscreen, with levels and lookup table applied.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.exportClicked">
+<code class="descname">exportClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.exportClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.exportClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.getHistogramWidget">
+<code class="descname">getHistogramWidget</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.getHistogramWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.getHistogramWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the HistogramLUTWidget for this ImageView</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.getImageItem">
+<code class="descname">getImageItem</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.getImageItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.getImageItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the ImageItem for this ImageView.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.getProcessedImage">
+<code class="descname">getProcessedImage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.getProcessedImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.getProcessedImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the image data after it has been processed by any normalization options in use.
+This method also sets the attributes self.levelMin and self.levelMax 
+to indicate the range of data in the image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.getRoiPlot">
+<code class="descname">getRoiPlot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.getRoiPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.getRoiPlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the ROI PlotWidget for this ImageView</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.getView">
+<code class="descname">getView</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.getView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.getView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the ViewBox (or other compatible object) which displays the ImageItem</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.hasTimeAxis">
+<code class="descname">hasTimeAxis</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.hasTimeAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.hasTimeAxis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.jumpFrames">
+<code class="descname">jumpFrames</code><span class="sig-paren">(</span><em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.jumpFrames"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.jumpFrames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move video frame ahead n frames (may be negative)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.keyPressEvent">
+<code class="descname">keyPressEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.keyPressEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.keyPressEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.keyReleaseEvent">
+<code class="descname">keyReleaseEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.keyReleaseEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.keyReleaseEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.menuClicked">
+<code class="descname">menuClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.menuClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.menuClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.normRadioChanged">
+<code class="descname">normRadioChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.normRadioChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.normRadioChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.normToggled">
+<code class="descname">normToggled</code><span class="sig-paren">(</span><em>b</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.normToggled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.normToggled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.normalize">
+<code class="descname">normalize</code><span class="sig-paren">(</span><em>image</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process <em>image</em> using the normalization options configured in the
+control panel.</p>
+<p>This can be repurposed to process any data through the same filter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.play">
+<code class="descname">play</code><span class="sig-paren">(</span><em>rate</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.play"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.play" title="Permalink to this definition">¶</a></dt>
+<dd><p>Begin automatically stepping frames forward at the given rate (in fps).
+This can also be accessed by pressing the spacebar.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.quickMinMax">
+<code class="descname">quickMinMax</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.quickMinMax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.quickMinMax" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate the min/max values of <em>data</em> by subsampling.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.roiChanged">
+<code class="descname">roiChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.roiChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.roiChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.roiClicked">
+<code class="descname">roiClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.roiClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.roiClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.setColorMap">
+<code class="descname">setColorMap</code><span class="sig-paren">(</span><em>colormap</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.setColorMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.setColorMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the color map.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Arguments</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>colormap</td>
+<td>(A ColorMap() instance) The ColorMap to use for coloring
+images.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.setCurrentIndex">
+<code class="descname">setCurrentIndex</code><span class="sig-paren">(</span><em>ind</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.setCurrentIndex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.setCurrentIndex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the currently displayed frame index.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.setImage">
+<code class="descname">setImage</code><span class="sig-paren">(</span><em>img</em>, <em>autoRange=True</em>, <em>autoLevels=True</em>, <em>levels=None</em>, <em>axes=None</em>, <em>xvals=None</em>, <em>pos=None</em>, <em>scale=None</em>, <em>transform=None</em>, <em>autoHistogramRange=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.setImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.setImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the image to be displayed in the widget.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Arguments:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>img</td>
+<td>(numpy array) the image to be displayed. See <code class="xref py py-func docutils literal"><span class="pre">ImageItem.setImage()</span></code> and
+<em>notes</em> below.</td>
+</tr>
+<tr class="row-odd"><td>xvals</td>
+<td>(numpy array) 1D array of z-axis values corresponding to the third axis
+in a 3D image. For video, this array should contain the time of each frame.</td>
+</tr>
+<tr class="row-even"><td>autoRange</td>
+<td>(bool) whether to scale/pan the view to fit the image.</td>
+</tr>
+<tr class="row-odd"><td>autoLevels</td>
+<td>(bool) whether to update the white/black levels to fit the image.</td>
+</tr>
+<tr class="row-even"><td>levels</td>
+<td>(min, max); the white and black level values to use.</td>
+</tr>
+<tr class="row-odd"><td>axes</td>
+<td><p class="first">Dictionary indicating the interpretation for each axis.
+This is only needed to override the default guess. Format is:</p>
+<div class="last highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;t&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">:</span><span class="mi">3</span><span class="p">};</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>pos</td>
+<td>Change the position of the displayed image</td>
+</tr>
+<tr class="row-odd"><td>scale</td>
+<td>Change the scale of the displayed image</td>
+</tr>
+<tr class="row-even"><td>transform</td>
+<td>Set the transform of the displayed image. This option overrides <em>pos</em>
+and <em>scale</em>.</td>
+</tr>
+<tr class="row-odd"><td>autoHistogramRange</td>
+<td>If True, the histogram y-range is automatically scaled to fit the
+image data.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Notes:</strong></p>
+<p>For backward compatibility, image data is assumed to be in column-major order (column, row).
+However, most image data is stored in row-major order (row, column) and will need to be
+transposed before calling setImage():</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">imageview</span><span class="o">.</span><span class="n">setImage</span><span class="p">(</span><span class="n">imagedata</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This requirement can be changed by the <code class="docutils literal"><span class="pre">imageAxisOrder</span></code>
+<span class="xref std std-ref">global configuration option</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.setLevels">
+<code class="descname">setLevels</code><span class="sig-paren">(</span><em>min</em>, <em>max</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.setLevels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.setLevels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the min/max (bright and dark) levels.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.setPredefinedGradient">
+<code class="descname">setPredefinedGradient</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.setPredefinedGradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.setPredefinedGradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set one of the gradients defined in <code class="xref py py-class docutils literal"><span class="pre">GradientEditorItem</span></code>.
+Currently available gradients are:   
+odict_keys([&#8216;thermal&#8217;, &#8216;flame&#8217;, &#8216;yellowy&#8217;, &#8216;bipolar&#8217;, &#8216;spectrum&#8217;, &#8216;cyclic&#8217;, &#8216;greyclip&#8217;, &#8216;grey&#8217;])</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.sigProcessingChanged">
+<code class="descname">sigProcessingChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.sigProcessingChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.sigTimeChanged">
+<code class="descname">sigTimeChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.sigTimeChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.timeIndex">
+<code class="descname">timeIndex</code><span class="sig-paren">(</span><em>slider</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.timeIndex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.timeIndex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.timeLineChanged">
+<code class="descname">timeLineChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.timeLineChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.timeLineChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.timeout">
+<code class="descname">timeout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.timeout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.timeout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.updateImage">
+<code class="descname">updateImage</code><span class="sig-paren">(</span><em>autoHistogramRange=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.updateImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.updateImage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.ImageView.updateNorm">
+<code class="descname">updateNorm</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#ImageView.updateNorm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.ImageView.updateNorm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.imageview.ImageView.PlotROI">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.imageview.ImageView.</code><code class="descname">PlotROI</code><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageView.html#PlotROI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageView.PlotROI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ROI.ROI" title="iris.gui.pyqtgraph.graphicsItems.ROI.ROI"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.graphicsItems.ROI.ROI</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt">
+<span id="iris-gui-pyqtgraph-imageview-imageviewtemplate-pyqt-module"></span><h2>iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt module<a class="headerlink" href="#module-iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt.Ui_Form">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt.</code><code class="descname">Ui_Form</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageViewTemplate_pyqt.html#Ui_Form"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt.Ui_Form" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt.Ui_Form.retranslateUi">
+<code class="descname">retranslateUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageViewTemplate_pyqt.html#Ui_Form.retranslateUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt.Ui_Form.retranslateUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt.Ui_Form.setupUi">
+<code class="descname">setupUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageViewTemplate_pyqt.html#Ui_Form.setupUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt.Ui_Form.setupUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5">
+<span id="iris-gui-pyqtgraph-imageview-imageviewtemplate-pyqt5-module"></span><h2>iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5 module<a class="headerlink" href="#module-iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5.Ui_Form">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5.</code><code class="descname">Ui_Form</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageViewTemplate_pyqt5.html#Ui_Form"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5.Ui_Form" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5.Ui_Form.retranslateUi">
+<code class="descname">retranslateUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageViewTemplate_pyqt5.html#Ui_Form.retranslateUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5.Ui_Form.retranslateUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5.Ui_Form.setupUi">
+<code class="descname">setupUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/imageview/ImageViewTemplate_pyqt5.html#Ui_Form.setupUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5.Ui_Form.setupUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="iris-gui-pyqtgraph-imageview-imageviewtemplate-pyside-module">
+<h2>iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyside module<a class="headerlink" href="#iris-gui-pyqtgraph-imageview-imageviewtemplate-pyside-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.imageview">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-iris.gui.pyqtgraph.imageview" title="Permalink to this headline">¶</a></h2>
+<p>Widget used for display and analysis of 2D and 3D image data.
+Includes ROI plotting over time and image normalization.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">iris.gui.pyqtgraph.imageview package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.imageview.ImageView">iris.gui.pyqtgraph.imageview.ImageView module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt">iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5">iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyqt5 module</a></li>
+<li><a class="reference internal" href="#iris-gui-pyqtgraph-imageview-imageviewtemplate-pyside-module">iris.gui.pyqtgraph.imageview.ImageViewTemplate_pyside module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.imageview">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="iris.html">iris package</a><ul>
+  <li><a href="iris.gui.html">iris.gui package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.html">iris.gui.pyqtgraph package</a><ul>
+      <li>Previous: <a href="iris.gui.pyqtgraph.graphicsItems.ViewBox.html" title="previous chapter">iris.gui.pyqtgraph.graphicsItems.ViewBox package</a></li>
+      <li>Next: <a href="iris.gui.pyqtgraph.metaarray.html" title="next chapter">iris.gui.pyqtgraph.metaarray package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/iris.gui.pyqtgraph.imageview.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/iris.gui.pyqtgraph.imageview.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

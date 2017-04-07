@@ -1,0 +1,533 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.exporters.SVGExporter &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.exporters.SVGExporter</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.Exporter</span> <span class="k">import</span> <span class="n">Exporter</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="n">asUnicode</span>
+<span class="kn">from</span> <span class="nn">..parametertree</span> <span class="k">import</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtSvg</span><span class="p">,</span> <span class="n">USE_PYSIDE</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">debug</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">xml.dom.minidom</span> <span class="k">as</span> <span class="nn">xml</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;SVGExporter&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="SVGExporter"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter">[docs]</a><span class="k">class</span> <span class="nc">SVGExporter</span><span class="p">(</span><span class="n">Exporter</span><span class="p">):</span>
+    <span class="n">Name</span> <span class="o">=</span> <span class="s2">&quot;Scalable Vector Graphics (SVG)&quot;</span>
+    <span class="n">allowCopy</span><span class="o">=</span><span class="kc">True</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">Exporter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="c1">#tr = self.getTargetRect()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+            <span class="c1">#{&#39;name&#39;: &#39;width&#39;, &#39;type&#39;: &#39;float&#39;, &#39;value&#39;: tr.width(), &#39;limits&#39;: (0, None)},</span>
+            <span class="c1">#{&#39;name&#39;: &#39;height&#39;, &#39;type&#39;: &#39;float&#39;, &#39;value&#39;: tr.height(), &#39;limits&#39;: (0, None)},</span>
+            <span class="c1">#{&#39;name&#39;: &#39;viewbox clipping&#39;, &#39;type&#39;: &#39;bool&#39;, &#39;value&#39;: True},</span>
+            <span class="c1">#{&#39;name&#39;: &#39;normalize coordinates&#39;, &#39;type&#39;: &#39;bool&#39;, &#39;value&#39;: True},</span>
+            <span class="c1">#{&#39;name&#39;: &#39;normalize line width&#39;, &#39;type&#39;: &#39;bool&#39;, &#39;value&#39;: True},</span>
+        <span class="p">])</span>
+        <span class="c1">#self.params.param(&#39;width&#39;).sigValueChanged.connect(self.widthChanged)</span>
+        <span class="c1">#self.params.param(&#39;height&#39;).sigValueChanged.connect(self.heightChanged)</span>
+
+<div class="viewcode-block" id="SVGExporter.widthChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.widthChanged">[docs]</a>    <span class="k">def</span> <span class="nf">widthChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">sr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSourceRect</span><span class="p">()</span>
+        <span class="n">ar</span> <span class="o">=</span> <span class="n">sr</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">/</span> <span class="n">sr</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">ar</span><span class="p">,</span> <span class="n">blockSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">heightChanged</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="SVGExporter.heightChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.heightChanged">[docs]</a>    <span class="k">def</span> <span class="nf">heightChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">sr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSourceRect</span><span class="p">()</span>
+        <span class="n">ar</span> <span class="o">=</span> <span class="n">sr</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">/</span> <span class="n">sr</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">ar</span><span class="p">,</span> <span class="n">blockSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">widthChanged</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="SVGExporter.parameters"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.parameters">[docs]</a>    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span></div>
+    
+<div class="viewcode-block" id="SVGExporter.export"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">toBytes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">toBytes</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">copy</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">fileName</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fileSaveDialog</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="s2">&quot;Scalable Vector Graphics (*.svg)&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="c1">## Qt&#39;s SVG generator is not complete. (notably, it lacks clipping)</span>
+        <span class="c1">## Instead, we will use Qt to generate SVG for each item independently,</span>
+        <span class="c1">## then manually reconstruct the entire document.</span>
+        <span class="n">xml</span> <span class="o">=</span> <span class="n">generateSvg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">toBytes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">xml</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">copy</span><span class="p">:</span>
+            <span class="n">md</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QMimeData</span><span class="p">()</span>
+            <span class="n">md</span><span class="o">.</span><span class="n">setData</span><span class="p">(</span><span class="s1">&#39;image/svg+xml&#39;</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QByteArray</span><span class="p">(</span><span class="n">xml</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)))</span>
+            <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">clipboard</span><span class="p">()</span><span class="o">.</span><span class="n">setMimeData</span><span class="p">(</span><span class="n">md</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span></div></div>
+
+
+<span class="n">xmlHeader</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;</span>
+<span class="s2">&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;  version=&quot;1.2&quot; baseProfile=&quot;tiny&quot;&gt;</span>
+<span class="s2">&lt;title&gt;pyqtgraph SVG export&lt;/title&gt;</span>
+<span class="s2">&lt;desc&gt;Generated with Qt and pyqtgraph&lt;/desc&gt;</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="k">def</span> <span class="nf">generateSvg</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">xmlHeader</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">node</span><span class="p">,</span> <span class="n">defs</span> <span class="o">=</span> <span class="n">_generateItemSvg</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1">## reset export mode for all items in the tree</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">):</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">childItems</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;setExportMode&#39;</span><span class="p">):</span>
+                <span class="n">i</span><span class="o">.</span><span class="n">setExportMode</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    
+    <span class="n">cleanXml</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+    
+    <span class="n">defsXml</span> <span class="o">=</span> <span class="s2">&quot;&lt;defs&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">defs</span><span class="p">:</span>
+        <span class="n">defsXml</span> <span class="o">+=</span> <span class="n">d</span><span class="o">.</span><span class="n">toprettyxml</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="s1">&#39;    &#39;</span><span class="p">)</span>
+    <span class="n">defsXml</span> <span class="o">+=</span> <span class="s2">&quot;&lt;/defs&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">xmlHeader</span> <span class="o">+</span> <span class="n">defsXml</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="n">toprettyxml</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="s1">&#39;    &#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&lt;/svg&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">_generateItemSvg</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">nodes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1">## This function is intended to work around some issues with Qt&#39;s SVG generator</span>
+    <span class="c1">## and SVG in general.</span>
+    <span class="c1">## 1) Qt SVG does not implement clipping paths. This is absurd.</span>
+    <span class="c1">##    The solution is to let Qt generate SVG for each item independently,</span>
+    <span class="c1">##    then glue them together manually with clipping.</span>
+    <span class="c1">##    </span>
+    <span class="c1">##    The format Qt generates for all items looks like this:</span>
+    <span class="c1">##    </span>
+    <span class="c1">##    &lt;g&gt;</span>
+    <span class="c1">##        &lt;g transform=&quot;matrix(...)&quot;&gt;</span>
+    <span class="c1">##            one or more of: &lt;path/&gt; or &lt;polyline/&gt; or &lt;text/&gt;</span>
+    <span class="c1">##        &lt;/g&gt;</span>
+    <span class="c1">##        &lt;g transform=&quot;matrix(...)&quot;&gt;</span>
+    <span class="c1">##            one or more of: &lt;path/&gt; or &lt;polyline/&gt; or &lt;text/&gt;</span>
+    <span class="c1">##        &lt;/g&gt;</span>
+    <span class="c1">##        . . .</span>
+    <span class="c1">##    &lt;/g&gt;</span>
+    <span class="c1">##    </span>
+    <span class="c1">## 2) There seems to be wide disagreement over whether path strokes</span>
+    <span class="c1">##    should be scaled anisotropically. </span>
+    <span class="c1">##      see: http://web.mit.edu/jonas/www/anisotropy/</span>
+    <span class="c1">##    Given that both inkscape and illustrator seem to prefer isotropic</span>
+    <span class="c1">##    scaling, we will optimize for those cases.  </span>
+    <span class="c1">##    </span>
+    <span class="c1">## 3) Qt generates paths using non-scaling-stroke from SVG 1.2, but </span>
+    <span class="c1">##    inkscape only supports 1.1. </span>
+    <span class="c1">##    </span>
+    <span class="c1">##    Both 2 and 3 can be addressed by drawing all items in world coordinates.</span>
+    
+    <span class="n">profiler</span> <span class="o">=</span> <span class="n">debug</span><span class="o">.</span><span class="n">Profiler</span><span class="p">()</span>
+    
+    <span class="k">if</span> <span class="n">nodes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1">## nodes maps all node IDs to their XML element. </span>
+                       <span class="c1">## this allows us to ensure all elements receive unique names.</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        
+    <span class="k">if</span> <span class="n">root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">item</span>
+                
+    <span class="c1">## Skip hidden items</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;isVisible&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">isVisible</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">None</span>
+        
+    <span class="c1">## If this item defines its own SVG generator, use that.</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;generateSvg&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">generateSvg</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+    
+
+    <span class="c1">## Generate SVG text for just this item (exclude its children; we&#39;ll handle them later)</span>
+    <span class="n">tr</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">):</span>
+        <span class="n">xmlStr</span> <span class="o">=</span> <span class="s2">&quot;&lt;g&gt;</span><span class="se">\n</span><span class="s2">&lt;/g&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">xml</span><span class="o">.</span><span class="n">parseString</span><span class="p">(</span><span class="n">xmlStr</span><span class="p">)</span>
+        <span class="n">childs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">item</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">paint</span> <span class="o">==</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsItem</span><span class="o">.</span><span class="n">paint</span><span class="p">:</span>
+        <span class="n">xmlStr</span> <span class="o">=</span> <span class="s2">&quot;&lt;g&gt;</span><span class="se">\n</span><span class="s2">&lt;/g&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">xml</span><span class="o">.</span><span class="n">parseString</span><span class="p">(</span><span class="n">xmlStr</span><span class="p">)</span>
+        <span class="n">childs</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">childItems</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">childs</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">childItems</span><span class="p">()</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">itemTransform</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">scene</span><span class="p">())</span>
+        
+        <span class="c1">## offset to corner of root item</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">):</span>
+            <span class="n">rootPos</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPoint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rootPos</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">scenePos</span><span class="p">()</span>
+        <span class="n">tr2</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+        <span class="n">tr2</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="o">-</span><span class="n">rootPos</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="o">-</span><span class="n">rootPos</span><span class="o">.</span><span class="n">y</span><span class="p">())</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">tr</span> <span class="o">*</span> <span class="n">tr2</span>
+
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QByteArray</span><span class="p">()</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QBuffer</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+        <span class="n">svg</span> <span class="o">=</span> <span class="n">QtSvg</span><span class="o">.</span><span class="n">QSvgGenerator</span><span class="p">()</span>
+        <span class="n">svg</span><span class="o">.</span><span class="n">setOutputDevice</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+        <span class="n">dpi</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QDesktopWidget</span><span class="p">()</span><span class="o">.</span><span class="n">physicalDpiX</span><span class="p">()</span>
+        <span class="n">svg</span><span class="o">.</span><span class="n">setResolution</span><span class="p">(</span><span class="n">dpi</span><span class="p">)</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPainter</span><span class="p">()</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">begin</span><span class="p">(</span><span class="n">svg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;setExportMode&#39;</span><span class="p">):</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">setExportMode</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;painter&#39;</span><span class="p">:</span> <span class="n">p</span><span class="p">})</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">setTransform</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">paint</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QStyleOptionGraphicsItem</span><span class="p">(),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+            <span class="c1">## Can&#39;t do this here--we need to wait until all children have painted as well.</span>
+            <span class="c1">## this is taken care of in generateSvg instead.</span>
+            <span class="c1">#if hasattr(item, &#39;setExportMode&#39;):</span>
+                <span class="c1">#item.setExportMode(False)</span>
+
+        <span class="k">if</span> <span class="n">USE_PYSIDE</span><span class="p">:</span>
+            <span class="n">xmlStr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xmlStr</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">xml</span><span class="o">.</span><span class="n">parseString</span><span class="p">(</span><span class="n">xmlStr</span><span class="p">)</span>
+        
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1">## Get top-level group for this item</span>
+        <span class="n">g1</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s1">&#39;g&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1">## get list of sub-groups</span>
+        <span class="n">g2</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">g1</span><span class="o">.</span><span class="n">childNodes</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">xml</span><span class="o">.</span><span class="n">Element</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n</span><span class="o">.</span><span class="n">tagName</span> <span class="o">==</span> <span class="s1">&#39;g&#39;</span><span class="p">]</span>
+        
+        <span class="n">defs</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s1">&#39;defs&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">defs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">defs</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">defs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">childNodes</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">xml</span><span class="o">.</span><span class="n">Element</span><span class="p">)]</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">toxml</span><span class="p">())</span>
+        <span class="k">raise</span>
+
+    <span class="n">profiler</span><span class="p">(</span><span class="s1">&#39;render&#39;</span><span class="p">)</span>
+
+    <span class="c1">## Get rid of group transformation matrices by applying</span>
+    <span class="c1">## transformation to inner coordinates</span>
+    <span class="n">correctCoordinates</span><span class="p">(</span><span class="n">g1</span><span class="p">,</span> <span class="n">defs</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+    <span class="n">profiler</span><span class="p">(</span><span class="s1">&#39;correct&#39;</span><span class="p">)</span>
+    <span class="c1">## make sure g1 has the transformation matrix</span>
+    <span class="c1">#m = (tr.m11(), tr.m12(), tr.m21(), tr.m22(), tr.m31(), tr.m32())</span>
+    <span class="c1">#g1.setAttribute(&#39;transform&#39;, &quot;matrix(%f,%f,%f,%f,%f,%f)&quot; % m)</span>
+    
+    <span class="c1">#print &quot;=================&quot;,item,&quot;=====================&quot;</span>
+    <span class="c1">#print g1.toprettyxml(indent=&quot;  &quot;, newl=&#39;&#39;)</span>
+    
+    <span class="c1">## Inkscape does not support non-scaling-stroke (this is SVG 1.2, inkscape supports 1.1)</span>
+    <span class="c1">## So we need to correct anything attempting to use this.</span>
+    <span class="c1">#correctStroke(g1, item, root)</span>
+    
+    <span class="c1">## decide on a name for this item</span>
+    <span class="n">baseName</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">baseName</span> <span class="o">+</span> <span class="s2">&quot;_</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">i</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">nodes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">g1</span>
+    <span class="n">g1</span><span class="o">.</span><span class="n">setAttribute</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    
+    <span class="c1">## If this item clips its children, we need to take care of that.</span>
+    <span class="n">childGroup</span> <span class="o">=</span> <span class="n">g1</span>  <span class="c1">## add children directly to this node unless we are clipping</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">):</span>
+        <span class="c1">## See if this item clips its children</span>
+        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">item</span><span class="o">.</span><span class="n">ItemClipsChildrenToShape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1">## Generate svg for just the path</span>
+            <span class="c1">#if isinstance(root, QtGui.QGraphicsScene):</span>
+                <span class="c1">#path = QtGui.QGraphicsPathItem(item.mapToScene(item.shape()))</span>
+            <span class="c1">#else:</span>
+                <span class="c1">#path = QtGui.QGraphicsPathItem(root.mapToParent(item.mapToItem(root, item.shape())))</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsPathItem</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">mapToScene</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">shape</span><span class="p">()))</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1">#pathNode = _generateItemSvg(path, root=root).getElementsByTagName(&#39;path&#39;)[0]</span>
+                <span class="n">pathNode</span> <span class="o">=</span> <span class="n">_generateItemSvg</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="c1"># assume &lt;defs&gt; for this path is empty.. possibly problematic.</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            
+            <span class="c1">## and for the clipPath element</span>
+            <span class="n">clip</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_clip&#39;</span>
+            <span class="n">clipNode</span> <span class="o">=</span> <span class="n">g1</span><span class="o">.</span><span class="n">ownerDocument</span><span class="o">.</span><span class="n">createElement</span><span class="p">(</span><span class="s1">&#39;clipPath&#39;</span><span class="p">)</span>
+            <span class="n">clipNode</span><span class="o">.</span><span class="n">setAttribute</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">clip</span><span class="p">)</span>
+            <span class="n">clipNode</span><span class="o">.</span><span class="n">appendChild</span><span class="p">(</span><span class="n">pathNode</span><span class="p">)</span>
+            <span class="n">g1</span><span class="o">.</span><span class="n">appendChild</span><span class="p">(</span><span class="n">clipNode</span><span class="p">)</span>
+            
+            <span class="n">childGroup</span> <span class="o">=</span> <span class="n">g1</span><span class="o">.</span><span class="n">ownerDocument</span><span class="o">.</span><span class="n">createElement</span><span class="p">(</span><span class="s1">&#39;g&#39;</span><span class="p">)</span>
+            <span class="n">childGroup</span><span class="o">.</span><span class="n">setAttribute</span><span class="p">(</span><span class="s1">&#39;clip-path&#39;</span><span class="p">,</span> <span class="s1">&#39;url(#</span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">clip</span><span class="p">)</span>
+            <span class="n">g1</span><span class="o">.</span><span class="n">appendChild</span><span class="p">(</span><span class="n">childGroup</span><span class="p">)</span>
+    <span class="n">profiler</span><span class="p">(</span><span class="s1">&#39;clipping&#39;</span><span class="p">)</span>
+            
+    <span class="c1">## Add all child items as sub-elements.</span>
+    <span class="n">childs</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">zValue</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">childs</span><span class="p">:</span>
+        <span class="n">csvg</span> <span class="o">=</span> <span class="n">_generateItemSvg</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">csvg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">cg</span><span class="p">,</span> <span class="n">cdefs</span> <span class="o">=</span> <span class="n">csvg</span>
+        <span class="n">childGroup</span><span class="o">.</span><span class="n">appendChild</span><span class="p">(</span><span class="n">cg</span><span class="p">)</span>  <span class="c1">### this isn&#39;t quite right--some items draw below their parent (good enough for now)</span>
+        <span class="n">defs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">cdefs</span><span class="p">)</span>
+        
+    <span class="n">profiler</span><span class="p">(</span><span class="s1">&#39;children&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">g1</span><span class="p">,</span> <span class="n">defs</span>
+
+<span class="k">def</span> <span class="nf">correctCoordinates</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">defs</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+    <span class="c1"># TODO: correct gradient coordinates inside defs</span>
+    
+    <span class="c1">## Remove transformation matrices from &lt;g&gt; tags by applying matrix to coordinates inside.</span>
+    <span class="c1">## Each item is represented by a single top-level group with one or more groups inside.</span>
+    <span class="c1">## Each inner group contains one or more drawing primitives, possibly of different types.</span>
+    <span class="n">groups</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s1">&#39;g&#39;</span><span class="p">)</span>
+    
+    <span class="c1">## Since we leave text unchanged, groups which combine text and non-text primitives must be split apart.</span>
+    <span class="c1">## (if at some point we start correcting text transforms as well, then it should be safe to remove this)</span>
+    <span class="n">groups2</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">grp</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+        <span class="n">subGroups</span> <span class="o">=</span> <span class="p">[</span><span class="n">grp</span><span class="o">.</span><span class="n">cloneNode</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">False</span><span class="p">)]</span>
+        <span class="n">textGroup</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">grp</span><span class="o">.</span><span class="n">childNodes</span><span class="p">[:]:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">xml</span><span class="o">.</span><span class="n">Element</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">textGroup</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">textGroup</span> <span class="o">=</span> <span class="n">ch</span><span class="o">.</span><span class="n">tagName</span> <span class="o">==</span> <span class="s1">&#39;text&#39;</span>
+                <span class="k">if</span> <span class="n">ch</span><span class="o">.</span><span class="n">tagName</span> <span class="o">==</span> <span class="s1">&#39;text&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">textGroup</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                        <span class="n">subGroups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grp</span><span class="o">.</span><span class="n">cloneNode</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+                        <span class="n">textGroup</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">textGroup</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                        <span class="n">subGroups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grp</span><span class="o">.</span><span class="n">cloneNode</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+                        <span class="n">textGroup</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">subGroups</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">appendChild</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+        <span class="n">groups2</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">subGroups</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">sg</span> <span class="ow">in</span> <span class="n">subGroups</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">insertBefore</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">grp</span><span class="p">)</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">removeChild</span><span class="p">(</span><span class="n">grp</span><span class="p">)</span>
+    <span class="n">groups</span> <span class="o">=</span> <span class="n">groups2</span>
+        
+    
+    <span class="k">for</span> <span class="n">grp</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+        <span class="n">matrix</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">getAttribute</span><span class="p">(</span><span class="s1">&#39;transform&#39;</span><span class="p">)</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">r&#39;matrix\((.*)\)&#39;</span><span class="p">,</span> <span class="n">matrix</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">match</span><span class="o">.</span><span class="n">groups</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">vals</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vals</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">vals</span><span class="p">[</span><span class="mi">4</span><span class="p">]],</span> <span class="p">[</span><span class="n">vals</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">vals</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">vals</span><span class="p">[</span><span class="mi">5</span><span class="p">]]])</span>
+        
+        <span class="n">removeTransform</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">grp</span><span class="o">.</span><span class="n">childNodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">xml</span><span class="o">.</span><span class="n">Element</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">ch</span><span class="o">.</span><span class="n">tagName</span> <span class="o">==</span> <span class="s1">&#39;polyline&#39;</span><span class="p">:</span>
+                <span class="n">removeTransform</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">ch</span><span class="o">.</span><span class="n">getAttribute</span><span class="p">(</span><span class="s1">&#39;points&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)])</span>
+                <span class="n">coords</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">transformCoordinates</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">transpose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">ch</span><span class="o">.</span><span class="n">setAttribute</span><span class="p">(</span><span class="s1">&#39;points&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">c</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">]))</span>
+            <span class="k">elif</span> <span class="n">ch</span><span class="o">.</span><span class="n">tagName</span> <span class="o">==</span> <span class="s1">&#39;path&#39;</span><span class="p">:</span>
+                <span class="n">removeTransform</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">newCoords</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="n">oldCoords</span> <span class="o">=</span> <span class="n">ch</span><span class="o">.</span><span class="n">getAttribute</span><span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">oldCoords</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">oldCoords</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">):</span>
+                    <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isalpha</span><span class="p">():</span>
+                        <span class="n">t</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">t</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                    <span class="n">nc</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">transformCoordinates</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">)]]),</span> <span class="n">transpose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="n">newCoords</span> <span class="o">+=</span> <span class="n">t</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">nc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;,&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">nc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39; &#39;</span>
+                <span class="n">ch</span><span class="o">.</span><span class="n">setAttribute</span><span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="n">newCoords</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">ch</span><span class="o">.</span><span class="n">tagName</span> <span class="o">==</span> <span class="s1">&#39;text&#39;</span><span class="p">:</span>
+                <span class="n">removeTransform</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="c1">## leave text alone for now. Might need this later to correctly render text with outline.</span>
+                <span class="c1">#c = np.array([</span>
+                    <span class="c1">#[float(ch.getAttribute(&#39;x&#39;)), float(ch.getAttribute(&#39;y&#39;))], </span>
+                    <span class="c1">#[float(ch.getAttribute(&#39;font-size&#39;)), 0], </span>
+                    <span class="c1">#[0,0]])</span>
+                <span class="c1">#c = fn.transformCoordinates(tr, c, transpose=True)</span>
+                <span class="c1">#ch.setAttribute(&#39;x&#39;, str(c[0,0]))</span>
+                <span class="c1">#ch.setAttribute(&#39;y&#39;, str(c[0,1]))</span>
+                <span class="c1">#fs = c[1]-c[2]</span>
+                <span class="c1">#fs = (fs**2).sum()**0.5</span>
+                <span class="c1">#ch.setAttribute(&#39;font-size&#39;, str(fs))</span>
+                
+                <span class="c1">## Correct some font information</span>
+                <span class="n">families</span> <span class="o">=</span> <span class="n">ch</span><span class="o">.</span><span class="n">getAttribute</span><span class="p">(</span><span class="s1">&#39;font-family&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">families</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">font</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QFont</span><span class="p">(</span><span class="n">families</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot; &#39;</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">font</span><span class="o">.</span><span class="n">style</span><span class="p">()</span> <span class="o">==</span> <span class="n">font</span><span class="o">.</span><span class="n">SansSerif</span><span class="p">:</span>
+                        <span class="n">families</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;sans-serif&#39;</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">font</span><span class="o">.</span><span class="n">style</span><span class="p">()</span> <span class="o">==</span> <span class="n">font</span><span class="o">.</span><span class="n">Serif</span><span class="p">:</span>
+                        <span class="n">families</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;serif&#39;</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">font</span><span class="o">.</span><span class="n">style</span><span class="p">()</span> <span class="o">==</span> <span class="n">font</span><span class="o">.</span><span class="n">Courier</span><span class="p">:</span>
+                        <span class="n">families</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;monospace&#39;</span><span class="p">)</span>
+                    <span class="n">ch</span><span class="o">.</span><span class="n">setAttribute</span><span class="p">(</span><span class="s1">&#39;font-family&#39;</span><span class="p">,</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">f</span> <span class="k">if</span> <span class="s1">&#39; &#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">else</span> <span class="s1">&#39;&quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span><span class="o">%</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">families</span><span class="p">]))</span>
+                
+            <span class="c1">## correct line widths if needed</span>
+            <span class="k">if</span> <span class="n">removeTransform</span> <span class="ow">and</span> <span class="n">ch</span><span class="o">.</span><span class="n">getAttribute</span><span class="p">(</span><span class="s1">&#39;vector-effect&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;non-scaling-stroke&#39;</span><span class="p">:</span>
+                <span class="n">w</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">grp</span><span class="o">.</span><span class="n">getAttribute</span><span class="p">(</span><span class="s1">&#39;stroke-width&#39;</span><span class="p">))</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">transformCoordinates</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">w</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]),</span> <span class="n">transpose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">w</span> <span class="o">=</span> <span class="p">((</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">**</span><span class="mf">0.5</span>
+                <span class="n">ch</span><span class="o">.</span><span class="n">setAttribute</span><span class="p">(</span><span class="s1">&#39;stroke-width&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">))</span>
+            
+        <span class="k">if</span> <span class="n">removeTransform</span><span class="p">:</span>
+            <span class="n">grp</span><span class="o">.</span><span class="n">removeAttribute</span><span class="p">(</span><span class="s1">&#39;transform&#39;</span><span class="p">)</span>
+
+
+<span class="n">SVGExporter</span><span class="o">.</span><span class="n">register</span><span class="p">()</span>        
+
+
+<span class="k">def</span> <span class="nf">itemTransform</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">root</span><span class="p">):</span>
+    <span class="c1">## Return the transformation mapping item to root</span>
+    <span class="c1">## (actually to parent coordinate system of root)</span>
+    
+    <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="n">root</span><span class="p">:</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="o">*</span><span class="n">item</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">tr</span> <span class="o">*</span> <span class="n">item</span><span class="o">.</span><span class="n">transform</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">tr</span>
+        
+    
+    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">item</span><span class="o">.</span><span class="n">ItemIgnoresTransformations</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">itemTransform</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="n">pos</span><span class="o">.</span><span class="n">y</span><span class="p">())</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">transform</span><span class="p">()</span> <span class="o">*</span> <span class="n">tr</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1">## find next parent that is either the root item or </span>
+        <span class="c1">## an item that ignores its transformation</span>
+        <span class="n">nextRoot</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">nextRoot</span> <span class="o">=</span> <span class="n">nextRoot</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">nextRoot</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">nextRoot</span> <span class="o">=</span> <span class="n">root</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">nextRoot</span> <span class="ow">is</span> <span class="n">root</span> <span class="ow">or</span> <span class="nb">int</span><span class="p">(</span><span class="n">nextRoot</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">nextRoot</span><span class="o">.</span><span class="n">ItemIgnoresTransformations</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nextRoot</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">):</span>
+            <span class="n">tr</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">sceneTransform</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tr</span> <span class="o">=</span> <span class="n">itemTransform</span><span class="p">(</span><span class="n">nextRoot</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span> <span class="o">*</span> <span class="n">item</span><span class="o">.</span><span class="n">itemTransform</span><span class="p">(</span><span class="n">nextRoot</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="k">return</span> <span class="n">tr</span>
+
+            
+<span class="k">def</span> <span class="nf">cleanXml</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="c1">## remove extraneous text; let the xml library do the formatting.</span>
+    <span class="n">hasElement</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">nonElement</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">childNodes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">xml</span><span class="o">.</span><span class="n">Element</span><span class="p">):</span>
+            <span class="n">hasElement</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">cleanXml</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">nonElement</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">hasElement</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">nonElement</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">removeChild</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">node</span><span class="o">.</span><span class="n">tagName</span> <span class="o">==</span> <span class="s1">&#39;g&#39;</span><span class="p">:</span>  <span class="c1">## remove childless groups</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">parentNode</span><span class="o">.</span><span class="n">removeChild</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  <li><a href="../exporters.html">iris.gui.pyqtgraph.exporters</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

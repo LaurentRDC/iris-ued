@@ -1,0 +1,366 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.dockarea.Container &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.dockarea.Container</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+
+<div class="viewcode-block" id="Container"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container">[docs]</a><span class="k">class</span> <span class="nc">Container</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="c1">#sigStretchChanged = QtCore.Signal()  ## can&#39;t do this here; not a QObject.</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+        <span class="nb">object</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">area</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_container</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stretch</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stretches</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakKeyDictionary</span><span class="p">()</span>
+        
+<div class="viewcode-block" id="Container.container"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.container">[docs]</a>    <span class="k">def</span> <span class="nf">container</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_container</span></div>
+        
+<div class="viewcode-block" id="Container.containerChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.containerChanged">[docs]</a>    <span class="k">def</span> <span class="nf">containerChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_container</span> <span class="o">=</span> <span class="n">c</span></div>
+
+<div class="viewcode-block" id="Container.type"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.type">[docs]</a>    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Container.insert"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.insert">[docs]</a>    <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">neighbor</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># remove from existing parent first</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">setParent</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="p">[</span><span class="n">new</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">neighbor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pos</span> <span class="o">==</span> <span class="s1">&#39;before&#39;</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexOf</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">pos</span> <span class="o">==</span> <span class="s1">&#39;after&#39;</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+                
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">new</span><span class="p">:</span>
+            <span class="c1">#print &quot;change container&quot;, n, &quot; -&gt; &quot;, self</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">containerChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="c1">#print &quot;insert&quot;, n, &quot; -&gt; &quot;, self, index</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_insertItem</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+            <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">sigStretchChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childStretchChanged</span><span class="p">)</span>
+        <span class="c1">#print &quot;child added&quot;, self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateStretch</span><span class="p">()</span></div>
+            
+<div class="viewcode-block" id="Container.apoptose"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.apoptose">[docs]</a>    <span class="k">def</span> <span class="nf">apoptose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">propagate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1">##if there is only one (or zero) item in this container, disappear.</span>
+        <span class="n">cont</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_container</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1">## if there is one item, give it to the parent container (unless this is the top)</span>
+            <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="o">.</span><span class="n">topContainer</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">()</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="s1">&#39;before&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="c1">#print &quot;apoptose:&quot;, self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">propagate</span> <span class="ow">and</span> <span class="n">cont</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cont</span><span class="o">.</span><span class="n">apoptose</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="Container.close"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_container</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setParent</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Container.childEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.childEvent">[docs]</a>    <span class="k">def</span> <span class="nf">childEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">ch</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">child</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">removed</span><span class="p">()</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="s1">&#39;sigStretchChanged&#39;</span><span class="p">):</span>
+            <span class="c1">#print &quot;Child&quot;, ev.child(), &quot;removed, updating&quot;, self</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ch</span><span class="o">.</span><span class="n">sigStretchChanged</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childStretchChanged</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateStretch</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="Container.childStretchChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.childStretchChanged">[docs]</a>    <span class="k">def</span> <span class="nf">childStretchChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#print &quot;child&quot;, QtCore.QObject.sender(self), &quot;changed shape, updating&quot;, self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateStretch</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="Container.setStretch"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.setStretch">[docs]</a>    <span class="k">def</span> <span class="nf">setStretch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1">#print &quot;setStretch&quot;, self, x, y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stretch</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigStretchChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Container.updateStretch"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.updateStretch">[docs]</a>    <span class="k">def</span> <span class="nf">updateStretch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">###Set the stretch values for this container to reflect its contents</span>
+        <span class="k">pass</span></div>
+        
+        
+<div class="viewcode-block" id="Container.stretch"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.Container.stretch">[docs]</a>    <span class="k">def</span> <span class="nf">stretch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the stretch factors for this container&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stretch</span></div></div>
+            
+
+<div class="viewcode-block" id="SplitContainer"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.SplitContainer">[docs]</a><span class="k">class</span> <span class="nc">SplitContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QSplitter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Horizontal or vertical splitter with some changes:</span>
+<span class="sd">     - save/restore works correctly</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sigStretchChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">orientation</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QSplitter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOrientation</span><span class="p">(</span><span class="n">orientation</span><span class="p">)</span>
+        <span class="n">Container</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">)</span>
+        <span class="c1">#self.splitterMoved.connect(self.restretchChildren)</span>
+        
+    <span class="k">def</span> <span class="nf">_insertItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">insertWidget</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="n">item</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>  <span class="c1">## need to show since it may have been previously hidden by tab</span>
+        
+<div class="viewcode-block" id="SplitContainer.saveState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.SplitContainer.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sizes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">sizes</span><span class="p">]):</span>
+            <span class="n">sizes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;sizes&#39;</span><span class="p">:</span> <span class="n">sizes</span><span class="p">}</span></div>
+        
+<div class="viewcode-block" id="SplitContainer.restoreState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.SplitContainer.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;sizes&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSizes</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sizes</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setStretchFactor</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">sizes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="SplitContainer.childEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.SplitContainer.childEvent">[docs]</a>    <span class="k">def</span> <span class="nf">childEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QSplitter</span><span class="o">.</span><span class="n">childEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        <span class="n">Container</span><span class="o">.</span><span class="n">childEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span></div></div>
+
+    <span class="c1">#def restretchChildren(self):</span>
+        <span class="c1">#sizes = self.sizes()</span>
+        <span class="c1">#tot = sum(sizes)</span>
+        
+        
+        
+
+<div class="viewcode-block" id="HContainer"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.HContainer">[docs]</a><span class="k">class</span> <span class="nc">HContainer</span><span class="p">(</span><span class="n">SplitContainer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+        <span class="n">SplitContainer</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="HContainer.type"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.HContainer.type">[docs]</a>    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;horizontal&#39;</span></div>
+        
+<div class="viewcode-block" id="HContainer.updateStretch"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.HContainer.updateStretch">[docs]</a>    <span class="k">def</span> <span class="nf">updateStretch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">##Set the stretch values for this container to reflect its contents</span>
+        <span class="c1">#print &quot;updateStretch&quot;, self</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()):</span>
+            <span class="n">wx</span><span class="p">,</span> <span class="n">wy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">stretch</span><span class="p">()</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="n">wx</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">wy</span><span class="p">)</span>
+            <span class="n">sizes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wx</span><span class="p">)</span>
+            <span class="c1">#print &quot;  child&quot;, self.widget(i), wx, wy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setStretch</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="c1">#print sizes</span>
+        
+        <span class="n">tot</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">sizes</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">tot</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">/</span> <span class="n">tot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSizes</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="o">*</span><span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sizes</span><span class="p">])</span></div></div>
+        
+
+
+<div class="viewcode-block" id="VContainer"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.VContainer">[docs]</a><span class="k">class</span> <span class="nc">VContainer</span><span class="p">(</span><span class="n">SplitContainer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+        <span class="n">SplitContainer</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">Vertical</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="VContainer.type"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.VContainer.type">[docs]</a>    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;vertical&#39;</span></div>
+
+<div class="viewcode-block" id="VContainer.updateStretch"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.VContainer.updateStretch">[docs]</a>    <span class="k">def</span> <span class="nf">updateStretch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">##Set the stretch values for this container to reflect its contents</span>
+        <span class="c1">#print &quot;updateStretch&quot;, self</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()):</span>
+            <span class="n">wx</span><span class="p">,</span> <span class="n">wy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">stretch</span><span class="p">()</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="n">wy</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">wx</span><span class="p">)</span>
+            <span class="n">sizes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wy</span><span class="p">)</span>
+            <span class="c1">#print &quot;  child&quot;, self.widget(i), wx, wy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setStretch</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="c1">#print sizes</span>
+        <span class="n">tot</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">sizes</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">tot</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">/</span> <span class="n">tot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSizes</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="o">*</span><span class="n">scale</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sizes</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="TContainer"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.TContainer">[docs]</a><span class="k">class</span> <span class="nc">TContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+    <span class="n">sigStretchChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">Container</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGridLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">setSpacing</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">hTabLayout</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hTabBox</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hTabBox</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hTabLayout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hTabLayout</span><span class="o">.</span><span class="n">setSpacing</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hTabLayout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hTabBox</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QStackedWidget</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">childEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stackChildEvent</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="s1">&#39;widget&#39;</span><span class="p">,</span> <span class="s1">&#39;indexOf&#39;</span><span class="p">]:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">_insertItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Dock</span><span class="o">.</span><span class="n">Dock</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Tab containers may hold only docks, not other containers.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">insertWidget</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hTabLayout</span><span class="o">.</span><span class="n">insertWidget</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        <span class="c1">#QtCore.QObject.connect(item.label, QtCore.SIGNAL(&#39;clicked&#39;), self.tabClicked)</span>
+        <span class="n">item</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sigClicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tabClicked</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tabClicked</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="TContainer.tabClicked"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.TContainer.tabClicked">[docs]</a>    <span class="k">def</span> <span class="nf">tabClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tab</span><span class="p">,</span> <span class="n">ev</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ev</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()):</span>
+                <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">w</span> <span class="ow">is</span> <span class="n">tab</span><span class="o">.</span><span class="n">dock</span><span class="p">:</span>
+                    <span class="n">w</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setDim</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">w</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setDim</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="TContainer.raiseDock"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.TContainer.raiseDock">[docs]</a>    <span class="k">def</span> <span class="nf">raiseDock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dock</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Move *dock* to the top of the stack&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">currentWidget</span><span class="p">()</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setDim</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">setCurrentWidget</span><span class="p">(</span><span class="n">dock</span><span class="p">)</span>
+        <span class="n">dock</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setDim</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+        
+        
+<div class="viewcode-block" id="TContainer.type"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.TContainer.type">[docs]</a>    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;tab&#39;</span></div>
+
+<div class="viewcode-block" id="TContainer.saveState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.TContainer.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">currentIndex</span><span class="p">()}</span></div>
+        
+<div class="viewcode-block" id="TContainer.restoreState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.TContainer.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">])</span></div>
+        
+<div class="viewcode-block" id="TContainer.updateStretch"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.TContainer.updateStretch">[docs]</a>    <span class="k">def</span> <span class="nf">updateStretch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">##Set the stretch values for this container to reflect its contents</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()):</span>
+            <span class="n">wx</span><span class="p">,</span> <span class="n">wy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">stretch</span><span class="p">()</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">wx</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">wy</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setStretch</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="TContainer.stackChildEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.Container.TContainer.stackChildEvent">[docs]</a>    <span class="k">def</span> <span class="nf">stackChildEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QStackedWidget</span><span class="o">.</span><span class="n">childEvent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        <span class="n">Container</span><span class="o">.</span><span class="n">childEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span></div></div>
+        
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">Dock</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

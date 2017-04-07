@@ -1,0 +1,2035 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.widgets package &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iris.gui.qdarkstyle package" href="iris.gui.qdarkstyle.html" />
+    <link rel="prev" title="iris.gui.pyqtgraph.util.colorama package" href="iris.gui.pyqtgraph.util.colorama.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iris-gui-pyqtgraph-widgets-package">
+<h1>iris.gui.pyqtgraph.widgets package<a class="headerlink" href="#iris-gui-pyqtgraph-widgets-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.BusyCursor">
+<span id="iris-gui-pyqtgraph-widgets-busycursor-module"></span><h2>iris.gui.pyqtgraph.widgets.BusyCursor module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.BusyCursor" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.BusyCursor.BusyCursor">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.BusyCursor.</code><code class="descname">BusyCursor</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/BusyCursor.html#BusyCursor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.BusyCursor.BusyCursor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Class for displaying a busy mouse cursor during long operations.
+Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">pyqtgraph</span><span class="o">.</span><span class="n">BusyCursor</span><span class="p">():</span>
+    <span class="n">doLongOperation</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>May be nested.</p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.BusyCursor.BusyCursor.active">
+<code class="descname">active</code><em class="property"> = []</em><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.BusyCursor.BusyCursor.active" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.CheckTable">
+<span id="iris-gui-pyqtgraph-widgets-checktable-module"></span><h2>iris.gui.pyqtgraph.widgets.CheckTable module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.CheckTable" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.CheckTable.CheckTable">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.CheckTable.</code><code class="descname">CheckTable</code><span class="sig-paren">(</span><em>columns</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/CheckTable.html#CheckTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.addRow">
+<code class="descname">addRow</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/CheckTable.html#CheckTable.addRow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.addRow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.checkChanged">
+<code class="descname">checkChanged</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/CheckTable.html#CheckTable.checkChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.checkChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.removeRow">
+<code class="descname">removeRow</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/CheckTable.html#CheckTable.removeRow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.removeRow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.restoreState">
+<code class="descname">restoreState</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/CheckTable.html#CheckTable.restoreState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.restoreState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.saveState">
+<code class="descname">saveState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/CheckTable.html#CheckTable.saveState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.saveState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.sigStateChanged">
+<code class="descname">sigStateChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.sigStateChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.updateRows">
+<code class="descname">updateRows</code><span class="sig-paren">(</span><em>rows</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/CheckTable.html#CheckTable.updateRows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.updateRows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.ColorButton">
+<span id="iris-gui-pyqtgraph-widgets-colorbutton-module"></span><h2>iris.gui.pyqtgraph.widgets.ColorButton module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.ColorButton" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.ColorButton.</code><code class="descname">ColorButton</code><span class="sig-paren">(</span><em>parent=None</em>, <em>color=(128</em>, <em>128</em>, <em>128)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QPushButton</span></code></p>
+<p><strong>Bases:</strong> QtGui.QPushButton</p>
+<p>Button displaying a color and allowing the user to select a new color.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Signals:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>sigColorChanging(self)</td>
+<td>emitted whenever a new color is picked in the color dialog</td>
+</tr>
+<tr class="row-odd"><td>sigColorChanged(self)</td>
+<td>emitted when the selected color is accepted (user clicks OK)</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.color">
+<code class="descname">color</code><span class="sig-paren">(</span><em>mode='qcolor'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.color"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.color" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.colorRejected">
+<code class="descname">colorRejected</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.colorRejected"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.colorRejected" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.colorSelected">
+<code class="descname">colorSelected</code><span class="sig-paren">(</span><em>color</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.colorSelected"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.colorSelected" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.dialogColorChanged">
+<code class="descname">dialogColorChanged</code><span class="sig-paren">(</span><em>color</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.dialogColorChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.dialogColorChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.restoreState">
+<code class="descname">restoreState</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.restoreState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.restoreState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.saveState">
+<code class="descname">saveState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.saveState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.saveState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.selectColor">
+<code class="descname">selectColor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.selectColor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.selectColor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.setColor">
+<code class="descname">setColor</code><span class="sig-paren">(</span><em>color</em>, <em>finished=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.setColor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.setColor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the button&#8217;s color and emits both sigColorChanged and sigColorChanging.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.sigColorChanged">
+<code class="descname">sigColorChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.sigColorChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.sigColorChanging">
+<code class="descname">sigColorChanging</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.sigColorChanging" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.widgetGroupInterface">
+<code class="descname">widgetGroupInterface</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorButton.html#ColorButton.widgetGroupInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorButton.ColorButton.widgetGroupInterface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.ColorMapWidget">
+<span id="iris-gui-pyqtgraph-widgets-colormapwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.ColorMapWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.ColorMapWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.ColorMapWidget.</code><code class="descname">ColorMapWidget</code><span class="sig-paren">(</span><em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorMapWidget.html#ColorMapWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree" title="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree</span></code></a></p>
+<p>This class provides a widget allowing the user to customize color mapping
+for multi-column data. Given a list of field names, the user may specify
+multiple criteria for assigning colors to each record in a numpy record array.
+Multiple criteria are evaluated and combined into a single color for each
+record by user-defined compositing methods.</p>
+<p>For simpler color mapping using a single gradient editor, see 
+<code class="xref py py-class docutils literal"><span class="pre">GradientWidget</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.mapChanged">
+<code class="descname">mapChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorMapWidget.html#ColorMapWidget.mapChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.mapChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.restoreState">
+<code class="descname">restoreState</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorMapWidget.html#ColorMapWidget.restoreState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.restoreState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.saveState">
+<code class="descname">saveState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorMapWidget.html#ColorMapWidget.saveState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.saveState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.sigColorMapChanged">
+<code class="descname">sigColorMapChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.sigColorMapChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.widgetGroupInterface">
+<code class="descname">widgetGroupInterface</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ColorMapWidget.html#ColorMapWidget.widgetGroupInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.widgetGroupInterface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.ComboBox">
+<span id="iris-gui-pyqtgraph-widgets-combobox-module"></span><h2>iris.gui.pyqtgraph.widgets.ComboBox module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.ComboBox" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.ComboBox.</code><code class="descname">ComboBox</code><span class="sig-paren">(</span><em>parent=None</em>, <em>items=None</em>, <em>default=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QComboBox</span></code></p>
+<p>Extends QComboBox to add extra functionality.</p>
+<ul class="simple">
+<li>Handles dict mappings &#8211; user selects a text key, and the ComboBox indicates
+the selected value.</li>
+<li>Requires item strings to be unique</li>
+<li>Remembers selected value if list is cleared and subsequently repopulated</li>
+<li>setItems() replaces the items in the ComboBox and blocks signals if the
+value ultimately does not change.</li>
+</ul>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.addItem">
+<code class="descname">addItem</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.addItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.addItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.addItems">
+<code class="descname">addItems</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.addItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.addItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.blockIfUnchanged">
+<code class="descname">blockIfUnchanged</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.blockIfUnchanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.blockIfUnchanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.ignoreIndexChange">
+<code class="descname">ignoreIndexChange</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.ignoreIndexChange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.ignoreIndexChange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.indexChanged">
+<code class="descname">indexChanged</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.indexChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.indexChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.insertItem">
+<code class="descname">insertItem</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.insertItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.insertItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.insertItems">
+<code class="descname">insertItems</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.insertItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.insertItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.items">
+<code class="descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.items"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.items" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.itemsChanged">
+<code class="descname">itemsChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.itemsChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.itemsChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setCurrentIndex">
+<code class="descname">setCurrentIndex</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.setCurrentIndex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setCurrentIndex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setItemValue">
+<code class="descname">setItemValue</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.setItemValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setItemValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setItems">
+<code class="descname">setItems</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.setItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setText">
+<code class="descname">setText</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.setText"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setText" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the selected item to the first one having the given text.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setValue">
+<code class="descname">setValue</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.setValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.setValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the selected item to the first one having the given value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.updateList">
+<code class="descname">updateList</code><span class="sig-paren">(</span><em>items</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.updateList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.updateList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.value">
+<code class="descname">value</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ComboBox.html#ComboBox.value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ComboBox.ComboBox.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>If items were given as a list of strings, then return the currently 
+selected text. If items were given as a dict, then return the value
+corresponding to the currently selected key. If the combo list is empty,
+return None.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.DataFilterWidget">
+<span id="iris-gui-pyqtgraph-widgets-datafilterwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.DataFilterWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.DataFilterWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.DataFilterWidget.DataFilterWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.DataFilterWidget.</code><code class="descname">DataFilterWidget</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/DataFilterWidget.html#DataFilterWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.DataFilterWidget.DataFilterWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree" title="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree</span></code></a></p>
+<p>This class allows the user to filter multi-column data sets by specifying
+multiple criteria</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.DataFilterWidget.DataFilterWidget.filterChanged">
+<code class="descname">filterChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/DataFilterWidget.html#DataFilterWidget.filterChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.DataFilterWidget.DataFilterWidget.filterChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.DataFilterWidget.DataFilterWidget.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/DataFilterWidget.html#DataFilterWidget.parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.DataFilterWidget.DataFilterWidget.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.DataFilterWidget.DataFilterWidget.sigFilterChanged">
+<code class="descname">sigFilterChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.DataFilterWidget.DataFilterWidget.sigFilterChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.DataTreeWidget">
+<span id="iris-gui-pyqtgraph-widgets-datatreewidget-module"></span><h2>iris.gui.pyqtgraph.widgets.DataTreeWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.DataTreeWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.DataTreeWidget.DataTreeWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.DataTreeWidget.</code><code class="descname">DataTreeWidget</code><span class="sig-paren">(</span><em>parent=None</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/DataTreeWidget.html#DataTreeWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.DataTreeWidget.DataTreeWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QTreeWidget</span></code></p>
+<p>Widget for displaying hierarchical python data structures
+(eg, nested dicts, lists, and arrays)</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.DataTreeWidget.DataTreeWidget.buildTree">
+<code class="descname">buildTree</code><span class="sig-paren">(</span><em>data</em>, <em>parent</em>, <em>name=''</em>, <em>hideRoot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/DataTreeWidget.html#DataTreeWidget.buildTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.DataTreeWidget.DataTreeWidget.buildTree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.DataTreeWidget.DataTreeWidget.setData">
+<code class="descname">setData</code><span class="sig-paren">(</span><em>data</em>, <em>hideRoot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/DataTreeWidget.html#DataTreeWidget.setData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.DataTreeWidget.DataTreeWidget.setData" title="Permalink to this definition">¶</a></dt>
+<dd><p>data should be a dictionary.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.FeedbackButton">
+<span id="iris-gui-pyqtgraph-widgets-feedbackbutton-module"></span><h2>iris.gui.pyqtgraph.widgets.FeedbackButton module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.FeedbackButton" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.FeedbackButton.</code><code class="descname">FeedbackButton</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QPushButton</span></code></p>
+<p>QPushButton which flashes success/failure indication for slow or asynchronous procedures.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.borderOff">
+<code class="descname">borderOff</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.borderOff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.borderOff" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.borderOn">
+<code class="descname">borderOn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.borderOn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.borderOn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.failure">
+<code class="descname">failure</code><span class="sig-paren">(</span><em>message=None</em>, <em>tip=''</em>, <em>limitedTime=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.failure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.failure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays specified message on button and flashes button red to let user know there was an error. If you want the error to be displayed until the user takes an action, set limitedTime to False. Then call self.reset() after the desired action. Threadsafe.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.feedback">
+<code class="descname">feedback</code><span class="sig-paren">(</span><em>success</em>, <em>message=None</em>, <em>tip=''</em>, <em>limitedTime=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.feedback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.feedback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls success() or failure(). If you want the message to be displayed until the user takes an action, set limitedTime to False. Then call self.reset() after the desired action.Threadsafe.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.processing">
+<code class="descname">processing</code><span class="sig-paren">(</span><em>message='Processing..'</em>, <em>tip=''</em>, <em>processEvents=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.processing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.processing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays specified message on button to let user know the action is in progress. Threadsafe.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the button to its original text and style. Threadsafe.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.setStyleSheet">
+<code class="descname">setStyleSheet</code><span class="sig-paren">(</span><em>style=None</em>, <em>temporary=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.setStyleSheet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.setStyleSheet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.setText">
+<code class="descname">setText</code><span class="sig-paren">(</span><em>text=None</em>, <em>temporary=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.setText"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.setText" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.setToolTip">
+<code class="descname">setToolTip</code><span class="sig-paren">(</span><em>text=None</em>, <em>temporary=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.setToolTip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.setToolTip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.sigCallFailure">
+<code class="descname">sigCallFailure</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.sigCallFailure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.sigCallProcess">
+<code class="descname">sigCallProcess</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.sigCallProcess" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.sigCallSuccess">
+<code class="descname">sigCallSuccess</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.sigCallSuccess" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.sigReset">
+<code class="descname">sigReset</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.sigReset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.startBlink">
+<code class="descname">startBlink</code><span class="sig-paren">(</span><em>color</em>, <em>message=None</em>, <em>tip=''</em>, <em>limitedTime=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.startBlink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.startBlink" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.success">
+<code class="descname">success</code><span class="sig-paren">(</span><em>message=None</em>, <em>tip=''</em>, <em>limitedTime=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FeedbackButton.html#FeedbackButton.success"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FeedbackButton.FeedbackButton.success" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays specified message on button and flashes button green to let user know action was successful. If you want the success to be displayed until the user takes an action, set limitedTime to False. Then call self.reset() after the desired action. Threadsafe.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.FileDialog">
+<span id="iris-gui-pyqtgraph-widgets-filedialog-module"></span><h2>iris.gui.pyqtgraph.widgets.FileDialog module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.FileDialog" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.FileDialog.FileDialog">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.FileDialog.</code><code class="descname">FileDialog</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/FileDialog.html#FileDialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.FileDialog.FileDialog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QFileDialog</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.GradientWidget">
+<span id="iris-gui-pyqtgraph-widgets-gradientwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.GradientWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.GradientWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.GradientWidget.</code><code class="descname">GradientWidget</code><span class="sig-paren">(</span><em>parent=None</em>, <em>orientation='bottom'</em>, <em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GradientWidget.html#GradientWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView" title="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView</span></code></a></p>
+<p>Widget displaying an editable color gradient. The user may add, move, recolor,
+or remove colors from the gradient. Additionally, a context menu allows the 
+user to select from pre-defined gradients.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget.setMaxDim">
+<code class="descname">setMaxDim</code><span class="sig-paren">(</span><em>mx=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GradientWidget.html#GradientWidget.setMaxDim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget.setMaxDim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget.setOrientation">
+<code class="descname">setOrientation</code><span class="sig-paren">(</span><em>ort</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GradientWidget.html#GradientWidget.setOrientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget.setOrientation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the orientation of the widget. May be one of &#8216;bottom&#8217;, &#8216;top&#8217;, 
+&#8216;left&#8217;, or &#8216;right&#8217;.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget.sigGradientChangeFinished">
+<code class="descname">sigGradientChangeFinished</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget.sigGradientChangeFinished" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget.sigGradientChanged">
+<code class="descname">sigGradientChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GradientWidget.GradientWidget.sigGradientChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.GraphicsLayoutWidget">
+<span id="iris-gui-pyqtgraph-widgets-graphicslayoutwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.GraphicsLayoutWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.GraphicsLayoutWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsLayoutWidget.GraphicsLayoutWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.GraphicsLayoutWidget.</code><code class="descname">GraphicsLayoutWidget</code><span class="sig-paren">(</span><em>parent=None</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsLayoutWidget.html#GraphicsLayoutWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsLayoutWidget.GraphicsLayoutWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView" title="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView</span></code></a></p>
+<p>Convenience class consisting of a <code class="xref py py-class docutils literal"><span class="pre">GraphicsView</span></code> with a single <code class="xref py py-class docutils literal"><span class="pre">GraphicsLayout</span></code> as its central item.</p>
+<p>This class wraps several methods from its internal GraphicsLayout:
+<code class="xref py py-func docutils literal"><span class="pre">nextRow</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">nextColumn</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">addPlot</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">addViewBox</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">addItem</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">getItem</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">addLabel</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">addLayout</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">removeItem</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">itemIndex</span></code>
+<code class="xref py py-func docutils literal"><span class="pre">clear</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.GraphicsView">
+<span id="iris-gui-pyqtgraph-widgets-graphicsview-module"></span><h2>iris.gui.pyqtgraph.widgets.GraphicsView module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.GraphicsView" title="Permalink to this headline">¶</a></h2>
+<p>GraphicsView.py -   Extension of QGraphicsView
+Copyright 2010  Luke Campagnola
+Distributed under MIT/X11 license. See license.txt for more infomation.</p>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.GraphicsView.</code><code class="descname">GraphicsView</code><span class="sig-paren">(</span><em>parent=None</em>, <em>useOpenGL=None</em>, <em>background='default'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QGraphicsView</span></code></p>
+<p>Re-implementation of QGraphicsView that removes scrollbars and allows unambiguous control of the 
+viewed coordinate range. Also automatically creates a GraphicsScene and a central QGraphicsWidget
+that is automatically scaled to the full view geometry.</p>
+<p>This widget is the basis for <code class="xref py py-class docutils literal"><span class="pre">PlotWidget</span></code>, 
+<code class="xref py py-class docutils literal"><span class="pre">GraphicsLayoutWidget</span></code>, and the view widget in
+<code class="xref py py-class docutils literal"><span class="pre">ImageView</span></code>.</p>
+<p>By default, the view coordinate system matches the widget&#8217;s pixel coordinates and 
+automatically updates when the view is resized. This can be overridden by setting 
+autoPixelRange=False. The exact visible range can be set with setRange().</p>
+<p>The view can be panned using the middle mouse button and scaled using the right mouse button if
+enabled via enableMouse()  (but ordinarily, we use ViewBox for this functionality).</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.addItem">
+<code class="descname">addItem</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.addItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.addItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.clearMouse">
+<code class="descname">clearMouse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.clearMouse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.clearMouse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.dragEnterEvent">
+<code class="descname">dragEnterEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.dragEnterEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.dragEnterEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.enableMouse">
+<code class="descname">enableMouse</code><span class="sig-paren">(</span><em>b=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.enableMouse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.enableMouse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.keyPressEvent">
+<code class="descname">keyPressEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.keyPressEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.keyPressEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.lastFileDir">
+<code class="descname">lastFileDir</code><em class="property"> = None</em><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.lastFileDir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.leaveEvent">
+<code class="descname">leaveEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.leaveEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.leaveEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.lockXRange">
+<code class="descname">lockXRange</code><span class="sig-paren">(</span><em>v1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.lockXRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.lockXRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.mouseMoveEvent">
+<code class="descname">mouseMoveEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.mouseMoveEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.mouseMoveEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.mousePressEvent">
+<code class="descname">mousePressEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.mousePressEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.mousePressEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.mouseReleaseEvent">
+<code class="descname">mouseReleaseEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.mouseReleaseEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.mouseReleaseEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.pixelSize">
+<code class="descname">pixelSize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.pixelSize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.pixelSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return vector with the length and width of one view pixel in scene coordinates</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.removeItem">
+<code class="descname">removeItem</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.removeItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.removeItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.render">
+<code class="descname">render</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.render" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.resizeEvent">
+<code class="descname">resizeEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.resizeEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.resizeEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.scale">
+<code class="descname">scale</code><span class="sig-paren">(</span><em>sx</em>, <em>sy</em>, <em>center=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.scale" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.scaleToImage">
+<code class="descname">scaleToImage</code><span class="sig-paren">(</span><em>image</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.scaleToImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.scaleToImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scales such that pixels in image are the same size as screen pixels. This may result in a significant performance increase.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setAntialiasing">
+<code class="descname">setAntialiasing</code><span class="sig-paren">(</span><em>aa</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.setAntialiasing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setAntialiasing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable or disable default antialiasing.
+Note that this will only affect items that do not specify their own antialiasing options.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setAspectLocked">
+<code class="descname">setAspectLocked</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.setAspectLocked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setAspectLocked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setBackground">
+<code class="descname">setBackground</code><span class="sig-paren">(</span><em>background</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.setBackground"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setBackground" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the background color of the GraphicsView.
+To use the defaults specified py pyqtgraph.setConfigOption, use background=&#8217;default&#8217;.
+To make the background transparent, use background=None.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setCentralItem">
+<code class="descname">setCentralItem</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.setCentralItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setCentralItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setCentralWidget">
+<code class="descname">setCentralWidget</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.setCentralWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setCentralWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a QGraphicsWidget to automatically fill the entire view (the item will be automatically
+resize whenever the GraphicsView is resized).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setRange">
+<code class="descname">setRange</code><span class="sig-paren">(</span><em>newRect=None</em>, <em>padding=0.05</em>, <em>lockAspect=None</em>, <em>propagate=True</em>, <em>disableAutoPixel=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.setRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setXRange">
+<code class="descname">setXRange</code><span class="sig-paren">(</span><em>r</em>, <em>padding=0.05</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.setXRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setXRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setYRange">
+<code class="descname">setYRange</code><span class="sig-paren">(</span><em>r</em>, <em>padding=0.05</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.setYRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.setYRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigDeviceRangeChanged">
+<code class="descname">sigDeviceRangeChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigDeviceRangeChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigDeviceTransformChanged">
+<code class="descname">sigDeviceTransformChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigDeviceTransformChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigMouseReleased">
+<code class="descname">sigMouseReleased</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigMouseReleased" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigScaleChanged">
+<code class="descname">sigScaleChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigScaleChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigSceneMouseMoved">
+<code class="descname">sigSceneMouseMoved</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.sigSceneMouseMoved" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.translate">
+<code class="descname">translate</code><span class="sig-paren">(</span><em>dx</em>, <em>dy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.translate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.translate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.updateMatrix">
+<code class="descname">updateMatrix</code><span class="sig-paren">(</span><em>propagate=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.updateMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.updateMatrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.useOpenGL">
+<code class="descname">useOpenGL</code><span class="sig-paren">(</span><em>b=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.useOpenGL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.useOpenGL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.viewRect">
+<code class="descname">viewRect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.viewRect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.viewRect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the boundaries of the view in scene coordinates</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.visibleRange">
+<code class="descname">visibleRange</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.visibleRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.visibleRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.wheelEvent">
+<code class="descname">wheelEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/GraphicsView.html#GraphicsView.wheelEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView.wheelEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.HistogramLUTWidget">
+<span id="iris-gui-pyqtgraph-widgets-histogramlutwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.HistogramLUTWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.HistogramLUTWidget" title="Permalink to this headline">¶</a></h2>
+<p>Widget displaying an image histogram along with gradient editor. Can be used to adjust the appearance of images.
+This is a wrapper around HistogramLUTItem</p>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.HistogramLUTWidget.HistogramLUTWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.HistogramLUTWidget.</code><code class="descname">HistogramLUTWidget</code><span class="sig-paren">(</span><em>parent=None</em>, <em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/HistogramLUTWidget.html#HistogramLUTWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.HistogramLUTWidget.HistogramLUTWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView" title="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView</span></code></a></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.HistogramLUTWidget.HistogramLUTWidget.sizeHint">
+<code class="descname">sizeHint</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/HistogramLUTWidget.html#HistogramLUTWidget.sizeHint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.HistogramLUTWidget.HistogramLUTWidget.sizeHint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.JoystickButton">
+<span id="iris-gui-pyqtgraph-widgets-joystickbutton-module"></span><h2>iris.gui.pyqtgraph.widgets.JoystickButton module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.JoystickButton" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.JoystickButton.</code><code class="descname">JoystickButton</code><span class="sig-paren">(</span><em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QPushButton</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.doubleClickEvent">
+<code class="descname">doubleClickEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.doubleClickEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.doubleClickEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.getState">
+<code class="descname">getState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.getState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.getState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.mouseMoveEvent">
+<code class="descname">mouseMoveEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.mouseMoveEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.mouseMoveEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.mousePressEvent">
+<code class="descname">mousePressEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.mousePressEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.mousePressEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.mouseReleaseEvent">
+<code class="descname">mouseReleaseEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.mouseReleaseEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.mouseReleaseEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.resizeEvent">
+<code class="descname">resizeEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.resizeEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.resizeEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.setState">
+<code class="descname">setState</code><span class="sig-paren">(</span><em>*xy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.setState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.setState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.sigStateChanged">
+<code class="descname">sigStateChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.sigStateChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.wheelEvent">
+<code class="descname">wheelEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/JoystickButton.html#JoystickButton.wheelEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.JoystickButton.JoystickButton.wheelEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.LayoutWidget">
+<span id="iris-gui-pyqtgraph-widgets-layoutwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.LayoutWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.LayoutWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.LayoutWidget.</code><code class="descname">LayoutWidget</code><span class="sig-paren">(</span><em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/LayoutWidget.html#LayoutWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<p>Convenience class used for laying out QWidgets in a grid.
+(It&#8217;s just a little less effort to use than QGridLayout)</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.addLabel">
+<code class="descname">addLabel</code><span class="sig-paren">(</span><em>text=' '</em>, <em>row=None</em>, <em>col=None</em>, <em>rowspan=1</em>, <em>colspan=1</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/LayoutWidget.html#LayoutWidget.addLabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.addLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a QLabel with <em>text</em> and place it in the next available cell (or in the cell specified)
+All extra keyword arguments are passed to QLabel().
+Returns the created widget.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.addLayout">
+<code class="descname">addLayout</code><span class="sig-paren">(</span><em>row=None</em>, <em>col=None</em>, <em>rowspan=1</em>, <em>colspan=1</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/LayoutWidget.html#LayoutWidget.addLayout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.addLayout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an empty LayoutWidget and place it in the next available cell (or in the cell specified)
+All extra keyword arguments are passed to <code class="xref py py-func docutils literal"><span class="pre">LayoutWidget.__init__</span></code>
+Returns the created widget.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.addWidget">
+<code class="descname">addWidget</code><span class="sig-paren">(</span><em>item</em>, <em>row=None</em>, <em>col=None</em>, <em>rowspan=1</em>, <em>colspan=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/LayoutWidget.html#LayoutWidget.addWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.addWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a widget to the layout and place it in the next available cell (or in the cell specified).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.getWidget">
+<code class="descname">getWidget</code><span class="sig-paren">(</span><em>row</em>, <em>col</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/LayoutWidget.html#LayoutWidget.getWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.getWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the widget in (<em>row</em>, <em>col</em>)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.nextCol">
+<code class="descname">nextCol</code><span class="sig-paren">(</span><em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/LayoutWidget.html#LayoutWidget.nextCol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.nextCol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias of nextColumn</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.nextColumn">
+<code class="descname">nextColumn</code><span class="sig-paren">(</span><em>colspan=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/LayoutWidget.html#LayoutWidget.nextColumn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.nextColumn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Advance to next column, while returning the current column number 
+(generally only for internal use&#8211;called by addWidget)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.nextRow">
+<code class="descname">nextRow</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/LayoutWidget.html#LayoutWidget.nextRow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.LayoutWidget.LayoutWidget.nextRow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Advance to next row for automatic widget placement</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.MatplotlibWidget">
+<span id="iris-gui-pyqtgraph-widgets-matplotlibwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.MatplotlibWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.MatplotlibWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.MatplotlibWidget.MatplotlibWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.MatplotlibWidget.</code><code class="descname">MatplotlibWidget</code><span class="sig-paren">(</span><em>size=(5.0</em>, <em>4.0)</em>, <em>dpi=100</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MatplotlibWidget.html#MatplotlibWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MatplotlibWidget.MatplotlibWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<p>Implements a Matplotlib figure inside a QWidget.
+Use getFigure() and redraw() to interact with matplotlib.</p>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mw</span> <span class="o">=</span> <span class="n">MatplotlibWidget</span><span class="p">()</span>
+<span class="n">subplot</span> <span class="o">=</span> <span class="n">mw</span><span class="o">.</span><span class="n">getFigure</span><span class="p">()</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+<span class="n">subplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+<span class="n">mw</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MatplotlibWidget.MatplotlibWidget.draw">
+<code class="descname">draw</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MatplotlibWidget.html#MatplotlibWidget.draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MatplotlibWidget.MatplotlibWidget.draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MatplotlibWidget.MatplotlibWidget.getFigure">
+<code class="descname">getFigure</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MatplotlibWidget.html#MatplotlibWidget.getFigure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MatplotlibWidget.MatplotlibWidget.getFigure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.MultiPlotWidget">
+<span id="iris-gui-pyqtgraph-widgets-multiplotwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.MultiPlotWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.MultiPlotWidget" title="Permalink to this headline">¶</a></h2>
+<p>MultiPlotWidget.py -  Convenience class&#8211;GraphicsView widget displaying a MultiPlotItem
+Copyright 2010  Luke Campagnola
+Distributed under MIT/X11 license. See license.txt for more infomation.</p>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.MultiPlotWidget.</code><code class="descname">MultiPlotWidget</code><span class="sig-paren">(</span><em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MultiPlotWidget.html#MultiPlotWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView" title="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView</span></code></a></p>
+<p>Widget implementing a graphicsView with a single MultiPlotItem inside.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MultiPlotWidget.html#MultiPlotWidget.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.resizeEvent">
+<code class="descname">resizeEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MultiPlotWidget.html#MultiPlotWidget.resizeEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.resizeEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.restoreState">
+<code class="descname">restoreState</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MultiPlotWidget.html#MultiPlotWidget.restoreState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.restoreState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.saveState">
+<code class="descname">saveState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MultiPlotWidget.html#MultiPlotWidget.saveState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.saveState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.setMinimumPlotHeight">
+<code class="descname">setMinimumPlotHeight</code><span class="sig-paren">(</span><em>min</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MultiPlotWidget.html#MultiPlotWidget.setMinimumPlotHeight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.setMinimumPlotHeight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the minimum height for each sub-plot displayed.</p>
+<p>If the total height of all plots is greater than the height of the 
+widget, then a scroll bar will appear to provide access to the entire
+set of plots.</p>
+<p>Added in version 0.9.9</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.setRange">
+<code class="descname">setRange</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MultiPlotWidget.html#MultiPlotWidget.setRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.setRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.widgetGroupInterface">
+<code class="descname">widgetGroupInterface</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/MultiPlotWidget.html#MultiPlotWidget.widgetGroupInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.widgetGroupInterface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.PathButton">
+<span id="iris-gui-pyqtgraph-widgets-pathbutton-module"></span><h2>iris.gui.pyqtgraph.widgets.PathButton module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.PathButton" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.PathButton.PathButton">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.PathButton.</code><code class="descname">PathButton</code><span class="sig-paren">(</span><em>parent=None</em>, <em>path=None</em>, <em>pen='default'</em>, <em>brush=None</em>, <em>size=(30</em>, <em>30)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PathButton.html#PathButton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PathButton.PathButton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QPushButton</span></code></p>
+<p>Simple PushButton extension which paints a QPainterPath on its face</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PathButton.PathButton.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PathButton.html#PathButton.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PathButton.PathButton.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PathButton.PathButton.setBrush">
+<code class="descname">setBrush</code><span class="sig-paren">(</span><em>brush</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PathButton.html#PathButton.setBrush"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PathButton.PathButton.setBrush" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PathButton.PathButton.setPath">
+<code class="descname">setPath</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PathButton.html#PathButton.setPath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PathButton.PathButton.setPath" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PathButton.PathButton.setPen">
+<code class="descname">setPen</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PathButton.html#PathButton.setPen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PathButton.PathButton.setPen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.PlotWidget">
+<span id="iris-gui-pyqtgraph-widgets-plotwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.PlotWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.PlotWidget" title="Permalink to this headline">¶</a></h2>
+<p>PlotWidget.py -  Convenience class&#8211;GraphicsView widget displaying a single PlotItem
+Copyright 2010  Luke Campagnola
+Distributed under MIT/X11 license. See license.txt for more infomation.</p>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.PlotWidget.</code><code class="descname">PlotWidget</code><span class="sig-paren">(</span><em>parent=None</em>, <em>background='default'</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PlotWidget.html#PlotWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView" title="iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.widgets.GraphicsView.GraphicsView</span></code></a></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PlotWidget.html#PlotWidget.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.getPlotItem">
+<code class="descname">getPlotItem</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PlotWidget.html#PlotWidget.getPlotItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.getPlotItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the PlotItem contained within.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.restoreState">
+<code class="descname">restoreState</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PlotWidget.html#PlotWidget.restoreState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.restoreState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.saveState">
+<code class="descname">saveState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PlotWidget.html#PlotWidget.saveState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.saveState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.sigRangeChanged">
+<code class="descname">sigRangeChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.sigRangeChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.sigTransformChanged">
+<code class="descname">sigTransformChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.sigTransformChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-class docutils literal"><span class="pre">GraphicsView</span></code> widget with a single
+<code class="xref py py-class docutils literal"><span class="pre">PlotItem</span></code> inside.</p>
+<p>The following methods are wrapped directly from PlotItem:
+<code class="xref py py-func docutils literal"><span class="pre">addItem</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">removeItem</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">clear</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setXRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setYRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">autoRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setXLink</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setYLink</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">viewRect</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setMouseEnabled</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">enableAutoRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">disableAutoRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setAspectLocked</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setLimits</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">register</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">unregister</span></code></p>
+<p>For all
+other methods, use <code class="xref py py-func docutils literal"><span class="pre">getPlotItem</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.viewRangeChanged">
+<code class="descname">viewRangeChanged</code><span class="sig-paren">(</span><em>view</em>, <em>range</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PlotWidget.html#PlotWidget.viewRangeChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.viewRangeChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.widgetGroupInterface">
+<code class="descname">widgetGroupInterface</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/PlotWidget.html#PlotWidget.widgetGroupInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.PlotWidget.PlotWidget.widgetGroupInterface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.ProgressDialog">
+<span id="iris-gui-pyqtgraph-widgets-progressdialog-module"></span><h2>iris.gui.pyqtgraph.widgets.ProgressDialog module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.ProgressDialog" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.ProgressDialog.</code><code class="descname">ProgressDialog</code><span class="sig-paren">(</span><em>labelText</em>, <em>minimum=0</em>, <em>maximum=100</em>, <em>cancelText='Cancel'</em>, <em>parent=None</em>, <em>wait=250</em>, <em>busyCursor=False</em>, <em>disable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ProgressDialog.html#ProgressDialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QProgressDialog</span></code></p>
+<p>Extends QProgressDialog for use in &#8216;with&#8217; statements.</p>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">ProgressDialog</span><span class="p">(</span><span class="s2">&quot;Processing..&quot;</span><span class="p">,</span> <span class="n">minVal</span><span class="p">,</span> <span class="n">maxVal</span><span class="p">)</span> <span class="k">as</span> <span class="n">dlg</span><span class="p">:</span>
+    <span class="c1"># do stuff</span>
+    <span class="n">dlg</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>   <span class="c1">## could also use dlg += 1</span>
+    <span class="k">if</span> <span class="n">dlg</span><span class="o">.</span><span class="n">wasCanceled</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Processing canceled by user&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.maximum">
+<code class="descname">maximum</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ProgressDialog.html#ProgressDialog.maximum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.maximum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.minimum">
+<code class="descname">minimum</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ProgressDialog.html#ProgressDialog.minimum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.minimum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.setLabelText">
+<code class="descname">setLabelText</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ProgressDialog.html#ProgressDialog.setLabelText"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.setLabelText" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.setMaximum">
+<code class="descname">setMaximum</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ProgressDialog.html#ProgressDialog.setMaximum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.setMaximum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.setMinimum">
+<code class="descname">setMinimum</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ProgressDialog.html#ProgressDialog.setMinimum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.setMinimum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.setValue">
+<code class="descname">setValue</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ProgressDialog.html#ProgressDialog.setValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.setValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.wasCanceled">
+<code class="descname">wasCanceled</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ProgressDialog.html#ProgressDialog.wasCanceled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ProgressDialog.ProgressDialog.wasCanceled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.RawImageWidget">
+<span id="iris-gui-pyqtgraph-widgets-rawimagewidget-module"></span><h2>iris.gui.pyqtgraph.widgets.RawImageWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.RawImageWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.RawImageWidget.</code><code class="descname">RawImageWidget</code><span class="sig-paren">(</span><em>parent=None</em>, <em>scaled=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RawImageWidget.html#RawImageWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<p>Widget optimized for very fast video display. 
+Generally using an ImageItem inside GraphicsView is fast enough.
+On some systems this may provide faster video. See the VideoSpeedTest example for benchmarking.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RawImageWidget.html#RawImageWidget.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget.setImage">
+<code class="descname">setImage</code><span class="sig-paren">(</span><em>img</em>, <em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RawImageWidget.html#RawImageWidget.setImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget.setImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>img must be ndarray of shape (x,y), (x,y,3), or (x,y,4).
+Extra arguments are sent to functions.makeARGB</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.RemoteGraphicsView">
+<span id="iris-gui-pyqtgraph-widgets-remotegraphicsview-module"></span><h2>iris.gui.pyqtgraph.widgets.RemoteGraphicsView module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.RemoteGraphicsView" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.RemoteGraphicsView.</code><code class="descname">RemoteGraphicsView</code><span class="sig-paren">(</span><em>parent=None</em>, <em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<p>Replacement for GraphicsView that does all scene management and rendering on a remote process,
+while displaying on the local widget.</p>
+<p>GraphicsItems must be created by proxy to the remote process.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close the remote process. After this call, the widget will no longer be updated.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.enterEvent">
+<code class="descname">enterEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.enterEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.enterEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.keyEvent">
+<code class="descname">keyEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.keyEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.keyEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.leaveEvent">
+<code class="descname">leaveEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.leaveEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.leaveEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.mouseMoveEvent">
+<code class="descname">mouseMoveEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.mouseMoveEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.mouseMoveEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.mousePressEvent">
+<code class="descname">mousePressEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.mousePressEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.mousePressEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.mouseReleaseEvent">
+<code class="descname">mouseReleaseEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.mouseReleaseEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.mouseReleaseEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.remoteProcess">
+<code class="descname">remoteProcess</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.remoteProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.remoteProcess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the remote process handle. (see multiprocess.remoteproxy.RemoteEventHandler)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.remoteSceneChanged">
+<code class="descname">remoteSceneChanged</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.remoteSceneChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.remoteSceneChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.resizeEvent">
+<code class="descname">resizeEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.resizeEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.resizeEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.sizeHint">
+<code class="descname">sizeHint</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.sizeHint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.sizeHint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.wheelEvent">
+<code class="descname">wheelEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/RemoteGraphicsView.html#RemoteGraphicsView.wheelEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.RemoteGraphicsView.RemoteGraphicsView.wheelEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.ScatterPlotWidget">
+<span id="iris-gui-pyqtgraph-widgets-scatterplotwidget-module"></span><h2>iris.gui.pyqtgraph.widgets.ScatterPlotWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.ScatterPlotWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.ScatterPlotWidget.</code><code class="descname">ScatterPlotWidget</code><span class="sig-paren">(</span><em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ScatterPlotWidget.html#ScatterPlotWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QSplitter</span></code></p>
+<p>This is a high-level widget for exploring relationships in tabular data.</p>
+<p>Given a multi-column record array, the widget displays a scatter plot of a
+specific subset of the data. Includes controls for selecting the columns to
+plot, filtering data, and determining symbol color and shape.</p>
+<p>The widget consists of four components:</p>
+<ol class="arabic simple">
+<li>A list of column names from which the user may select 1 or 2 columns
+to plot. If one column is selected, the data for that column will be
+plotted in a histogram-like manner by using <code class="xref py py-func docutils literal"><span class="pre">pseudoScatter()</span></code>. If two columns are selected, then the
+scatter plot will be generated with x determined by the first column
+that was selected and y by the second.</li>
+<li>A DataFilter that allows the user to select a subset of the data by 
+specifying multiple selection criteria.</li>
+<li>A ColorMap that allows the user to determine how points are colored by
+specifying multiple criteria.</li>
+<li>A PlotWidget for displaying the data.</li>
+</ol>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.fieldSelectionChanged">
+<code class="descname">fieldSelectionChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ScatterPlotWidget.html#ScatterPlotWidget.fieldSelectionChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.fieldSelectionChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.filterChanged">
+<code class="descname">filterChanged</code><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ScatterPlotWidget.html#ScatterPlotWidget.filterChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.filterChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.plotClicked">
+<code class="descname">plotClicked</code><span class="sig-paren">(</span><em>plot</em>, <em>points</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ScatterPlotWidget.html#ScatterPlotWidget.plotClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.plotClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.setData">
+<code class="descname">setData</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ScatterPlotWidget.html#ScatterPlotWidget.setData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.setData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the data to be processed and displayed. 
+Argument must be a numpy record array.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.setFields">
+<code class="descname">setFields</code><span class="sig-paren">(</span><em>fields</em>, <em>mouseOverField=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ScatterPlotWidget.html#ScatterPlotWidget.setFields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.setFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the list of field names/units to be processed.</p>
+<p>The format of <em>fields</em> is the same as used by 
+<code class="xref py py-func docutils literal"><span class="pre">ColorMapWidget.setFields</span></code></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.updatePlot">
+<code class="descname">updatePlot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ScatterPlotWidget.html#ScatterPlotWidget.updatePlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ScatterPlotWidget.ScatterPlotWidget.updatePlot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.SpinBox">
+<span id="iris-gui-pyqtgraph-widgets-spinbox-module"></span><h2>iris.gui.pyqtgraph.widgets.SpinBox module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.SpinBox" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.SpinBox.</code><code class="descname">SpinBox</code><span class="sig-paren">(</span><em>parent=None</em>, <em>value=0.0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QAbstractSpinBox</span></code></p>
+<p><strong>Bases:</strong> QtGui.QAbstractSpinBox</p>
+<p>QSpinBox widget on steroids. Allows selection of numerical value, with extra features:</p>
+<ul class="simple">
+<li>SI prefix notation (eg, automatically display &#8220;300 mV&#8221; instead of &#8220;0.003 V&#8221;)</li>
+<li>Float values with linear and decimal stepping (1-9, 10-90, 100-900, etc.)</li>
+<li>Option for unbounded values</li>
+<li>Delayed signals (allows multiple rapid changes with only one change signal)</li>
+</ul>
+<table border="1" class="docutils">
+<colgroup>
+<col width="37%" />
+<col width="63%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Signals:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>valueChanged(value)</td>
+<td>Same as QSpinBox; emitted every time the value
+has changed.</td>
+</tr>
+<tr class="row-odd"><td>sigValueChanged(self)</td>
+<td>Emitted when value has changed, but also combines
+multiple rapid changes into one signal (eg,
+when rolling the mouse wheel).</td>
+</tr>
+<tr class="row-even"><td>sigValueChanging(self, value)</td>
+<td>Emitted immediately for all value changes.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.delayedChange">
+<code class="descname">delayedChange</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.delayedChange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.delayedChange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.editingFinishedEvent">
+<code class="descname">editingFinishedEvent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.editingFinishedEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.editingFinishedEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Edit has finished; set value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.emitChanged">
+<code class="descname">emitChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.emitChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.emitChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.event">
+<code class="descname">event</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.event" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.interpret">
+<code class="descname">interpret</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.interpret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.interpret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return value of text. Return False if text is invalid, raise exception if text is intermediate</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.selectNumber">
+<code class="descname">selectNumber</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.selectNumber"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.selectNumber" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select the numerical portion of the text to allow quick editing by the user.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setDecimals">
+<code class="descname">setDecimals</code><span class="sig-paren">(</span><em>decimals</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setDecimals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setDecimals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of decimals to be displayed when formatting numeric
+values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setMaximum">
+<code class="descname">setMaximum</code><span class="sig-paren">(</span><em>m</em>, <em>update=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setMaximum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setMaximum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the maximum allowed value (or None for no limit)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setMinimum">
+<code class="descname">setMinimum</code><span class="sig-paren">(</span><em>m</em>, <em>update=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setMinimum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setMinimum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the minimum allowed value (or None for no limit)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setOpts">
+<code class="descname">setOpts</code><span class="sig-paren">(</span><em>**opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setOpts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setOpts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes the behavior of the SpinBox. Accepts most of the arguments 
+allowed in <code class="xref py py-func docutils literal"><span class="pre">__init__</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setPrefix">
+<code class="descname">setPrefix</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setPrefix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setPrefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a string prefix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setProperty">
+<code class="descname">setProperty</code><span class="sig-paren">(</span><em>prop</em>, <em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setProperty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setProperty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setRange">
+<code class="descname">setRange</code><span class="sig-paren">(</span><em>r0</em>, <em>r1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setRange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the upper and lower limits for values in the spinbox.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setSingleStep">
+<code class="descname">setSingleStep</code><span class="sig-paren">(</span><em>step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setSingleStep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setSingleStep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the step size used when responding to the mouse wheel, arrow
+buttons, or arrow keys.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setSuffix">
+<code class="descname">setSuffix</code><span class="sig-paren">(</span><em>suf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setSuffix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setSuffix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the string suffix appended to the spinbox text.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setValue">
+<code class="descname">setValue</code><span class="sig-paren">(</span><em>value=None</em>, <em>update=True</em>, <em>delaySignal=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.setValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.setValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the value of this spin. 
+If the value is out of bounds, it will be clipped to the nearest boundary.
+If the spin is integer type, the value will be coerced to int.
+Returns the actual value set.</p>
+<p>If value is None, then the current value is used (this is for resetting
+the value after bounds, etc. have changed)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.sigValueChanged">
+<code class="descname">sigValueChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.sigValueChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.sigValueChanging">
+<code class="descname">sigValueChanging</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.sigValueChanging" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.sizeHint">
+<code class="descname">sizeHint</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.sizeHint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.sizeHint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.stepBy">
+<code class="descname">stepBy</code><span class="sig-paren">(</span><em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.stepBy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.stepBy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.stepEnabled">
+<code class="descname">stepEnabled</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.stepEnabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.stepEnabled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.updateText">
+<code class="descname">updateText</code><span class="sig-paren">(</span><em>prev=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.updateText"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.updateText" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.validate">
+<code class="descname">validate</code><span class="sig-paren">(</span><em>strn</em>, <em>pos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.validate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.value">
+<code class="descname">value</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the value of this SpinBox.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.valueChanged">
+<code class="descname">valueChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.valueChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.valueInRange">
+<code class="descname">valueInRange</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.valueInRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.valueInRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.widgetGroupInterface">
+<code class="descname">widgetGroupInterface</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/SpinBox.html#SpinBox.widgetGroupInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.SpinBox.SpinBox.widgetGroupInterface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.TableWidget">
+<span id="iris-gui-pyqtgraph-widgets-tablewidget-module"></span><h2>iris.gui.pyqtgraph.widgets.TableWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.TableWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.TableWidget.</code><code class="descname">TableWidget</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QTableWidget</span></code></p>
+<p>Extends QTableWidget with some useful functions for automatic data handling
+and copy / export context menu. Can automatically format and display a variety
+of data types (see <code class="xref py py-func docutils literal"><span class="pre">setData()</span></code> for more
+information.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.addRow">
+<code class="descname">addRow</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.addRow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.addRow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.appendData">
+<code class="descname">appendData</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.appendData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.appendData" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.appendRow">
+<code class="descname">appendRow</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.appendRow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.appendRow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear all contents from the table.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.contextMenuEvent">
+<code class="descname">contextMenuEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.contextMenuEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.contextMenuEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.copyAll">
+<code class="descname">copyAll</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.copyAll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.copyAll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy all data to clipboard.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.copySel">
+<code class="descname">copySel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.copySel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.copySel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy selected data to clipboard.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.handleItemChanged">
+<code class="descname">handleItemChanged</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.handleItemChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.handleItemChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iterFirstAxis">
+<code class="descname">iterFirstAxis</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.iterFirstAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iterFirstAxis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iterate">
+<code class="descname">iterate</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.iterate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iterate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iteratorFn">
+<code class="descname">iteratorFn</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.iteratorFn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iteratorFn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.keyPressEvent">
+<code class="descname">keyPressEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.keyPressEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.keyPressEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.save" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.saveAll">
+<code class="descname">saveAll</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.saveAll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.saveAll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all data to file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.saveSel">
+<code class="descname">saveSel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.saveSel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.saveSel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save selected data to file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.serialize">
+<code class="descname">serialize</code><span class="sig-paren">(</span><em>useSelection=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert entire table (or just selected area) into tab-separated text values</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setData">
+<code class="descname">setData</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.setData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the data displayed in the table.
+Allowed formats are:</p>
+<ul class="simple">
+<li>numpy arrays</li>
+<li>numpy record arrays</li>
+<li>metaarrays</li>
+<li>list-of-lists  [[1,2,3], [4,5,6]]</li>
+<li>dict-of-lists  {&#8216;x&#8217;: [1,2,3], &#8216;y&#8217;: [4,5,6]}</li>
+<li>list-of-dicts  [{&#8216;x&#8217;: 1, &#8216;y&#8217;: 4}, {&#8216;x&#8217;: 2, &#8216;y&#8217;: 5}, ...]</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setEditable">
+<code class="descname">setEditable</code><span class="sig-paren">(</span><em>editable=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.setEditable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setEditable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setFormat">
+<code class="descname">setFormat</code><span class="sig-paren">(</span><em>format</em>, <em>column=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.setFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the default text formatting for the entire table, or for a
+single column if <em>column</em> is specified.</p>
+<p>If a string is specified, it is used as a format string for converting
+float values (and all other types are converted using str). If a 
+function is specified, it will be called with the item as its only
+argument and must return a string. Setting format = None causes the 
+default formatter to be used instead.</p>
+<p>Added in version 0.9.9.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setRow">
+<code class="descname">setRow</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.setRow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setRow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setSortMode">
+<code class="descname">setSortMode</code><span class="sig-paren">(</span><em>column</em>, <em>mode</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.setSortMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setSortMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the mode used to sort <em>column</em>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Sort Modes</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>value</td>
+<td>Compares item.value if available; falls back to text
+comparison.</td>
+</tr>
+<tr class="row-odd"><td>text</td>
+<td>Compares item.text()</td>
+</tr>
+<tr class="row-even"><td>index</td>
+<td>Compares by the order in which items were inserted.</td>
+</tr>
+</tbody>
+</table>
+<p>Added in version 0.9.9</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.sizeHint">
+<code class="descname">sizeHint</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TableWidget.html#TableWidget.sizeHint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.sizeHint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.TreeWidget">
+<span id="iris-gui-pyqtgraph-widgets-treewidget-module"></span><h2>iris.gui.pyqtgraph.widgets.TreeWidget module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.TreeWidget" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.TreeWidget.</code><code class="descname">TreeWidget</code><span class="sig-paren">(</span><em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QTreeWidget</span></code></p>
+<p>Extends QTreeWidget to allow internal drag/drop with widgets in the tree.
+Also maintains the expanded state of subtrees as they are moved.
+This class demonstrates the absurd lengths one must go to to make drag/drop work.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.addTopLevelItem">
+<code class="descname">addTopLevelItem</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.addTopLevelItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.addTopLevelItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.addTopLevelItems">
+<code class="descname">addTopLevelItems</code><span class="sig-paren">(</span><em>items</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.addTopLevelItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.addTopLevelItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.collapseTree">
+<code class="descname">collapseTree</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.collapseTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.collapseTree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.dropEvent">
+<code class="descname">dropEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.dropEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.dropEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.dropMimeData">
+<code class="descname">dropMimeData</code><span class="sig-paren">(</span><em>parent</em>, <em>index</em>, <em>data</em>, <em>action</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.dropMimeData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.dropMimeData" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.informTreeWidgetChange">
+<em class="property">static </em><code class="descname">informTreeWidgetChange</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.informTreeWidgetChange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.informTreeWidgetChange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.insertTopLevelItem">
+<code class="descname">insertTopLevelItem</code><span class="sig-paren">(</span><em>index</em>, <em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.insertTopLevelItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.insertTopLevelItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.insertTopLevelItems">
+<code class="descname">insertTopLevelItems</code><span class="sig-paren">(</span><em>index</em>, <em>items</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.insertTopLevelItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.insertTopLevelItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.itemMoving">
+<code class="descname">itemMoving</code><span class="sig-paren">(</span><em>item</em>, <em>parent</em>, <em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.itemMoving"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.itemMoving" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when item has been dropped elsewhere in the tree.
+Return True to accept the move, False to reject.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.itemWidget">
+<code class="descname">itemWidget</code><span class="sig-paren">(</span><em>item</em>, <em>col</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.itemWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.itemWidget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.listAllItems">
+<code class="descname">listAllItems</code><span class="sig-paren">(</span><em>item=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.listAllItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.listAllItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.prepareMove">
+<code class="descname">prepareMove</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.prepareMove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.prepareMove" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.recoverMove">
+<code class="descname">recoverMove</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.recoverMove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.recoverMove" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.removeTopLevelItem">
+<code class="descname">removeTopLevelItem</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.removeTopLevelItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.removeTopLevelItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.setItemWidget">
+<code class="descname">setItemWidget</code><span class="sig-paren">(</span><em>item</em>, <em>col</em>, <em>wid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.setItemWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.setItemWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides QTreeWidget.setItemWidget such that widgets are added inside an invisible wrapper widget.
+This makes it possible to move the item in and out of the tree without its widgets being automatically deleted.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.sigItemMoved">
+<code class="descname">sigItemMoved</code><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.sigItemMoved" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.takeTopLevelItem">
+<code class="descname">takeTopLevelItem</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.takeTopLevelItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.takeTopLevelItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.topLevelItems">
+<code class="descname">topLevelItems</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.topLevelItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.topLevelItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.updateDropFlags">
+<code class="descname">updateDropFlags</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidget.updateDropFlags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget.updateDropFlags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.TreeWidget.</code><code class="descname">TreeWidgetItem</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QTreeWidgetItem</span></code></p>
+<p>TreeWidgetItem that keeps track of its own widgets.
+Widgets may be added to columns before the item is added to a tree.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.addChild">
+<code class="descname">addChild</code><span class="sig-paren">(</span><em>child</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.addChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.addChild" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.addChildren">
+<code class="descname">addChildren</code><span class="sig-paren">(</span><em>childs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.addChildren"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.addChildren" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.insertChild">
+<code class="descname">insertChild</code><span class="sig-paren">(</span><em>index</em>, <em>child</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.insertChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.insertChild" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.insertChildren">
+<code class="descname">insertChildren</code><span class="sig-paren">(</span><em>index</em>, <em>childs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.insertChildren"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.insertChildren" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.removeChild">
+<code class="descname">removeChild</code><span class="sig-paren">(</span><em>child</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.removeChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.removeChild" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.removeWidget">
+<code class="descname">removeWidget</code><span class="sig-paren">(</span><em>column</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.removeWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.removeWidget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.setChecked">
+<code class="descname">setChecked</code><span class="sig-paren">(</span><em>column</em>, <em>checked</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.setChecked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.setChecked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.setWidget">
+<code class="descname">setWidget</code><span class="sig-paren">(</span><em>column</em>, <em>widget</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.setWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.setWidget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.takeChild">
+<code class="descname">takeChild</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.takeChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.takeChild" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.takeChildren">
+<code class="descname">takeChildren</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.takeChildren"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.takeChildren" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.treeWidgetChanged">
+<code class="descname">treeWidgetChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/TreeWidget.html#TreeWidgetItem.treeWidgetChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidgetItem.treeWidgetChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.ValueLabel">
+<span id="iris-gui-pyqtgraph-widgets-valuelabel-module"></span><h2>iris.gui.pyqtgraph.widgets.ValueLabel module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.ValueLabel" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.ValueLabel.</code><code class="descname">ValueLabel</code><span class="sig-paren">(</span><em>parent=None</em>, <em>suffix=''</em>, <em>siPrefix=False</em>, <em>averageTime=0</em>, <em>formatStr=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ValueLabel.html#ValueLabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QLabel</span></code></p>
+<p>QLabel specifically for displaying numerical values.
+Extends QLabel adding some extra functionality:</p>
+<ul class="simple">
+<li>displaying units with si prefix</li>
+<li>built-in exponential averaging</li>
+</ul>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.averageValue">
+<code class="descname">averageValue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ValueLabel.html#ValueLabel.averageValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.averageValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.generateText">
+<code class="descname">generateText</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ValueLabel.html#ValueLabel.generateText"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.generateText" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ValueLabel.html#ValueLabel.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.setAverageTime">
+<code class="descname">setAverageTime</code><span class="sig-paren">(</span><em>t</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ValueLabel.html#ValueLabel.setAverageTime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.setAverageTime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.setFormatStr">
+<code class="descname">setFormatStr</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ValueLabel.html#ValueLabel.setFormatStr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.setFormatStr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.setValue">
+<code class="descname">setValue</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/ValueLabel.html#ValueLabel.setValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.ValueLabel.ValueLabel.setValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets.VerticalLabel">
+<span id="iris-gui-pyqtgraph-widgets-verticallabel-module"></span><h2>iris.gui.pyqtgraph.widgets.VerticalLabel module<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets.VerticalLabel" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.widgets.VerticalLabel.VerticalLabel">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.widgets.VerticalLabel.</code><code class="descname">VerticalLabel</code><span class="sig-paren">(</span><em>text</em>, <em>orientation='vertical'</em>, <em>forceWidth=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/VerticalLabel.html#VerticalLabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.VerticalLabel.VerticalLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QLabel</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.VerticalLabel.VerticalLabel.paintEvent">
+<code class="descname">paintEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/VerticalLabel.html#VerticalLabel.paintEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.VerticalLabel.VerticalLabel.paintEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.VerticalLabel.VerticalLabel.setOrientation">
+<code class="descname">setOrientation</code><span class="sig-paren">(</span><em>o</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/VerticalLabel.html#VerticalLabel.setOrientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.VerticalLabel.VerticalLabel.setOrientation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.widgets.VerticalLabel.VerticalLabel.sizeHint">
+<code class="descname">sizeHint</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/widgets/VerticalLabel.html#VerticalLabel.sizeHint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.widgets.VerticalLabel.VerticalLabel.sizeHint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.widgets">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-iris.gui.pyqtgraph.widgets" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">iris.gui.pyqtgraph.widgets package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.BusyCursor">iris.gui.pyqtgraph.widgets.BusyCursor module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.CheckTable">iris.gui.pyqtgraph.widgets.CheckTable module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.ColorButton">iris.gui.pyqtgraph.widgets.ColorButton module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.ColorMapWidget">iris.gui.pyqtgraph.widgets.ColorMapWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.ComboBox">iris.gui.pyqtgraph.widgets.ComboBox module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.DataFilterWidget">iris.gui.pyqtgraph.widgets.DataFilterWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.DataTreeWidget">iris.gui.pyqtgraph.widgets.DataTreeWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.FeedbackButton">iris.gui.pyqtgraph.widgets.FeedbackButton module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.FileDialog">iris.gui.pyqtgraph.widgets.FileDialog module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.GradientWidget">iris.gui.pyqtgraph.widgets.GradientWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.GraphicsLayoutWidget">iris.gui.pyqtgraph.widgets.GraphicsLayoutWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.GraphicsView">iris.gui.pyqtgraph.widgets.GraphicsView module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.HistogramLUTWidget">iris.gui.pyqtgraph.widgets.HistogramLUTWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.JoystickButton">iris.gui.pyqtgraph.widgets.JoystickButton module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.LayoutWidget">iris.gui.pyqtgraph.widgets.LayoutWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.MatplotlibWidget">iris.gui.pyqtgraph.widgets.MatplotlibWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.MultiPlotWidget">iris.gui.pyqtgraph.widgets.MultiPlotWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.PathButton">iris.gui.pyqtgraph.widgets.PathButton module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.PlotWidget">iris.gui.pyqtgraph.widgets.PlotWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.ProgressDialog">iris.gui.pyqtgraph.widgets.ProgressDialog module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.RawImageWidget">iris.gui.pyqtgraph.widgets.RawImageWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.RemoteGraphicsView">iris.gui.pyqtgraph.widgets.RemoteGraphicsView module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.ScatterPlotWidget">iris.gui.pyqtgraph.widgets.ScatterPlotWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.SpinBox">iris.gui.pyqtgraph.widgets.SpinBox module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.TableWidget">iris.gui.pyqtgraph.widgets.TableWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.TreeWidget">iris.gui.pyqtgraph.widgets.TreeWidget module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.ValueLabel">iris.gui.pyqtgraph.widgets.ValueLabel module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets.VerticalLabel">iris.gui.pyqtgraph.widgets.VerticalLabel module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.widgets">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="iris.html">iris package</a><ul>
+  <li><a href="iris.gui.html">iris.gui package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.html">iris.gui.pyqtgraph package</a><ul>
+      <li>Previous: <a href="iris.gui.pyqtgraph.util.colorama.html" title="previous chapter">iris.gui.pyqtgraph.util.colorama package</a></li>
+      <li>Next: <a href="iris.gui.qdarkstyle.html" title="next chapter">iris.gui.qdarkstyle package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/iris.gui.pyqtgraph.widgets.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/iris.gui.pyqtgraph.widgets.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

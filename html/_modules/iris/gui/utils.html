@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.utils &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.utils</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">pyqtgraph</span> <span class="k">as</span> <span class="n">pg</span>
+<span class="kn">from</span> <span class="nn">.pyqtgraph</span> <span class="k">import</span> <span class="n">QtCore</span>
+
+<div class="viewcode-block" id="WorkThread"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.utils.WorkThread">[docs]</a><span class="k">class</span> <span class="nc">WorkThread</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QThread</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object taking care of threading computations.</span>
+<span class="sd">    </span>
+<span class="sd">    Signals</span>
+<span class="sd">    -------</span>
+<span class="sd">    done_signal</span>
+<span class="sd">        Emitted when the function evaluation is over.</span>
+<span class="sd">    in_progress_signal</span>
+<span class="sd">        Emitted when the function evaluation starts.</span>
+<span class="sd">    results_signal</span>
+<span class="sd">        Emitted when the function evaluation is over. Carries the results</span>
+<span class="sd">        of the computation.</span>
+<span class="sd">        </span>
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    function : callable</span>
+<span class="sd">        Function to be called</span>
+<span class="sd">    args : tuple</span>
+<span class="sd">        Positional arguments of function</span>
+<span class="sd">    kwargs : dict</span>
+<span class="sd">        Keyword arguments of function</span>
+<span class="sd">    results : object</span>
+<span class="sd">        Results of the computation</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; function = lambda x : x ** 10</span>
+<span class="sd">    &gt;&gt;&gt; result_function = lambda x: print(x)</span>
+<span class="sd">    &gt;&gt;&gt; worker = WorkThread(function, 2)  # 2 ** 10</span>
+<span class="sd">    &gt;&gt;&gt; worker.results_signal.connect(result_function)</span>
+<span class="sd">    &gt;&gt;&gt; worker.start()      # Computation starts only when this method is called</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">results_signal</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">pyqtSignal</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;results_signal&#39;</span><span class="p">)</span>
+    <span class="n">done_signal</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">pyqtSignal</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;done_signal&#39;</span><span class="p">)</span>
+    <span class="n">in_progress_signal</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">pyqtSignal</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;in_progress_signal&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}):</span>
+        
+        <span class="n">QtCore</span><span class="o">.</span><span class="n">QThread</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">function</span> <span class="o">=</span> <span class="n">function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+    
+    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="WorkThread.run"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.utils.WorkThread.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_progress_signal</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>   
+        <span class="bp">self</span><span class="o">.</span><span class="n">done_signal</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>  
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_signal</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="spectrum_colors"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.utils.spectrum_colors">[docs]</a><span class="k">def</span> <span class="nf">spectrum_colors</span><span class="p">(</span><span class="n">num_colors</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a set of QColor 0bjects corresponding to the visible spectrum.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_colors : int</span>
+<span class="sd">        number of colors to return</span>
+<span class="sd">    </span>
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    colors : QColor </span>
+<span class="sd">        Can be used with PyQt and PyQtGraph</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Hue values from 0 to 1</span>
+    <span class="n">hue_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">/</span><span class="n">num_colors</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_colors</span><span class="p">)]</span>
+    
+    <span class="c1"># Scale so that the maximum is &#39;purple&#39;:</span>
+    <span class="n">hue_values</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="o">*</span><span class="n">hue</span> <span class="k">for</span> <span class="n">hue</span> <span class="ow">in</span> <span class="n">hue_values</span><span class="p">]</span>
+    
+    <span class="n">colors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">hue_values</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">pg</span><span class="o">.</span><span class="n">hsvColor</span><span class="p">(</span><span class="n">hue</span> <span class="o">=</span> <span class="n">h</span><span class="p">,</span> <span class="n">sat</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

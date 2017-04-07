@@ -1,0 +1,700 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.ImageItem &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.graphicsItems.ImageItem</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">debug</span> <span class="k">as</span> <span class="n">debug</span>
+<span class="kn">from</span> <span class="nn">.GraphicsObject</span> <span class="k">import</span> <span class="n">GraphicsObject</span>
+<span class="kn">from</span> <span class="nn">..Point</span> <span class="k">import</span> <span class="n">Point</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">getConfigOption</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ImageItem&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="ImageItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem">[docs]</a><span class="k">class</span> <span class="nc">ImageItem</span><span class="p">(</span><span class="n">GraphicsObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **Bases:** :class:`GraphicsObject &lt;pyqtgraph.GraphicsObject&gt;`</span>
+<span class="sd">    </span>
+<span class="sd">    GraphicsObject displaying an image. Optimized for rapid update (ie video display).</span>
+<span class="sd">    This item displays either a 2D numpy array (height, width) or</span>
+<span class="sd">    a 3D array (height, width, RGBa). This array is optionally scaled (see </span>
+<span class="sd">    :func:`setLevels &lt;pyqtgraph.ImageItem.setLevels&gt;`) and/or colored</span>
+<span class="sd">    with a lookup table (see :func:`setLookupTable &lt;pyqtgraph.ImageItem.setLookupTable&gt;`)</span>
+<span class="sd">    before being displayed.</span>
+<span class="sd">    </span>
+<span class="sd">    ImageItem is frequently used in conjunction with </span>
+<span class="sd">    :class:`HistogramLUTItem &lt;pyqtgraph.HistogramLUTItem&gt;` or </span>
+<span class="sd">    :class:`HistogramLUTWidget &lt;pyqtgraph.HistogramLUTWidget&gt;` to provide a GUI</span>
+<span class="sd">    for controlling the levels and lookup table used to display the image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">sigImageChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+    <span class="n">sigRemoveRequested</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>  <span class="c1"># self; emitted when &#39;remove&#39; is selected from context menu</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        See :func:`setImage &lt;pyqtgraph.ImageItem.setImage&gt;` for all allowed initialization arguments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">GraphicsObject</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="kc">None</span>   <span class="c1">## original image data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1">## rendered image for display</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">paintMode</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">levels</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1">## [min, max] or [[redMin, redMax], ...]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lut</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">autoDownsample</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">=</span> <span class="n">getConfigOption</span><span class="p">(</span><span class="s1">&#39;imageAxisOrder&#39;</span><span class="p">)</span>
+        
+        <span class="c1"># In some cases, we use a modified lookup table to handle both rescaling</span>
+        <span class="c1"># and LUT more efficiently</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_effectiveLut</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">drawKernel</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">border</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removable</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="n">image</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setImage</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setOpts</span><span class="p">(</span><span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ImageItem.setCompositionMode"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setCompositionMode">[docs]</a>    <span class="k">def</span> <span class="nf">setCompositionMode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Change the composition mode of the item (see QPainter::CompositionMode</span>
+<span class="sd">        in the Qt documentation). This is useful when overlaying multiple ImageItems.</span>
+<span class="sd">        </span>
+<span class="sd">        ============================================  ============================================================</span>
+<span class="sd">        **Most common arguments:**</span>
+<span class="sd">        QtGui.QPainter.CompositionMode_SourceOver     Default; image replaces the background if it</span>
+<span class="sd">                                                      is opaque. Otherwise, it uses the alpha channel to blend</span>
+<span class="sd">                                                      the image with the background.</span>
+<span class="sd">        QtGui.QPainter.CompositionMode_Overlay        The image color is mixed with the background color to </span>
+<span class="sd">                                                      reflect the lightness or darkness of the background.</span>
+<span class="sd">        QtGui.QPainter.CompositionMode_Plus           Both the alpha and color of the image and background pixels </span>
+<span class="sd">                                                      are added together.</span>
+<span class="sd">        QtGui.QPainter.CompositionMode_Multiply       The output is the image color multiplied by the background.</span>
+<span class="sd">        ============================================  ============================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paintMode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ImageItem.setBorder"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setBorder">[docs]</a>    <span class="k">def</span> <span class="nf">setBorder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">border</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ImageItem.width"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.width">[docs]</a>    <span class="k">def</span> <span class="nf">width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">==</span> <span class="s1">&#39;col-major&#39;</span> <span class="k">else</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="ImageItem.height"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.height">[docs]</a>    <span class="k">def</span> <span class="nf">height</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">==</span> <span class="s1">&#39;col-major&#39;</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ImageItem.boundingRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.boundingRect">[docs]</a>    <span class="k">def</span> <span class="nf">boundingRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">()))</span></div>
+
+<div class="viewcode-block" id="ImageItem.setLevels"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setLevels">[docs]</a>    <span class="k">def</span> <span class="nf">setLevels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set image scaling levels. Can be one of:</span>
+<span class="sd">        </span>
+<span class="sd">        * [blackLevel, whiteLevel]</span>
+<span class="sd">        * [[minRed, maxRed], [minGreen, maxGreen], [minBlue, maxBlue]]</span>
+<span class="sd">            </span>
+<span class="sd">        Only the first format is compatible with lookup tables. See :func:`makeARGB &lt;pyqtgraph.makeARGB&gt;`</span>
+<span class="sd">        for more details on how levels are applied.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">levels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">levels</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fn</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="n">levels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">levels</span> <span class="o">=</span> <span class="n">levels</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_effectiveLut</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">updateImage</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ImageItem.getLevels"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.getLevels">[docs]</a>    <span class="k">def</span> <span class="nf">getLevels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">levels</span></div>
+        <span class="c1">#return self.whiteLevel, self.blackLevel</span>
+
+<div class="viewcode-block" id="ImageItem.setLookupTable"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setLookupTable">[docs]</a>    <span class="k">def</span> <span class="nf">setLookupTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lut</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the lookup table (numpy array) to use for this image. (see </span>
+<span class="sd">        :func:`makeARGB &lt;pyqtgraph.makeARGB&gt;` for more information on how this is used).</span>
+<span class="sd">        Optionally, lut can be a callable that accepts the current image as an </span>
+<span class="sd">        argument and returns the lookup table to use.</span>
+<span class="sd">        </span>
+<span class="sd">        Ordinarily, this table is supplied by a :class:`HistogramLUTItem &lt;pyqtgraph.HistogramLUTItem&gt;`</span>
+<span class="sd">        or :class:`GradientEditorItem &lt;pyqtgraph.GradientEditorItem&gt;`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">lut</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">lut</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lut</span> <span class="o">=</span> <span class="n">lut</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_effectiveLut</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">updateImage</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ImageItem.setAutoDownsample"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setAutoDownsample">[docs]</a>    <span class="k">def</span> <span class="nf">setAutoDownsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ads</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the automatic downsampling mode for this ImageItem.</span>
+<span class="sd">        </span>
+<span class="sd">        Added in version 0.9.9</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">autoDownsample</span> <span class="o">=</span> <span class="n">ads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ImageItem.setOpts"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setOpts">[docs]</a>    <span class="k">def</span> <span class="nf">setOpts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;axisOrder&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;axisOrder&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;row-major&#39;</span><span class="p">,</span> <span class="s1">&#39;col-major&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;axisOrder must be either &quot;row-major&quot; or &quot;col-major&quot;&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">if</span> <span class="s1">&#39;lut&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setLookupTable</span><span class="p">(</span><span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;lut&#39;</span><span class="p">],</span> <span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;levels&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setLevels</span><span class="p">(</span><span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;levels&#39;</span><span class="p">],</span> <span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">)</span>
+        <span class="c1">#if &#39;clipLevel&#39; in kargs:</span>
+            <span class="c1">#self.setClipLevel(kargs[&#39;clipLevel&#39;])</span>
+        <span class="k">if</span> <span class="s1">&#39;opacity&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setOpacity</span><span class="p">(</span><span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;opacity&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;compositionMode&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setCompositionMode</span><span class="p">(</span><span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;compositionMode&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;border&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setBorder</span><span class="p">(</span><span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;border&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;removable&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removable</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;removable&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">menu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s1">&#39;autoDownsample&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setAutoDownsample</span><span class="p">(</span><span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;autoDownsample&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ImageItem.setRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setRect">[docs]</a>    <span class="k">def</span> <span class="nf">setRect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rect</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Scale and translate the image to fit within rect (must be a QRect or QRectF).&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resetTransform</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">left</span><span class="p">(),</span> <span class="n">rect</span><span class="o">.</span><span class="n">top</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ImageItem.clear"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepareGeometryChange</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">informViewBoundsChanged</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ImageItem.setImage"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setImage">[docs]</a>    <span class="k">def</span> <span class="nf">setImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">autoLevels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the image displayed by this item. For more information on how the image</span>
+<span class="sd">        is processed before displaying, see :func:`makeARGB &lt;pyqtgraph.makeARGB&gt;`</span>
+<span class="sd">        </span>
+<span class="sd">        =================  =========================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        image              (numpy array) Specifies the image data. May be 2D (width, height) or </span>
+<span class="sd">                           3D (width, height, RGBa). The array dtype must be integer or floating</span>
+<span class="sd">                           point of any bit depth. For 3D arrays, the third dimension must</span>
+<span class="sd">                           be of length 3 (RGB) or 4 (RGBA). See *notes* below.</span>
+<span class="sd">        autoLevels         (bool) If True, this forces the image to automatically select </span>
+<span class="sd">                           levels based on the maximum and minimum values in the data.</span>
+<span class="sd">                           By default, this argument is true unless the levels argument is</span>
+<span class="sd">                           given.</span>
+<span class="sd">        lut                (numpy array) The color lookup table to use when displaying the image.</span>
+<span class="sd">                           See :func:`setLookupTable &lt;pyqtgraph.ImageItem.setLookupTable&gt;`.</span>
+<span class="sd">        levels             (min, max) The minimum and maximum values to use when rescaling the image</span>
+<span class="sd">                           data. By default, this will be set to the minimum and maximum values </span>
+<span class="sd">                           in the image. If the image array has dtype uint8, no rescaling is necessary.</span>
+<span class="sd">        opacity            (float 0.0-1.0)</span>
+<span class="sd">        compositionMode    See :func:`setCompositionMode &lt;pyqtgraph.ImageItem.setCompositionMode&gt;`</span>
+<span class="sd">        border             Sets the pen used when drawing the image border. Default is None.</span>
+<span class="sd">        autoDownsample     (bool) If True, the image is automatically downsampled to match the</span>
+<span class="sd">                           screen resolution. This improves performance for large images and </span>
+<span class="sd">                           reduces aliasing.</span>
+<span class="sd">        =================  =========================================================================</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        **Notes:**        </span>
+<span class="sd">        </span>
+<span class="sd">        For backward compatibility, image data is assumed to be in column-major order (column, row).</span>
+<span class="sd">        However, most image data is stored in row-major order (row, column) and will need to be</span>
+<span class="sd">        transposed before calling setImage()::</span>
+<span class="sd">        </span>
+<span class="sd">            imageitem.setImage(imagedata.T)</span>
+<span class="sd">            </span>
+<span class="sd">        This requirement can be changed by calling ``image.setOpts(axisOrder=&#39;row-major&#39;)`` or</span>
+<span class="sd">        by changing the ``imageAxisOrder`` :ref:`global configuration option &lt;apiref_config&gt;`.</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">debug</span><span class="o">.</span><span class="n">Profiler</span><span class="p">()</span>
+
+        <span class="n">gotNewData</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gotNewData</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">shapeChanged</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">image</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_effectiveLut</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">image</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="o">**</span><span class="mi">15</span><span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="o">**</span><span class="mi">15</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;autoDownsample&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+                    <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;autoDownsample&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">shapeChanged</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prepareGeometryChange</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">informViewBoundsChanged</span><span class="p">()</span>
+
+        <span class="n">profile</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">autoLevels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;levels&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+                <span class="n">autoLevels</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">autoLevels</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">autoLevels</span><span class="p">:</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span>
+            <span class="k">while</span> <span class="n">img</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="o">**</span><span class="mi">16</span><span class="p">:</span>
+                <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="p">[::</span><span class="mi">2</span><span class="p">,</span> <span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">mn</span><span class="p">,</span> <span class="n">mx</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">img</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">mn</span> <span class="o">==</span> <span class="n">mx</span><span class="p">:</span>
+                <span class="n">mn</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">mx</span> <span class="o">=</span> <span class="mi">255</span>
+            <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;levels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">mn</span><span class="p">,</span><span class="n">mx</span><span class="p">]</span>
+
+        <span class="n">profile</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOpts</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+
+        <span class="n">profile</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+        <span class="n">profile</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">gotNewData</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigImageChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ImageItem.dataTransform"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.dataTransform">[docs]</a>    <span class="k">def</span> <span class="nf">dataTransform</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the transform that maps from this image&#39;s input array to its</span>
+<span class="sd">        local coordinate system.</span>
+<span class="sd">        </span>
+<span class="sd">        This transform corrects for the transposition that occurs when image data</span>
+<span class="sd">        is interpreted in row-major order.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Might eventually need to account for downsampling / clipping here</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">==</span> <span class="s1">&#39;row-major&#39;</span><span class="p">:</span>
+            <span class="c1"># transpose</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tr</span></div>
+
+<div class="viewcode-block" id="ImageItem.inverseDataTransform"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.inverseDataTransform">[docs]</a>    <span class="k">def</span> <span class="nf">inverseDataTransform</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the transform that maps from this image&#39;s local coordinate</span>
+<span class="sd">        system to its input array.</span>
+<span class="sd">        </span>
+<span class="sd">        See dataTransform() for more information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">==</span> <span class="s1">&#39;row-major&#39;</span><span class="p">:</span>
+            <span class="c1"># transpose</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tr</span></div>
+
+<div class="viewcode-block" id="ImageItem.mapToData"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.mapToData">[docs]</a>    <span class="k">def</span> <span class="nf">mapToData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inverseDataTransform</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">tr</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.mapFromData"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.mapFromData">[docs]</a>    <span class="k">def</span> <span class="nf">mapFromData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataTransform</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">tr</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.quickMinMax"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.quickMinMax">[docs]</a>    <span class="k">def</span> <span class="nf">quickMinMax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targetSize</span><span class="o">=</span><span class="mi">1</span><span class="n">e6</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Estimate the min/max values of the image data by subsampling.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span>
+        <span class="k">while</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="n">targetSize</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">sl</span> <span class="o">=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span> <span class="o">*</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span>
+            <span class="n">sl</span><span class="p">[</span><span class="n">ax</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">sl</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">nanmin</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">nanmax</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.updateImage"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.updateImage">[docs]</a>    <span class="k">def</span> <span class="nf">updateImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="c1">## used for re-rendering qimage from self.image.</span>
+        
+        <span class="c1">## can we make any assumptions here that speed things up?</span>
+        <span class="c1">## dtype, range, size are all the same?</span>
+        <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;autoLevels&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">defaults</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">setImage</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">defaults</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.render"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.render">[docs]</a>    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Convert data to QImage for display.</span>
+        
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">debug</span><span class="o">.</span><span class="n">Profiler</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lut</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Callable</span><span class="p">):</span>
+            <span class="n">lut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lut</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lut</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">autoDownsample</span><span class="p">:</span>
+            <span class="c1"># reduce dimensions of image based on screen resolution</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapToDevice</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapToDevice</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapToDevice</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">o</span><span class="p">)</span><span class="o">.</span><span class="n">length</span><span class="p">()</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">o</span><span class="p">)</span><span class="o">.</span><span class="n">length</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">h</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">return</span>
+            <span class="n">xds</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">w</span><span class="p">))</span>
+            <span class="n">yds</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">h</span><span class="p">))</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">==</span> <span class="s1">&#39;row-major&#39;</span> <span class="k">else</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">,</span> <span class="n">xds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">yds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_lastDownsample</span> <span class="o">=</span> <span class="p">(</span><span class="n">xds</span><span class="p">,</span> <span class="n">yds</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span>
+
+        <span class="c1"># if the image data is a small int, then we can combine levels + lut</span>
+        <span class="c1"># into a single lut for better performance</span>
+        <span class="n">levels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">levels</span>
+        <span class="k">if</span> <span class="n">levels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">levels</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">image</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effectiveLut</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">eflsize</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">itemsize</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span>
+                <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">eflsize</span><span class="p">)</span>
+                <span class="n">minlev</span><span class="p">,</span> <span class="n">maxlev</span> <span class="o">=</span> <span class="n">levels</span>
+                <span class="n">levdiff</span> <span class="o">=</span> <span class="n">maxlev</span> <span class="o">-</span> <span class="n">minlev</span>
+                <span class="n">levdiff</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">levdiff</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">levdiff</span>  <span class="c1"># don&#39;t allow division by 0</span>
+                <span class="k">if</span> <span class="n">lut</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">efflut</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">rescaleData</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">255.</span><span class="o">/</span><span class="n">levdiff</span><span class="p">,</span> 
+                                            <span class="n">offset</span><span class="o">=</span><span class="n">minlev</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">lutdtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min_scalar_type</span><span class="p">(</span><span class="n">lut</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">efflut</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">rescaleData</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="p">(</span><span class="n">lut</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">levdiff</span><span class="p">,</span>
+                                            <span class="n">offset</span><span class="o">=</span><span class="n">minlev</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">lutdtype</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">lut</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+                    <span class="n">efflut</span> <span class="o">=</span> <span class="n">lut</span><span class="p">[</span><span class="n">efflut</span><span class="p">]</span>
+                
+                <span class="bp">self</span><span class="o">.</span><span class="n">_effectiveLut</span> <span class="o">=</span> <span class="n">efflut</span>
+            <span class="n">lut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effectiveLut</span>
+            <span class="n">levels</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="c1"># Assume images are in column-major order for backward compatibility</span>
+        <span class="c1"># (most images are in row-major order)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">==</span> <span class="s1">&#39;col-major&#39;</span><span class="p">:</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[:</span><span class="n">image</span><span class="o">.</span><span class="n">ndim</span><span class="p">])</span>
+        
+        <span class="n">argb</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">makeARGB</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">lut</span><span class="o">=</span><span class="n">lut</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">makeQImage</span><span class="p">(</span><span class="n">argb</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">transpose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.paint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.paint">[docs]</a>    <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">debug</span><span class="o">.</span><span class="n">Profiler</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">profile</span><span class="p">(</span><span class="s1">&#39;render QImage&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paintMode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">setCompositionMode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paintMode</span><span class="p">)</span>
+            <span class="n">profile</span><span class="p">(</span><span class="s1">&#39;set comp mode&#39;</span><span class="p">)</span>
+
+        <span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">==</span> <span class="s1">&#39;col-major&#39;</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">*</span><span class="n">shape</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span><span class="p">)</span>
+        <span class="n">profile</span><span class="p">(</span><span class="s1">&#39;p.drawImage&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">border</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">border</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">drawRect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ImageItem.save"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save this image to file. Note that this saves the visible image (after scale/color changes), not the original data.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.getHistogram"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.getHistogram">[docs]</a>    <span class="k">def</span> <span class="nf">getHistogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">targetImageSize</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">targetHistogramSize</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns x and y arrays containing the histogram values for the current image.</span>
+<span class="sd">        For an explanation of the return format, see numpy.histogram().</span>
+<span class="sd">        </span>
+<span class="sd">        The *step* argument causes pixels to be skipped when computing the histogram to save time.</span>
+<span class="sd">        If *step* is &#39;auto&#39;, then a step is chosen such that the analyzed data has</span>
+<span class="sd">        dimensions roughly *targetImageSize* for each axis.</span>
+<span class="sd">        </span>
+<span class="sd">        The *bins* argument and any extra keyword arguments are passed to </span>
+<span class="sd">        np.histogram(). If *bins* is &#39;auto&#39;, then a bin number is automatically</span>
+<span class="sd">        chosen based on the image characteristics:</span>
+<span class="sd">        </span>
+<span class="sd">        * Integer images will have approximately *targetHistogramSize* bins, </span>
+<span class="sd">          with each bin having an integer width.</span>
+<span class="sd">        * All other types will have *targetHistogramSize* bins.</span>
+<span class="sd">        </span>
+<span class="sd">        This method is also used when automatically computing levels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span><span class="kc">None</span>
+        <span class="k">if</span> <span class="n">step</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">targetImageSize</span><span class="p">)),</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">targetImageSize</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">step</span><span class="p">):</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+        <span class="n">stepData</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">[::</span><span class="n">step</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">::</span><span class="n">step</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        
+        <span class="k">if</span> <span class="n">bins</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stepData</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="s2">&quot;ui&quot;</span><span class="p">:</span>
+                <span class="n">mn</span> <span class="o">=</span> <span class="n">stepData</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+                <span class="n">mx</span> <span class="o">=</span> <span class="n">stepData</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+                <span class="n">step</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">mx</span><span class="o">-</span><span class="n">mn</span><span class="p">)</span> <span class="o">/</span> <span class="mf">500.</span><span class="p">)</span>
+                <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mn</span><span class="p">,</span> <span class="n">mx</span><span class="o">+</span><span class="mf">1.01</span><span class="o">*</span><span class="n">step</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">bins</span> <span class="o">=</span> <span class="p">[</span><span class="n">mn</span><span class="p">,</span> <span class="n">mx</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">bins</span> <span class="o">=</span> <span class="mi">500</span>
+
+        <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;bins&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bins</span>
+        <span class="n">stepData</span> <span class="o">=</span> <span class="n">stepData</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">stepData</span><span class="p">)]</span>
+        <span class="n">hist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">stepData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">hist</span><span class="p">[</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">hist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ImageItem.setPxMode"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setPxMode">[docs]</a>    <span class="k">def</span> <span class="nf">setPxMode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set whether the item ignores transformations and draws directly to screen pixels.</span>
+<span class="sd">        If True, the item will not inherit any scale or rotation transformations from its</span>
+<span class="sd">        parent items, but its position will be transformed as usual.</span>
+<span class="sd">        (see GraphicsItem::ItemIgnoresTransformations in the Qt documentation)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFlag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ItemIgnoresTransformations</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="ImageItem.setScaledMode"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setScaledMode">[docs]</a>    <span class="k">def</span> <span class="nf">setScaledMode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setPxMode</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.getPixmap"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.getPixmap">[docs]</a>    <span class="k">def</span> <span class="nf">getPixmap</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPixmap</span><span class="o">.</span><span class="n">fromImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qimage</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="ImageItem.pixelSize"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.pixelSize">[docs]</a>    <span class="k">def</span> <span class="nf">pixelSize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;return scene-size of a single pixel in the image&quot;&quot;&quot;</span>
+        <span class="n">br</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sceneBoundingRect</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span><span class="p">,</span><span class="mi">1</span>
+        <span class="k">return</span> <span class="n">br</span><span class="o">.</span><span class="n">width</span><span class="p">()</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="n">br</span><span class="o">.</span><span class="n">height</span><span class="p">()</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="ImageItem.viewTransformChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.viewTransformChanged">[docs]</a>    <span class="k">def</span> <span class="nf">viewTransformChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">autoDownsample</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">qimage</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ImageItem.mouseDragEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.mouseDragEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mouseDragEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">!=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">:</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">ignore</span><span class="p">()</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawKernel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drawAt</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">pos</span><span class="p">(),</span> <span class="n">ev</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.mouseClickEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.mouseClickEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mouseClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">raiseContextMenu</span><span class="p">(</span><span class="n">ev</span><span class="p">):</span>
+                <span class="n">ev</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawKernel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drawAt</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">pos</span><span class="p">(),</span> <span class="n">ev</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.raiseContextMenu"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.raiseContextMenu">[docs]</a>    <span class="k">def</span> <span class="nf">raiseContextMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">menu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getMenu</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">menu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">menu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span><span class="o">.</span><span class="n">addParentContextMenus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">menu</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">screenPos</span><span class="p">()</span>
+        <span class="n">menu</span><span class="o">.</span><span class="n">popup</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPoint</span><span class="p">(</span><span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="n">pos</span><span class="o">.</span><span class="n">y</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="ImageItem.getMenu"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.getMenu">[docs]</a>    <span class="k">def</span> <span class="nf">getMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">menu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">removable</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">menu</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMenu</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">setTitle</span><span class="p">(</span><span class="s2">&quot;Image&quot;</span><span class="p">)</span>
+            <span class="n">remAct</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QAction</span><span class="p">(</span><span class="s2">&quot;Remove image&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="p">)</span>
+            <span class="n">remAct</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">removeClicked</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">remAct</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">remAct</span> <span class="o">=</span> <span class="n">remAct</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">menu</span></div>
+        
+<div class="viewcode-block" id="ImageItem.hoverEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.hoverEvent">[docs]</a>    <span class="k">def</span> <span class="nf">hoverEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ev</span><span class="o">.</span><span class="n">isExit</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawKernel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ev</span><span class="o">.</span><span class="n">acceptDrags</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">):</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">acceptClicks</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">)</span> <span class="c1">## we don&#39;t use the click, but we also don&#39;t want anyone else to use it.</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">acceptClicks</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">ev</span><span class="o">.</span><span class="n">isExit</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">removable</span><span class="p">:</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">acceptClicks</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">)</span>  <span class="c1">## accept context menu clicks</span></div>
+
+<div class="viewcode-block" id="ImageItem.tabletEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.tabletEvent">[docs]</a>    <span class="k">def</span> <span class="nf">tabletEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+        <span class="c1">#print(ev.device())</span>
+        <span class="c1">#print(ev.pointerType())</span>
+        <span class="c1">#print(ev.pressure())</span>
+    
+<div class="viewcode-block" id="ImageItem.drawAt"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.drawAt">[docs]</a>    <span class="k">def</span> <span class="nf">drawAt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">ev</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">()),</span> <span class="nb">int</span><span class="p">(</span><span class="n">pos</span><span class="o">.</span><span class="n">y</span><span class="p">())]</span>
+        <span class="n">dk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawKernel</span>
+        <span class="n">kc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawKernelCenter</span>
+        <span class="n">sx</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">dk</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">sy</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">dk</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">tx</span> <span class="o">=</span> <span class="p">[</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">kc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">kc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span> <span class="n">dk</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">ty</span> <span class="o">=</span> <span class="p">[</span><span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">kc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">kc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span> <span class="n">dk</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">dx1</span> <span class="o">=</span> <span class="o">-</span><span class="nb">min</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">tx</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">dx2</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">tx</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">tx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">dx1</span><span class="o">+</span><span class="n">dx2</span>
+            <span class="n">sx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">dx1</span><span class="o">+</span><span class="n">dx2</span>
+
+            <span class="n">dy1</span> <span class="o">=</span> <span class="o">-</span><span class="nb">min</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ty</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">dy2</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">ty</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">ty</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">dy1</span><span class="o">+</span><span class="n">dy2</span>
+            <span class="n">sy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">dy1</span><span class="o">+</span><span class="n">dy2</span>
+
+        <span class="n">ts</span> <span class="o">=</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="n">tx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">tx</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">slice</span><span class="p">(</span><span class="n">ty</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">ty</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">ss</span> <span class="o">=</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="n">sx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">sx</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">slice</span><span class="p">(</span><span class="n">sy</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">sy</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawMask</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="n">dk</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drawMode</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Callable</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drawMode</span><span class="p">(</span><span class="n">dk</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">ss</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="p">[</span><span class="n">ss</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawMode</span> <span class="o">==</span> <span class="s1">&#39;set&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[</span><span class="n">ss</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">[</span><span class="n">ts</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">[</span><span class="n">ts</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mask</span><span class="p">)</span> <span class="o">+</span> <span class="n">src</span> <span class="o">*</span> <span class="n">mask</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">[</span><span class="n">ts</span><span class="p">]</span> <span class="o">=</span> <span class="n">src</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawMode</span> <span class="o">==</span> <span class="s1">&#39;add&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">[</span><span class="n">ts</span><span class="p">]</span> <span class="o">+=</span> <span class="n">src</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unknown draw mode &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawMode</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateImage</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ImageItem.setDrawKernel"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.setDrawKernel">[docs]</a>    <span class="k">def</span> <span class="nf">setDrawKernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;set&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drawKernel</span> <span class="o">=</span> <span class="n">kernel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drawKernelCenter</span> <span class="o">=</span> <span class="n">center</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drawMode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drawMask</span> <span class="o">=</span> <span class="n">mask</span></div>
+
+<div class="viewcode-block" id="ImageItem.removeClicked"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.removeClicked">[docs]</a>    <span class="k">def</span> <span class="nf">removeClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">## Send remove event only after we have exited the menu event handler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeTimer</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QTimer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeTimer</span><span class="o">.</span><span class="n">timeout</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emitRemoveRequested</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeTimer</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImageItem.emitRemoveRequested"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ImageItem.ImageItem.emitRemoveRequested">[docs]</a>    <span class="k">def</span> <span class="nf">emitRemoveRequested</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeTimer</span><span class="o">.</span><span class="n">timeout</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emitRemoveRequested</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigRemoveRequested</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

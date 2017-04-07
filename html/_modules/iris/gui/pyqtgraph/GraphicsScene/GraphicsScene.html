@@ -1,0 +1,639 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.GraphicsScene.GraphicsScene &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.GraphicsScene.GraphicsScene</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="n">sortList</span><span class="p">,</span> <span class="nb">cmp</span>
+<span class="kn">from</span> <span class="nn">..Point</span> <span class="k">import</span> <span class="n">Point</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">ptime</span> <span class="k">as</span> <span class="n">ptime</span>
+<span class="kn">from</span> <span class="nn">.mouseEvents</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">debug</span> <span class="k">as</span> <span class="n">debug</span>
+
+
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">QtCore</span><span class="p">,</span> <span class="s1">&#39;PYQT_VERSION&#39;</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">sip</span>
+        <span class="n">HAVE_SIP</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">HAVE_SIP</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">HAVE_SIP</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GraphicsScene&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="GraphicsScene"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene">[docs]</a><span class="k">class</span> <span class="nc">GraphicsScene</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extension of QGraphicsScene that implements a complete, parallel mouse event system.</span>
+<span class="sd">    (It would have been preferred to just alter the way QGraphicsScene creates and delivers </span>
+<span class="sd">    events, but this turned out to be impossible because the constructor for QGraphicsMouseEvent</span>
+<span class="sd">    is private)</span>
+<span class="sd">    </span>
+<span class="sd">    *  Generates MouseClicked events in addition to the usual press/move/release events. </span>
+<span class="sd">       (This works around a problem where it is impossible to have one item respond to a </span>
+<span class="sd">       drag if another is watching for a click.)</span>
+<span class="sd">    *  Adjustable radius around click that will catch objects so you don&#39;t have to click *exactly* over small/thin objects</span>
+<span class="sd">    *  Global context menu--if an item implements a context menu, then its parent(s) may also add items to the menu.</span>
+<span class="sd">    *  Allows items to decide _before_ a mouse click which item will be the recipient of mouse events.</span>
+<span class="sd">       This lets us indicate unambiguously to the user which item they are about to click/drag on</span>
+<span class="sd">    *  Eats mouseMove events that occur too soon after a mouse press.</span>
+<span class="sd">    *  Reimplements items() and itemAt() to circumvent PyQt bug</span>
+<span class="sd">    </span>
+<span class="sd">    Mouse interaction is as follows:</span>
+<span class="sd">    </span>
+<span class="sd">    1) Every time the mouse moves, the scene delivers both the standard hoverEnter/Move/LeaveEvents </span>
+<span class="sd">       as well as custom HoverEvents. </span>
+<span class="sd">    2) Items are sent HoverEvents in Z-order and each item may optionally call event.acceptClicks(button), </span>
+<span class="sd">       acceptDrags(button) or both. If this method call returns True, this informs the item that _if_ </span>
+<span class="sd">       the user clicks/drags the specified mouse button, the item is guaranteed to be the </span>
+<span class="sd">       recipient of click/drag events (the item may wish to change its appearance to indicate this).</span>
+<span class="sd">       If the call to acceptClicks/Drags returns False, then the item is guaranteed to *not* receive</span>
+<span class="sd">       the requested event (because another item has already accepted it). </span>
+<span class="sd">    3) If the mouse is clicked, a mousePressEvent is generated as usual. If any items accept this press event, then</span>
+<span class="sd">       No click/drag events will be generated and mouse interaction proceeds as defined by Qt. This allows</span>
+<span class="sd">       items to function properly if they are expecting the usual press/move/release sequence of events.</span>
+<span class="sd">       (It is recommended that items do NOT accept press events, and instead use click/drag events)</span>
+<span class="sd">       Note: The default implementation of QGraphicsItem.mousePressEvent will *accept* the event if the </span>
+<span class="sd">       item is has its Selectable or Movable flags enabled. You may need to override this behavior.</span>
+<span class="sd">    4) If no item accepts the mousePressEvent, then the scene will begin delivering mouseDrag and/or mouseClick events.</span>
+<span class="sd">       If the mouse is moved a sufficient distance (or moved slowly enough) before the button is released, </span>
+<span class="sd">       then a mouseDragEvent is generated.</span>
+<span class="sd">       If no drag events are generated before the button is released, then a mouseClickEvent is generated. </span>
+<span class="sd">    5) Click/drag events are delivered to the item that called acceptClicks/acceptDrags on the HoverEvent</span>
+<span class="sd">       in step 1. If no such items exist, then the scene attempts to deliver the events to items near the event. </span>
+<span class="sd">       ClickEvents may be delivered in this way even if no</span>
+<span class="sd">       item originally claimed it could accept the click. DragEvents may only be delivered this way if it is the initial</span>
+<span class="sd">       move in a drag.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">sigMouseHover</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>   <span class="c1">## emits a list of objects hovered over</span>
+    <span class="n">sigMouseMoved</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>   <span class="c1">## emits position of mouse on every move</span>
+    <span class="n">sigMouseClicked</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>   <span class="c1">## emitted when mouse is clicked. Check for event.isAccepted() to see whether the event has already been acted on.</span>
+    
+    <span class="n">sigPrepareForPaint</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>  <span class="c1">## emitted immediately before the scene is about to be rendered</span>
+    
+    <span class="n">_addressCache</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakValueDictionary</span><span class="p">()</span>
+    
+    <span class="n">ExportDirectory</span> <span class="o">=</span> <span class="kc">None</span>
+    
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="GraphicsScene.registerObject"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.registerObject">[docs]</a>    <span class="k">def</span> <span class="nf">registerObject</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Workaround for PyQt bug in qgraphicsscene.items()</span>
+<span class="sd">        All subclasses of QGraphicsObject must register themselves with this function.</span>
+<span class="sd">        (otherwise, mouse interaction with those objects will likely fail)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">HAVE_SIP</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">sip</span><span class="o">.</span><span class="n">wrapper</span><span class="p">):</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">_addressCache</span><span class="p">[</span><span class="n">sip</span><span class="o">.</span><span class="n">unwrapinstance</span><span class="p">(</span><span class="n">sip</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsItem</span><span class="p">))]</span> <span class="o">=</span> <span class="n">obj</span></div>
+            
+            
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clickRadius</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">moveDistance</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setClickRadius</span><span class="p">(</span><span class="n">clickRadius</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMoveDistance</span><span class="p">(</span><span class="n">moveDistance</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exportDirectory</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">clickEvents</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mouseGrabber</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lastDrag</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hoverItems</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakKeyDictionary</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lastHoverEvent</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minDragTime</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># drags shorter than 0.5 sec are interpreted as clicks</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span> <span class="o">=</span> <span class="p">[</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QAction</span><span class="p">(</span><span class="s2">&quot;Export...&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">showExportDialog</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">exportDialog</span> <span class="o">=</span> <span class="kc">None</span>
+        
+<div class="viewcode-block" id="GraphicsScene.render"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.render">[docs]</a>    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepareForPaint</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GraphicsScene.prepareForPaint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.prepareForPaint">[docs]</a>    <span class="k">def</span> <span class="nf">prepareForPaint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called before every render. This method will inform items that the scene is about to</span>
+<span class="sd">        be rendered by emitting sigPrepareForPaint.</span>
+<span class="sd">        </span>
+<span class="sd">        This allows items to delay expensive processing until they know a paint will be required.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigPrepareForPaint</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span></div>
+    
+
+<div class="viewcode-block" id="GraphicsScene.setClickRadius"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.setClickRadius">[docs]</a>    <span class="k">def</span> <span class="nf">setClickRadius</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the distance away from mouse clicks to search for interacting items.</span>
+<span class="sd">        When clicking, the scene searches first for items that directly intersect the click position</span>
+<span class="sd">        followed by any other items that are within a rectangle that extends r pixels away from the </span>
+<span class="sd">        click position. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clickRadius</span> <span class="o">=</span> <span class="n">r</span></div>
+        
+<div class="viewcode-block" id="GraphicsScene.setMoveDistance"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.setMoveDistance">[docs]</a>    <span class="k">def</span> <span class="nf">setMoveDistance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the distance the mouse must move after a press before mouseMoveEvents will be delivered.</span>
+<span class="sd">        This ensures that clicks with a small amount of movement are recognized as clicks instead of</span>
+<span class="sd">        drags.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_moveDistance</span> <span class="o">=</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="GraphicsScene.mousePressEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mousePressEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mousePressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">mousePressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mouseGrabberItem</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1">## nobody claimed press; we are free to generate drag/click events</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastHoverEvent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># If the mouse has moved since the last hover event, send a new one.</span>
+                <span class="c1"># This can happen if a context menu is open while the mouse is moving.</span>
+                <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">scenePos</span><span class="p">()</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastHoverEvent</span><span class="o">.</span><span class="n">scenePos</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sendHoverEvents</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">clickEvents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MouseClickEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">))</span>
+            
+            <span class="c1">## set focus on the topmost focusable item under this click</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">scenePos</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">isEnabled</span><span class="p">()</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">isVisible</span><span class="p">()</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">i</span><span class="o">.</span><span class="n">ItemIsFocusable</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">i</span><span class="o">.</span><span class="n">setFocus</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">MouseFocusReason</span><span class="p">)</span>
+                    <span class="k">break</span></div>
+        
+<div class="viewcode-block" id="GraphicsScene.mouseMoveEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseMoveEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mouseMoveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigMouseMoved</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">scenePos</span><span class="p">())</span>
+        
+        <span class="c1">## First allow QGraphicsScene to deliver hoverEnter/Move/ExitEvents</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">mouseMoveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        
+        <span class="c1">## Next deliver our own HoverEvents</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendHoverEvents</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">buttons</span><span class="p">())</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1">## button is pressed; send mouseMoveEvents and mouseDragEvents</span>
+            <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">mouseMoveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mouseGrabberItem</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">now</span> <span class="o">=</span> <span class="n">ptime</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="n">init</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="c1">## keep track of which buttons are involved in dragging</span>
+                <span class="k">for</span> <span class="n">btn</span> <span class="ow">in</span> <span class="p">[</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">MidButton</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">buttons</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">btn</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">btn</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span><span class="p">:</span>  <span class="c1">## see if we&#39;ve dragged far enough yet</span>
+                        <span class="n">cev</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">clickEvents</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">button</span><span class="p">())</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">btn</span><span class="p">)][</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">dist</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">scenePos</span><span class="p">()</span> <span class="o">-</span> <span class="n">cev</span><span class="o">.</span><span class="n">scenePos</span><span class="p">())</span><span class="o">.</span><span class="n">length</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">dist</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">dist</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_moveDistance</span> <span class="ow">and</span> <span class="n">now</span> <span class="o">-</span> <span class="n">cev</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">minDragTime</span><span class="p">):</span>
+                            <span class="k">continue</span>
+                        <span class="n">init</span> <span class="o">=</span> <span class="n">init</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1">## If this is the first button to be dragged, then init=True</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">btn</span><span class="p">))</span>
+                        
+                <span class="c1">## If we have dragged buttons, deliver a drag event</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sendDragEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="n">init</span><span class="p">):</span>
+                        <span class="n">ev</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span></div>
+                
+<div class="viewcode-block" id="GraphicsScene.leaveEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.leaveEvent">[docs]</a>    <span class="k">def</span> <span class="nf">leaveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>  <span class="c1">## inform items that mouse is gone</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sendHoverEvents</span><span class="p">(</span><span class="n">ev</span><span class="p">,</span> <span class="n">exitOnly</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+                
+<div class="viewcode-block" id="GraphicsScene.mouseReleaseEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseReleaseEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mouseReleaseEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mouseGrabberItem</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sendDragEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                    <span class="c1">#print &quot;sent drag event&quot;</span>
+                    <span class="n">ev</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cev</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">clickEvents</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">button</span><span class="p">())</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">())]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sendClickEvent</span><span class="p">(</span><span class="n">cev</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                    <span class="c1">#print &quot;sent click event&quot;</span>
+                    <span class="n">ev</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">clickEvents</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">cev</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                
+        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">buttons</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dragButtons</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clickEvents</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lastDrag</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">mouseReleaseEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendHoverEvents</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>  <span class="c1">## let items prepare for next click/drag</span></div>
+
+<div class="viewcode-block" id="GraphicsScene.mouseDoubleClickEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseDoubleClickEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mouseDoubleClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">mouseDoubleClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mouseGrabberItem</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1">## nobody claimed press; we are free to generate drag/click events</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clickEvents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MouseClickEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+        
+<div class="viewcode-block" id="GraphicsScene.sendHoverEvents"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendHoverEvents">[docs]</a>    <span class="k">def</span> <span class="nf">sendHoverEvents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">,</span> <span class="n">exitOnly</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1">## if exitOnly, then just inform all previously hovered items that the mouse has left.</span>
+        
+        <span class="k">if</span> <span class="n">exitOnly</span><span class="p">:</span>
+            <span class="n">acceptable</span><span class="o">=</span><span class="kc">False</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">HoverEvent</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">acceptable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">acceptable</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">buttons</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span>  <span class="c1">## if we are in mid-drag, do not allow items to accept the hover event.</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">HoverEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">,</span> <span class="n">acceptable</span><span class="p">)</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemsNearEvent</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">hoverable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigMouseHover</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">items</span><span class="p">)</span>
+            
+        <span class="n">prevItems</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hoverItems</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;hoverEvent&#39;</span><span class="p">):</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">currentItem</span> <span class="o">=</span> <span class="n">item</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hoverItems</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">hoverItems</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">event</span><span class="o">.</span><span class="n">enter</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">prevItems</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                    <span class="n">event</span><span class="o">.</span><span class="n">enter</span> <span class="o">=</span> <span class="kc">False</span>
+                    
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">item</span><span class="o">.</span><span class="n">hoverEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">debug</span><span class="o">.</span><span class="n">printExc</span><span class="p">(</span><span class="s2">&quot;Error sending hover event:&quot;</span><span class="p">)</span>
+        
+        <span class="n">event</span><span class="o">.</span><span class="n">enter</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1">#print &quot;hover exit items:&quot;, prevItems</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">prevItems</span><span class="p">:</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">currentItem</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">hoverEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">debug</span><span class="o">.</span><span class="n">printExc</span><span class="p">(</span><span class="s2">&quot;Error sending hover exit event:&quot;</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">hoverItems</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+        
+        <span class="c1"># Update last hover event unless:</span>
+        <span class="c1">#   - mouse is dragging (move+buttons); in this case we want the dragged</span>
+        <span class="c1">#     item to continue receiving events until the drag is over</span>
+        <span class="c1">#   - event is not a mouse event (QEvent.Leave sometimes appears here)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="n">ev</span><span class="o">.</span><span class="n">GraphicsSceneMousePress</span> <span class="ow">or</span> 
+            <span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="n">ev</span><span class="o">.</span><span class="n">GraphicsSceneMouseMove</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">buttons</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lastHoverEvent</span> <span class="o">=</span> <span class="n">event</span>  <span class="c1">## save this so we can ask about accepted events later.</span></div>
+
+<div class="viewcode-block" id="GraphicsScene.sendDragEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendDragEvent">[docs]</a>    <span class="k">def</span> <span class="nf">sendDragEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1">## Send a MouseDragEvent to the current dragItem or to </span>
+        <span class="c1">## items near the beginning of the drag</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">MouseDragEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clickEvents</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastDrag</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">init</span><span class="p">,</span> <span class="n">finish</span><span class="o">=</span><span class="n">final</span><span class="p">)</span>
+        <span class="c1">#print &quot;dragEvent: init=&quot;, init, &#39;final=&#39;, final, &#39;self.dragItem=&#39;, self.dragItem</span>
+        <span class="k">if</span> <span class="n">init</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastHoverEvent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">acceptedItem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastHoverEvent</span><span class="o">.</span><span class="n">dragItems</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">button</span><span class="p">(),</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">acceptedItem</span> <span class="o">=</span> <span class="kc">None</span>
+                
+            <span class="k">if</span> <span class="n">acceptedItem</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1">#print &quot;Drag -&gt; pre-selected item:&quot;, acceptedItem</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span> <span class="o">=</span> <span class="n">acceptedItem</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">currentItem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span><span class="o">.</span><span class="n">mouseDragEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">debug</span><span class="o">.</span><span class="n">printExc</span><span class="p">(</span><span class="s2">&quot;Error sending drag event:&quot;</span><span class="p">)</span>
+                    
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1">#print &quot;drag -&gt; new item&quot;</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemsNearEvent</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+                    <span class="c1">#print &quot;check item:&quot;, item</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">isVisible</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">isEnabled</span><span class="p">():</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;mouseDragEvent&#39;</span><span class="p">):</span>
+                        <span class="n">event</span><span class="o">.</span><span class="n">currentItem</span> <span class="o">=</span> <span class="n">item</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">item</span><span class="o">.</span><span class="n">mouseDragEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                        <span class="k">except</span><span class="p">:</span>
+                            <span class="n">debug</span><span class="o">.</span><span class="n">printExc</span><span class="p">(</span><span class="s2">&quot;Error sending drag event:&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">isAccepted</span><span class="p">():</span>
+                            <span class="c1">#print &quot;   --&gt; accepted&quot;</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span> <span class="o">=</span> <span class="n">item</span>
+                            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">item</span><span class="o">.</span><span class="n">ItemIsFocusable</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">item</span><span class="o">.</span><span class="n">setFocus</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">MouseFocusReason</span><span class="p">)</span>
+                            <span class="k">break</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">currentItem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span><span class="o">.</span><span class="n">mouseDragEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">debug</span><span class="o">.</span><span class="n">printExc</span><span class="p">(</span><span class="s2">&quot;Error sending hover exit event:&quot;</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">lastDrag</span> <span class="o">=</span> <span class="n">event</span>
+        
+        <span class="k">return</span> <span class="n">event</span><span class="o">.</span><span class="n">isAccepted</span><span class="p">()</span></div>
+            
+        
+<div class="viewcode-block" id="GraphicsScene.sendClickEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendClickEvent">[docs]</a>    <span class="k">def</span> <span class="nf">sendClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="c1">## if we are in mid-drag, click events may only go to the dragged item.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span><span class="p">,</span> <span class="s1">&#39;mouseClickEvent&#39;</span><span class="p">):</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">currentItem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dragItem</span><span class="o">.</span><span class="n">mouseClickEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
+            
+        <span class="c1">## otherwise, search near the cursor</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastHoverEvent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">acceptedItem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastHoverEvent</span><span class="o">.</span><span class="n">clickItems</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">(),</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">acceptedItem</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">acceptedItem</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ev</span><span class="o">.</span><span class="n">currentItem</span> <span class="o">=</span> <span class="n">acceptedItem</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">acceptedItem</span><span class="o">.</span><span class="n">mouseClickEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">debug</span><span class="o">.</span><span class="n">printExc</span><span class="p">(</span><span class="s2">&quot;Error sending click event:&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemsNearEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">isVisible</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">isEnabled</span><span class="p">():</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;mouseClickEvent&#39;</span><span class="p">):</span>
+                        <span class="n">ev</span><span class="o">.</span><span class="n">currentItem</span> <span class="o">=</span> <span class="n">item</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">item</span><span class="o">.</span><span class="n">mouseClickEvent</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
+                        <span class="k">except</span><span class="p">:</span>
+                            <span class="n">debug</span><span class="o">.</span><span class="n">printExc</span><span class="p">(</span><span class="s2">&quot;Error sending click event:&quot;</span><span class="p">)</span>
+                            
+                        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">isAccepted</span><span class="p">():</span>
+                            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">item</span><span class="o">.</span><span class="n">ItemIsFocusable</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">item</span><span class="o">.</span><span class="n">setFocus</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">MouseFocusReason</span><span class="p">)</span>
+                            <span class="k">break</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigMouseClicked</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ev</span><span class="o">.</span><span class="n">isAccepted</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="GraphicsScene.items"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="c1">#print &#39;args:&#39;, args</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="c1">## PyQt bug: items() returns a list of QGraphicsItem instances. If the item is subclassed from QGraphicsObject,</span>
+        <span class="c1">## then the object returned will be different than the actual item that was originally added to the scene</span>
+        <span class="n">items2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">translateGraphicsItem</span><span class="p">,</span> <span class="n">items</span><span class="p">))</span>
+        <span class="c1">#if HAVE_SIP and isinstance(self, sip.wrapper):</span>
+            <span class="c1">#items2 = []</span>
+            <span class="c1">#for i in items:</span>
+                <span class="c1">#addr = sip.unwrapinstance(sip.cast(i, QtGui.QGraphicsItem))</span>
+                <span class="c1">#i2 = GraphicsScene._addressCache.get(addr, i)</span>
+                <span class="c1">##print i, &quot;==&gt;&quot;, i2</span>
+                <span class="c1">#items2.append(i2)</span>
+        <span class="c1">#print &#39;items:&#39;, items</span>
+        <span class="k">return</span> <span class="n">items2</span></div>
+    
+<div class="viewcode-block" id="GraphicsScene.selectedItems"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.selectedItems">[docs]</a>    <span class="k">def</span> <span class="nf">selectedItems</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">selectedItems</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="c1">## PyQt bug: items() returns a list of QGraphicsItem instances. If the item is subclassed from QGraphicsObject,</span>
+        <span class="c1">## then the object returned will be different than the actual item that was originally added to the scene</span>
+        <span class="c1">#if HAVE_SIP and isinstance(self, sip.wrapper):</span>
+            <span class="c1">#items2 = []</span>
+            <span class="c1">#for i in items:</span>
+                <span class="c1">#addr = sip.unwrapinstance(sip.cast(i, QtGui.QGraphicsItem))</span>
+                <span class="c1">#i2 = GraphicsScene._addressCache.get(addr, i)</span>
+                <span class="c1">##print i, &quot;==&gt;&quot;, i2</span>
+                <span class="c1">#items2.append(i2)</span>
+        <span class="n">items2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">translateGraphicsItem</span><span class="p">,</span> <span class="n">items</span><span class="p">))</span>
+
+        <span class="c1">#print &#39;items:&#39;, items</span>
+        <span class="k">return</span> <span class="n">items2</span></div>
+
+<div class="viewcode-block" id="GraphicsScene.itemAt"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.itemAt">[docs]</a>    <span class="k">def</span> <span class="nf">itemAt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="o">.</span><span class="n">itemAt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        
+        <span class="c1">## PyQt bug: items() returns a list of QGraphicsItem instances. If the item is subclassed from QGraphicsObject,</span>
+        <span class="c1">## then the object returned will be different than the actual item that was originally added to the scene</span>
+        <span class="c1">#if HAVE_SIP and isinstance(self, sip.wrapper):</span>
+            <span class="c1">#addr = sip.unwrapinstance(sip.cast(item, QtGui.QGraphicsItem))</span>
+            <span class="c1">#item = GraphicsScene._addressCache.get(addr, item)</span>
+        <span class="c1">#return item</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">translateGraphicsItem</span><span class="p">(</span><span class="n">item</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GraphicsScene.itemsNearEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.itemsNearEvent">[docs]</a>    <span class="k">def</span> <span class="nf">itemsNearEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">selMode</span><span class="o">=</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">IntersectsItemShape</span><span class="p">,</span> <span class="n">sortOrder</span><span class="o">=</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">DescendingOrder</span><span class="p">,</span> <span class="n">hoverable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an iterator that iterates first through the items that directly intersect point (in Z order)</span>
+<span class="sd">        followed by any other items that are within the scene&#39;s click radius.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#tr = self.getViewWidget(event.widget()).transform()</span>
+        <span class="n">view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">views</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">viewportTransform</span><span class="p">()</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clickRadius</span>
+        <span class="n">rect</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">mapToScene</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QRect</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="p">))</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">()</span>
+        
+        <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s1">&#39;buttonDownScenePos&#39;</span><span class="p">):</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">buttonDownScenePos</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">scenePos</span><span class="p">()</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="n">rgn</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="o">-</span><span class="n">w</span><span class="p">,</span> <span class="n">point</span><span class="o">.</span><span class="n">y</span><span class="p">()</span><span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">w</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">h</span><span class="p">)</span>
+        <span class="c1">#self.searchRect.setRect(rgn)</span>
+
+
+        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">selMode</span><span class="p">,</span> <span class="n">sortOrder</span><span class="p">,</span> <span class="n">tr</span><span class="p">)</span>
+        
+        <span class="c1">## remove items whose shape does not contain point (scene.items() apparently sucks at this)</span>
+        <span class="n">items2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hoverable</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;hoverEvent&#39;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">shape</span><span class="p">()</span> <span class="c1"># Note: default shape() returns boundingRect()</span>
+            <span class="k">if</span> <span class="n">shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">shape</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">mapFromScene</span><span class="p">(</span><span class="n">point</span><span class="p">)):</span>
+                <span class="n">items2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        
+        <span class="c1">## Sort by descending Z-order (don&#39;t trust scene.itms() to do this either)</span>
+        <span class="c1">## use &#39;absolute&#39; z value, which is the sum of all item/parent ZValues</span>
+        <span class="k">def</span> <span class="nf">absZValue</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mi">0</span>
+            <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">zValue</span><span class="p">()</span> <span class="o">+</span> <span class="n">absZValue</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">parentItem</span><span class="p">())</span>
+        
+        <span class="n">sortList</span><span class="p">(</span><span class="n">items2</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">:</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">absZValue</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="n">absZValue</span><span class="p">(</span><span class="n">a</span><span class="p">)))</span>
+        
+        <span class="k">return</span> <span class="n">items2</span></div>
+        
+        <span class="c1">#for item in items:</span>
+            <span class="c1">##seen.add(item)</span>
+
+            <span class="c1">#shape = item.mapToScene(item.shape())</span>
+            <span class="c1">#if not shape.contains(point):</span>
+                <span class="c1">#continue</span>
+            <span class="c1">#yield item</span>
+        <span class="c1">#for item in self.items(rgn, selMode, sortOrder, tr):</span>
+            <span class="c1">##if item not in seen:</span>
+            <span class="c1">#yield item</span>
+        
+<div class="viewcode-block" id="GraphicsScene.getViewWidget"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.getViewWidget">[docs]</a>    <span class="k">def</span> <span class="nf">getViewWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">views</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span></div>
+    
+    <span class="c1">#def getViewWidget(self, widget):</span>
+        <span class="c1">### same pyqt bug -- mouseEvent.widget() doesn&#39;t give us the original python object.</span>
+        <span class="c1">### [[doesn&#39;t seem to work correctly]]</span>
+        <span class="c1">#if HAVE_SIP and isinstance(self, sip.wrapper):</span>
+            <span class="c1">#addr = sip.unwrapinstance(sip.cast(widget, QtGui.QWidget))</span>
+            <span class="c1">##print &quot;convert&quot;, widget, addr</span>
+            <span class="c1">#for v in self.views():</span>
+                <span class="c1">#addr2 = sip.unwrapinstance(sip.cast(v, QtGui.QWidget))</span>
+                <span class="c1">##print &quot;   check:&quot;, v, addr2</span>
+                <span class="c1">#if addr2 == addr:</span>
+                    <span class="c1">#return v</span>
+        <span class="c1">#else:</span>
+            <span class="c1">#return widget</span>
+
+<div class="viewcode-block" id="GraphicsScene.addParentContextMenus"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.addParentContextMenus">[docs]</a>    <span class="k">def</span> <span class="nf">addParentContextMenus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">menu</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Can be called by any item in the scene to expand its context menu to include parent context menus.</span>
+<span class="sd">        Parents may implement getContextMenus to add new menus / actions to the existing menu.</span>
+<span class="sd">        getContextMenus must accept 1 argument (the event that generated the original menu) and</span>
+<span class="sd">        return a single QMenu or a list of QMenus.</span>
+<span class="sd">        </span>
+<span class="sd">        The final menu will look like:</span>
+<span class="sd">        </span>
+<span class="sd">            |    Original Item 1</span>
+<span class="sd">            |    Original Item 2</span>
+<span class="sd">            |    ...</span>
+<span class="sd">            |    Original Item N</span>
+<span class="sd">            |    ------------------</span>
+<span class="sd">            |    Parent Item 1</span>
+<span class="sd">            |    Parent Item 2</span>
+<span class="sd">            |    ...</span>
+<span class="sd">            |    Grandparent Item 1</span>
+<span class="sd">            |    ...</span>
+<span class="sd">            </span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ==================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        item            The item that initially created the context menu </span>
+<span class="sd">                        (This is probably the item making the call to this function)</span>
+<span class="sd">        menu            The context menu being shown by the item</span>
+<span class="sd">        event           The original event that triggered the menu to appear.</span>
+<span class="sd">        ==============  ==================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">menusToAdd</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s2">&quot;getContextMenus&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">subMenus</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">getContextMenus</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subMenus</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span> <span class="c1">## so that some items (like FlowchartViewBox) can return multiple menus</span>
+                <span class="n">menusToAdd</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">subMenus</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">menusToAdd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subMenus</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">menusToAdd</span><span class="p">:</span>
+            <span class="n">menu</span><span class="o">.</span><span class="n">addSeparator</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">menusToAdd</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMenu</span><span class="p">):</span>
+                <span class="n">menu</span><span class="o">.</span><span class="n">addMenu</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QAction</span><span class="p">):</span>
+                <span class="n">menu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Cannot add object </span><span class="si">%s</span><span class="s2"> (type=</span><span class="si">%s</span><span class="s2">) to QMenu.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">))))</span>
+            
+        <span class="k">return</span> <span class="n">menu</span></div>
+
+<div class="viewcode-block" id="GraphicsScene.getContextMenus"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.getContextMenus">[docs]</a>    <span class="k">def</span> <span class="nf">getContextMenus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenuItem</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">acceptedItem</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span></div>
+
+<div class="viewcode-block" id="GraphicsScene.showExportDialog"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.showExportDialog">[docs]</a>    <span class="k">def</span> <span class="nf">showExportDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exportDialog</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">exportDialog</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exportDialog</span> <span class="o">=</span> <span class="n">exportDialog</span><span class="o">.</span><span class="n">ExportDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exportDialog</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contextMenuItem</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="GraphicsScene.translateGraphicsItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.translateGraphicsItem">[docs]</a>    <span class="k">def</span> <span class="nf">translateGraphicsItem</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+        <span class="c1">## for fixing pyqt bugs where the wrong item is returned</span>
+        <span class="k">if</span> <span class="n">HAVE_SIP</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">sip</span><span class="o">.</span><span class="n">wrapper</span><span class="p">):</span>
+            <span class="n">addr</span> <span class="o">=</span> <span class="n">sip</span><span class="o">.</span><span class="n">unwrapinstance</span><span class="p">(</span><span class="n">sip</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsItem</span><span class="p">))</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="n">GraphicsScene</span><span class="o">.</span><span class="n">_addressCache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">addr</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">item</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="GraphicsScene.translateGraphicsItems"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.translateGraphicsItems">[docs]</a>    <span class="k">def</span> <span class="nf">translateGraphicsItems</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">GraphicsScene</span><span class="o">.</span><span class="n">translateGraphicsItem</span><span class="p">,</span> <span class="n">items</span><span class="p">))</span></div></div>
+
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

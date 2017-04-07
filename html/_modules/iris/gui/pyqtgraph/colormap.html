@@ -1,0 +1,343 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.colormap &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.colormap</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">.Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">.python2_3</span> <span class="k">import</span> <span class="n">basestring</span>
+
+
+<div class="viewcode-block" id="ColorMap"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap">[docs]</a><span class="k">class</span> <span class="nc">ColorMap</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A ColorMap defines a relationship between a scalar value and a range of colors. </span>
+<span class="sd">    ColorMaps are commonly used for false-coloring monochromatic images, coloring </span>
+<span class="sd">    scatter-plot points, and coloring surface plots by height. </span>
+<span class="sd">    </span>
+<span class="sd">    Each color map is defined by a set of colors, each corresponding to a</span>
+<span class="sd">    particular scalar value. For example:</span>
+<span class="sd">    </span>
+<span class="sd">        | 0.0  -&gt; black</span>
+<span class="sd">        | 0.2  -&gt; red</span>
+<span class="sd">        | 0.6  -&gt; yellow</span>
+<span class="sd">        | 1.0  -&gt; white</span>
+<span class="sd">        </span>
+<span class="sd">    The colors for intermediate values are determined by interpolating between </span>
+<span class="sd">    the two nearest colors in either RGB or HSV color space.</span>
+<span class="sd">    </span>
+<span class="sd">    To provide user-defined color mappings, see :class:`GradientWidget &lt;pyqtgraph.GradientWidget&gt;`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    
+    <span class="c1">## color interpolation modes</span>
+    <span class="n">RGB</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">HSV_POS</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">HSV_NEG</span> <span class="o">=</span> <span class="mi">3</span>
+    
+    <span class="c1">## boundary modes</span>
+    <span class="n">CLIP</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">REPEAT</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">MIRROR</span> <span class="o">=</span> <span class="mi">3</span>
+    
+    <span class="c1">## return types</span>
+    <span class="n">BYTE</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">FLOAT</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">QCOLOR</span> <span class="o">=</span> <span class="mi">3</span>
+    
+    <span class="n">enumMap</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;rgb&#39;</span><span class="p">:</span> <span class="n">RGB</span><span class="p">,</span>
+        <span class="s1">&#39;hsv+&#39;</span><span class="p">:</span> <span class="n">HSV_POS</span><span class="p">,</span>
+        <span class="s1">&#39;hsv-&#39;</span><span class="p">:</span> <span class="n">HSV_NEG</span><span class="p">,</span>
+        <span class="s1">&#39;clip&#39;</span><span class="p">:</span> <span class="n">CLIP</span><span class="p">,</span>
+        <span class="s1">&#39;repeat&#39;</span><span class="p">:</span> <span class="n">REPEAT</span><span class="p">,</span>
+        <span class="s1">&#39;mirror&#39;</span><span class="p">:</span> <span class="n">MIRROR</span><span class="p">,</span>
+        <span class="s1">&#39;byte&#39;</span><span class="p">:</span> <span class="n">BYTE</span><span class="p">,</span>
+        <span class="s1">&#39;float&#39;</span><span class="p">:</span> <span class="n">FLOAT</span><span class="p">,</span>
+        <span class="s1">&#39;qcolor&#39;</span><span class="p">:</span> <span class="n">QCOLOR</span><span class="p">,</span>
+    <span class="p">}</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ===============     ==============================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        pos                 Array of positions where each color is defined</span>
+<span class="sd">        color               Array of RGBA colors.</span>
+<span class="sd">                            Integer data types are interpreted as 0-255; float data types</span>
+<span class="sd">                            are interpreted as 0.0-1.0</span>
+<span class="sd">        mode                Array of color modes (ColorMap.RGB, HSV_POS, or HSV_NEG)</span>
+<span class="sd">                            indicating the color space that should be used when</span>
+<span class="sd">                            interpolating between stops. Note that the last mode value is</span>
+<span class="sd">                            ignored. By default, the mode is entirely RGB.</span>
+<span class="sd">        ===============     ==============================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">color</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stopsCache</span> <span class="o">=</span> <span class="p">{}</span>
+        
+<div class="viewcode-block" id="ColorMap.map"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.map">[docs]</a>    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;byte&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an array of colors corresponding to the values in *data*. </span>
+<span class="sd">        Data must be either a scalar position or an array (any shape) of positions.</span>
+<span class="sd">        </span>
+<span class="sd">        The *mode* argument determines the type of data returned:</span>
+<span class="sd">        </span>
+<span class="sd">        =========== ===============================================================</span>
+<span class="sd">        byte        (default) Values are returned as 0-255 unsigned bytes.</span>
+<span class="sd">        float       Values are returned as 0.0-1.0 floats. </span>
+<span class="sd">        qcolor      Values are returned as an array of QColor objects.</span>
+<span class="sd">        =========== ===============================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">enumMap</span><span class="p">[</span><span class="n">mode</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+            
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">QCOLOR</span><span class="p">:</span>
+            <span class="n">pos</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getStops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BYTE</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pos</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getStops</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+            
+        <span class="c1"># don&#39;t need this--np.interp takes care of it.</span>
+        <span class="c1">#data = np.clip(data, pos.min(), pos.max())</span>
+            
+        <span class="c1"># Interpolate</span>
+        <span class="c1"># TODO: is griddata faster?</span>
+        <span class="c1">#          interp = scipy.interpolate.griddata(pos, color, data)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="n">interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">color</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">color</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="n">color</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">color</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">color</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">interp</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">color</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># Convert to QColor if requested</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">QCOLOR</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">interp</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">interp</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">interp</span></div>
+        
+<div class="viewcode-block" id="ColorMap.mapToQColor"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.mapToQColor">[docs]</a>    <span class="k">def</span> <span class="nf">mapToQColor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convenience function; see :func:`map() &lt;pyqtgraph.ColorMap.map&gt;`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">QCOLOR</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ColorMap.mapToByte"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.mapToByte">[docs]</a>    <span class="k">def</span> <span class="nf">mapToByte</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convenience function; see :func:`map() &lt;pyqtgraph.ColorMap.map&gt;`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">BYTE</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ColorMap.mapToFloat"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.mapToFloat">[docs]</a>    <span class="k">def</span> <span class="nf">mapToFloat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convenience function; see :func:`map() &lt;pyqtgraph.ColorMap.map&gt;`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">FLOAT</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="ColorMap.getGradient"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.getGradient">[docs]</a>    <span class="k">def</span> <span class="nf">getGradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p2</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a QLinearGradient object spanning from QPoints p1 to p2.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">p1</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">p2</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QLinearGradient</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">)</span>
+        
+        <span class="n">pos</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getStops</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">BYTE</span><span class="p">)</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="p">[</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">color</span><span class="p">]</span>
+        <span class="n">g</span><span class="o">.</span><span class="n">setStops</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">color</span><span class="p">))</span>
+        
+        <span class="c1">#if self.colorMode == &#39;rgb&#39;:</span>
+            <span class="c1">#ticks = self.listTicks()</span>
+            <span class="c1">#g.setStops([(x, QtGui.QColor(t.color)) for t,x in ticks])</span>
+        <span class="c1">#elif self.colorMode == &#39;hsv&#39;:  ## HSV mode is approximated for display by interpolating 10 points between each stop</span>
+            <span class="c1">#ticks = self.listTicks()</span>
+            <span class="c1">#stops = []</span>
+            <span class="c1">#stops.append((ticks[0][1], ticks[0][0].color))</span>
+            <span class="c1">#for i in range(1,len(ticks)):</span>
+                <span class="c1">#x1 = ticks[i-1][1]</span>
+                <span class="c1">#x2 = ticks[i][1]</span>
+                <span class="c1">#dx = (x2-x1) / 10.</span>
+                <span class="c1">#for j in range(1,10):</span>
+                    <span class="c1">#x = x1 + dx*j</span>
+                    <span class="c1">#stops.append((x, self.getColor(x)))</span>
+                <span class="c1">#stops.append((x2, self.getColor(x2)))</span>
+            <span class="c1">#g.setStops(stops)</span>
+        <span class="k">return</span> <span class="n">g</span></div>
+    
+<div class="viewcode-block" id="ColorMap.getColors"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.getColors">[docs]</a>    <span class="k">def</span> <span class="nf">getColors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return list of all color stops converted to the specified mode.</span>
+<span class="sd">        If mode is None, then no conversion is done.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">enumMap</span><span class="p">[</span><span class="n">mode</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+        
+        <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">BYTE</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">QCOLOR</span><span class="p">]</span> <span class="ow">and</span> <span class="n">color</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="p">(</span><span class="n">color</span> <span class="o">*</span> <span class="mi">255</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLOAT</span> <span class="ow">and</span> <span class="n">color</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span> <span class="o">/</span> <span class="mf">255.</span>
+            
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">QCOLOR</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="p">[</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">color</span><span class="p">]</span>
+            
+        <span class="k">return</span> <span class="n">color</span></div>
+        
+<div class="viewcode-block" id="ColorMap.getStops"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.getStops">[docs]</a>    <span class="k">def</span> <span class="nf">getStops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+        <span class="c1">## Get fully-expanded set of RGBA stops in either float or byte mode.</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stopsCache</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">BYTE</span> <span class="ow">and</span> <span class="n">color</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="p">(</span><span class="n">color</span> <span class="o">*</span> <span class="mi">255</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLOAT</span> <span class="ow">and</span> <span class="n">color</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span> <span class="o">/</span> <span class="mf">255.</span>
+        
+            <span class="c1">## to support HSV mode, we need to do a little more work..</span>
+            <span class="c1">#stops = []</span>
+            <span class="c1">#for i in range(len(self.pos)):</span>
+                <span class="c1">#pos = self.pos[i]</span>
+                <span class="c1">#color = color[i]</span>
+                
+                <span class="c1">#imode = self.mode[i]</span>
+                <span class="c1">#if imode == self.RGB:</span>
+                    <span class="c1">#stops.append((x,color)) </span>
+                <span class="c1">#else:</span>
+                    <span class="c1">#ns = </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stopsCache</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stopsCache</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="ColorMap.getLookupTable"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.getLookupTable">[docs]</a>    <span class="k">def</span> <span class="nf">getLookupTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">nPts</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;byte&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an RGB(A) lookup table (ndarray). </span>
+<span class="sd">        </span>
+<span class="sd">        ===============   =============================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        start             The starting value in the lookup table (default=0.0)</span>
+<span class="sd">        stop              The final value in the lookup table (default=1.0)</span>
+<span class="sd">        nPts              The number of points in the returned lookup table.</span>
+<span class="sd">        alpha             True, False, or None - Specifies whether or not alpha values are included</span>
+<span class="sd">                          in the table. If alpha is None, it will be automatically determined.</span>
+<span class="sd">        mode              Determines return type: &#39;byte&#39; (0-255), &#39;float&#39; (0.0-1.0), or &#39;qcolor&#39;.</span>
+<span class="sd">                          See :func:`map() &lt;pyqtgraph.ColorMap.map&gt;`.</span>
+<span class="sd">        ===============   =============================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">enumMap</span><span class="p">[</span><span class="n">mode</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+        
+        <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">usesAlpha</span><span class="p">()</span>
+            
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">nPts</span><span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">alpha</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">table</span><span class="p">[:,:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">table</span></div>
+    
+<div class="viewcode-block" id="ColorMap.usesAlpha"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.usesAlpha">[docs]</a>    <span class="k">def</span> <span class="nf">usesAlpha</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return True if any stops have an alpha &lt; 255&quot;&quot;&quot;</span>
+        <span class="nb">max</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span> <span class="k">else</span> <span class="mi">255</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">max</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="ColorMap.isMapTrivial"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.colormap.ColorMap.isMapTrivial">[docs]</a>    <span class="k">def</span> <span class="nf">isMapTrivial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return True if the gradient has exactly two stops in it: black at 0.0 and white at 1.0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">]]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">],</span> <span class="p">[</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">]]))</span></div>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;ColorMap(</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

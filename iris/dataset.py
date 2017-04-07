@@ -25,6 +25,8 @@ class ExperimentalParameter(object):
         output : callable
             Callable to format output.
             e.g. numpy.array, tuple, float, ...
+        default : object or None, optional
+            Default value returned. If None, exception is raised.
         """
         self.name = name
         self.output = output
@@ -43,39 +45,6 @@ class ExperimentalParameter(object):
     
     def __delete__(self, instance):
         del instance.experimental_parameters_group.attrs[self.name]
-
-class AnalysisParameter(object):
-    """ Descriptor to analysis parameters. """
-    def __init__(self, name, output, group_name):
-        """ 
-        Parameters
-        ----------
-        name : str
-        output : callable
-            Callable to format output.
-            e.g. numpy.array, tuple, float, ...
-        group_name : str
-            Path to the hdf5 group in which the parameter is 
-            stored (as an attribute).
-        """
-        self.name = name
-        self.output = output
-        self.group_name = group_name
-    
-    def __get__(self, instance, cls):
-        try:
-            return self.output(instance[self.group_name].attrs[self.name])
-        except KeyError:
-            return None
-    
-    def __set__(self, instance, value):
-        instance[self.group_name].attrs[self.name] = value
-    
-    def __delete__(self, instance):
-        try:
-            del instance[self.group_name].attrs[self.name]
-        except:
-            pass
 
 class DiffractionDataset(h5py.File):
     """
@@ -102,9 +71,11 @@ class DiffractionDataset(h5py.File):
 
     def __init__(self, name, mode = 'r', **kwargs):
         """
+        Keyword arguments are passed to the h5py.File constructor.
+
         Parameters
         ----------
-        name : str or unicode
+        name : str
         mode : str, {'w', 'r' (default), 'r+', 'a', 'w-'}
         """
         super().__init__(name = name, mode = mode, **kwargs)
@@ -280,19 +251,15 @@ class PowderDiffractionDataset(DiffractionDataset):
     """ 
     Abstraction of HDF5 files for powder diffraction datasets.
     """
-    _powder_group_name = '/powder'
 
-    # Analysis parameters concerning the wavelet used
-    # The dual-tree complex wavelet transform also uses 
-    # first stage wavelet
-    first_stage = AnalysisParameter(name = 'first_stage', output = str, group_name = _powder_group_name)
-    wavelet = AnalysisParameter(name = 'wavelet', output = str, group_name = _powder_group_name)
-    level = AnalysisParameter(name = 'level', output = int, group_name = _powder_group_name)
-    baseline_removed = AnalysisParameter(name = 'baseline_removed', output = bool, group_name = _powder_group_name)
+    first_stage = ExperimentalParameter(name = 'powder_wavelet_baseline_first_stage', output = str)
+    wavelet = ExperimentalParameter(name = 'powder_baseline_wavelet', output = str)
+    level = ExperimentalParameter(name = 'powder_baseline_transform_level', output = int)
+    baseline_removed = ExperimentalParameter(name = 'powder_baseline_removed', output = bool, default = False)
 
     @property
     def powder_group(self):
-        return self.require_group(name = self._powder_group_name)
+        return self.require_group('/powder')
     
     @property
     def scattering_length(self):

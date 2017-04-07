@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.exporters.Exporter &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.exporters.Exporter</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..widgets.FileDialog</span> <span class="k">import</span> <span class="n">FileDialog</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtSvg</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="n">asUnicode</span><span class="p">,</span> <span class="n">basestring</span>
+<span class="kn">from</span> <span class="nn">..GraphicsScene</span> <span class="k">import</span> <span class="n">GraphicsScene</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">re</span>
+<span class="n">LastExportDirectory</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="Exporter"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter">[docs]</a><span class="k">class</span> <span class="nc">Exporter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract class used for exporting graphics to file / printer / whatever.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    <span class="n">allowCopy</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># subclasses set this to True if they can use the copy buffer</span>
+    <span class="n">Exporters</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Exporter.register"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.register">[docs]</a>    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Used to register Exporter classes to appear in the export dialog.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Exporter</span><span class="o">.</span><span class="n">Exporters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize with the item to be exported.</span>
+<span class="sd">        Can be an individual graphics item or a scene.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">object</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span> <span class="o">=</span> <span class="n">item</span>
+        
+<div class="viewcode-block" id="Exporter.parameters"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.parameters">[docs]</a>    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the parameters used to configure this exporter.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Abstract method must be overridden in subclass.&quot;</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Exporter.export"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">toBytes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If *fileName* is None, pop-up a file dialog.</span>
+<span class="sd">        If *toBytes* is True, return a bytes object rather than writing to file.</span>
+<span class="sd">        If *copy* is True, export to the copy buffer rather than writing to file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Abstract method must be overridden in subclass.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Exporter.fileSaveDialog"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.fileSaveDialog">[docs]</a>    <span class="k">def</span> <span class="nf">fileSaveDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">opts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1">## Show a file dialog, call self.export(fileName) when finished.</span>
+        <span class="k">if</span> <span class="n">opts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">opts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span> <span class="o">=</span> <span class="n">FileDialog</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">setFileMode</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QFileDialog</span><span class="o">.</span><span class="n">AnyFile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">setAcceptMode</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QFileDialog</span><span class="o">.</span><span class="n">AcceptSave</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">filter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">filter</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">setNameFilter</span><span class="p">(</span><span class="nb">filter</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">filter</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">setNameFilters</span><span class="p">(</span><span class="nb">filter</span><span class="p">)</span>
+        <span class="k">global</span> <span class="n">LastExportDirectory</span>
+        <span class="n">exportDir</span> <span class="o">=</span> <span class="n">LastExportDirectory</span>
+        <span class="k">if</span> <span class="n">exportDir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">setDirectory</span><span class="p">(</span><span class="n">exportDir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="n">opts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">fileSelected</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fileSaveFinished</span><span class="p">)</span>
+        <span class="k">return</span></div>
+        
+<div class="viewcode-block" id="Exporter.fileSaveFinished"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.fileSaveFinished">[docs]</a>    <span class="k">def</span> <span class="nf">fileSaveFinished</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="p">):</span>
+        <span class="n">fileName</span> <span class="o">=</span> <span class="n">asUnicode</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>
+        <span class="k">global</span> <span class="n">LastExportDirectory</span>
+        <span class="n">LastExportDirectory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">fileName</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="c1">## If file name does not match selected extension, append it now</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fileName</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">selectedExt</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s1">r&#39;\*\.(\w+)\b&#39;</span><span class="p">,</span> <span class="n">asUnicode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">selectedNameFilter</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="n">selectedExt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">selectedExt</span> <span class="o">=</span> <span class="n">selectedExt</span><span class="o">.</span><span class="n">groups</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">ext</span> <span class="o">!=</span> <span class="n">selectedExt</span><span class="p">:</span>
+                <span class="n">fileName</span> <span class="o">=</span> <span class="n">fileName</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">selectedExt</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">fileName</span><span class="o">=</span><span class="n">fileName</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">fileDialog</span><span class="o">.</span><span class="n">opts</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Exporter.getScene"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.getScene">[docs]</a>    <span class="k">def</span> <span class="nf">getScene</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">GraphicsScene</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="Exporter.getSourceRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.getSourceRect">[docs]</a>    <span class="k">def</span> <span class="nf">getSourceRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">GraphicsScene</span><span class="p">):</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">getViewWidget</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">w</span><span class="o">.</span><span class="n">viewportTransform</span><span class="p">()</span><span class="o">.</span><span class="n">inverted</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mapRect</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">rect</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">sceneBoundingRect</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="Exporter.getTargetRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.getTargetRect">[docs]</a>    <span class="k">def</span> <span class="nf">getTargetRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">GraphicsScene</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">getViewWidget</span><span class="p">()</span><span class="o">.</span><span class="n">rect</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">mapRectToDevice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">())</span></div>
+        
+<div class="viewcode-block" id="Exporter.setExportMode"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.setExportMode">[docs]</a>    <span class="k">def</span> <span class="nf">setExportMode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export</span><span class="p">,</span> <span class="n">opts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Call setExportMode(export, opts) on all items that will </span>
+<span class="sd">        be painted during the export. This informs the item</span>
+<span class="sd">        that it is about to be painted for export, allowing it to </span>
+<span class="sd">        alter its appearance temporarily</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        *export*  - bool; must be True before exporting and False afterward</span>
+<span class="sd">        *opts*    - dict; common parameters are &#39;antialias&#39; and &#39;background&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">opts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">opts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPaintItems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;setExportMode&#39;</span><span class="p">):</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">setExportMode</span><span class="p">(</span><span class="n">export</span><span class="p">,</span> <span class="n">opts</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Exporter.getPaintItems"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.getPaintItems">[docs]</a>    <span class="k">def</span> <span class="nf">getPaintItems</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a list of all items that should be painted in the correct order.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span>
+        <span class="n">preItems</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">postItems</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">):</span>
+            <span class="n">childs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="n">rootItem</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">childs</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">childItems</span><span class="p">()</span>
+            <span class="n">rootItem</span> <span class="o">=</span> <span class="p">[</span><span class="n">root</span><span class="p">]</span>
+        <span class="n">childs</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">zValue</span><span class="p">())</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">childs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ch</span> <span class="o">=</span> <span class="n">childs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">tree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPaintItems</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">ch</span><span class="o">.</span><span class="n">ItemStacksBehindParent</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">zValue</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">ch</span><span class="o">.</span><span class="n">ItemNegativeZStacksBehindParent</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="n">preItems</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">postItems</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+                
+        <span class="k">return</span> <span class="n">preItems</span> <span class="o">+</span> <span class="n">rootItem</span> <span class="o">+</span> <span class="n">postItems</span></div>
+
+<div class="viewcode-block" id="Exporter.render"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Exporter.Exporter.render">[docs]</a>    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">painter</span><span class="p">,</span> <span class="n">targetRect</span><span class="p">,</span> <span class="n">sourceRect</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">getScene</span><span class="p">()</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">painter</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="n">targetRect</span><span class="p">),</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="n">sourceRect</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  <li><a href="../exporters.html">iris.gui.pyqtgraph.exporters</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

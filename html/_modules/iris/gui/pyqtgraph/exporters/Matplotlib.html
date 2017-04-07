@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.exporters.Matplotlib &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.exporters.Matplotlib</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">.Exporter</span> <span class="k">import</span> <span class="n">Exporter</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">PlotItem</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MatplotlibExporter&#39;</span><span class="p">]</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">It is helpful when using the matplotlib Exporter if your</span>
+<span class="sd">.matplotlib/matplotlibrc file is configured appropriately.</span>
+<span class="sd">The following are suggested for getting usable PDF output that</span>
+<span class="sd">can be edited in Illustrator, etc.</span>
+
+<span class="sd">backend      : Qt4Agg</span>
+<span class="sd">text.usetex : True  # Assumes you have a findable LaTeX installation</span>
+<span class="sd">interactive : False</span>
+<span class="sd">font.family : sans-serif</span>
+<span class="sd">font.sans-serif : &#39;Arial&#39;  # (make first in list)</span>
+<span class="sd">mathtext.default : sf</span>
+<span class="sd">figure.facecolor : white  # personal preference</span>
+<span class="sd"># next setting allows pdf font to be readable in Adobe Illustrator</span>
+<span class="sd">pdf.fonttype : 42   # set fonts to TrueType (otherwise it will be 3</span>
+<span class="sd">                    # and the text will be vectorized.</span>
+<span class="sd">text.dvipnghack : True  # primarily to clean up font appearance on Mac</span>
+
+<span class="sd">The advantage is that there is less to do to get an exported file cleaned and ready for</span>
+<span class="sd">publication. Fonts are not vectorized (outlined), and window colors are white.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="MatplotlibExporter"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter">[docs]</a><span class="k">class</span> <span class="nc">MatplotlibExporter</span><span class="p">(</span><span class="n">Exporter</span><span class="p">):</span>
+    <span class="n">Name</span> <span class="o">=</span> <span class="s2">&quot;Matplotlib Window&quot;</span>
+    <span class="n">windows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">Exporter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="MatplotlibExporter.parameters"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.parameters">[docs]</a>    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="MatplotlibExporter.cleanAxes"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.cleanAxes">[docs]</a>    <span class="k">def</span> <span class="nf">cleanAxes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axl</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">axl</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">axl</span> <span class="o">=</span> <span class="p">[</span><span class="n">axl</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axl</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">loc</span><span class="p">,</span> <span class="n">spine</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">loc</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">]:</span>
+                    <span class="k">pass</span>
+                <span class="k">elif</span> <span class="n">loc</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="s1">&#39;top&#39;</span><span class="p">]:</span>
+                    <span class="n">spine</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+                    <span class="c1"># do not draw the spine</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown spine location: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">loc</span><span class="p">)</span>
+                <span class="c1"># turn off ticks when there is no spine</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticks_position</span><span class="p">(</span><span class="s1">&#39;bottom&#39;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MatplotlibExporter.export"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">PlotItem</span><span class="p">):</span>
+            <span class="n">mpw</span> <span class="o">=</span> <span class="n">MatplotlibWindow</span><span class="p">()</span>
+            <span class="n">MatplotlibExporter</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mpw</span><span class="p">)</span>
+
+            <span class="n">stdFont</span> <span class="o">=</span> <span class="s1">&#39;Arial&#39;</span>
+            
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">mpw</span><span class="o">.</span><span class="n">getFigure</span><span class="p">()</span>
+            
+            <span class="c1"># get labels from the graphic item</span>
+            <span class="n">xlabel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s1">&#39;bottom&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">toPlainText</span><span class="p">()</span>
+            <span class="n">ylabel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s1">&#39;left&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">toPlainText</span><span class="p">()</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">titleLabel</span><span class="o">.</span><span class="n">text</span>
+
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cleanAxes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+            <span class="c1">#ax.grid(True)</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">curves</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">getData</span><span class="p">()</span>
+                <span class="n">opts</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">opts</span>
+                <span class="n">pen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;pen&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">pen</span><span class="o">.</span><span class="n">style</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">NoPen</span><span class="p">:</span>
+                    <span class="n">linestyle</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">linestyle</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mf">255.</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">fn</span><span class="o">.</span><span class="n">colorTuple</span><span class="p">(</span><span class="n">pen</span><span class="o">.</span><span class="n">color</span><span class="p">())])</span>
+                <span class="n">symbol</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;symbol&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">symbol</span> <span class="o">==</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span>
+                    <span class="n">symbol</span> <span class="o">=</span> <span class="s1">&#39;^&#39;</span>
+                <span class="n">symbolPen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;symbolPen&#39;</span><span class="p">])</span>
+                <span class="n">symbolBrush</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;symbolBrush&#39;</span><span class="p">])</span>
+                <span class="n">markeredgecolor</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mf">255.</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">fn</span><span class="o">.</span><span class="n">colorTuple</span><span class="p">(</span><span class="n">symbolPen</span><span class="o">.</span><span class="n">color</span><span class="p">())])</span>
+                <span class="n">markerfacecolor</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mf">255.</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">fn</span><span class="o">.</span><span class="n">colorTuple</span><span class="p">(</span><span class="n">symbolBrush</span><span class="o">.</span><span class="n">color</span><span class="p">())])</span>
+                <span class="n">markersize</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;symbolSize&#39;</span><span class="p">]</span>
+                
+                <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;fillLevel&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;fillBrush&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">fillBrush</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;fillBrush&#39;</span><span class="p">])</span>
+                    <span class="n">fillcolor</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mf">255.</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">fn</span><span class="o">.</span><span class="n">colorTuple</span><span class="p">(</span><span class="n">fillBrush</span><span class="o">.</span><span class="n">color</span><span class="p">())])</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y1</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">y2</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;fillLevel&#39;</span><span class="p">],</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">fillcolor</span><span class="p">)</span>
+                
+                <span class="n">pl</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">symbol</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">pen</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> 
+                        <span class="n">linestyle</span><span class="o">=</span><span class="n">linestyle</span><span class="p">,</span> <span class="n">markeredgecolor</span><span class="o">=</span><span class="n">markeredgecolor</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">markerfacecolor</span><span class="p">,</span>
+                        <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
+                <span class="n">xr</span><span class="p">,</span> <span class="n">yr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">viewRange</span><span class="p">()</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xbound</span><span class="p">(</span><span class="o">*</span><span class="n">xr</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ybound</span><span class="p">(</span><span class="o">*</span><span class="n">yr</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>  <span class="c1"># place the labels.</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+            <span class="n">mpw</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Matplotlib export currently only works with plot items&quot;</span><span class="p">)</span></div></div>
+                
+<span class="n">MatplotlibExporter</span><span class="o">.</span><span class="n">register</span><span class="p">()</span>        
+        
+
+<span class="k">class</span> <span class="nc">MatplotlibWindow</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">..widgets</span> <span class="k">import</span> <span class="n">MatplotlibWidget</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mpl</span> <span class="o">=</span> <span class="n">MatplotlibWidget</span><span class="o">.</span><span class="n">MatplotlibWidget</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mpl</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mpl</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">MatplotlibExporter</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  <li><a href="../exporters.html">iris.gui.pyqtgraph.exporters</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

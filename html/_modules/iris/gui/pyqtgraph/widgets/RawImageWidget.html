@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.widgets.RawImageWidget &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.widgets.RawImageWidget</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtOpenGL</span>
+    <span class="kn">from</span> <span class="nn">OpenGL.GL</span> <span class="k">import</span> <span class="o">*</span>
+    <span class="n">HAVE_OPENGL</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+    <span class="c1"># Would prefer `except ImportError` here, but some versions of pyopengl generate</span>
+    <span class="c1"># AttributeError upon import</span>
+    <span class="n">HAVE_OPENGL</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="RawImageWidget"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget">[docs]</a><span class="k">class</span> <span class="nc">RawImageWidget</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Widget optimized for very fast video display. </span>
+<span class="sd">    Generally using an ImageItem inside GraphicsView is fast enough.</span>
+<span class="sd">    On some systems this may provide faster video. See the VideoSpeedTest example for benchmarking.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scaled</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Setting scaled=True will cause the entire image to be displayed within the boundaries of the widget. This also greatly reduces the speed at which it will draw frames.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSizePolicy</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">,</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scaled</span> <span class="o">=</span> <span class="n">scaled</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="kc">None</span>
+    
+<div class="viewcode-block" id="RawImageWidget.setImage"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget.setImage">[docs]</a>    <span class="k">def</span> <span class="nf">setImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        img must be ndarray of shape (x,y), (x,y,3), or (x,y,4).</span>
+<span class="sd">        Extra arguments are sent to functions.makeARGB</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="RawImageWidget.paintEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.RawImageWidget.RawImageWidget.paintEvent">[docs]</a>    <span class="k">def</span> <span class="nf">paintEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">argb</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">makeARGB</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">makeQImage</span><span class="p">(</span><span class="n">argb</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="c1">#if self.pixmap is None:</span>
+            <span class="c1">#self.pixmap = QtGui.QPixmap.fromImage(self.image)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPainter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaled</span><span class="p">:</span>
+            <span class="n">rect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rect</span><span class="p">()</span>
+            <span class="n">ar</span> <span class="o">=</span> <span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">())</span>
+            <span class="n">imar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">height</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">ar</span> <span class="o">&gt;</span> <span class="n">imar</span><span class="p">:</span>
+                <span class="n">rect</span><span class="o">.</span><span class="n">setWidth</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">*</span> <span class="n">imar</span><span class="o">/</span><span class="n">ar</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rect</span><span class="o">.</span><span class="n">setHeight</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">*</span> <span class="n">ar</span><span class="o">/</span><span class="n">imar</span><span class="p">))</span>
+                
+            <span class="n">p</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">rect</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">)</span>
+        <span class="c1">#p.drawPixmap(self.rect(), self.pixmap)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">end</span><span class="p">()</span></div></div>
+
+
+<span class="k">if</span> <span class="n">HAVE_OPENGL</span><span class="p">:</span>
+    <span class="k">class</span> <span class="nc">RawImageGLWidget</span><span class="p">(</span><span class="n">QtOpenGL</span><span class="o">.</span><span class="n">QGLWidget</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Similar to RawImageWidget, but uses a GL widget to do all drawing.</span>
+<span class="sd">        Perfomance varies between platforms; see examples/VideoSpeedTest for benchmarking.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scaled</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="n">QtOpenGL</span><span class="o">.</span><span class="n">QGLWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scaled</span> <span class="o">=</span> <span class="n">scaled</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uploaded</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">smooth</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">def</span> <span class="nf">setImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            img must be ndarray of shape (x,y), (x,y,3), or (x,y,4).</span>
+<span class="sd">            Extra arguments are sent to functions.makeARGB</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uploaded</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">initializeGL</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">texture</span> <span class="o">=</span> <span class="n">glGenTextures</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            
+        <span class="k">def</span> <span class="nf">uploadTexture</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">glEnable</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">)</span>
+            <span class="n">glBindTexture</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">texture</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">smooth</span><span class="p">:</span>
+                <span class="n">glTexParameteri</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="n">GL_TEXTURE_MIN_FILTER</span><span class="p">,</span> <span class="n">GL_LINEAR</span><span class="p">)</span>
+                <span class="n">glTexParameteri</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="n">GL_TEXTURE_MAG_FILTER</span><span class="p">,</span> <span class="n">GL_LINEAR</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">glTexParameteri</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="n">GL_TEXTURE_MIN_FILTER</span><span class="p">,</span> <span class="n">GL_NEAREST</span><span class="p">)</span>
+                <span class="n">glTexParameteri</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="n">GL_TEXTURE_MAG_FILTER</span><span class="p">,</span> <span class="n">GL_NEAREST</span><span class="p">)</span>
+            <span class="n">glTexParameteri</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="n">GL_TEXTURE_WRAP_S</span><span class="p">,</span> <span class="n">GL_CLAMP_TO_BORDER</span><span class="p">)</span>
+            <span class="n">glTexParameteri</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="n">GL_TEXTURE_WRAP_T</span><span class="p">,</span> <span class="n">GL_CLAMP_TO_BORDER</span><span class="p">)</span>
+            <span class="c1">#glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER)</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span>
+            
+            <span class="c1">### Test texture dimensions first</span>
+            <span class="c1">#glTexImage2D(GL_PROXY_TEXTURE_2D, 0, GL_RGBA, shape[0], shape[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, None)</span>
+            <span class="c1">#if glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_WIDTH) == 0:</span>
+                <span class="c1">#raise Exception(&quot;OpenGL failed to create 2D texture (%dx%d); too large for this hardware.&quot; % shape[:2])</span>
+            
+            <span class="n">glTexImage2D</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">GL_RGBA</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">GL_RGBA</span><span class="p">,</span> <span class="n">GL_UNSIGNED_BYTE</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
+            <span class="n">glDisable</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">)</span>
+            
+        <span class="k">def</span> <span class="nf">paintGL</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">return</span>
+                <span class="n">img</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span>
+                <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;useRGBA&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">makeARGB</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">uploaded</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">uploadTexture</span><span class="p">()</span>
+            
+            <span class="n">glViewport</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">())</span>
+            <span class="n">glEnable</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">)</span>
+            <span class="n">glBindTexture</span><span class="p">(</span><span class="n">GL_TEXTURE_2D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">texture</span><span class="p">)</span>
+            <span class="n">glColor4f</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">glBegin</span><span class="p">(</span><span class="n">GL_QUADS</span><span class="p">)</span>
+            <span class="n">glTexCoord2f</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">glVertex3f</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">glTexCoord2f</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">glVertex3f</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">glTexCoord2f</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">glVertex3f</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">glTexCoord2f</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">glVertex3f</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">glEnd</span><span class="p">()</span>
+            <span class="n">glDisable</span><span class="p">(</span><span class="n">GL_TEXTURE_3D</span><span class="p">)</span>
+            
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

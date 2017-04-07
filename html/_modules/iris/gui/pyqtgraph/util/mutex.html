@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.util.mutex &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.util.mutex</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtCore</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+
+<div class="viewcode-block" id="Mutex"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.debug.Mutex">[docs]</a><span class="k">class</span> <span class="nc">Mutex</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QMutex</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Subclass of QMutex that provides useful debugging information during</span>
+<span class="sd">    deadlocks--tracebacks are printed for both the code location that is </span>
+<span class="sd">    attempting to lock the mutex as well as the location that has already</span>
+<span class="sd">    acquired the lock.</span>
+<span class="sd">    </span>
+<span class="sd">    Also provides __enter__ and __exit__ methods for use in &quot;with&quot; statements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">kargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recursive&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QMutex</span><span class="o">.</span><span class="n">Recursive</span><span class="p">,)</span>
+        <span class="n">QtCore</span><span class="o">.</span><span class="n">QMutex</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QMutex</span><span class="p">()</span>  <span class="c1">## for serializing access to self.tb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tb</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1">## True to enable debugging functions</span>
+
+<div class="viewcode-block" id="Mutex.tryLock"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.debug.Mutex.tryLock">[docs]</a>    <span class="k">def</span> <span class="nf">tryLock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">locked</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QMutex</span><span class="o">.</span><span class="n">tryLock</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">locked</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QMutex</span><span class="o">.</span><span class="n">tryLock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="ow">and</span> <span class="n">locked</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_stack</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;  &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">))</span>
+                <span class="c1">#print &#39;trylock&#39;, self, len(self.tb)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">unlock</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">locked</span></div>
+        
+<div class="viewcode-block" id="Mutex.lock"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.debug.Mutex.lock">[docs]</a>    <span class="k">def</span> <span class="nf">lock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">waitTime</span> <span class="o">=</span> <span class="mi">5000</span>  <span class="c1"># in ms</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tryLock</span><span class="p">(</span><span class="n">waitTime</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="n">c</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Waiting for mutex lock (</span><span class="si">%0.1f</span><span class="s2"> sec). Traceback follows:&quot;</span> 
+                          <span class="o">%</span> <span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">waitTime</span><span class="o">/</span><span class="mf">1000.</span><span class="p">))</span>
+                    <span class="n">traceback</span><span class="o">.</span><span class="n">print_stack</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mutex is currently locked from:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mutex is currently locked from [???]&quot;</span><span class="p">)</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">unlock</span><span class="p">()</span></div>
+        <span class="c1">#print &#39;lock&#39;, self, len(self.tb)</span>
+
+<div class="viewcode-block" id="Mutex.unlock"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.debug.Mutex.unlock">[docs]</a>    <span class="k">def</span> <span class="nf">unlock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">QtCore</span><span class="o">.</span><span class="n">QMutex</span><span class="o">.</span><span class="n">unlock</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1">#print &#39;unlock&#39;, self, len(self.tb)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Attempt to unlock mutex before it has been locked&quot;</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">unlock</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Mutex.depth"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.debug.Mutex.depth">[docs]</a>    <span class="k">def</span> <span class="nf">depth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">unlock</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">n</span></div>
+
+<div class="viewcode-block" id="Mutex.traceback"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.debug.Mutex.traceback">[docs]</a>    <span class="k">def</span> <span class="nf">traceback</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb</span><span class="p">[:]</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">unlock</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unlock</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.dualtree._discrete &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.dualtree._discrete</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Algorithms based on the discrete wavelet transform.</span>
+
+<span class="sd">Author: Laurent P. René de Cotret</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">._dtcwt</span> <span class="k">import</span> <span class="n">DEFAULT_MODE</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+<span class="kn">import</span> <span class="nn">pywt</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="k">import</span> <span class="n">warn</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;baseline_dwt&#39;</span><span class="p">,</span> <span class="s1">&#39;denoise_dwt&#39;</span><span class="p">]</span>
+
+<span class="n">FUNC_DICT</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">(</span><span class="n">pywt</span><span class="o">.</span><span class="n">wavedec</span><span class="p">,</span> <span class="n">pywt</span><span class="o">.</span><span class="n">waverec</span><span class="p">),</span> <span class="mi">2</span><span class="p">:</span> <span class="p">(</span><span class="n">pywt</span><span class="o">.</span><span class="n">wavedec2</span><span class="p">,</span> <span class="n">pywt</span><span class="o">.</span><span class="n">waverec2</span><span class="p">)}</span>    <span class="c1"># Decomposition and recomposition functions based on dimensionality</span>
+
+<div class="viewcode-block" id="baseline_dwt"><a class="viewcode-back" href="../../../iris.dualtree.html#iris.dualtree.baseline_dwt">[docs]</a><span class="k">def</span> <span class="nf">baseline_dwt</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">wavelet</span> <span class="o">=</span> <span class="s1">&#39;sym6&#39;</span><span class="p">,</span> <span class="n">background_regions</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Iterative method of baseline determination, modified from [1]. This function handles both 1D curves and 2D images.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    array : ndarray, shape (M,N)</span>
+<span class="sd">        Data with background. Can be either 1D signal or 2D array.</span>
+<span class="sd">    max_iter : int</span>
+<span class="sd">        Number of iterations to perform.</span>
+<span class="sd">    level : int or None, optional</span>
+<span class="sd">        Decomposition level. A higher level will result in a coarser approximation of</span>
+<span class="sd">        the input signal (read: a lower frequency baseline). If None (default), the maximum level</span>
+<span class="sd">        possible is used.</span>
+<span class="sd">    wavelet : PyWavelet.Wavelet object or str, optional</span>
+<span class="sd">        Wavelet with which to perform the algorithm. See PyWavelet documentation</span>
+<span class="sd">        for available values. Default is &#39;sym6&#39;.</span>
+<span class="sd">    background_regions : list, optional</span>
+<span class="sd">        Indices of the array values that are known to be purely background. Depending</span>
+<span class="sd">        on the dimensions of array, the format is different:</span>
+<span class="sd">        </span>
+<span class="sd">        ``array.ndim == 1``</span>
+<span class="sd">          background_regions is a list of ints (indices) or slices</span>
+<span class="sd">          E.g. &gt;&gt;&gt; background_regions = [0, 7, 122, slice(534, 1000)]</span>
+<span class="sd">          </span>
+<span class="sd">        ``array.ndim == 2``</span>
+<span class="sd">          background_regions is a list of tuples of ints (indices) or tuples of slices</span>
+<span class="sd">          E.g. &gt;&gt;&gt; background_regions = [(14, 19), (42, 99), (slice(59, 82), slice(81,23))]</span>
+<span class="sd">         </span>
+<span class="sd">        Default is empty list.</span>
+<span class="sd">    </span>
+<span class="sd">    mask : ndarray, dtype bool, optional</span>
+<span class="sd">        Mask array that evaluates to True for pixels that are invalid. Useful to determine which pixels are masked</span>
+<span class="sd">        by a beam block.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    baseline : ndarray, shape (M,N)</span>
+<span class="sd">        Baseline of the input array.</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If input array is neither 1D nor 2D.</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Galloway et al. &#39;An Iterative Algorithm for Background Removal in Spectroscopy by Wavelet Transforms&#39;, Applied Spectroscopy pp. 1370 - 1376, September 2009.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">array</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+    
+    <span class="n">signal</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+    <span class="n">background</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iter</span><span class="p">):</span>
+        
+        <span class="c1"># Make sure the background values are equal to the original signal values in the</span>
+        <span class="c1"># background regions</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">background_regions</span><span class="p">:</span>
+            <span class="n">signal</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        
+        <span class="c1"># Wavelet reconstruction using approximation coefficients</span>
+        <span class="n">background</span> <span class="o">=</span> <span class="n">_approx_rec_dwt</span><span class="p">(</span><span class="n">array</span> <span class="o">=</span> <span class="n">signal</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">level</span><span class="p">,</span> <span class="n">wavelet</span> <span class="o">=</span> <span class="n">wavelet</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="p">)</span>
+        
+        <span class="c1"># Modify the signal so it cannot be more than the background</span>
+        <span class="c1"># This reduces the influence of the peaks in the wavelet decomposition</span>
+        <span class="n">signal</span><span class="p">[</span><span class="n">signal</span> <span class="o">&gt;</span> <span class="n">background</span><span class="p">]</span> <span class="o">=</span> <span class="n">background</span><span class="p">[</span><span class="n">signal</span> <span class="o">&gt;</span> <span class="n">background</span><span class="p">]</span>
+    
+    <span class="c1"># The background should be identically 0 where the data points are invalid</span>
+    <span class="n">background</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  
+    <span class="k">return</span> <span class="n">background</span></div>
+
+<div class="viewcode-block" id="denoise_dwt"><a class="viewcode-back" href="../../../iris.dualtree.html#iris.dualtree.denoise_dwt">[docs]</a><span class="k">def</span> <span class="nf">denoise_dwt</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">wavelet</span> <span class="o">=</span> <span class="s1">&#39;db5&#39;</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Denoise an array using the wavelet transform.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    array : ndarray, shape (M,N)</span>
+<span class="sd">        Data with background. Can be either 1D signal or 2D array.</span>
+<span class="sd">    level : int, optional</span>
+<span class="sd">        Decomposition level. Higher level means that lower frequency noise is removed. Default is 1</span>
+<span class="sd">    wavelet : PyWavelet.Wavelet object or str, optional</span>
+<span class="sd">        Wavelet with which to perform the algorithm. See PyWavelet documentation</span>
+<span class="sd">        for available values. Default is &#39;db5&#39;.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    denoised : ndarray, shape (M,N)</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------    </span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If input array has dimension &gt; 2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_approx_rec_dwt</span><span class="p">(</span><span class="n">array</span> <span class="o">=</span> <span class="n">array</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">level</span><span class="p">,</span> <span class="n">wavelet</span> <span class="o">=</span> <span class="n">wavelet</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">_approx_rec_dwt</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">wavelet</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Approximate reconstruction of a signal/image. Uses the multi-level discrete wavelet </span>
+<span class="sd">    transform to decompose a signal or an image, and reconstruct it using approximate </span>
+<span class="sd">    coefficients only.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    array : array-like</span>
+<span class="sd">        Array to be decomposed. Currently, only 1D and 2D arrays are supported.</span>
+<span class="sd">    level : int or &#39;max&#39; or None (deprecated)</span>
+<span class="sd">        Decomposition level. A higher level will result in a coarser approximation of</span>
+<span class="sd">        the input array. If the level is higher than the maximum possible decomposition level,</span>
+<span class="sd">        the maximum level is used.</span>
+<span class="sd">        If None, the maximum possible decomposition level is used.</span>
+<span class="sd">    wavelet : str or Wavelet object</span>
+<span class="sd">        Can be any argument accepted by PyWavelet.Wavelet, e.g. &#39;db10&#39;</span>
+<span class="sd">    mask : ndarray</span>
+<span class="sd">        Same shape as array. Must evaluate to True where data is invalid.</span>
+<span class="sd">            </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    reconstructed : ndarray</span>
+<span class="sd">        Approximated reconstruction of the input array.</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------    </span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If input array has dimension &gt; 2 </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">array</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    
+    <span class="c1"># Choose deconstruction and reconstruction functions based on dimensionality</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">ndim</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Signal dimensions </span><span class="si">{}</span><span class="s1"> larger than 2 is not supported.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+    <span class="n">func_dict</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">(</span><span class="n">pywt</span><span class="o">.</span><span class="n">wavedec</span><span class="p">,</span> <span class="n">pywt</span><span class="o">.</span><span class="n">waverec</span><span class="p">),</span> <span class="mi">2</span><span class="p">:</span> <span class="p">(</span><span class="n">pywt</span><span class="o">.</span><span class="n">wavedec2</span><span class="p">,</span> <span class="n">pywt</span><span class="o">.</span><span class="n">waverec2</span><span class="p">)}</span>
+    <span class="n">dec_func</span><span class="p">,</span> <span class="n">rec_func</span> <span class="o">=</span> <span class="n">FUNC_DICT</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span>
+
+    <span class="c1"># Build Wavelet object</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavelet</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">wavelet</span> <span class="o">=</span> <span class="n">pywt</span><span class="o">.</span><span class="n">Wavelet</span><span class="p">(</span><span class="n">wavelet</span><span class="p">)</span>
+        
+    <span class="c1"># Check maximum decomposition level</span>
+    <span class="c1"># For 2D array, check the condition with shortest dimension min(array.shape). This is how</span>
+    <span class="c1"># it is done in PyWavelet.wavedec2.</span>
+    <span class="n">max_level</span> <span class="o">=</span> <span class="n">pywt</span><span class="o">.</span><span class="n">dwt_max_level</span><span class="p">(</span><span class="n">data_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="n">filter_len</span> <span class="o">=</span> <span class="n">wavelet</span><span class="o">.</span><span class="n">dec_len</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">level</span> <span class="ow">is</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="n">max_level</span>
+    <span class="k">elif</span> <span class="n">max_level</span> <span class="o">&lt;</span> <span class="n">level</span><span class="p">:</span>
+        <span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Decomposition level </span><span class="si">{}</span><span class="s1"> higher than maximum </span><span class="si">{}</span><span class="s1">. Maximum is used.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">max_level</span><span class="p">))</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="n">max_level</span>
+        
+    <span class="c1"># By now, we are sure that the decomposition level will be supported.</span>
+    <span class="c1"># Decompose the signal using the multilevel discrete wavelet transform</span>
+    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">dec_func</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="n">array</span><span class="p">,</span> <span class="n">wavelet</span> <span class="o">=</span> <span class="n">wavelet</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">level</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="n">DEFAULT_MODE</span><span class="p">)</span>
+    <span class="n">app_coeffs</span><span class="p">,</span> <span class="n">det_coeffs</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    
+    <span class="c1"># Replace detail coefficients by 0; keep the correct length so that the</span>
+    <span class="c1"># reconstructed signal has the same size as the (possibly upsampled) signal</span>
+    <span class="c1"># The structure of coefficients depends on the dimensionality</span>
+    <span class="n">zeroed</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">zeroed</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">det_coeffs</span><span class="p">)</span>
+        <span class="c1">#for detail in det_coeffs:</span>
+        <span class="c1">#    zeroed.append( n.zeros_like(detail) )</span>
+    <span class="k">elif</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">detail_tuples</span> <span class="ow">in</span> <span class="n">det_coeffs</span><span class="p">:</span>
+            <span class="n">cHn</span><span class="p">,</span> <span class="n">cVn</span><span class="p">,</span> <span class="n">cDn</span> <span class="o">=</span> <span class="n">detail_tuples</span>       <span class="c1"># See PyWavelet.wavedec2 documentation for coefficients structure.</span>
+            <span class="n">zeroed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">cHn</span><span class="p">),</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">cVn</span><span class="p">),</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">cDn</span><span class="p">))</span> <span class="p">)</span>
+        
+    <span class="c1"># Reconstruct signal</span>
+    <span class="n">reconstructed</span> <span class="o">=</span> <span class="n">rec_func</span><span class="p">([</span><span class="n">app_coeffs</span><span class="p">]</span> <span class="o">+</span> <span class="n">zeroed</span><span class="p">,</span> <span class="n">wavelet</span> <span class="o">=</span> <span class="n">wavelet</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="n">DEFAULT_MODE</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">n</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">reconstructed</span><span class="p">,</span> <span class="n">new_shape</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

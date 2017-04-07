@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.LegendItem &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.graphicsItems.LegendItem</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.GraphicsWidget</span> <span class="k">import</span> <span class="n">GraphicsWidget</span>
+<span class="kn">from</span> <span class="nn">.LabelItem</span> <span class="k">import</span> <span class="n">LabelItem</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">..Point</span> <span class="k">import</span> <span class="n">Point</span>
+<span class="kn">from</span> <span class="nn">.ScatterPlotItem</span> <span class="k">import</span> <span class="n">ScatterPlotItem</span><span class="p">,</span> <span class="n">drawSymbol</span>
+<span class="kn">from</span> <span class="nn">.PlotDataItem</span> <span class="k">import</span> <span class="n">PlotDataItem</span>
+<span class="kn">from</span> <span class="nn">.GraphicsWidgetAnchor</span> <span class="k">import</span> <span class="n">GraphicsWidgetAnchor</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LegendItem&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="LegendItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem">[docs]</a><span class="k">class</span> <span class="nc">LegendItem</span><span class="p">(</span><span class="n">GraphicsWidget</span><span class="p">,</span> <span class="n">GraphicsWidgetAnchor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Displays a legend used for describing the contents of a plot.</span>
+<span class="sd">    LegendItems are most commonly created by calling PlotItem.addLegend().</span>
+
+<span class="sd">    Note that this item should not be added directly to a PlotItem. Instead,</span>
+<span class="sd">    Make it a direct descendant of the PlotItem::</span>
+
+<span class="sd">        legend.setParentItem(plotItem)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ==============  ===============================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        size            Specifies the fixed size (width, height) of the legend. If</span>
+<span class="sd">                        this argument is omitted, the legend will autimatically resize</span>
+<span class="sd">                        to fit its contents.</span>
+<span class="sd">        offset          Specifies the offset position relative to the legend&#39;s parent.</span>
+<span class="sd">                        Positive values offset from the left or top; negative values</span>
+<span class="sd">                        offset from the right or bottom. If offset is None, the</span>
+<span class="sd">                        legend must be anchored manually by calling anchor() or</span>
+<span class="sd">                        positioned by calling setPos().</span>
+<span class="sd">        ==============  ===============================================================</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        
+        <span class="n">GraphicsWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">GraphicsWidgetAnchor</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFlag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ItemIgnoresTransformations</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsGridLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        
+<div class="viewcode-block" id="LegendItem.setParentItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem.setParentItem">[docs]</a>    <span class="k">def</span> <span class="nf">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">GraphicsWidget</span><span class="o">.</span><span class="n">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
+            <span class="n">anchorx</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">anchory</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">anchor</span> <span class="o">=</span> <span class="p">(</span><span class="n">anchorx</span><span class="p">,</span> <span class="n">anchory</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">anchor</span><span class="p">(</span><span class="n">itemPos</span><span class="o">=</span><span class="n">anchor</span><span class="p">,</span> <span class="n">parentPos</span><span class="o">=</span><span class="n">anchor</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+        
+<div class="viewcode-block" id="LegendItem.addItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem.addItem">[docs]</a>    <span class="k">def</span> <span class="nf">addItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a new entry to the legend. </span>
+
+<span class="sd">        ==============  ========================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        item            A PlotDataItem from which the line and point style</span>
+<span class="sd">                        of the item will be determined or an instance of</span>
+<span class="sd">                        ItemSample (or a subclass), allowing the item display</span>
+<span class="sd">                        to be customized.</span>
+<span class="sd">        title           The title to display for this item. Simple HTML allowed.</span>
+<span class="sd">        ==============  ========================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">LabelItem</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ItemSample</span><span class="p">):</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="n">ItemSample</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>        
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">sample</span><span class="p">,</span> <span class="n">label</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateSize</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="LegendItem.removeItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem.removeItem">[docs]</a>    <span class="k">def</span> <span class="nf">removeItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes one item from the legend. </span>
+
+<span class="sd">        ==============  ========================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        title           The title displayed for this item.</span>
+<span class="sd">        ==============  ========================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Thanks, Ulrich!</span>
+        <span class="c1"># cycle for a match</span>
+        <span class="k">for</span> <span class="n">sample</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>  <span class="c1"># hit</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span> <span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span> <span class="p">)</span>    <span class="c1"># remove from itemlist</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>          <span class="c1"># remove from layout</span>
+                <span class="n">sample</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>                          <span class="c1"># remove from drawing</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+                <span class="n">label</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">updateSize</span><span class="p">()</span>                       <span class="c1"># redraq box</span></div>
+
+<div class="viewcode-block" id="LegendItem.updateSize"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem.updateSize">[docs]</a>    <span class="k">def</span> <span class="nf">updateSize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+            
+        <span class="n">height</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#print(&quot;-------&quot;)</span>
+        <span class="k">for</span> <span class="n">sample</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+            <span class="n">height</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">height</span><span class="p">(),</span> <span class="n">label</span><span class="o">.</span><span class="n">height</span><span class="p">())</span> <span class="o">+</span> <span class="mi">3</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">sample</span><span class="o">.</span><span class="n">width</span><span class="p">()</span><span class="o">+</span><span class="n">label</span><span class="o">.</span><span class="n">width</span><span class="p">())</span>
+            <span class="c1">#print(width, height)</span>
+        <span class="c1">#print width, height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">width</span><span class="o">+</span><span class="mi">25</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="LegendItem.boundingRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem.boundingRect">[docs]</a>    <span class="k">def</span> <span class="nf">boundingRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">())</span></div>
+    
+<div class="viewcode-block" id="LegendItem.paint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem.paint">[docs]</a>    <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">100</span><span class="p">))</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">setBrush</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">50</span><span class="p">))</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">drawRect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="LegendItem.hoverEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem.hoverEvent">[docs]</a>    <span class="k">def</span> <span class="nf">hoverEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">ev</span><span class="o">.</span><span class="n">acceptDrags</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="LegendItem.mouseDragEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LegendItem.LegendItem.mouseDragEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mouseDragEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">:</span>
+            <span class="n">dpos</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span> <span class="o">-</span> <span class="n">ev</span><span class="o">.</span><span class="n">lastPos</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">autoAnchor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span> <span class="o">+</span> <span class="n">dpos</span><span class="p">)</span></div></div>
+        
+<span class="k">class</span> <span class="nc">ItemSample</span><span class="p">(</span><span class="n">GraphicsWidget</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Class responsible for drawing a single item in a LegendItem (sans label).</span>
+<span class="sd">    </span>
+<span class="sd">    This may be subclassed to draw custom graphics in a Legend.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">## Todo: make this more generic; let each item decide how it should be represented.</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">GraphicsWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span> <span class="o">=</span> <span class="n">item</span>
+    
+    <span class="k">def</span> <span class="nf">boundingRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="c1">#p.setRenderHint(p.Antialiasing)  # only if the data is antialiased.</span>
+        <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">opts</span>
+        
+        <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fillLevel&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fillBrush&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">setBrush</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;fillBrush&#39;</span><span class="p">]))</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">drawPolygon</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPolygonF</span><span class="p">([</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">18</span><span class="p">),</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">18</span><span class="p">)]))</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">ScatterPlotItem</span><span class="p">):</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;pen&#39;</span><span class="p">]))</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">drawLine</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">18</span><span class="p">,</span> <span class="mi">18</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        
+        <span class="n">symbol</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;symbol&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">symbol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">PlotDataItem</span><span class="p">):</span>
+                <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">scatter</span><span class="o">.</span><span class="n">opts</span>
+                
+            <span class="n">pen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;pen&#39;</span><span class="p">])</span>
+            <span class="n">brush</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;brush&#39;</span><span class="p">])</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span>
+            
+            <span class="n">p</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">drawSymbol</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">pen</span><span class="p">,</span> <span class="n">brush</span><span class="p">)</span>
+        
+        
+        
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -39,7 +39,11 @@ class Iris(QtGui.QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        self.controller = IrisController(parent = self)
+        self._controller_thread = QtCore.QThread()
+        self.controller = IrisController() # No parent so that we can moveToThread
+        self.controller.moveToThread(self._controller_thread)
+        self._controller_thread.start()
+
         self.dataset_info = DatasetInfoWidget()
         self.raw_data_viewer = RawDataViewer()
         self.processed_viewer = ProcessedDataViewer()
@@ -160,6 +164,9 @@ class Iris(QtGui.QMainWindow):
         self.setWindowTitle('Iris - UED data exploration')
         self.center_window()
         self.showMaximized()
+        
+    def __del__(self):
+        self._controller_thread.quit()
     
     @QtCore.pyqtSlot()
     def load_raw_dataset(self):
@@ -170,7 +177,8 @@ class Iris(QtGui.QMainWindow):
     def load_dataset(self):
         path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset', filter = '*.hdf5')[0]
         self.dataset_path_signal.emit(path)
-            
+    
+    @QtCore.pyqtSlot()
     def center_window(self):
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()

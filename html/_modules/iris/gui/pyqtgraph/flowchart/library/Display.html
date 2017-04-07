@@ -1,0 +1,401 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.flowchart.library.Display &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.flowchart.library.Display</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">from</span> <span class="nn">..Node</span> <span class="k">import</span> <span class="n">Node</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">...Qt</span> <span class="k">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span>
+<span class="kn">from</span> <span class="nn">...graphicsItems.ScatterPlotItem</span> <span class="k">import</span> <span class="n">ScatterPlotItem</span>
+<span class="kn">from</span> <span class="nn">...graphicsItems.PlotCurveItem</span> <span class="k">import</span> <span class="n">PlotCurveItem</span>
+<span class="kn">from</span> <span class="nn">...</span> <span class="k">import</span> <span class="n">PlotDataItem</span><span class="p">,</span> <span class="n">ComboBox</span>
+
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="PlotWidgetNode"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode">[docs]</a><span class="k">class</span> <span class="nc">PlotWidgetNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Connection to PlotWidget. Will plot arrays, metaarrays, and display event lists.&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;PlotWidget&#39;</span>
+    <span class="n">sigPlotChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">Node</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">terminals</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;In&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;io&#39;</span><span class="p">:</span> <span class="s1">&#39;in&#39;</span><span class="p">,</span> <span class="s1">&#39;multi&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># currently selected plot </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plots</span> <span class="o">=</span> <span class="p">{}</span>   <span class="c1"># list of available plots user may select from</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span> <span class="o">=</span> <span class="kc">None</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="p">{}</span>
+        
+<div class="viewcode-block" id="PlotWidgetNode.disconnected"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.disconnected">[docs]</a>    <span class="k">def</span> <span class="nf">disconnected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">localTerm</span><span class="p">,</span> <span class="n">remoteTerm</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">localTerm</span> <span class="ow">is</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;In&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">remoteTerm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">remoteTerm</span><span class="p">])</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">remoteTerm</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="PlotWidgetNode.setPlot"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.setPlot">[docs]</a>    <span class="k">def</span> <span class="nf">setPlot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot</span><span class="p">):</span>
+        <span class="c1">#print &quot;======set plot&quot;</span>
+        <span class="k">if</span> <span class="n">plot</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># clear data from previous plot</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">vid</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">])</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="o">=</span> <span class="n">plot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateUi</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigPlotChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="PlotWidgetNode.getPlot"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.getPlot">[docs]</a>    <span class="k">def</span> <span class="nf">getPlot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span></div>
+        
+<div class="viewcode-block" id="PlotWidgetNode.process"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.process">[docs]</a>    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">In</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">display</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="c1"># Add all new input items to selected plot</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">vals</span> <span class="ow">in</span> <span class="n">In</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">vals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">list</span><span class="p">:</span>
+                    <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+                    
+                <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">:</span>
+                    <span class="n">vid</span> <span class="o">=</span> <span class="nb">id</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">vid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">]</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">scene</span><span class="p">():</span>
+                        <span class="c1"># Item is already added to the correct scene</span>
+                        <span class="c1">#   possible bug: what if two plots occupy the same scene? (should</span>
+                        <span class="c1">#   rarely be a problem because items are removed from a plot before</span>
+                        <span class="c1">#   switching).</span>
+                        <span class="n">items</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vid</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Add the item to the plot, or generate a new item if needed.</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsItem</span><span class="p">):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                            <span class="n">item</span> <span class="o">=</span> <span class="n">val</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                        <span class="n">items</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vid</span><span class="p">)</span>
+                        
+            <span class="c1"># Any left-over items that did not appear in the input must be removed</span>
+            <span class="k">for</span> <span class="n">vid</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">vid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">])</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">]</span></div>
+            
+<div class="viewcode-block" id="PlotWidgetNode.processBypassed"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.processBypassed">[docs]</a>    <span class="k">def</span> <span class="nf">processBypassed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="p">{}</span></div>
+        
+<div class="viewcode-block" id="PlotWidgetNode.ctrlWidget"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.ctrlWidget">[docs]</a>    <span class="k">def</span> <span class="nf">ctrlWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ui</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ui</span> <span class="o">=</span> <span class="n">ComboBox</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">currentIndexChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotSelected</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateUi</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ui</span></div>
+    
+<div class="viewcode-block" id="PlotWidgetNode.plotSelected"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.plotSelected">[docs]</a>    <span class="k">def</span> <span class="nf">plotSelected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setPlot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">value</span><span class="p">())</span></div>
+    
+<div class="viewcode-block" id="PlotWidgetNode.setPlotList"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.setPlotList">[docs]</a>    <span class="k">def</span> <span class="nf">setPlotList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plots</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Specify the set of plots (PlotWidget or PlotItem) that the user may</span>
+<span class="sd">        select from.</span>
+<span class="sd">        </span>
+<span class="sd">        *plots* must be a dictionary of {name: plot} pairs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plots</span> <span class="o">=</span> <span class="n">plots</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateUi</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="PlotWidgetNode.updateUi"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotWidgetNode.updateUi">[docs]</a>    <span class="k">def</span> <span class="nf">updateUi</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># sets list and automatically preserves previous selection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">setItems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plots</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span></div></div>
+        
+
+<div class="viewcode-block" id="CanvasNode"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.CanvasNode">[docs]</a><span class="k">class</span> <span class="nc">CanvasNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Connection to a Canvas widget.&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;CanvasWidget&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">Node</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">terminals</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;In&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;io&#39;</span><span class="p">:</span> <span class="s1">&#39;in&#39;</span><span class="p">,</span> <span class="s1">&#39;multi&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="p">{}</span>
+        
+<div class="viewcode-block" id="CanvasNode.disconnected"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.CanvasNode.disconnected">[docs]</a>    <span class="k">def</span> <span class="nf">disconnected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">localTerm</span><span class="p">,</span> <span class="n">remoteTerm</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">localTerm</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">In</span> <span class="ow">and</span> <span class="n">remoteTerm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">remoteTerm</span><span class="p">])</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">remoteTerm</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="CanvasNode.setCanvas"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.CanvasNode.setCanvas">[docs]</a>    <span class="k">def</span> <span class="nf">setCanvas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">canvas</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="n">canvas</span></div>
+        
+<div class="viewcode-block" id="CanvasNode.getCanvas"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.CanvasNode.getCanvas">[docs]</a>    <span class="k">def</span> <span class="nf">getCanvas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span></div>
+        
+<div class="viewcode-block" id="CanvasNode.process"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.CanvasNode.process">[docs]</a>    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">In</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">display</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">vals</span> <span class="ow">in</span> <span class="n">In</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">vals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">list</span><span class="p">:</span>
+                    <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+                
+                <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">:</span>
+                    <span class="n">vid</span> <span class="o">=</span> <span class="nb">id</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">vid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+                        <span class="n">items</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vid</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                        <span class="n">item</span> <span class="o">=</span> <span class="n">val</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                        <span class="n">items</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vid</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">vid</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">vid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                    <span class="c1">#print &quot;remove&quot;, self.items[vid]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">])</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">vid</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="PlotCurve"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotCurve">[docs]</a><span class="k">class</span> <span class="nc">PlotCurve</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generates a plot curve from x/y data&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;PlotCurve&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;color&#39;</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">),</span>
+    <span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">CtrlNode</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">terminals</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;io&#39;</span><span class="p">:</span> <span class="s1">&#39;in&#39;</span><span class="p">},</span>
+            <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;io&#39;</span><span class="p">:</span> <span class="s1">&#39;in&#39;</span><span class="p">},</span>
+            <span class="s1">&#39;plot&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;io&#39;</span><span class="p">:</span> <span class="s1">&#39;out&#39;</span><span class="p">}</span>
+        <span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span> <span class="o">=</span> <span class="n">PlotDataItem</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="PlotCurve.process"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.PlotCurve.process">[docs]</a>    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1">#print &quot;scatterplot process&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;plot&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">setData</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">pen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;color&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">color</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;plot&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">}</span></div></div>
+        
+        
+
+
+<div class="viewcode-block" id="ScatterPlot"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.ScatterPlot">[docs]</a><span class="k">class</span> <span class="nc">ScatterPlot</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generates a scatter plot from a record array or nested dicts&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;ScatterPlot&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;combo&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;combo&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;sizeEnabled&#39;</span><span class="p">,</span> <span class="s1">&#39;check&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;size&#39;</span><span class="p">,</span> <span class="s1">&#39;combo&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;absoluteSize&#39;</span><span class="p">,</span> <span class="s1">&#39;check&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;colorEnabled&#39;</span><span class="p">,</span> <span class="s1">&#39;check&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;color&#39;</span><span class="p">,</span> <span class="s1">&#39;colormap&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">(</span><span class="s1">&#39;borderEnabled&#39;</span><span class="p">,</span> <span class="s1">&#39;check&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;border&#39;</span><span class="p">,</span> <span class="s1">&#39;colormap&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">CtrlNode</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">terminals</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;input&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;io&#39;</span><span class="p">:</span> <span class="s1">&#39;in&#39;</span><span class="p">},</span>
+            <span class="s1">&#39;plot&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;io&#39;</span><span class="p">:</span> <span class="s1">&#39;out&#39;</span><span class="p">}</span>
+        <span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span> <span class="o">=</span> <span class="n">ScatterPlotItem</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c1">#self.ui = QtGui.QWidget()</span>
+        <span class="c1">#self.layout = QtGui.QGridLayout()</span>
+        <span class="c1">#self.ui.setLayout(self.layout)</span>
+        
+        <span class="c1">#self.xCombo = QtGui.QComboBox()</span>
+        <span class="c1">#self.yCombo = QtGui.QComboBox()</span>
+        
+        
+    
+<div class="viewcode-block" id="ScatterPlot.process"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.ScatterPlot.process">[docs]</a>    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1">#print &quot;scatterplot process&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;plot&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateKeys</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">currentText</span><span class="p">())</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">currentText</span><span class="p">())</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">currentText</span><span class="p">())</span>
+        <span class="n">pen</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPen</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+            <span class="n">pt</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;pos&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">i</span><span class="p">[</span><span class="n">y</span><span class="p">])}</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;sizeEnabled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isChecked</span><span class="p">():</span>
+                <span class="n">pt</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="n">size</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;borderEnabled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isChecked</span><span class="p">():</span>
+                <span class="n">pt</span><span class="p">[</span><span class="s1">&#39;pen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;border&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pt</span><span class="p">[</span><span class="s1">&#39;pen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pen</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;colorEnabled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isChecked</span><span class="p">():</span>
+                <span class="n">pt</span><span class="p">[</span><span class="s1">&#39;brush&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QBrush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;color&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">setPxMode</span><span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;absoluteSize&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isChecked</span><span class="p">())</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">setPoints</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;plot&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">}</span></div>
+        
+        
+
+<div class="viewcode-block" id="ScatterPlot.updateKeys"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.ScatterPlot.updateKeys">[docs]</a>    <span class="k">def</span> <span class="nf">updateKeys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">void</span><span class="p">):</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unknown data type:&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">data</span><span class="p">)</span>
+            <span class="k">return</span>
+            
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">blockSignals</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]]:</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">currentText</span><span class="p">())</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">cur</span><span class="p">:</span>
+                    <span class="n">c</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;color&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;border&#39;</span><span class="p">]]:</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">setArgList</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">blockSignals</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">keys</span> <span class="o">=</span> <span class="n">keys</span></div>
+        
+
+<div class="viewcode-block" id="ScatterPlot.saveState"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.ScatterPlot.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">CtrlNode</span><span class="o">.</span><span class="n">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;keys&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">,</span> <span class="s1">&#39;ctrls&#39;</span><span class="p">:</span> <span class="n">state</span><span class="p">}</span></div>
+        
+<div class="viewcode-block" id="ScatterPlot.restoreState"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Display.ScatterPlot.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateKeys</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;keys&#39;</span><span class="p">])</span>
+        <span class="n">CtrlNode</span><span class="o">.</span><span class="n">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;ctrls&#39;</span><span class="p">])</span></div></div>
+        
+<span class="c1">#class ImageItem(Node):</span>
+    <span class="c1">#&quot;&quot;&quot;Creates an ImageItem for display in a canvas from a file handle.&quot;&quot;&quot;</span>
+    <span class="c1">#nodeName = &#39;Image&#39;</span>
+    
+    <span class="c1">#def __init__(self, name):</span>
+        <span class="c1">#Node.__init__(self, name, terminals={</span>
+            <span class="c1">#&#39;file&#39;: {&#39;io&#39;: &#39;in&#39;},</span>
+            <span class="c1">#&#39;image&#39;: {&#39;io&#39;: &#39;out&#39;}</span>
+        <span class="c1">#})</span>
+        <span class="c1">#self.imageItem = graphicsItems.ImageItem()</span>
+        <span class="c1">#self.handle = None</span>
+        
+    <span class="c1">#def process(self, file, display=True):</span>
+        <span class="c1">#if not display:</span>
+            <span class="c1">#return {&#39;image&#39;: None}</span>
+            
+        <span class="c1">#if file != self.handle:</span>
+            <span class="c1">#self.handle = file</span>
+            <span class="c1">#data = file.read()</span>
+            <span class="c1">#self.imageItem.updateImage(data)</span>
+            
+        <span class="c1">#pos = file.</span>
+        
+        
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../../index.html">Module code</a><ul>
+  <li><a href="../../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

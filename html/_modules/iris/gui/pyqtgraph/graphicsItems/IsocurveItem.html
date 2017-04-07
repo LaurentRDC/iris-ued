@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.IsocurveItem &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.graphicsItems.IsocurveItem</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">getConfigOption</span>
+<span class="kn">from</span> <span class="nn">.GraphicsObject</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+
+
+<div class="viewcode-block" id="IsocurveItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem">[docs]</a><span class="k">class</span> <span class="nc">IsocurveItem</span><span class="p">(</span><span class="n">GraphicsObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **Bases:** :class:`GraphicsObject &lt;pyqtgraph.GraphicsObject&gt;`</span>
+<span class="sd">    </span>
+<span class="sd">    Item displaying an isocurve of a 2D array. To align this item correctly with an </span>
+<span class="sd">    ImageItem, call ``isocurve.setParentItem(image)``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pen</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">axisOrder</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new isocurve item. </span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ===============================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        data            A 2-dimensional ndarray. Can be initialized as None, and set</span>
+<span class="sd">                        later using :func:`setData &lt;pyqtgraph.IsocurveItem.setData&gt;`</span>
+<span class="sd">        level           The cutoff value at which to draw the isocurve.</span>
+<span class="sd">        pen             The color of the curve item. Can be anything valid for</span>
+<span class="sd">                        :func:`mkPen &lt;pyqtgraph.mkPen&gt;`</span>
+<span class="sd">        axisOrder       May be either &#39;row-major&#39; or &#39;col-major&#39;. By default this uses</span>
+<span class="sd">                        the ``imageAxisOrder``</span>
+<span class="sd">                        :ref:`global configuration option &lt;apiref_config&gt;`.</span>
+<span class="sd">        ==============  ===============================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">GraphicsObject</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="n">level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">=</span> <span class="n">getConfigOption</span><span class="p">(</span><span class="s1">&#39;imageAxisOrder&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">axisOrder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">axisOrder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">pen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setData</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="IsocurveItem.setData"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem.setData">[docs]</a>    <span class="k">def</span> <span class="nf">setData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the data/image to draw isocurves for.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ========================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        data            A 2-dimensional ndarray.</span>
+<span class="sd">        level           The cutoff value at which to draw the curve. If level is not specified,</span>
+<span class="sd">                        the previously set level is used.</span>
+<span class="sd">        ==============  ========================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="n">level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepareGeometryChange</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="IsocurveItem.setLevel"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem.setLevel">[docs]</a>    <span class="k">def</span> <span class="nf">setLevel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the level at which the isocurve is drawn.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="n">level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepareGeometryChange</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="IsocurveItem.setPen"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem.setPen">[docs]</a>    <span class="k">def</span> <span class="nf">setPen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the pen used to draw the isocurve. Arguments can be any that are valid </span>
+<span class="sd">        for :func:`mkPen &lt;pyqtgraph.mkPen&gt;`&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="IsocurveItem.setBrush"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem.setBrush">[docs]</a>    <span class="k">def</span> <span class="nf">setBrush</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the brush used to draw the isocurve. Arguments can be any that are valid </span>
+<span class="sd">        for :func:`mkBrush &lt;pyqtgraph.mkBrush&gt;`&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">brush</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="IsocurveItem.updateLines"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem.updateLines">[docs]</a>    <span class="k">def</span> <span class="nf">updateLines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setData</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IsocurveItem.boundingRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem.boundingRect">[docs]</a>    <span class="k">def</span> <span class="nf">boundingRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generatePath</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="IsocurveItem.generatePath"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem.generatePath">[docs]</a>    <span class="k">def</span> <span class="nf">generatePath</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axisOrder</span> <span class="o">==</span> <span class="s1">&#39;row-major&#39;</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">isocurve</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">,</span> <span class="n">connected</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">extendToEdge</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPainterPath</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="o">*</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="IsocurveItem.paint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.IsocurveItem.IsocurveItem.paint">[docs]</a>    <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generatePath</span><span class="p">()</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pen</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">drawPath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div></div>
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,774 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.GraphicsScene package &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iris.gui.pyqtgraph.canvas package" href="iris.gui.pyqtgraph.canvas.html" />
+    <link rel="prev" title="iris.gui.pyqtgraph package" href="iris.gui.pyqtgraph.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iris-gui-pyqtgraph-graphicsscene-package">
+<h1>iris.gui.pyqtgraph.GraphicsScene package<a class="headerlink" href="#iris-gui-pyqtgraph-graphicsscene-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.GraphicsScene.GraphicsScene">
+<span id="iris-gui-pyqtgraph-graphicsscene-graphicsscene-module"></span><h2>iris.gui.pyqtgraph.GraphicsScene.GraphicsScene module<a class="headerlink" href="#module-iris.gui.pyqtgraph.GraphicsScene.GraphicsScene" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.</code><code class="descname">GraphicsScene</code><span class="sig-paren">(</span><em>clickRadius=2</em>, <em>moveDistance=5</em>, <em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QGraphicsScene</span></code></p>
+<p>Extension of QGraphicsScene that implements a complete, parallel mouse event system.
+(It would have been preferred to just alter the way QGraphicsScene creates and delivers 
+events, but this turned out to be impossible because the constructor for QGraphicsMouseEvent
+is private)</p>
+<ul class="simple">
+<li>Generates MouseClicked events in addition to the usual press/move/release events. 
+(This works around a problem where it is impossible to have one item respond to a 
+drag if another is watching for a click.)</li>
+<li>Adjustable radius around click that will catch objects so you don&#8217;t have to click <em>exactly</em> over small/thin objects</li>
+<li>Global context menu&#8211;if an item implements a context menu, then its parent(s) may also add items to the menu.</li>
+<li>Allows items to decide _before_ a mouse click which item will be the recipient of mouse events.
+This lets us indicate unambiguously to the user which item they are about to click/drag on</li>
+<li>Eats mouseMove events that occur too soon after a mouse press.</li>
+<li>Reimplements items() and itemAt() to circumvent PyQt bug</li>
+</ul>
+<p>Mouse interaction is as follows:</p>
+<ol class="arabic simple">
+<li>Every time the mouse moves, the scene delivers both the standard hoverEnter/Move/LeaveEvents 
+as well as custom HoverEvents.</li>
+<li>Items are sent HoverEvents in Z-order and each item may optionally call event.acceptClicks(button), 
+acceptDrags(button) or both. If this method call returns True, this informs the item that _if_ 
+the user clicks/drags the specified mouse button, the item is guaranteed to be the 
+recipient of click/drag events (the item may wish to change its appearance to indicate this).
+If the call to acceptClicks/Drags returns False, then the item is guaranteed to <em>not</em> receive
+the requested event (because another item has already accepted it).</li>
+<li>If the mouse is clicked, a mousePressEvent is generated as usual. If any items accept this press event, then
+No click/drag events will be generated and mouse interaction proceeds as defined by Qt. This allows
+items to function properly if they are expecting the usual press/move/release sequence of events.
+(It is recommended that items do NOT accept press events, and instead use click/drag events)
+Note: The default implementation of QGraphicsItem.mousePressEvent will <em>accept</em> the event if the 
+item is has its Selectable or Movable flags enabled. You may need to override this behavior.</li>
+<li>If no item accepts the mousePressEvent, then the scene will begin delivering mouseDrag and/or mouseClick events.
+If the mouse is moved a sufficient distance (or moved slowly enough) before the button is released, 
+then a mouseDragEvent is generated.
+If no drag events are generated before the button is released, then a mouseClickEvent is generated.</li>
+<li>Click/drag events are delivered to the item that called acceptClicks/acceptDrags on the HoverEvent
+in step 1. If no such items exist, then the scene attempts to deliver the events to items near the event. 
+ClickEvents may be delivered in this way even if no
+item originally claimed it could accept the click. DragEvents may only be delivered this way if it is the initial
+move in a drag.</li>
+</ol>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.ExportDirectory">
+<code class="descname">ExportDirectory</code><em class="property"> = None</em><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.ExportDirectory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.addParentContextMenus">
+<code class="descname">addParentContextMenus</code><span class="sig-paren">(</span><em>item</em>, <em>menu</em>, <em>event</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.addParentContextMenus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.addParentContextMenus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Can be called by any item in the scene to expand its context menu to include parent context menus.
+Parents may implement getContextMenus to add new menus / actions to the existing menu.
+getContextMenus must accept 1 argument (the event that generated the original menu) and
+return a single QMenu or a list of QMenus.</p>
+<p>The final menu will look like:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Original Item 1</div>
+<div class="line">Original Item 2</div>
+<div class="line">...</div>
+<div class="line">Original Item N</div>
+<div class="line">&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;</div>
+<div class="line">Parent Item 1</div>
+<div class="line">Parent Item 2</div>
+<div class="line">...</div>
+<div class="line">Grandparent Item 1</div>
+<div class="line">...</div>
+</div>
+</div></blockquote>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Arguments:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>item</td>
+<td>The item that initially created the context menu
+(This is probably the item making the call to this function)</td>
+</tr>
+<tr class="row-odd"><td>menu</td>
+<td>The context menu being shown by the item</td>
+</tr>
+<tr class="row-even"><td>event</td>
+<td>The original event that triggered the menu to appear.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.getContextMenus">
+<code class="descname">getContextMenus</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.getContextMenus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.getContextMenus" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.getViewWidget">
+<code class="descname">getViewWidget</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.getViewWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.getViewWidget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.itemAt">
+<code class="descname">itemAt</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.itemAt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.itemAt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.items">
+<code class="descname">items</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.items"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.items" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.itemsNearEvent">
+<code class="descname">itemsNearEvent</code><span class="sig-paren">(</span><em>event</em>, <em>selMode=1</em>, <em>sortOrder=1</em>, <em>hoverable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.itemsNearEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.itemsNearEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an iterator that iterates first through the items that directly intersect point (in Z order)
+followed by any other items that are within the scene&#8217;s click radius.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.leaveEvent">
+<code class="descname">leaveEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.leaveEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.leaveEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseDoubleClickEvent">
+<code class="descname">mouseDoubleClickEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.mouseDoubleClickEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseDoubleClickEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseMoveEvent">
+<code class="descname">mouseMoveEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.mouseMoveEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseMoveEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mousePressEvent">
+<code class="descname">mousePressEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.mousePressEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mousePressEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseReleaseEvent">
+<code class="descname">mouseReleaseEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.mouseReleaseEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.mouseReleaseEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.prepareForPaint">
+<code class="descname">prepareForPaint</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.prepareForPaint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.prepareForPaint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before every render. This method will inform items that the scene is about to
+be rendered by emitting sigPrepareForPaint.</p>
+<p>This allows items to delay expensive processing until they know a paint will be required.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.registerObject">
+<em class="property">classmethod </em><code class="descname">registerObject</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.registerObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.registerObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Workaround for PyQt bug in qgraphicsscene.items()
+All subclasses of QGraphicsObject must register themselves with this function.
+(otherwise, mouse interaction with those objects will likely fail)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.render">
+<code class="descname">render</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.render" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.selectedItems">
+<code class="descname">selectedItems</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.selectedItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.selectedItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendClickEvent">
+<code class="descname">sendClickEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.sendClickEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendClickEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendDragEvent">
+<code class="descname">sendDragEvent</code><span class="sig-paren">(</span><em>ev</em>, <em>init=False</em>, <em>final=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.sendDragEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendDragEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendHoverEvents">
+<code class="descname">sendHoverEvents</code><span class="sig-paren">(</span><em>ev</em>, <em>exitOnly=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.sendHoverEvents"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sendHoverEvents" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.setClickRadius">
+<code class="descname">setClickRadius</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.setClickRadius"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.setClickRadius" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the distance away from mouse clicks to search for interacting items.
+When clicking, the scene searches first for items that directly intersect the click position
+followed by any other items that are within a rectangle that extends r pixels away from the 
+click position.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.setMoveDistance">
+<code class="descname">setMoveDistance</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.setMoveDistance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.setMoveDistance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the distance the mouse must move after a press before mouseMoveEvents will be delivered.
+This ensures that clicks with a small amount of movement are recognized as clicks instead of
+drags.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.showExportDialog">
+<code class="descname">showExportDialog</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.showExportDialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.showExportDialog" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sigMouseClicked">
+<code class="descname">sigMouseClicked</code><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sigMouseClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sigMouseHover">
+<code class="descname">sigMouseHover</code><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sigMouseHover" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sigMouseMoved">
+<code class="descname">sigMouseMoved</code><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sigMouseMoved" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sigPrepareForPaint">
+<code class="descname">sigPrepareForPaint</code><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.sigPrepareForPaint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.translateGraphicsItem">
+<em class="property">static </em><code class="descname">translateGraphicsItem</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.translateGraphicsItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.translateGraphicsItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.translateGraphicsItems">
+<em class="property">static </em><code class="descname">translateGraphicsItems</code><span class="sig-paren">(</span><em>items</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/GraphicsScene.html#GraphicsScene.translateGraphicsItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene.translateGraphicsItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.GraphicsScene.exportDialog">
+<span id="iris-gui-pyqtgraph-graphicsscene-exportdialog-module"></span><h2>iris.gui.pyqtgraph.GraphicsScene.exportDialog module<a class="headerlink" href="#module-iris.gui.pyqtgraph.GraphicsScene.exportDialog" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.GraphicsScene.exportDialog.</code><code class="descname">ExportDialog</code><span class="sig-paren">(</span><em>scene</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.closeEvent">
+<code class="descname">closeEvent</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.closeEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.closeEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.copyClicked">
+<code class="descname">copyClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.copyClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.copyClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportClicked">
+<code class="descname">exportClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.exportClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportFormatChanged">
+<code class="descname">exportFormatChanged</code><span class="sig-paren">(</span><em>item</em>, <em>prev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.exportFormatChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportFormatChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportItemChanged">
+<code class="descname">exportItemChanged</code><span class="sig-paren">(</span><em>item</em>, <em>prev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.exportItemChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportItemChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.show">
+<code class="descname">show</code><span class="sig-paren">(</span><em>item=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.show" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateFormatList">
+<code class="descname">updateFormatList</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.updateFormatList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateFormatList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateItemList">
+<code class="descname">updateItemList</code><span class="sig-paren">(</span><em>select=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.updateItemList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateItemList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateItemTree">
+<code class="descname">updateItemTree</code><span class="sig-paren">(</span><em>item</em>, <em>treeItem</em>, <em>select=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialog.html#ExportDialog.updateItemTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateItemTree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="iris-gui-pyqtgraph-graphicsscene-exportdialogtemplate-pyqt-module">
+<h2>iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt module<a class="headerlink" href="#iris-gui-pyqtgraph-graphicsscene-exportdialogtemplate-pyqt-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5">
+<span id="iris-gui-pyqtgraph-graphicsscene-exportdialogtemplate-pyqt5-module"></span><h2>iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5 module<a class="headerlink" href="#module-iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5.Ui_Form">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5.</code><code class="descname">Ui_Form</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialogTemplate_pyqt5.html#Ui_Form"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5.Ui_Form" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5.Ui_Form.retranslateUi">
+<code class="descname">retranslateUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialogTemplate_pyqt5.html#Ui_Form.retranslateUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5.Ui_Form.retranslateUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5.Ui_Form.setupUi">
+<code class="descname">setupUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/exportDialogTemplate_pyqt5.html#Ui_Form.setupUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5.Ui_Form.setupUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="iris-gui-pyqtgraph-graphicsscene-exportdialogtemplate-pyside-module">
+<h2>iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyside module<a class="headerlink" href="#iris-gui-pyqtgraph-graphicsscene-exportdialogtemplate-pyside-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.GraphicsScene.mouseEvents">
+<span id="iris-gui-pyqtgraph-graphicsscene-mouseevents-module"></span><h2>iris.gui.pyqtgraph.GraphicsScene.mouseEvents module<a class="headerlink" href="#module-iris.gui.pyqtgraph.GraphicsScene.mouseEvents" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.GraphicsScene.mouseEvents.</code><code class="descname">HoverEvent</code><span class="sig-paren">(</span><em>moveEvent</em>, <em>acceptable</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Instances of this class are delivered to items in a <code class="xref py py-class docutils literal"><span class="pre">GraphicsScene</span></code> via their hoverEvent() method when the mouse is hovering over the item.
+This event class both informs items that the mouse cursor is nearby and allows items to 
+communicate with one another about whether each item will accept <em>potential</em> mouse events.</p>
+<p>It is common for multiple overlapping items to receive hover events and respond by changing 
+their appearance. This can be misleading to the user since, in general, only one item will
+respond to mouse events. To avoid this, items make calls to event.acceptClicks(button) 
+and/or acceptDrags(button).</p>
+<p>Each item may make multiple calls to acceptClicks/Drags, each time for a different button. 
+If the method returns True, then the item is guaranteed to be
+the recipient of the claimed event IF the user presses the specified mouse button before
+moving. If claimEvent returns False, then this item is guaranteed NOT to get the specified
+event (because another has already claimed it) and the item should change its appearance 
+accordingly.</p>
+<p>event.isEnter() returns True if the mouse has just entered the item&#8217;s shape;
+event.isExit() returns True if the mouse has just left.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.acceptClicks">
+<code class="descname">acceptClicks</code><span class="sig-paren">(</span><em>button</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.acceptClicks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.acceptClicks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inform the scene that the item (that the event was delivered to)
+would accept a mouse click event if the user were to click before
+moving the mouse again.</p>
+<p>Returns True if the request is successful, otherwise returns False (indicating
+that some other item would receive an incoming click).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.acceptDrags">
+<code class="descname">acceptDrags</code><span class="sig-paren">(</span><em>button</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.acceptDrags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.acceptDrags" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inform the scene that the item (that the event was delivered to)
+would accept a mouse drag event if the user were to drag before
+the next hover event.</p>
+<p>Returns True if the request is successful, otherwise returns False (indicating
+that some other item would receive an incoming drag event).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.buttons">
+<code class="descname">buttons</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.buttons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.buttons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the buttons currently pressed on the mouse.
+(see QGraphicsSceneMouseEvent::buttons in the Qt documentation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.clickItems">
+<code class="descname">clickItems</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.clickItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.clickItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.dragItems">
+<code class="descname">dragItems</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.dragItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.dragItems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.isEnter">
+<code class="descname">isEnter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.isEnter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.isEnter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the mouse has just entered the item&#8217;s shape</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.isExit">
+<code class="descname">isExit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.isExit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.isExit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the mouse has just exited the item&#8217;s shape</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.lastPos">
+<code class="descname">lastPos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.lastPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.lastPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the previous position of the mouse in the coordinate system of the item
+that the event was delivered to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.lastScenePos">
+<code class="descname">lastScenePos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.lastScenePos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.lastScenePos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the previous scene position of the mouse.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.lastScreenPos">
+<code class="descname">lastScreenPos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.lastScreenPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.lastScreenPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the previous screen position of the mouse.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.modifiers">
+<code class="descname">modifiers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.modifiers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.modifiers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return any keyboard modifiers currently pressed.
+(see QGraphicsSceneMouseEvent::modifiers in the Qt documentation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.pos">
+<code class="descname">pos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.pos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current position of the mouse in the coordinate system of the item
+that the event was delivered to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.scenePos">
+<code class="descname">scenePos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.scenePos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.scenePos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current scene position of the mouse.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.screenPos">
+<code class="descname">screenPos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#HoverEvent.screenPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.HoverEvent.screenPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current screen position of the mouse.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.GraphicsScene.mouseEvents.</code><code class="descname">MouseClickEvent</code><span class="sig-paren">(</span><em>pressEvent</em>, <em>double=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Instances of this class are delivered to items in a <code class="xref py py-class docutils literal"><span class="pre">GraphicsScene</span></code> via their mouseClickEvent() method when the item is clicked.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.accept">
+<code class="descname">accept</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.accept"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.accept" title="Permalink to this definition">¶</a></dt>
+<dd><p>An item should call this method if it can handle the event. This will prevent the event being delivered to any other items.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.button">
+<code class="descname">button</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.button"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.button" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the mouse button that generated the click event.
+(see QGraphicsSceneMouseEvent::button in the Qt documentation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.buttons">
+<code class="descname">buttons</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.buttons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.buttons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the buttons currently pressed on the mouse.
+(see QGraphicsSceneMouseEvent::buttons in the Qt documentation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.double">
+<code class="descname">double</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.double"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.double" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if this is a double-click.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.ignore">
+<code class="descname">ignore</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.ignore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.ignore" title="Permalink to this definition">¶</a></dt>
+<dd><p>An item should call this method if it cannot handle the event. This will allow the event to be delivered to other items.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.isAccepted">
+<code class="descname">isAccepted</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.isAccepted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.isAccepted" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.lastPos">
+<code class="descname">lastPos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.lastPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.lastPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the previous position of the mouse in the coordinate system of the item
+that the event was delivered to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.modifiers">
+<code class="descname">modifiers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.modifiers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.modifiers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return any keyboard modifiers currently pressed.
+(see QGraphicsSceneMouseEvent::modifiers in the Qt documentation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.pos">
+<code class="descname">pos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.pos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current position of the mouse in the coordinate system of the item
+that the event was delivered to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.scenePos">
+<code class="descname">scenePos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.scenePos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.scenePos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current scene position of the mouse.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.screenPos">
+<code class="descname">screenPos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.screenPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.screenPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current screen position (pixels relative to widget) of the mouse.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.time">
+<code class="descname">time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseClickEvent.time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent.time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.GraphicsScene.mouseEvents.</code><code class="descname">MouseDragEvent</code><span class="sig-paren">(</span><em>moveEvent</em>, <em>pressEvent</em>, <em>lastEvent</em>, <em>start=False</em>, <em>finish=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Instances of this class are delivered to items in a <code class="xref py py-class docutils literal"><span class="pre">GraphicsScene</span></code> via their mouseDragEvent() method when the item is being mouse-dragged.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.accept">
+<code class="descname">accept</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.accept"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.accept" title="Permalink to this definition">¶</a></dt>
+<dd><p>An item should call this method if it can handle the event. This will prevent the event being delivered to any other items.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.button">
+<code class="descname">button</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.button"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.button" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the button that initiated the drag (may be different from the buttons currently pressed)
+(see QGraphicsSceneMouseEvent::button in the Qt documentation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.buttonDownPos">
+<code class="descname">buttonDownPos</code><span class="sig-paren">(</span><em>btn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.buttonDownPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.buttonDownPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the position of the mouse at the time the drag was initiated
+in the coordinate system of the item that the event was delivered to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.buttonDownScenePos">
+<code class="descname">buttonDownScenePos</code><span class="sig-paren">(</span><em>btn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.buttonDownScenePos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.buttonDownScenePos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the scene position of the mouse at the time <em>btn</em> was pressed.
+If <em>btn</em> is omitted, then the button that initiated the drag is assumed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.buttonDownScreenPos">
+<code class="descname">buttonDownScreenPos</code><span class="sig-paren">(</span><em>btn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.buttonDownScreenPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.buttonDownScreenPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the screen position (pixels relative to widget) of the mouse at the time <em>btn</em> was pressed.
+If <em>btn</em> is omitted, then the button that initiated the drag is assumed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.buttons">
+<code class="descname">buttons</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.buttons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.buttons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the buttons currently pressed on the mouse.
+(see QGraphicsSceneMouseEvent::buttons in the Qt documentation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.ignore">
+<code class="descname">ignore</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.ignore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.ignore" title="Permalink to this definition">¶</a></dt>
+<dd><p>An item should call this method if it cannot handle the event. This will allow the event to be delivered to other items.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.isAccepted">
+<code class="descname">isAccepted</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.isAccepted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.isAccepted" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.isFinish">
+<code class="descname">isFinish</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.isFinish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.isFinish" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns False if this is the last event in a drag. Note that this
+event will have the same position as the previous one.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.isStart">
+<code class="descname">isStart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.isStart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.isStart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if this event is the first since a drag was initiated.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.lastPos">
+<code class="descname">lastPos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.lastPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.lastPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the previous position of the mouse in the coordinate system of the item
+that the event was delivered to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.lastScenePos">
+<code class="descname">lastScenePos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.lastScenePos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.lastScenePos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the scene position of the mouse immediately prior to this event.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.lastScreenPos">
+<code class="descname">lastScreenPos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.lastScreenPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.lastScreenPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the screen position of the mouse immediately prior to this event.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.modifiers">
+<code class="descname">modifiers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.modifiers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.modifiers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return any keyboard modifiers currently pressed.
+(see QGraphicsSceneMouseEvent::modifiers in the Qt documentation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.pos">
+<code class="descname">pos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.pos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current position of the mouse in the coordinate system of the item
+that the event was delivered to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.scenePos">
+<code class="descname">scenePos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.scenePos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.scenePos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current scene position of the mouse.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.screenPos">
+<code class="descname">screenPos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/GraphicsScene/mouseEvents.html#MouseDragEvent.screenPos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.GraphicsScene.mouseEvents.MouseDragEvent.screenPos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current screen position (pixels relative to widget) of the mouse.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.GraphicsScene">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-iris.gui.pyqtgraph.GraphicsScene" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">iris.gui.pyqtgraph.GraphicsScene package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.GraphicsScene.GraphicsScene">iris.gui.pyqtgraph.GraphicsScene.GraphicsScene module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.GraphicsScene.exportDialog">iris.gui.pyqtgraph.GraphicsScene.exportDialog module</a></li>
+<li><a class="reference internal" href="#iris-gui-pyqtgraph-graphicsscene-exportdialogtemplate-pyqt-module">iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5">iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyqt5 module</a></li>
+<li><a class="reference internal" href="#iris-gui-pyqtgraph-graphicsscene-exportdialogtemplate-pyside-module">iris.gui.pyqtgraph.GraphicsScene.exportDialogTemplate_pyside module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.GraphicsScene.mouseEvents">iris.gui.pyqtgraph.GraphicsScene.mouseEvents module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.GraphicsScene">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="iris.html">iris package</a><ul>
+  <li><a href="iris.gui.html">iris.gui package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.html">iris.gui.pyqtgraph package</a><ul>
+      <li>Previous: <a href="iris.gui.pyqtgraph.html" title="previous chapter">iris.gui.pyqtgraph package</a></li>
+      <li>Next: <a href="iris.gui.pyqtgraph.canvas.html" title="next chapter">iris.gui.pyqtgraph.canvas package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/iris.gui.pyqtgraph.GraphicsScene.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/iris.gui.pyqtgraph.GraphicsScene.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

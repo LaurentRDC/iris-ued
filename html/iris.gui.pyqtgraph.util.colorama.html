@@ -1,0 +1,317 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.util.colorama package &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iris.gui.pyqtgraph.widgets package" href="iris.gui.pyqtgraph.widgets.html" />
+    <link rel="prev" title="iris.gui.pyqtgraph.util package" href="iris.gui.pyqtgraph.util.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iris-gui-pyqtgraph-util-colorama-package">
+<h1>iris.gui.pyqtgraph.util.colorama package<a class="headerlink" href="#iris-gui-pyqtgraph-util-colorama-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.util.colorama.win32">
+<span id="iris-gui-pyqtgraph-util-colorama-win32-module"></span><h2>iris.gui.pyqtgraph.util.colorama.win32 module<a class="headerlink" href="#module-iris.gui.pyqtgraph.util.colorama.win32" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.util.colorama.win32.</code><code class="descname">CONSOLE_SCREEN_BUFFER_INFO</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/win32.html#CONSOLE_SCREEN_BUFFER_INFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">_ctypes.Structure</span></code></p>
+<p>struct in wincon.h.</p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.dwCursorPosition">
+<code class="descname">dwCursorPosition</code><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.dwCursorPosition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Structure/Union member</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.dwMaximumWindowSize">
+<code class="descname">dwMaximumWindowSize</code><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.dwMaximumWindowSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Structure/Union member</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.dwSize">
+<code class="descname">dwSize</code><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.dwSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Structure/Union member</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.srWindow">
+<code class="descname">srWindow</code><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.srWindow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Structure/Union member</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.wAttributes">
+<code class="descname">wAttributes</code><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.CONSOLE_SCREEN_BUFFER_INFO.wAttributes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Structure/Union member</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.FillConsoleOutputAttribute">
+<code class="descclassname">iris.gui.pyqtgraph.util.colorama.win32.</code><code class="descname">FillConsoleOutputAttribute</code><span class="sig-paren">(</span><em>hConsole</em>, <em>csbi.wAttributes</em>, <em>dwConSize</em>, <em>coordScreen</em>, <em>&amp;cCharsWritten</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/win32.html#FillConsoleOutputAttribute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.FillConsoleOutputAttribute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.FillConsoleOutputCharacter">
+<code class="descclassname">iris.gui.pyqtgraph.util.colorama.win32.</code><code class="descname">FillConsoleOutputCharacter</code><span class="sig-paren">(</span><em>stream_id</em>, <em>char</em>, <em>length</em>, <em>start</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/win32.html#FillConsoleOutputCharacter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.FillConsoleOutputCharacter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.GetConsoleScreenBufferInfo">
+<code class="descclassname">iris.gui.pyqtgraph.util.colorama.win32.</code><code class="descname">GetConsoleScreenBufferInfo</code><span class="sig-paren">(</span><em>stream_id=-11</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/win32.html#GetConsoleScreenBufferInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.GetConsoleScreenBufferInfo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.SetConsoleCursorPosition">
+<code class="descclassname">iris.gui.pyqtgraph.util.colorama.win32.</code><code class="descname">SetConsoleCursorPosition</code><span class="sig-paren">(</span><em>stream_id</em>, <em>position</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/win32.html#SetConsoleCursorPosition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.SetConsoleCursorPosition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iris.gui.pyqtgraph.util.colorama.win32.SetConsoleTextAttribute">
+<code class="descclassname">iris.gui.pyqtgraph.util.colorama.win32.</code><code class="descname">SetConsoleTextAttribute</code><span class="sig-paren">(</span><em>stream_id</em>, <em>attrs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/win32.html#SetConsoleTextAttribute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.win32.SetConsoleTextAttribute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.util.colorama.winterm">
+<span id="iris-gui-pyqtgraph-util-colorama-winterm-module"></span><h2>iris.gui.pyqtgraph.util.colorama.winterm module<a class="headerlink" href="#module-iris.gui.pyqtgraph.util.colorama.winterm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.util.colorama.winterm.</code><code class="descname">WinColor</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinColor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor.BLACK">
+<code class="descname">BLACK</code><em class="property"> = 0</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor.BLACK" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor.BLUE">
+<code class="descname">BLUE</code><em class="property"> = 1</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor.BLUE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor.CYAN">
+<code class="descname">CYAN</code><em class="property"> = 3</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor.CYAN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor.GREEN">
+<code class="descname">GREEN</code><em class="property"> = 2</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor.GREEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor.GREY">
+<code class="descname">GREY</code><em class="property"> = 7</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor.GREY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor.MAGENTA">
+<code class="descname">MAGENTA</code><em class="property"> = 5</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor.MAGENTA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor.RED">
+<code class="descname">RED</code><em class="property"> = 4</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor.RED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinColor.YELLOW">
+<code class="descname">YELLOW</code><em class="property"> = 6</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinColor.YELLOW" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinStyle">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.util.colorama.winterm.</code><code class="descname">WinStyle</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinStyle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinStyle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinStyle.BRIGHT">
+<code class="descname">BRIGHT</code><em class="property"> = 8</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinStyle.BRIGHT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinStyle.NORMAL">
+<code class="descname">NORMAL</code><em class="property"> = 0</em><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinStyle.NORMAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.util.colorama.winterm.</code><code class="descname">WinTerm</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.back">
+<code class="descname">back</code><span class="sig-paren">(</span><em>back=None</em>, <em>on_stderr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.back"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.back" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.cursor_up">
+<code class="descname">cursor_up</code><span class="sig-paren">(</span><em>num_rows=0</em>, <em>on_stderr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.cursor_up"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.cursor_up" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.erase_data">
+<code class="descname">erase_data</code><span class="sig-paren">(</span><em>mode=0</em>, <em>on_stderr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.erase_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.erase_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.fore">
+<code class="descname">fore</code><span class="sig-paren">(</span><em>fore=None</em>, <em>on_stderr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.fore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.fore" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.get_attrs">
+<code class="descname">get_attrs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.get_attrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.get_attrs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.get_position">
+<code class="descname">get_position</code><span class="sig-paren">(</span><em>handle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.get_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.get_position" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.reset_all">
+<code class="descname">reset_all</code><span class="sig-paren">(</span><em>on_stderr=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.reset_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.reset_all" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.set_attrs">
+<code class="descname">set_attrs</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.set_attrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.set_attrs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.set_console">
+<code class="descname">set_console</code><span class="sig-paren">(</span><em>attrs=None</em>, <em>on_stderr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.set_console"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.set_console" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.set_cursor_position">
+<code class="descname">set_cursor_position</code><span class="sig-paren">(</span><em>position=None</em>, <em>on_stderr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.set_cursor_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.set_cursor_position" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.style">
+<code class="descname">style</code><span class="sig-paren">(</span><em>style=None</em>, <em>on_stderr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/util/colorama/winterm.html#WinTerm.style"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.util.colorama.winterm.WinTerm.style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.util.colorama">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-iris.gui.pyqtgraph.util.colorama" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">iris.gui.pyqtgraph.util.colorama package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.util.colorama.win32">iris.gui.pyqtgraph.util.colorama.win32 module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.util.colorama.winterm">iris.gui.pyqtgraph.util.colorama.winterm module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.util.colorama">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="iris.html">iris package</a><ul>
+  <li><a href="iris.gui.html">iris.gui package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.html">iris.gui.pyqtgraph package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.util.html">iris.gui.pyqtgraph.util package</a><ul>
+      <li>Previous: <a href="iris.gui.pyqtgraph.util.html" title="previous chapter">iris.gui.pyqtgraph.util package</a></li>
+      <li>Next: <a href="iris.gui.pyqtgraph.widgets.html" title="next chapter">iris.gui.pyqtgraph.widgets package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/iris.gui.pyqtgraph.util.colorama.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/iris.gui.pyqtgraph.util.colorama.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

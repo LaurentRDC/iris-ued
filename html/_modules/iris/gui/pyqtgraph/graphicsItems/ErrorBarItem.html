@@ -1,0 +1,238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.ErrorBarItem &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.graphicsItems.ErrorBarItem</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">.GraphicsObject</span> <span class="k">import</span> <span class="n">GraphicsObject</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">getConfigOption</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ErrorBarItem&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ErrorBarItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ErrorBarItem.ErrorBarItem">[docs]</a><span class="k">class</span> <span class="nc">ErrorBarItem</span><span class="p">(</span><span class="n">GraphicsObject</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        All keyword arguments are passed to setData().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">GraphicsObject</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">height</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">top</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">bottom</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">left</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">right</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">beam</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">pen</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setData</span><span class="p">(</span><span class="o">**</span><span class="n">opts</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ErrorBarItem.setData"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ErrorBarItem.ErrorBarItem.setData">[docs]</a>    <span class="k">def</span> <span class="nf">setData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the data in the item. All arguments are optional.</span>
+<span class="sd">        </span>
+<span class="sd">        Valid keyword options are:</span>
+<span class="sd">        x, y, height, width, top, bottom, left, right, beam, pen</span>
+<span class="sd">        </span>
+<span class="sd">        * x and y must be numpy arrays specifying the coordinates of data points.</span>
+<span class="sd">        * height, width, top, bottom, left, right, and beam may be numpy arrays,</span>
+<span class="sd">          single values, or None to disable. All values should be positive.</span>
+<span class="sd">        * top, bottom, left, and right specify the lengths of bars extending</span>
+<span class="sd">          in each direction.</span>
+<span class="sd">        * If height is specified, it overrides top and bottom.</span>
+<span class="sd">        * If width is specified, it overrides left and right.</span>
+<span class="sd">        * beam specifies the width of the beam at the end of each bar.</span>
+<span class="sd">        * pen may be any single argument accepted by pg.mkPen().</span>
+<span class="sd">        </span>
+<span class="sd">        This method was added in version 0.9.9. For prior versions, use setOpts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepareGeometryChange</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">informViewBoundsChanged</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ErrorBarItem.setOpts"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ErrorBarItem.ErrorBarItem.setOpts">[docs]</a>    <span class="k">def</span> <span class="nf">setOpts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">):</span>
+        <span class="c1"># for backward compatibility</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setData</span><span class="p">(</span><span class="o">**</span><span class="n">opts</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ErrorBarItem.drawPath"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ErrorBarItem.ErrorBarItem.drawPath">[docs]</a>    <span class="k">def</span> <span class="nf">drawPath</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPainterPath</span><span class="p">()</span>
+        
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">beam</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;beam&#39;</span><span class="p">]</span>
+        
+        
+        <span class="n">height</span><span class="p">,</span> <span class="n">top</span><span class="p">,</span> <span class="n">bottom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;top&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;bottom&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">top</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">bottom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">## draw vertical error bars</span>
+            <span class="k">if</span> <span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">y1</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">height</span><span class="o">/</span><span class="mf">2.</span>
+                <span class="n">y2</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">height</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">bottom</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">y1</span> <span class="o">=</span> <span class="n">y</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">y1</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">bottom</span>
+                <span class="k">if</span> <span class="n">top</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">y2</span> <span class="o">=</span> <span class="n">y</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">y2</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">top</span>
+            
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                
+            <span class="k">if</span> <span class="n">beam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">beam</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">beam</span><span class="o">/</span><span class="mf">2.</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">beam</span><span class="o">/</span><span class="mf">2.</span>
+                <span class="k">if</span> <span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">top</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">bottom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        
+        <span class="n">width</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;right&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;left&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">right</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">left</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">## draw vertical error bars</span>
+            <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">width</span><span class="o">/</span><span class="mf">2.</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">width</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">left</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">left</span>
+                <span class="k">if</span> <span class="n">right</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">right</span>
+            
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                
+            <span class="k">if</span> <span class="n">beam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">beam</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">y1</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">beam</span><span class="o">/</span><span class="mf">2.</span>
+                <span class="n">y2</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">beam</span><span class="o">/</span><span class="mf">2.</span>
+                <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">right</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">left</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepareGeometryChange</span><span class="p">()</span></div>
+        
+        
+<div class="viewcode-block" id="ErrorBarItem.paint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ErrorBarItem.ErrorBarItem.paint">[docs]</a>    <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drawPath</span><span class="p">()</span>
+        <span class="n">pen</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;pen&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">pen</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pen</span> <span class="o">=</span> <span class="n">getConfigOption</span><span class="p">(</span><span class="s1">&#39;foreground&#39;</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">pen</span><span class="p">))</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">drawPath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="ErrorBarItem.boundingRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ErrorBarItem.ErrorBarItem.boundingRect">[docs]</a>    <span class="k">def</span> <span class="nf">boundingRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drawPath</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">()</span></div></div>
+    
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.exporters package &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iris.gui.pyqtgraph.exporters.tests package" href="iris.gui.pyqtgraph.exporters.tests.html" />
+    <link rel="prev" title="iris.gui.pyqtgraph.dockarea package" href="iris.gui.pyqtgraph.dockarea.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iris-gui-pyqtgraph-exporters-package">
+<h1>iris.gui.pyqtgraph.exporters package<a class="headerlink" href="#iris-gui-pyqtgraph-exporters-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="iris.gui.pyqtgraph.exporters.tests.html">iris.gui.pyqtgraph.exporters.tests package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="iris.gui.pyqtgraph.exporters.tests.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iris.gui.pyqtgraph.exporters.tests.html#module-iris.gui.pyqtgraph.exporters.tests.test_csv">iris.gui.pyqtgraph.exporters.tests.test_csv module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iris.gui.pyqtgraph.exporters.tests.html#module-iris.gui.pyqtgraph.exporters.tests.test_svg">iris.gui.pyqtgraph.exporters.tests.test_svg module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iris.gui.pyqtgraph.exporters.tests.html#module-iris.gui.pyqtgraph.exporters.tests">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.exporters.CSVExporter">
+<span id="iris-gui-pyqtgraph-exporters-csvexporter-module"></span><h2>iris.gui.pyqtgraph.exporters.CSVExporter module<a class="headerlink" href="#module-iris.gui.pyqtgraph.exporters.CSVExporter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.exporters.CSVExporter.</code><code class="descname">CSVExporter</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/CSVExporter.html#CSVExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter" title="iris.gui.pyqtgraph.exporters.Exporter.Exporter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.exporters.Exporter.Exporter</span></code></a></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter.Name">
+<code class="descname">Name</code><em class="property"> = 'CSV from plot data'</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter.Name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter.export">
+<code class="descname">export</code><span class="sig-paren">(</span><em>fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/CSVExporter.html#CSVExporter.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter.export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/CSVExporter.html#CSVExporter.parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter.windows">
+<code class="descname">windows</code><em class="property"> = []</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter.windows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.exporters.Exporter">
+<span id="iris-gui-pyqtgraph-exporters-exporter-module"></span><h2>iris.gui.pyqtgraph.exporters.Exporter module<a class="headerlink" href="#module-iris.gui.pyqtgraph.exporters.Exporter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.exporters.Exporter.</code><code class="descname">Exporter</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Abstract class used for exporting graphics to file / printer / whatever.</p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.Exporters">
+<code class="descname">Exporters</code><em class="property"> = [&lt;class 'iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter'&gt;, &lt;class 'iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter'&gt;, &lt;class 'iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter'&gt;, &lt;class 'iris.gui.pyqtgraph.exporters.CSVExporter.CSVExporter'&gt;, &lt;class 'iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter'&gt;]</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.Exporters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.allowCopy">
+<code class="descname">allowCopy</code><em class="property"> = False</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.allowCopy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.export">
+<code class="descname">export</code><span class="sig-paren">(</span><em>fileName=None</em>, <em>toBytes=False</em>, <em>copy=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>If <em>fileName</em> is None, pop-up a file dialog.
+If <em>toBytes</em> is True, return a bytes object rather than writing to file.
+If <em>copy</em> is True, export to the copy buffer rather than writing to file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.fileSaveDialog">
+<code class="descname">fileSaveDialog</code><span class="sig-paren">(</span><em>filter=None</em>, <em>opts=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.fileSaveDialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.fileSaveDialog" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.fileSaveFinished">
+<code class="descname">fileSaveFinished</code><span class="sig-paren">(</span><em>fileName</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.fileSaveFinished"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.fileSaveFinished" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.getPaintItems">
+<code class="descname">getPaintItems</code><span class="sig-paren">(</span><em>root=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.getPaintItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.getPaintItems" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of all items that should be painted in the correct order.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.getScene">
+<code class="descname">getScene</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.getScene"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.getScene" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.getSourceRect">
+<code class="descname">getSourceRect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.getSourceRect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.getSourceRect" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.getTargetRect">
+<code class="descname">getTargetRect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.getTargetRect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.getTargetRect" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the parameters used to configure this exporter.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.register">
+<em class="property">classmethod </em><code class="descname">register</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to register Exporter classes to appear in the export dialog.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.render">
+<code class="descname">render</code><span class="sig-paren">(</span><em>painter</em>, <em>targetRect</em>, <em>sourceRect</em>, <em>item=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.render" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Exporter.Exporter.setExportMode">
+<code class="descname">setExportMode</code><span class="sig-paren">(</span><em>export</em>, <em>opts=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Exporter.html#Exporter.setExportMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter.setExportMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call setExportMode(export, opts) on all items that will 
+be painted during the export. This informs the item
+that it is about to be painted for export, allowing it to 
+alter its appearance temporarily</p>
+<p><em>export</em>  - bool; must be True before exporting and False afterward
+<em>opts</em>    - dict; common parameters are &#8216;antialias&#8217; and &#8216;background&#8217;</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.exporters.HDF5Exporter">
+<span id="iris-gui-pyqtgraph-exporters-hdf5exporter-module"></span><h2>iris.gui.pyqtgraph.exporters.HDF5Exporter module<a class="headerlink" href="#module-iris.gui.pyqtgraph.exporters.HDF5Exporter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.exporters.HDF5Exporter.</code><code class="descname">HDF5Exporter</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/HDF5Exporter.html#HDF5Exporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter" title="iris.gui.pyqtgraph.exporters.Exporter.Exporter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.exporters.Exporter.Exporter</span></code></a></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.Name">
+<code class="descname">Name</code><em class="property"> = 'HDF5 Export: plot (x,y)'</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.Name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.allowCopy">
+<code class="descname">allowCopy</code><em class="property"> = False</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.allowCopy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.export">
+<code class="descname">export</code><span class="sig-paren">(</span><em>fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/HDF5Exporter.html#HDF5Exporter.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/HDF5Exporter.html#HDF5Exporter.parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.windows">
+<code class="descname">windows</code><em class="property"> = []</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.HDF5Exporter.HDF5Exporter.windows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.exporters.ImageExporter">
+<span id="iris-gui-pyqtgraph-exporters-imageexporter-module"></span><h2>iris.gui.pyqtgraph.exporters.ImageExporter module<a class="headerlink" href="#module-iris.gui.pyqtgraph.exporters.ImageExporter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.exporters.ImageExporter.</code><code class="descname">ImageExporter</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/ImageExporter.html#ImageExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter" title="iris.gui.pyqtgraph.exporters.Exporter.Exporter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.exporters.Exporter.Exporter</span></code></a></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.Name">
+<code class="descname">Name</code><em class="property"> = 'Image File (PNG, TIF, JPG, ...)'</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.Name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.allowCopy">
+<code class="descname">allowCopy</code><em class="property"> = True</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.allowCopy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.export">
+<code class="descname">export</code><span class="sig-paren">(</span><em>fileName=None</em>, <em>toBytes=False</em>, <em>copy=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/ImageExporter.html#ImageExporter.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.heightChanged">
+<code class="descname">heightChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/ImageExporter.html#ImageExporter.heightChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.heightChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/ImageExporter.html#ImageExporter.parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.widthChanged">
+<code class="descname">widthChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/ImageExporter.html#ImageExporter.widthChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.widthChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.exporters.Matplotlib">
+<span id="iris-gui-pyqtgraph-exporters-matplotlib-module"></span><h2>iris.gui.pyqtgraph.exporters.Matplotlib module<a class="headerlink" href="#module-iris.gui.pyqtgraph.exporters.Matplotlib" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.exporters.Matplotlib.</code><code class="descname">MatplotlibExporter</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Matplotlib.html#MatplotlibExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter" title="iris.gui.pyqtgraph.exporters.Exporter.Exporter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.exporters.Exporter.Exporter</span></code></a></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.Name">
+<code class="descname">Name</code><em class="property"> = 'Matplotlib Window'</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.Name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.cleanAxes">
+<code class="descname">cleanAxes</code><span class="sig-paren">(</span><em>axl</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Matplotlib.html#MatplotlibExporter.cleanAxes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.cleanAxes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.export">
+<code class="descname">export</code><span class="sig-paren">(</span><em>fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Matplotlib.html#MatplotlibExporter.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/Matplotlib.html#MatplotlibExporter.parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.windows">
+<code class="descname">windows</code><em class="property"> = []</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.Matplotlib.MatplotlibExporter.windows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.exporters.PrintExporter">
+<span id="iris-gui-pyqtgraph-exporters-printexporter-module"></span><h2>iris.gui.pyqtgraph.exporters.PrintExporter module<a class="headerlink" href="#module-iris.gui.pyqtgraph.exporters.PrintExporter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.exporters.PrintExporter.</code><code class="descname">PrintExporter</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/PrintExporter.html#PrintExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter" title="iris.gui.pyqtgraph.exporters.Exporter.Exporter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.exporters.Exporter.Exporter</span></code></a></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.Name">
+<code class="descname">Name</code><em class="property"> = 'Printer'</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.Name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.export">
+<code class="descname">export</code><span class="sig-paren">(</span><em>fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/PrintExporter.html#PrintExporter.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.heightChanged">
+<code class="descname">heightChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/PrintExporter.html#PrintExporter.heightChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.heightChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/PrintExporter.html#PrintExporter.parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.widthChanged">
+<code class="descname">widthChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/PrintExporter.html#PrintExporter.widthChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.PrintExporter.PrintExporter.widthChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.exporters.SVGExporter">
+<span id="iris-gui-pyqtgraph-exporters-svgexporter-module"></span><h2>iris.gui.pyqtgraph.exporters.SVGExporter module<a class="headerlink" href="#module-iris.gui.pyqtgraph.exporters.SVGExporter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.exporters.SVGExporter.</code><code class="descname">SVGExporter</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/SVGExporter.html#SVGExporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.exporters.Exporter.Exporter" title="iris.gui.pyqtgraph.exporters.Exporter.Exporter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.exporters.Exporter.Exporter</span></code></a></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.Name">
+<code class="descname">Name</code><em class="property"> = 'Scalable Vector Graphics (SVG)'</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.Name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.allowCopy">
+<code class="descname">allowCopy</code><em class="property"> = True</em><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.allowCopy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.export">
+<code class="descname">export</code><span class="sig-paren">(</span><em>fileName=None</em>, <em>toBytes=False</em>, <em>copy=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/SVGExporter.html#SVGExporter.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.heightChanged">
+<code class="descname">heightChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/SVGExporter.html#SVGExporter.heightChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.heightChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/SVGExporter.html#SVGExporter.parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.widthChanged">
+<code class="descname">widthChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters/SVGExporter.html#SVGExporter.widthChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.SVGExporter.SVGExporter.widthChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.exporters">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-iris.gui.pyqtgraph.exporters" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="iris.gui.pyqtgraph.exporters.listExporters">
+<code class="descclassname">iris.gui.pyqtgraph.exporters.</code><code class="descname">listExporters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/exporters.html#listExporters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.exporters.listExporters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">iris.gui.pyqtgraph.exporters package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.exporters.CSVExporter">iris.gui.pyqtgraph.exporters.CSVExporter module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.exporters.Exporter">iris.gui.pyqtgraph.exporters.Exporter module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.exporters.HDF5Exporter">iris.gui.pyqtgraph.exporters.HDF5Exporter module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.exporters.ImageExporter">iris.gui.pyqtgraph.exporters.ImageExporter module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.exporters.Matplotlib">iris.gui.pyqtgraph.exporters.Matplotlib module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.exporters.PrintExporter">iris.gui.pyqtgraph.exporters.PrintExporter module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.exporters.SVGExporter">iris.gui.pyqtgraph.exporters.SVGExporter module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.exporters">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="iris.html">iris package</a><ul>
+  <li><a href="iris.gui.html">iris.gui package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.html">iris.gui.pyqtgraph package</a><ul>
+      <li>Previous: <a href="iris.gui.pyqtgraph.dockarea.html" title="previous chapter">iris.gui.pyqtgraph.dockarea package</a></li>
+      <li>Next: <a href="iris.gui.pyqtgraph.exporters.tests.html" title="next chapter">iris.gui.pyqtgraph.exporters.tests package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/iris.gui.pyqtgraph.exporters.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/iris.gui.pyqtgraph.exporters.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

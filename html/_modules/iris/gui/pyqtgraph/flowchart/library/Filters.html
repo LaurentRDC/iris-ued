@@ -1,0 +1,442 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.flowchart.library.Filters &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.flowchart.library.Filters</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">...Qt</span> <span class="k">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span>
+<span class="kn">from</span> <span class="nn">..Node</span> <span class="k">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">functions</span>
+<span class="kn">from</span> <span class="nn">...</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">pgfn</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">...python2_3</span> <span class="k">import</span> <span class="n">xrange</span>
+<span class="kn">from</span> <span class="nn">...</span> <span class="k">import</span> <span class="n">PolyLineROI</span>
+<span class="kn">from</span> <span class="nn">...</span> <span class="k">import</span> <span class="n">Point</span>
+<span class="kn">from</span> <span class="nn">...</span> <span class="k">import</span> <span class="n">metaarray</span> <span class="k">as</span> <span class="n">metaarray</span>
+
+
+<div class="viewcode-block" id="Downsample"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Downsample">[docs]</a><span class="k">class</span> <span class="nc">Downsample</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Downsample by averaging samples together.&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;Downsample&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+<div class="viewcode-block" id="Downsample.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Downsample.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">functions</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Subsample"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Subsample">[docs]</a><span class="k">class</span> <span class="nc">Subsample</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Downsample by selecting every Nth sample.&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;Subsample&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+<div class="viewcode-block" id="Subsample.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Subsample.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[::</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">()]</span></div></div>
+
+
+<div class="viewcode-block" id="Bessel"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Bessel">[docs]</a><span class="k">class</span> <span class="nc">Bessel</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Bessel filter. Input data must have time values.&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;BesselFilter&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;combo&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;lowpass&#39;</span><span class="p">,</span> <span class="s1">&#39;highpass&#39;</span><span class="p">],</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;cutoff&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">1000.</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;order&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;bidir&#39;</span><span class="p">,</span> <span class="s1">&#39;check&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;checked&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+<div class="viewcode-block" id="Bessel.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Bessel.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateGroup</span><span class="o">.</span><span class="n">state</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;lowpass&#39;</span><span class="p">:</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;low&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;high&#39;</span>
+        <span class="k">return</span> <span class="n">functions</span><span class="o">.</span><span class="n">besselFilter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">bidir</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;bidir&#39;</span><span class="p">],</span> <span class="n">btype</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;cutoff&#39;</span><span class="p">],</span> <span class="n">order</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="Butterworth"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Butterworth">[docs]</a><span class="k">class</span> <span class="nc">Butterworth</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Butterworth filter&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;ButterworthFilter&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">,</span> <span class="s1">&#39;combo&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;lowpass&#39;</span><span class="p">,</span> <span class="s1">&#39;highpass&#39;</span><span class="p">],</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;wPass&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">1000.</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;wStop&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">2000.</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;gPass&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;dB&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;gStop&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">20.0</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;dB&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;bidir&#39;</span><span class="p">,</span> <span class="s1">&#39;check&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;checked&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+<div class="viewcode-block" id="Butterworth.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Butterworth.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateGroup</span><span class="o">.</span><span class="n">state</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;lowpass&#39;</span><span class="p">:</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;low&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;high&#39;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">butterworthFilter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">bidir</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;bidir&#39;</span><span class="p">],</span> <span class="n">btype</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">wPass</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;wPass&#39;</span><span class="p">],</span> <span class="n">wStop</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;wStop&#39;</span><span class="p">],</span> <span class="n">gPass</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;gPass&#39;</span><span class="p">],</span> <span class="n">gStop</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;gStop&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">ret</span></div></div>
+
+        
+<div class="viewcode-block" id="ButterworthNotch"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.ButterworthNotch">[docs]</a><span class="k">class</span> <span class="nc">ButterworthNotch</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Butterworth notch filter&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;ButterworthNotchFilter&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;low_wPass&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">1000.</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;low_wStop&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">2000.</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;low_gPass&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;dB&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;low_gStop&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">20.0</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;dB&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;high_wPass&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">3000.</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;high_wStop&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">4000.</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;high_gPass&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;dB&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;high_gStop&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">20.0</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;dB&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;bidir&#39;</span><span class="p">,</span> <span class="s1">&#39;check&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;checked&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+<div class="viewcode-block" id="ButterworthNotch.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.ButterworthNotch.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateGroup</span><span class="o">.</span><span class="n">state</span><span class="p">()</span>
+        
+        <span class="n">low</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">butterworthFilter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">bidir</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;bidir&#39;</span><span class="p">],</span> <span class="n">btype</span><span class="o">=</span><span class="s1">&#39;low&#39;</span><span class="p">,</span> <span class="n">wPass</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;low_wPass&#39;</span><span class="p">],</span> <span class="n">wStop</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;low_wStop&#39;</span><span class="p">],</span> <span class="n">gPass</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;low_gPass&#39;</span><span class="p">],</span> <span class="n">gStop</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;low_gStop&#39;</span><span class="p">])</span>
+        <span class="n">high</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">butterworthFilter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">bidir</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;bidir&#39;</span><span class="p">],</span> <span class="n">btype</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="n">wPass</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;high_wPass&#39;</span><span class="p">],</span> <span class="n">wStop</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;high_wStop&#39;</span><span class="p">],</span> <span class="n">gPass</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;high_gPass&#39;</span><span class="p">],</span> <span class="n">gStop</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;high_gStop&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">low</span> <span class="o">+</span> <span class="n">high</span></div></div>
+    
+
+<div class="viewcode-block" id="Mean"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Mean">[docs]</a><span class="k">class</span> <span class="nc">Mean</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filters data by taking the mean of a sliding window&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;MeanFilter&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+    <span class="nd">@metaArrayWrapper</span>
+    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">functions</span><span class="o">.</span><span class="n">rollingSum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span></div>
+
+
+<div class="viewcode-block" id="Median"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Median">[docs]</a><span class="k">class</span> <span class="nc">Median</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filters data by taking the median of a sliding window&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;MedianFilter&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+    <span class="nd">@metaArrayWrapper</span>
+    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">scipy.ndimage</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;MedianFilter node requires the package scipy.ndimage.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scipy</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">median_filter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Mode"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Mode">[docs]</a><span class="k">class</span> <span class="nc">Mode</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filters data by taking the mode (histogram-based) of a sliding window&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;ModeFilter&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;window&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">}),</span>
+    <span class="p">]</span>
+    
+    <span class="nd">@metaArrayWrapper</span>
+    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">functions</span><span class="o">.</span><span class="n">modeFilter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;window&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="Denoise"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Denoise">[docs]</a><span class="k">class</span> <span class="nc">Denoise</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Removes anomalous spikes from data, replacing with nearby values&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;DenoiseFilter&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;threshold&#39;</span><span class="p">,</span> <span class="s1">&#39;doubleSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">4.0</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+<div class="viewcode-block" id="Denoise.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Denoise.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="c1">#print &quot;DENOISE&quot;</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateGroup</span><span class="o">.</span><span class="n">state</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">functions</span><span class="o">.</span><span class="n">denoise</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">s</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Gaussian"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Gaussian">[docs]</a><span class="k">class</span> <span class="nc">Gaussian</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gaussian smoothing filter.&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;GaussianFilter&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;sigma&#39;</span><span class="p">,</span> <span class="s1">&#39;doubleSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+    <span class="nd">@metaArrayWrapper</span>
+    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">scipy.ndimage</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;GaussianFilter node requires the package scipy.ndimage.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;implements&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">implements</span><span class="p">(</span><span class="s1">&#39;MetaArray&#39;</span><span class="p">):</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">infoCopy</span><span class="p">()</span>
+            <span class="n">filt</span> <span class="o">=</span> <span class="n">pgfn</span><span class="o">.</span><span class="n">gaussianFilter</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">asarray</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">())</span>
+            <span class="k">if</span> <span class="s1">&#39;values&#39;</span> <span class="ow">in</span> <span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">][:</span><span class="n">filt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">return</span> <span class="n">metaarray</span><span class="o">.</span><span class="n">MetaArray</span><span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pgfn</span><span class="o">.</span><span class="n">gaussianFilter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Derivative"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Derivative">[docs]</a><span class="k">class</span> <span class="nc">Derivative</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the pointwise derivative of the input&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;DerivativeFilter&#39;</span>
+    
+<div class="viewcode-block" id="Derivative.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Derivative.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;implements&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">implements</span><span class="p">(</span><span class="s1">&#39;MetaArray&#39;</span><span class="p">):</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">infoCopy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s1">&#39;values&#39;</span> <span class="ow">in</span> <span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">metaarray</span><span class="o">.</span><span class="n">MetaArray</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">data</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">data</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="Integral"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Integral">[docs]</a><span class="k">class</span> <span class="nc">Integral</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the pointwise integral of the input&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;IntegralFilter&#39;</span>
+    
+    <span class="nd">@metaArrayWrapper</span>
+    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="Detrend"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.Detrend">[docs]</a><span class="k">class</span> <span class="nc">Detrend</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Removes linear trend from the data&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;DetrendFilter&#39;</span>
+    
+    <span class="nd">@metaArrayWrapper</span>
+    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="k">import</span> <span class="n">detrend</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;DetrendFilter node requires the package scipy.signal.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">detrend</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RemoveBaseline"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.RemoveBaseline">[docs]</a><span class="k">class</span> <span class="nc">RemoveBaseline</span><span class="p">(</span><span class="n">PlottingCtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Remove an arbitrary, graphically defined baseline from the data.&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;RemoveBaseline&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1">## define inputs and outputs (one output needs to be a plot)</span>
+        <span class="n">PlottingCtrlNode</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">line</span> <span class="o">=</span> <span class="n">PolyLineROI</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="o">.</span><span class="n">sigRegionChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">changed</span><span class="p">)</span>
+        
+        <span class="c1">## create a PolyLineROI, add it to a plot -- actually, I think we want to do this after the node is connected to a plot (look at EventDetection.ThresholdEvents node for ideas), and possible after there is data. We will need to update the end positions of the line each time the input data changes</span>
+        <span class="c1">#self.line = None ## will become a PolyLineROI</span>
+        
+<div class="viewcode-block" id="RemoveBaseline.connectToPlot"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.RemoveBaseline.connectToPlot">[docs]</a>    <span class="k">def</span> <span class="nf">connectToPlot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Define what happens when the node is connected to a plot&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">plot</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">getPlot</span><span class="p">()</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="p">)</span></div>
+       
+<div class="viewcode-block" id="RemoveBaseline.disconnectFromPlot"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.RemoveBaseline.disconnectFromPlot">[docs]</a>    <span class="k">def</span> <span class="nf">disconnectFromPlot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Define what happens when the node is disconnected from a plot&quot;&quot;&quot;</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="p">)</span>    </div>
+    
+<div class="viewcode-block" id="RemoveBaseline.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.RemoveBaseline.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="c1">## get array of baseline (from PolyLineROI)</span>
+        <span class="n">h0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="o">.</span><span class="n">getHandles</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">h1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="o">.</span><span class="n">getHandles</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="n">timeVals</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">xvals</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">h0</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="n">timeVals</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">h0</span><span class="o">.</span><span class="n">pos</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">h1</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="n">timeVals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">h1</span><span class="o">.</span><span class="n">pos</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>      
+        
+        <span class="n">pts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="o">.</span><span class="n">listPoints</span><span class="p">()</span> <span class="c1">## lists line handles in same coordinates as data</span>
+        <span class="n">pts</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjustXPositions</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">timeVals</span><span class="p">)</span> <span class="c1">## maxe sure x positions match x positions of data points</span>
+        
+        <span class="c1">## construct an array that represents the baseline</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">pts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">pts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
+            <span class="n">x2</span> <span class="o">=</span> <span class="n">pts</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
+            <span class="n">y1</span> <span class="o">=</span> <span class="n">pts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">()</span>
+            <span class="n">y2</span> <span class="o">=</span> <span class="n">pts</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">()</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">y2</span><span class="o">-</span><span class="n">y1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">x2</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">y1</span>
+            
+            <span class="n">times</span> <span class="o">=</span> <span class="n">timeVals</span><span class="p">[(</span><span class="n">timeVals</span> <span class="o">&gt;</span> <span class="n">x1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">timeVals</span> <span class="o">&lt;=</span> <span class="n">x2</span><span class="p">)]</span>
+            <span class="n">arr</span><span class="p">[</span><span class="n">n</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="p">(</span><span class="n">times</span><span class="o">-</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span><span class="o">+</span><span class="n">b</span>
+            <span class="n">n</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+                
+        <span class="k">return</span> <span class="n">data</span> <span class="o">-</span> <span class="n">arr</span> <span class="c1">## subract baseline from data</span></div>
+        
+<div class="viewcode-block" id="RemoveBaseline.adjustXPositions"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.RemoveBaseline.adjustXPositions">[docs]</a>    <span class="k">def</span> <span class="nf">adjustXPositions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pts</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a list of Point() where the x position is set to the nearest x value in *data* for each point in *pts*.&quot;&quot;&quot;</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">timeIndices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pts</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">data</span> <span class="o">-</span> <span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="p">())</span> <span class="o">==</span> <span class="nb">abs</span><span class="p">(</span><span class="n">data</span> <span class="o">-</span> <span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="p">())</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+            <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="p">()))</span>
+            <span class="n">timeIndices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">points</span><span class="p">,</span> <span class="n">timeIndices</span></div></div>
+
+
+
+<div class="viewcode-block" id="AdaptiveDetrend"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.AdaptiveDetrend">[docs]</a><span class="k">class</span> <span class="nc">AdaptiveDetrend</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Removes baseline from data, ignoring anomalous events&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;AdaptiveDetrend&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;threshold&#39;</span><span class="p">,</span> <span class="s1">&#39;doubleSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">})</span>
+    <span class="p">]</span>
+    
+<div class="viewcode-block" id="AdaptiveDetrend.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.AdaptiveDetrend.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">functions</span><span class="o">.</span><span class="n">adaptiveDetrend</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;threshold&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">())</span></div></div>
+
+<div class="viewcode-block" id="HistogramDetrend"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.HistogramDetrend">[docs]</a><span class="k">class</span> <span class="nc">HistogramDetrend</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Removes baseline from data by computing mode (from histogram) of beginning and end of data.&quot;&quot;&quot;</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;HistogramDetrend&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;windowSize&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">,</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;pts&#39;</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;numBins&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;offsetOnly&#39;</span><span class="p">,</span> <span class="s1">&#39;check&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;checked&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}),</span>
+    <span class="p">]</span>
+    
+<div class="viewcode-block" id="HistogramDetrend.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.HistogramDetrend.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateGroup</span><span class="o">.</span><span class="n">state</span><span class="p">()</span>
+        <span class="c1">#ws = self.ctrls[&#39;windowSize&#39;].value()</span>
+        <span class="c1">#bn = self.ctrls[&#39;numBins&#39;].value()</span>
+        <span class="c1">#offset = self.ctrls[&#39;offsetOnly&#39;].checked()</span>
+        <span class="k">return</span> <span class="n">functions</span><span class="o">.</span><span class="n">histogramDetrend</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;windowSize&#39;</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;numBins&#39;</span><span class="p">],</span> <span class="n">offsetOnly</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;offsetOnly&#39;</span><span class="p">])</span></div></div>
+
+
+    
+<div class="viewcode-block" id="RemovePeriodic"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.RemovePeriodic">[docs]</a><span class="k">class</span> <span class="nc">RemovePeriodic</span><span class="p">(</span><span class="n">CtrlNode</span><span class="p">):</span>
+    <span class="n">nodeName</span> <span class="o">=</span> <span class="s1">&#39;RemovePeriodic&#39;</span>
+    <span class="n">uiTemplate</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="c1">#(&#39;windowSize&#39;, &#39;intSpin&#39;, {&#39;value&#39;: 500, &#39;min&#39;: 10, &#39;max&#39;: 1000000, &#39;suffix&#39;: &#39;pts&#39;}),</span>
+        <span class="c1">#(&#39;numBins&#39;, &#39;intSpin&#39;, {&#39;value&#39;: 50, &#39;min&#39;: 3, &#39;max&#39;: 1000000})</span>
+        <span class="p">(</span><span class="s1">&#39;f0&#39;</span><span class="p">,</span> <span class="s1">&#39;spin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="s1">&#39;suffix&#39;</span><span class="p">:</span> <span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="s1">&#39;siPrefix&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;harmonics&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
+        <span class="p">(</span><span class="s1">&#39;samples&#39;</span><span class="p">,</span> <span class="s1">&#39;intSpin&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}),</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="RemovePeriodic.processData"><a class="viewcode-back" href="../../../../../../iris.gui.pyqtgraph.flowchart.library.html#iris.gui.pyqtgraph.flowchart.library.Filters.RemovePeriodic.processData">[docs]</a>    <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">xvals</span><span class="p">(</span><span class="s1">&#39;Time&#39;</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="n">data1</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">asarray</span><span class="p">()</span>
+        <span class="n">ft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">data1</span><span class="p">)</span>
+        
+        <span class="c1">## determine frequencies in fft data</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ft</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">df</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ft</span><span class="p">))</span>
+        
+        <span class="c1">## flatten spikes at f0 and harmonics</span>
+        <span class="n">f0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;f0&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;harmonics&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">()</span><span class="o">+</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">f0</span> <span class="o">*</span> <span class="n">i</span> <span class="c1"># target frequency</span>
+            
+            <span class="c1">## determine index range to check for this frequency</span>
+            <span class="n">ind1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">f</span> <span class="o">/</span> <span class="n">df</span><span class="p">))</span>
+            <span class="n">ind2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">f</span> <span class="o">/</span> <span class="n">df</span><span class="p">))</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrls</span><span class="p">[</span><span class="s1">&#39;samples&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ind1</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">ft</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">mag</span> <span class="o">=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">ft</span><span class="p">[</span><span class="n">ind1</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ft</span><span class="p">[</span><span class="n">ind2</span><span class="o">+</span><span class="mi">1</span><span class="p">]))</span> <span class="o">*</span> <span class="mf">0.5</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">ft</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>   <span class="c1">## Must preserve the phase of each point, otherwise any transients in the trace might lead to large artifacts.</span>
+                <span class="n">re</span> <span class="o">=</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phase</span><span class="p">)</span>
+                <span class="n">im</span> <span class="o">=</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phase</span><span class="p">)</span>
+                <span class="n">ft</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span> <span class="o">+</span> <span class="n">im</span><span class="o">*</span><span class="mi">1</span><span class="n">j</span>
+                <span class="n">ft</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">ft</span><span class="p">)</span><span class="o">-</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span> <span class="o">-</span> <span class="n">im</span><span class="o">*</span><span class="mi">1</span><span class="n">j</span>
+                
+        <span class="n">data2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="n">ft</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+        
+        <span class="n">ma</span> <span class="o">=</span> <span class="n">metaarray</span><span class="o">.</span><span class="n">MetaArray</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">infoCopy</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">ma</span></div></div>
+        
+        
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../../index.html">Module code</a><ul>
+  <li><a href="../../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

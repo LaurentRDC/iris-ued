@@ -1,0 +1,1030 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.GradientEditorItem &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.graphicsItems.GradientEditorItem</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="n">sortList</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">.GraphicsObject</span> <span class="k">import</span> <span class="n">GraphicsObject</span>
+<span class="kn">from</span> <span class="nn">.GraphicsWidget</span> <span class="k">import</span> <span class="n">GraphicsWidget</span>
+<span class="kn">from</span> <span class="nn">..widgets.SpinBox</span> <span class="k">import</span> <span class="n">SpinBox</span>
+<span class="kn">from</span> <span class="nn">..pgcollections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">..colormap</span> <span class="k">import</span> <span class="n">ColorMap</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="nb">cmp</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;TickSliderItem&#39;</span><span class="p">,</span> <span class="s1">&#39;GradientEditorItem&#39;</span><span class="p">]</span>
+
+<span class="n">Gradients</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([</span>
+    <span class="p">(</span><span class="s1">&#39;thermal&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="mf">0.3333</span><span class="p">,</span> <span class="p">(</span><span class="mi">185</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.6666</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">220</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))],</span> <span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;rgb&#39;</span><span class="p">}),</span>
+    <span class="p">(</span><span class="s1">&#39;flame&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="mf">0.2</span><span class="p">,</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">220</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="p">(</span><span class="mi">236</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">134</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="p">(</span><span class="mi">246</span><span class="p">,</span> <span class="mi">246</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))],</span> <span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;rgb&#39;</span><span class="p">}),</span>
+    <span class="p">(</span><span class="s1">&#39;yellowy&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.2328863796753704</span><span class="p">,</span> <span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">129</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.8362738179251941</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.5257586450247</span><span class="p">,</span> <span class="p">(</span><span class="mi">115</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">))],</span> <span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;rgb&#39;</span><span class="p">}</span> <span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;bipolar&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.25</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.75</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))],</span> <span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;rgb&#39;</span><span class="p">}),</span>
+    <span class="p">(</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))],</span> <span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;hsv&#39;</span><span class="p">}),</span>
+    <span class="p">(</span><span class="s1">&#39;cyclic&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))],</span> <span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;hsv&#39;</span><span class="p">}),</span>
+    <span class="p">(</span><span class="s1">&#39;greyclip&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">0.99</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))],</span> <span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;rgb&#39;</span><span class="p">}),</span>
+    <span class="p">(</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">))],</span> <span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;rgb&#39;</span><span class="p">}),</span>
+<span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">addGradientListToDocstring</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Decorator to add list of current pre-defined gradients to the end of a function docstring.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">dec</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="n">fn</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">Gradients</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;]&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fn</span>
+    <span class="k">return</span> <span class="n">dec</span>
+
+
+
+<div class="viewcode-block" id="TickSliderItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem">[docs]</a><span class="k">class</span> <span class="nc">TickSliderItem</span><span class="p">(</span><span class="n">GraphicsWidget</span><span class="p">):</span>
+    <span class="c1">## public class</span>
+    <span class="sd">&quot;&quot;&quot;**Bases:** :class:`GraphicsWidget &lt;pyqtgraph.GraphicsWidget&gt;`</span>
+<span class="sd">    </span>
+<span class="sd">    A rectangular item with tick marks along its length that can (optionally) be moved by the user.&quot;&quot;&quot;</span>
+        
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="n">allowAdd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ==============  =================================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        orientation     Set the orientation of the gradient. Options are: &#39;left&#39;, &#39;right&#39;</span>
+<span class="sd">                        &#39;top&#39;, and &#39;bottom&#39;.</span>
+<span class="sd">        allowAdd        Specifies whether ticks can be added to the item by the user.</span>
+<span class="sd">        tickPen         Default is white. Specifies the color of the outline of the ticks.</span>
+<span class="sd">                        Can be any of the valid arguments for :func:`mkPen &lt;pyqtgraph.mkPen&gt;`</span>
+<span class="sd">        ==============  =================================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## public</span>
+        <span class="n">GraphicsWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span> <span class="o">=</span> <span class="n">orientation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tickSize</span> <span class="o">=</span> <span class="mi">15</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticks</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxDim</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allowAdd</span> <span class="o">=</span> <span class="n">allowAdd</span>
+        <span class="k">if</span> <span class="s1">&#39;tickPen&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tickPen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;tickPen&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tickPen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">orientations</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;left&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> 
+            <span class="s1">&#39;right&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> 
+            <span class="s1">&#39;top&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> 
+            <span class="s1">&#39;bottom&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">}</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOrientation</span><span class="p">(</span><span class="n">orientation</span><span class="p">)</span>
+        <span class="c1">#self.setFrameStyle(QtGui.QFrame.NoFrame | QtGui.QFrame.Plain)</span>
+        <span class="c1">#self.setBackgroundRole(QtGui.QPalette.NoRole)</span>
+        <span class="c1">#self.setMouseTracking(True)</span>
+        
+    <span class="c1">#def boundingRect(self):</span>
+        <span class="c1">#return self.mapRectFromParent(self.geometry()).normalized()</span>
+        
+    <span class="c1">#def shape(self):  ## No idea why this is necessary, but rotated items do not receive clicks otherwise.</span>
+        <span class="c1">#p = QtGui.QPainterPath()</span>
+        <span class="c1">#p.addRect(self.boundingRect())</span>
+        <span class="c1">#return p</span>
+        
+<div class="viewcode-block" id="TickSliderItem.paint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.paint">[docs]</a>    <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">widget</span><span class="p">):</span>
+        <span class="c1">#p.setPen(fn.mkPen(&#39;g&#39;, width=3))</span>
+        <span class="c1">#p.drawRect(self.boundingRect())</span>
+        <span class="k">return</span></div>
+        
+<div class="viewcode-block" id="TickSliderItem.keyPressEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.keyPressEvent">[docs]</a>    <span class="k">def</span> <span class="nf">keyPressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">ev</span><span class="o">.</span><span class="n">ignore</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TickSliderItem.setMaxDim"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.setMaxDim">[docs]</a>    <span class="k">def</span> <span class="nf">setMaxDim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">mx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxDim</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maxDim</span> <span class="o">=</span> <span class="n">mx</span>
+            
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="s1">&#39;top&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setFixedHeight</span><span class="p">(</span><span class="n">mx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setMaximumWidth</span><span class="p">(</span><span class="mi">16777215</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setFixedWidth</span><span class="p">(</span><span class="n">mx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setMaximumHeight</span><span class="p">(</span><span class="mi">16777215</span><span class="p">)</span></div>
+            
+    
+<div class="viewcode-block" id="TickSliderItem.setOrientation"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.setOrientation">[docs]</a>    <span class="k">def</span> <span class="nf">setOrientation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orientation</span><span class="p">):</span>
+        <span class="c1">## public</span>
+        <span class="sd">&quot;&quot;&quot;Set the orientation of the TickSliderItem.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ===================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        orientation     Options are: &#39;left&#39;, &#39;right&#39;, &#39;top&#39;, &#39;bottom&#39;</span>
+<span class="sd">                        The orientation option specifies which side of the slider the</span>
+<span class="sd">                        ticks are on, as well as whether the slider is vertical (&#39;right&#39;</span>
+<span class="sd">                        and &#39;left&#39;) or horizontal (&#39;top&#39; and &#39;bottom&#39;).</span>
+<span class="sd">        ==============  ===================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span> <span class="o">=</span> <span class="n">orientation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMaxDim</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resetTransform</span><span class="p">()</span>
+        <span class="n">ort</span> <span class="o">=</span> <span class="n">orientation</span>
+        <span class="k">if</span> <span class="n">ort</span> <span class="o">==</span> <span class="s1">&#39;top&#39;</span><span class="p">:</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="o">.</span><span class="n">fromScale</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">transform</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setTransform</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ort</span> <span class="o">==</span> <span class="s1">&#39;left&#39;</span><span class="p">:</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+            <span class="n">transform</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="mi">270</span><span class="p">)</span>
+            <span class="n">transform</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">transform</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">(),</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">maxDim</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setTransform</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ort</span> <span class="o">==</span> <span class="s1">&#39;right&#39;</span><span class="p">:</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+            <span class="n">transform</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="mi">270</span><span class="p">)</span>
+            <span class="n">transform</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setTransform</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ort</span> <span class="o">!=</span> <span class="s1">&#39;bottom&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is not a valid orientation. Options are &#39;left&#39;, &#39;right&#39;, &#39;top&#39;, and &#39;bottom&#39;&quot;</span> <span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">ort</span><span class="p">))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tickSize</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="TickSliderItem.addTick"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.addTick">[docs]</a>    <span class="k">def</span> <span class="nf">addTick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">movable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1">## public</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a tick to the item.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        x               Position where tick should be added.</span>
+<span class="sd">        color           Color of added tick. If color is not specified, the color will be</span>
+<span class="sd">                        white.</span>
+<span class="sd">        movable         Specifies whether the tick is movable with the mouse.</span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">)</span>
+        <span class="n">tick</span> <span class="o">=</span> <span class="n">Tick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="p">,</span> <span class="n">movable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tickSize</span><span class="p">,</span> <span class="n">pen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tickPen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="p">[</span><span class="n">tick</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">tick</span><span class="o">.</span><span class="n">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tick</span></div>
+    
+<div class="viewcode-block" id="TickSliderItem.removeTick"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.removeTick">[docs]</a>    <span class="k">def</span> <span class="nf">removeTick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">):</span>
+        <span class="c1">## public</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes the specified tick.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="p">[</span><span class="n">tick</span><span class="p">]</span>
+        <span class="n">tick</span><span class="o">.</span><span class="n">setParentItem</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span><span class="o">.</span><span class="n">removeItem</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="TickSliderItem.tickMoved"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.tickMoved">[docs]</a>    <span class="k">def</span> <span class="nf">tickMoved</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">pos</span><span class="p">):</span>
+        <span class="c1">#print &quot;tick changed&quot;</span>
+        <span class="c1">## Correct position of tick if it has left bounds.</span>
+        <span class="n">newX</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">()),</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
+        <span class="n">pos</span><span class="o">.</span><span class="n">setX</span><span class="p">(</span><span class="n">newX</span><span class="p">)</span>
+        <span class="n">tick</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="p">[</span><span class="n">tick</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">newX</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span></div>
+    
+<div class="viewcode-block" id="TickSliderItem.tickMoveFinished"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.tickMoveFinished">[docs]</a>    <span class="k">def</span> <span class="nf">tickMoveFinished</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="TickSliderItem.tickClicked"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.tickClicked">[docs]</a>    <span class="k">def</span> <span class="nf">tickClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTick</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="TickSliderItem.widgetLength"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.widgetLength">[docs]</a>    <span class="k">def</span> <span class="nf">widgetLength</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="s1">&#39;top&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="TickSliderItem.resizeEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.resizeEvent">[docs]</a>    <span class="k">def</span> <span class="nf">resizeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="n">wlen</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">widgetLength</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLength</span><span class="p">(</span><span class="n">wlen</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">tickSize</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOrientation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="p">)</span></div>
+        <span class="c1">#bounds = self.scene().itemsBoundingRect()</span>
+        <span class="c1">#bounds.setLeft(min(-self.tickSize*0.5, bounds.left()))</span>
+        <span class="c1">#bounds.setRight(max(self.length + self.tickSize, bounds.right()))</span>
+        <span class="c1">#self.setSceneRect(bounds)</span>
+        <span class="c1">#self.fitInView(bounds, QtCore.Qt.KeepAspectRatio)</span>
+        
+<div class="viewcode-block" id="TickSliderItem.setLength"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.setLength">[docs]</a>    <span class="k">def</span> <span class="nf">setLength</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newLen</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">newLen</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span><span class="o">.</span><span class="n">y</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">newLen</span><span class="p">)</span></div>
+        
+    <span class="c1">#def mousePressEvent(self, ev):</span>
+        <span class="c1">#QtGui.QGraphicsView.mousePressEvent(self, ev)</span>
+        <span class="c1">#self.ignoreRelease = False</span>
+        <span class="c1">#for i in self.items(ev.pos()):</span>
+            <span class="c1">#if isinstance(i, Tick):</span>
+                <span class="c1">#self.ignoreRelease = True</span>
+                <span class="c1">#break</span>
+        <span class="c1">##if len(self.items(ev.pos())) &gt; 0:  ## Let items handle their own clicks</span>
+            <span class="c1">##self.ignoreRelease = True</span>
+        
+    <span class="c1">#def mouseReleaseEvent(self, ev):</span>
+        <span class="c1">#QtGui.QGraphicsView.mouseReleaseEvent(self, ev)</span>
+        <span class="c1">#if self.ignoreRelease:</span>
+            <span class="c1">#return</span>
+            
+        <span class="c1">#pos = self.mapToScene(ev.pos())</span>
+            
+        <span class="c1">#if ev.button() == QtCore.Qt.LeftButton and self.allowAdd:</span>
+            <span class="c1">#if pos.x() &lt; 0 or pos.x() &gt; self.length:</span>
+                <span class="c1">#return</span>
+            <span class="c1">#if pos.y() &lt; 0 or pos.y() &gt; self.tickSize:</span>
+                <span class="c1">#return</span>
+            <span class="c1">#pos.setX(min(max(pos.x(), 0), self.length))</span>
+            <span class="c1">#self.addTick(pos.x()/self.length)</span>
+        <span class="c1">#elif ev.button() == QtCore.Qt.RightButton:</span>
+            <span class="c1">#self.showMenu(ev)</span>
+            
+<div class="viewcode-block" id="TickSliderItem.mouseClickEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.mouseClickEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mouseClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowAdd</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="k">if</span> <span class="n">pos</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">pos</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">tickSize</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">pos</span><span class="o">.</span><span class="n">setX</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="mi">0</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addTick</span><span class="p">(</span><span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">showMenu</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span></div>
+
+        <span class="c1">#if  ev.button() == QtCore.Qt.RightButton:</span>
+            <span class="c1">#if self.moving:</span>
+                <span class="c1">#ev.accept()</span>
+                <span class="c1">#self.setPos(self.startPosition)</span>
+                <span class="c1">#self.moving = False</span>
+                <span class="c1">#self.sigMoving.emit(self)</span>
+                <span class="c1">#self.sigMoved.emit(self)</span>
+            <span class="c1">#else:</span>
+                <span class="c1">#pass</span>
+                <span class="c1">#self.view().tickClicked(self, ev)</span>
+                <span class="c1">###remove</span>
+
+<div class="viewcode-block" id="TickSliderItem.hoverEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.hoverEvent">[docs]</a>    <span class="k">def</span> <span class="nf">hoverEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ev</span><span class="o">.</span><span class="n">isExit</span><span class="p">())</span> <span class="ow">and</span> <span class="n">ev</span><span class="o">.</span><span class="n">acceptClicks</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">):</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">acceptClicks</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">)</span></div>
+            <span class="c1">## show ghost tick</span>
+            <span class="c1">#self.currentPen = fn.mkPen(255, 0,0)</span>
+        <span class="c1">#else:</span>
+            <span class="c1">#self.currentPen = self.pen</span>
+        <span class="c1">#self.update()</span>
+        
+<div class="viewcode-block" id="TickSliderItem.showMenu"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.showMenu">[docs]</a>    <span class="k">def</span> <span class="nf">showMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="TickSliderItem.setTickColor"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.setTickColor">[docs]</a>    <span class="k">def</span> <span class="nf">setTickColor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">color</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the color of the specified tick.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        tick            Can be either an integer corresponding to the index of the tick</span>
+<span class="sd">                        or a Tick object. Ex: if you had a slider with 3 ticks and you</span>
+<span class="sd">                        wanted to change the middle tick, the index would be 1.</span>
+<span class="sd">        color           The color to make the tick. Can be any argument that is valid for</span>
+<span class="sd">                        :func:`mkBrush &lt;pyqtgraph.mkBrush&gt;`</span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tick</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTick</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="n">tick</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
+        <span class="n">tick</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+        <span class="c1">#tick.setBrush(QtGui.QBrush(QtGui.QColor(tick.color)))</span>
+
+<div class="viewcode-block" id="TickSliderItem.setTickValue"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.setTickValue">[docs]</a>    <span class="k">def</span> <span class="nf">setTickValue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="c1">## public</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the position (along the slider) of the tick.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============   ==================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        tick             Can be either an integer corresponding to the index of the tick</span>
+<span class="sd">                         or a Tick object. Ex: if you had a slider with 3 ticks and you</span>
+<span class="sd">                         wanted to change the middle tick, the index would be 1.</span>
+<span class="sd">        val              The desired position of the tick. If val is &lt; 0, position will be</span>
+<span class="sd">                         set to 0. If val is &gt; 1, position will be set to 1.</span>
+<span class="sd">        ==============   ==================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tick</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTick</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">val</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">val</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">tick</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+        <span class="n">pos</span><span class="o">.</span><span class="n">setX</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">tick</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="p">[</span><span class="n">tick</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="TickSliderItem.tickValue"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.tickValue">[docs]</a>    <span class="k">def</span> <span class="nf">tickValue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">):</span>
+        <span class="c1">## public</span>
+        <span class="sd">&quot;&quot;&quot;Return the value (from 0.0 to 1.0) of the specified tick.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        tick            Can be either an integer corresponding to the index of the tick</span>
+<span class="sd">                        or a Tick object. Ex: if you had a slider with 3 ticks and you</span>
+<span class="sd">                        wanted the value of the middle tick, the index would be 1.</span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tick</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTick</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="p">[</span><span class="n">tick</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="TickSliderItem.getTick"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.getTick">[docs]</a>    <span class="k">def</span> <span class="nf">getTick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">):</span>
+        <span class="c1">## public</span>
+        <span class="sd">&quot;&quot;&quot;Return the Tick object at the specified index.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        tick            An integer corresponding to the index of the desired tick. If the</span>
+<span class="sd">                        argument is not an integer it will be returned unchanged.</span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="n">tick</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listTicks</span><span class="p">()[</span><span class="n">tick</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">tick</span></div>
+
+    <span class="c1">#def mouseMoveEvent(self, ev):</span>
+        <span class="c1">#QtGui.QGraphicsView.mouseMoveEvent(self, ev)</span>
+
+<div class="viewcode-block" id="TickSliderItem.listTicks"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.TickSliderItem.listTicks">[docs]</a>    <span class="k">def</span> <span class="nf">listTicks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a sorted list of all the Tick objects on the slider.&quot;&quot;&quot;</span>
+        <span class="c1">## public</span>
+        <span class="n">ticks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">sortList</span><span class="p">(</span><span class="n">ticks</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">:</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>  <span class="c1">## see pyqtgraph.python2_3.sortList</span>
+        <span class="k">return</span> <span class="n">ticks</span></div></div>
+
+
+<div class="viewcode-block" id="GradientEditorItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem">[docs]</a><span class="k">class</span> <span class="nc">GradientEditorItem</span><span class="p">(</span><span class="n">TickSliderItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **Bases:** :class:`TickSliderItem &lt;pyqtgraph.TickSliderItem&gt;`</span>
+<span class="sd">    </span>
+<span class="sd">    An item that can be used to define a color gradient. Implements common pre-defined gradients that are </span>
+<span class="sd">    customizable by the user. :class: `GradientWidget &lt;pyqtgraph.GradientWidget&gt;` provides a widget</span>
+<span class="sd">    with a GradientEditorItem that can be added to a GUI. </span>
+<span class="sd">    </span>
+<span class="sd">    ================================ ===========================================================</span>
+<span class="sd">    **Signals:**</span>
+<span class="sd">    sigGradientChanged(self)         Signal is emitted anytime the gradient changes. The signal </span>
+<span class="sd">                                     is emitted in real time while ticks are being dragged or </span>
+<span class="sd">                                     colors are being changed.</span>
+<span class="sd">    sigGradientChangeFinished(self)  Signal is emitted when the gradient is finished changing.</span>
+<span class="sd">    ================================ ===========================================================    </span>
+<span class="sd"> </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">sigGradientChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    <span class="n">sigGradientChangeFinished</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new GradientEditorItem. </span>
+<span class="sd">        All arguments are passed to :func:`TickSliderItem.__init__ &lt;pyqtgraph.TickSliderItem.__init__&gt;`</span>
+<span class="sd">        </span>
+<span class="sd">        ===============  =================================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        orientation      Set the orientation of the gradient. Options are: &#39;left&#39;, &#39;right&#39;</span>
+<span class="sd">                         &#39;top&#39;, and &#39;bottom&#39;.</span>
+<span class="sd">        allowAdd         Default is True. Specifies whether ticks can be added to the item.</span>
+<span class="sd">        tickPen          Default is white. Specifies the color of the outline of the ticks.</span>
+<span class="sd">                         Can be any of the valid arguments for :func:`mkPen &lt;pyqtgraph.mkPen&gt;`</span>
+<span class="sd">        ===============  =================================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentTick</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentTickColor</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span> <span class="o">=</span> <span class="mi">15</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradRect</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsRectItem</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backgroundRect</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsRectItem</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backgroundRect</span><span class="o">.</span><span class="n">setBrush</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QBrush</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">DiagCrossPattern</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorMode</span> <span class="o">=</span> <span class="s1">&#39;rgb&#39;</span>
+        
+        <span class="n">TickSliderItem</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorDialog</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColorDialog</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorDialog</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QColorDialog</span><span class="o">.</span><span class="n">ShowAlphaChannel</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorDialog</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QColorDialog</span><span class="o">.</span><span class="n">DontUseNativeDialog</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorDialog</span><span class="o">.</span><span class="n">currentColorChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentColorChanged</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorDialog</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentColorRejected</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorDialog</span><span class="o">.</span><span class="n">accepted</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentColorAccepted</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">backgroundRect</span><span class="o">.</span><span class="n">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradRect</span><span class="o">.</span><span class="n">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMaxDim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tickSize</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">rgbAction</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QAction</span><span class="p">(</span><span class="s1">&#39;RGB&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rgbAction</span><span class="o">.</span><span class="n">setCheckable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rgbAction</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">setColorMode</span><span class="p">(</span><span class="s1">&#39;rgb&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hsvAction</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QAction</span><span class="p">(</span><span class="s1">&#39;HSV&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hsvAction</span><span class="o">.</span><span class="n">setCheckable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hsvAction</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">setColorMode</span><span class="p">(</span><span class="s1">&#39;hsv&#39;</span><span class="p">))</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">menu</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMenu</span><span class="p">()</span>
+        
+        <span class="c1">## build context menu of gradients</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="k">global</span> <span class="n">Gradients</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">Gradients</span><span class="p">:</span>
+            <span class="n">px</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPixmap</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPainter</span><span class="p">(</span><span class="n">px</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">restoreState</span><span class="p">(</span><span class="n">Gradients</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getGradient</span><span class="p">()</span>
+            <span class="n">brush</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QBrush</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">fillRect</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QRect</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="n">brush</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QLabel</span><span class="p">()</span>
+            <span class="n">label</span><span class="o">.</span><span class="n">setPixmap</span><span class="p">(</span><span class="n">px</span><span class="p">)</span>
+            <span class="n">label</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">act</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidgetAction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">act</span><span class="o">.</span><span class="n">setDefaultWidget</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+            <span class="n">act</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contextMenuClicked</span><span class="p">)</span>
+            <span class="n">act</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">g</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">act</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">l</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">addSeparator</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rgbAction</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hsvAction</span><span class="p">)</span>
+        
+        
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTick</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addTick</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addTick</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setColorMode</span><span class="p">(</span><span class="s1">&#39;rgb&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="GradientEditorItem.setOrientation"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.setOrientation">[docs]</a>    <span class="k">def</span> <span class="nf">setOrientation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orientation</span><span class="p">):</span>
+        <span class="c1">## public</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the orientation of the GradientEditorItem. </span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ===================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        orientation     Options are: &#39;left&#39;, &#39;right&#39;, &#39;top&#39;, &#39;bottom&#39;</span>
+<span class="sd">                        The orientation option specifies which side of the gradient the</span>
+<span class="sd">                        ticks are on, as well as whether the gradient is vertical (&#39;right&#39;</span>
+<span class="sd">                        and &#39;left&#39;) or horizontal (&#39;top&#39; and &#39;bottom&#39;).</span>
+<span class="sd">        ==============  ===================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">TickSliderItem</span><span class="o">.</span><span class="n">setOrientation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orientation</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="GradientEditorItem.showMenu"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.showMenu">[docs]</a>    <span class="k">def</span> <span class="nf">showMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">popup</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">screenPos</span><span class="p">()</span><span class="o">.</span><span class="n">toQPoint</span><span class="p">())</span></div>
+    
+<div class="viewcode-block" id="GradientEditorItem.contextMenuClicked"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.contextMenuClicked">[docs]</a>    <span class="k">def</span> <span class="nf">contextMenuClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="c1">#global Gradients</span>
+        <span class="n">act</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sender</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loadPreset</span><span class="p">(</span><span class="n">act</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+        
+    <span class="nd">@addGradientListToDocstring</span><span class="p">()</span>
+<div class="viewcode-block" id="GradientEditorItem.loadPreset"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.loadPreset">[docs]</a>    <span class="k">def</span> <span class="nf">loadPreset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load a predefined gradient. Currently defined gradients are: </span>
+<span class="sd">        &quot;&quot;&quot;</span><span class="c1">## TODO: provide image with names of defined gradients</span>
+        
+        <span class="c1">#global Gradients</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">restoreState</span><span class="p">(</span><span class="n">Gradients</span><span class="p">[</span><span class="n">name</span><span class="p">])</span></div>
+    
+<div class="viewcode-block" id="GradientEditorItem.setColorMode"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.setColorMode">[docs]</a>    <span class="k">def</span> <span class="nf">setColorMode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the color mode for the gradient. Options are: &#39;hsv&#39;, &#39;rgb&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c1">## public</span>
+        <span class="k">if</span> <span class="n">cm</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;rgb&#39;</span><span class="p">,</span> <span class="s1">&#39;hsv&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unknown color mode </span><span class="si">%s</span><span class="s2">. Options are &#39;rgb&#39; and &#39;hsv&#39;.&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">cm</span><span class="p">))</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rgbAction</span><span class="o">.</span><span class="n">blockSignals</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hsvAction</span><span class="o">.</span><span class="n">blockSignals</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rgbAction</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="n">cm</span> <span class="o">==</span> <span class="s1">&#39;rgb&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hsvAction</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="n">cm</span> <span class="o">==</span> <span class="s1">&#39;hsv&#39;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rgbAction</span><span class="o">.</span><span class="n">blockSignals</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hsvAction</span><span class="o">.</span><span class="n">blockSignals</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorMode</span> <span class="o">=</span> <span class="n">cm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.colorMap"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.colorMap">[docs]</a>    <span class="k">def</span> <span class="nf">colorMap</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a ColorMap object representing the current state of the editor.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">colorMode</span> <span class="o">==</span> <span class="s1">&#39;hsv&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;hsv colormaps not yet supported&#39;</span><span class="p">)</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">listTicks</span><span class="p">():</span>
+            <span class="n">pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">color</span>
+            <span class="n">color</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">red</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">green</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">blue</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">alpha</span><span class="p">()])</span>
+        <span class="k">return</span> <span class="n">ColorMap</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">))</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.updateGradient"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.updateGradient">[docs]</a>    <span class="k">def</span> <span class="nf">updateGradient</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getGradient</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradRect</span><span class="o">.</span><span class="n">setBrush</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QBrush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gradient</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigGradientChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.setLength"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.setLength">[docs]</a>    <span class="k">def</span> <span class="nf">setLength</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newLen</span><span class="p">):</span>
+        <span class="c1">#private (but maybe public)</span>
+        <span class="n">TickSliderItem</span><span class="o">.</span><span class="n">setLength</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newLen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backgroundRect</span><span class="o">.</span><span class="n">setRect</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">,</span> <span class="n">newLen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradRect</span><span class="o">.</span><span class="n">setRect</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">,</span> <span class="n">newLen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectSize</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.currentColorChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.currentColorChanged">[docs]</a>    <span class="k">def</span> <span class="nf">currentColorChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="k">if</span> <span class="n">color</span><span class="o">.</span><span class="n">isValid</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">currentTick</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setTickColor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentTick</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span></div>
+            
+<div class="viewcode-block" id="GradientEditorItem.currentColorRejected"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.currentColorRejected">[docs]</a>    <span class="k">def</span> <span class="nf">currentColorRejected</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setTickColor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentTick</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">currentTickColor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.currentColorAccepted"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.currentColorAccepted">[docs]</a>    <span class="k">def</span> <span class="nf">currentColorAccepted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigGradientChangeFinished</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.tickClicked"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.tickClicked">[docs]</a>    <span class="k">def</span> <span class="nf">tickClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">raiseColorDialog</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">raiseTickContextMenu</span><span class="p">(</span><span class="n">tick</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="GradientEditorItem.raiseColorDialog"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.raiseColorDialog">[docs]</a>    <span class="k">def</span> <span class="nf">raiseColorDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tick</span><span class="o">.</span><span class="n">colorChangeAllowed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentTick</span> <span class="o">=</span> <span class="n">tick</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentTickColor</span> <span class="o">=</span> <span class="n">tick</span><span class="o">.</span><span class="n">color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorDialog</span><span class="o">.</span><span class="n">setCurrentColor</span><span class="p">(</span><span class="n">tick</span><span class="o">.</span><span class="n">color</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorDialog</span><span class="o">.</span><span class="n">open</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.raiseTickContextMenu"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.raiseTickContextMenu">[docs]</a>    <span class="k">def</span> <span class="nf">raiseTickContextMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tickMenu</span> <span class="o">=</span> <span class="n">TickMenu</span><span class="p">(</span><span class="n">tick</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tickMenu</span><span class="o">.</span><span class="n">popup</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">screenPos</span><span class="p">()</span><span class="o">.</span><span class="n">toQPoint</span><span class="p">())</span></div>
+    
+<div class="viewcode-block" id="GradientEditorItem.tickMoved"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.tickMoved">[docs]</a>    <span class="k">def</span> <span class="nf">tickMoved</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">pos</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="n">TickSliderItem</span><span class="o">.</span><span class="n">tickMoved</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="GradientEditorItem.tickMoveFinished"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.tickMoveFinished">[docs]</a>    <span class="k">def</span> <span class="nf">tickMoveFinished</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigGradientChangeFinished</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+    
+
+<div class="viewcode-block" id="GradientEditorItem.getGradient"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.getGradient">[docs]</a>    <span class="k">def</span> <span class="nf">getGradient</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a QLinearGradient object.&quot;&quot;&quot;</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QLinearGradient</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">colorMode</span> <span class="o">==</span> <span class="s1">&#39;rgb&#39;</span><span class="p">:</span>
+            <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listTicks</span><span class="p">()</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">setStops</span><span class="p">([(</span><span class="n">x</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">color</span><span class="p">))</span> <span class="k">for</span> <span class="n">t</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="n">ticks</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">colorMode</span> <span class="o">==</span> <span class="s1">&#39;hsv&#39;</span><span class="p">:</span>  <span class="c1">## HSV mode is approximated for display by interpolating 10 points between each stop</span>
+            <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listTicks</span><span class="p">()</span>
+            <span class="n">stops</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">stops</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">color</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ticks</span><span class="p">)):</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">dx</span> <span class="o">=</span> <span class="p">(</span><span class="n">x2</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">10.</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">):</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">dx</span><span class="o">*</span><span class="n">j</span>
+                    <span class="n">stops</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+                <span class="n">stops</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="n">x2</span><span class="p">)))</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">setStops</span><span class="p">(</span><span class="n">stops</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">g</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.getColor"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.getColor">[docs]</a>    <span class="k">def</span> <span class="nf">getColor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">toQColor</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a color for a given value.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        x               Value (position on gradient) of requested color.</span>
+<span class="sd">        toQColor        If true, returns a QColor object, else returns a (r,g,b,a) tuple.</span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listTicks</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">color</span>
+            <span class="k">if</span> <span class="n">toQColor</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>  <span class="c1"># always copy colors before handing them out</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">red</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">green</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">blue</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">alpha</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">color</span>
+            <span class="k">if</span> <span class="n">toQColor</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>  <span class="c1"># always copy colors before handing them out</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">red</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">green</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">blue</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">alpha</span><span class="p">())</span>
+            
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ticks</span><span class="p">)):</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">x2</span>
+            <span class="n">x2</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">x1</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="ow">and</span> <span class="n">x2</span> <span class="o">&gt;=</span> <span class="n">x</span><span class="p">:</span>
+                <span class="k">break</span>
+                
+        <span class="n">dx</span> <span class="o">=</span> <span class="p">(</span><span class="n">x2</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span> <span class="o">/</span> <span class="n">dx</span>
+        <span class="n">c1</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">color</span>
+        <span class="n">c2</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">color</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">colorMode</span> <span class="o">==</span> <span class="s1">&#39;rgb&#39;</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">c1</span><span class="o">.</span><span class="n">red</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="n">c2</span><span class="o">.</span><span class="n">red</span><span class="p">()</span> <span class="o">*</span> <span class="n">f</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">c1</span><span class="o">.</span><span class="n">green</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="n">c2</span><span class="o">.</span><span class="n">green</span><span class="p">()</span> <span class="o">*</span> <span class="n">f</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">c1</span><span class="o">.</span><span class="n">blue</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="n">c2</span><span class="o">.</span><span class="n">blue</span><span class="p">()</span> <span class="o">*</span> <span class="n">f</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">c1</span><span class="o">.</span><span class="n">alpha</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="n">c2</span><span class="o">.</span><span class="n">alpha</span><span class="p">()</span> <span class="o">*</span> <span class="n">f</span>
+            <span class="k">if</span> <span class="n">toQColor</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">g</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">a</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">colorMode</span> <span class="o">==</span> <span class="s1">&#39;hsv&#39;</span><span class="p">:</span>
+            <span class="n">h1</span><span class="p">,</span><span class="n">s1</span><span class="p">,</span><span class="n">v1</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">c1</span><span class="o">.</span><span class="n">getHsv</span><span class="p">()</span>
+            <span class="n">h2</span><span class="p">,</span><span class="n">s2</span><span class="p">,</span><span class="n">v2</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">c2</span><span class="o">.</span><span class="n">getHsv</span><span class="p">()</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">h1</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="n">h2</span> <span class="o">*</span> <span class="n">f</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">s1</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="n">s2</span> <span class="o">*</span> <span class="n">f</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v1</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="n">v2</span> <span class="o">*</span> <span class="n">f</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">()</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">setHsv</span><span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">toQColor</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">c</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">red</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">green</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">blue</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">alpha</span><span class="p">())</span></div>
+                    
+<div class="viewcode-block" id="GradientEditorItem.getLookupTable"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.getLookupTable">[docs]</a>    <span class="k">def</span> <span class="nf">getLookupTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nPts</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an RGB(A) lookup table (ndarray). </span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ============================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        nPts            The number of points in the returned lookup table.</span>
+<span class="sd">        alpha           True, False, or None - Specifies whether or not alpha values are included</span>
+<span class="sd">                        in the table.If alpha is None, alpha will be automatically determined.</span>
+<span class="sd">        ==============  ============================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">usesAlpha</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">alpha</span><span class="p">:</span>
+            <span class="n">table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nPts</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nPts</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">)</span>
+            
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nPts</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">nPts</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">toQColor</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">table</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span><span class="p">[:</span><span class="n">table</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            
+        <span class="k">return</span> <span class="n">table</span></div>
+    
+<div class="viewcode-block" id="GradientEditorItem.usesAlpha"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.usesAlpha">[docs]</a>    <span class="k">def</span> <span class="nf">usesAlpha</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return True if any ticks have an alpha &lt; 255&quot;&quot;&quot;</span>
+        
+        <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listTicks</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ticks</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">alpha</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">255</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            
+        <span class="k">return</span> <span class="kc">False</span></div>
+            
+<div class="viewcode-block" id="GradientEditorItem.isLookupTrivial"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.isLookupTrivial">[docs]</a>    <span class="k">def</span> <span class="nf">isLookupTrivial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return True if the gradient has exactly two stops in it: black at 0.0 and white at 1.0&quot;&quot;&quot;</span>
+        <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listTicks</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ticks</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">ticks</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">c1</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">colorTuple</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">color</span><span class="p">)</span>
+        <span class="n">c2</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">colorTuple</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">color</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">c1</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">)</span> <span class="ow">or</span> <span class="n">c2</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="GradientEditorItem.mouseReleaseEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.mouseReleaseEvent">[docs]</a>    <span class="k">def</span> <span class="nf">mouseReleaseEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="c1">#private</span>
+        <span class="n">TickSliderItem</span><span class="o">.</span><span class="n">mouseReleaseEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.addTick"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.addTick">[docs]</a>    <span class="k">def</span> <span class="nf">addTick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">movable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">finish</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a tick to the gradient. Return the tick.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        x               Position where tick should be added.</span>
+<span class="sd">        color           Color of added tick. If color is not specified, the color will be</span>
+<span class="sd">                        the color of the gradient at the specified position.</span>
+<span class="sd">        movable         Specifies whether the tick is movable with the mouse.</span>
+<span class="sd">        ==============  ==================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">TickSliderItem</span><span class="o">.</span><span class="n">addTick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">movable</span><span class="o">=</span><span class="n">movable</span><span class="p">)</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">colorChangeAllowed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">removeAllowed</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="k">if</span> <span class="n">finish</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigGradientChangeFinished</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">t</span></div>
+
+
+<div class="viewcode-block" id="GradientEditorItem.removeTick"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.removeTick">[docs]</a>    <span class="k">def</span> <span class="nf">removeTick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">finish</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">TickSliderItem</span><span class="o">.</span><span class="n">removeTick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">finish</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigGradientChangeFinished</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+        
+        
+<div class="viewcode-block" id="GradientEditorItem.saveState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dictionary with parameters for rebuilding the gradient. Keys will include:</span>
+<span class="sd">        </span>
+<span class="sd">           - &#39;mode&#39;: hsv or rgb</span>
+<span class="sd">           - &#39;ticks&#39;: a list of tuples (pos, (r,g,b,a))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## public</span>
+        <span class="n">ticks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">color</span>
+            <span class="n">ticks</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">red</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">green</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">blue</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">alpha</span><span class="p">())))</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">colorMode</span><span class="p">,</span> <span class="s1">&#39;ticks&#39;</span><span class="p">:</span> <span class="n">ticks</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">state</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.restoreState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore the gradient specified in state.</span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ====================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        state           A dictionary with same structure as those returned by</span>
+<span class="sd">                        :func:`saveState &lt;pyqtgraph.GradientEditorItem.saveState&gt;`</span>
+<span class="sd">                      </span>
+<span class="sd">                        Keys must include:</span>
+<span class="sd">                      </span>
+<span class="sd">                            - &#39;mode&#39;: hsv or rgb</span>
+<span class="sd">                            - &#39;ticks&#39;: a list of tuples (pos, (r,g,b,a))</span>
+<span class="sd">        ==============  ====================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## public</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setColorMode</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTick</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">finish</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;ticks&#39;</span><span class="p">]:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addTick</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">c</span><span class="p">,</span> <span class="n">finish</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigGradientChangeFinished</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GradientEditorItem.setColorMap"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GradientEditorItem.GradientEditorItem.setColorMap">[docs]</a>    <span class="k">def</span> <span class="nf">setColorMap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cm</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setColorMode</span><span class="p">(</span><span class="s1">&#39;rgb&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ticks</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTick</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">finish</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">getColors</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;qcolor&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cm</span><span class="o">.</span><span class="n">pos</span><span class="p">)):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addTick</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">finish</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGradient</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigGradientChangeFinished</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">Tick</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsWidget</span><span class="p">):</span>  <span class="c1">## NOTE: Making this a subclass of GraphicsObject instead results in</span>
+                                    <span class="c1">## activating this bug: https://bugreports.qt-project.org/browse/PYSIDE-86</span>
+    <span class="c1">## private class</span>
+
+    <span class="c1"># When making Tick a subclass of QtGui.QGraphicsObject as origin,</span>
+    <span class="c1"># ..GraphicsScene.items(self, *args) will get Tick object as a</span>
+    <span class="c1"># class of QtGui.QMultimediaWidgets.QGraphicsVideoItem in python2.7-PyQt5(5.4.0)</span>
+
+    <span class="n">sigMoving</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    <span class="n">sigMoved</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">movable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">pen</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">movable</span> <span class="o">=</span> <span class="n">movable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">moving</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">pen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hoverPen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentPen</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pg</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPainterPath</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pg</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="o">-</span><span class="n">scale</span><span class="o">/</span><span class="mi">3</span><span class="o">**</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">scale</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pg</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="n">scale</span><span class="o">/</span><span class="mi">3</span><span class="o">**</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">scale</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pg</span><span class="o">.</span><span class="n">closeSubpath</span><span class="p">()</span>
+        
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">movable</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setZValue</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setZValue</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">boundingRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg</span>
+
+    <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">setRenderHints</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPainter</span><span class="o">.</span><span class="n">Antialiasing</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">fillPath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pg</span><span class="p">,</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">))</span>
+        
+        <span class="n">p</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentPen</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">drawPath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pg</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">mouseDragEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">movable</span> <span class="ow">and</span> <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">isStart</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">moving</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cursorOffset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapToParent</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">buttonDownPos</span><span class="p">())</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">startPosition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">moving</span><span class="p">:</span>
+                <span class="k">return</span>
+                
+            <span class="n">newPos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cursorOffset</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapToParent</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+            <span class="n">newPos</span><span class="o">.</span><span class="n">setY</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span><span class="o">.</span><span class="n">y</span><span class="p">())</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="n">newPos</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">()</span><span class="o">.</span><span class="n">tickMoved</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newPos</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigMoving</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">isFinish</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">moving</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sigMoved</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">()</span><span class="o">.</span><span class="n">tickMoveFinished</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">mouseClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span>  <span class="n">ev</span><span class="o">.</span><span class="n">button</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">moving</span><span class="p">:</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startPosition</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">()</span><span class="o">.</span><span class="n">tickMoved</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">startPosition</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">moving</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigMoving</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigMoved</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">()</span><span class="o">.</span><span class="n">tickClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span>
+            <span class="c1">##remove</span>
+
+    <span class="k">def</span> <span class="nf">hoverEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ev</span><span class="o">.</span><span class="n">isExit</span><span class="p">())</span> <span class="ow">and</span> <span class="n">ev</span><span class="o">.</span><span class="n">acceptDrags</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">):</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">acceptClicks</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftButton</span><span class="p">)</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">acceptClicks</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">currentPen</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hoverPen</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">currentPen</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        
+
+<span class="k">class</span> <span class="nc">TickMenu</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QMenu</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick</span><span class="p">,</span> <span class="n">sliderItem</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QMenu</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">tick</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sliderItem</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">sliderItem</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeAct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="s2">&quot;Remove Tick&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sliderItem</span><span class="p">()</span><span class="o">.</span><span class="n">removeTick</span><span class="p">(</span><span class="n">tick</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tick</span><span class="p">()</span><span class="o">.</span><span class="n">removeAllowed</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sliderItem</span><span class="p">()</span><span class="o">.</span><span class="n">ticks</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeAct</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            
+        <span class="n">positionMenu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addMenu</span><span class="p">(</span><span class="s2">&quot;Set Position&quot;</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">()</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGridLayout</span><span class="p">()</span>
+        <span class="n">w</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+        
+        <span class="n">value</span> <span class="o">=</span> <span class="n">sliderItem</span><span class="o">.</span><span class="n">tickValue</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fracPosSpin</span> <span class="o">=</span> <span class="n">SpinBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fracPosSpin</span><span class="o">.</span><span class="n">setOpts</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1">#self.dataPosSpin = SpinBox(value=dataVal)</span>
+        <span class="c1">#self.dataPosSpin.setOpts(decimals=3, siPrefix=True)</span>
+                
+        <span class="n">l</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Position:&quot;</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracPosSpin</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1">#l.addWidget(QtGui.QLabel(&quot;Position (data units):&quot;), 1, 0)</span>
+        <span class="c1">#l.addWidget(self.dataPosSpin, 1,1)</span>
+        
+        <span class="c1">#if self.sliderItem().dataParent is None:</span>
+        <span class="c1">#    self.dataPosSpin.setEnabled(False)</span>
+        
+        <span class="n">a</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidgetAction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">setDefaultWidget</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+        <span class="n">positionMenu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>        
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">fracPosSpin</span><span class="o">.</span><span class="n">sigValueChanging</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fractionalValueChanged</span><span class="p">)</span>
+        <span class="c1">#self.dataPosSpin.valueChanged.connect(self.dataValueChanged)</span>
+        
+        <span class="n">colorAct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="s2">&quot;Set Color&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sliderItem</span><span class="p">()</span><span class="o">.</span><span class="n">raiseColorDialog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tick</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tick</span><span class="p">()</span><span class="o">.</span><span class="n">colorChangeAllowed</span><span class="p">:</span>
+            <span class="n">colorAct</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">fractionalValueChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sliderItem</span><span class="p">()</span><span class="o">.</span><span class="n">setTickValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tick</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracPosSpin</span><span class="o">.</span><span class="n">value</span><span class="p">())</span>
+        <span class="c1">#if self.sliderItem().dataParent is not None:</span>
+        <span class="c1">#    self.dataPosSpin.blockSignals(True)</span>
+        <span class="c1">#    self.dataPosSpin.setValue(self.sliderItem().tickDataValue(self.tick()))</span>
+        <span class="c1">#    self.dataPosSpin.blockSignals(False)</span>
+            
+    <span class="c1">#def dataValueChanged(self, val):</span>
+    <span class="c1">#    self.sliderItem().setTickValue(self.tick(), val, dataUnits=True)</span>
+    <span class="c1">#    self.fracPosSpin.blockSignals(True)</span>
+    <span class="c1">#    self.fracPosSpin.setValue(self.sliderItem().tickValue(self.tick()))</span>
+    <span class="c1">#    self.fracPosSpin.blockSignals(False)</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
