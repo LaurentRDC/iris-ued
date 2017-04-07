@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.util.lru_cache &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.util.lru_cache</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+
+<span class="n">_IS_PY3</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span>
+
+<div class="viewcode-block" id="LRUCache"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.lru_cache.LRUCache">[docs]</a><span class="k">class</span> <span class="nc">LRUCache</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This LRU cache should be reasonable for short collections (until around 100 items), as it does a</span>
+<span class="sd">    sort on the items if the collection would become too big (so, it is very fast for getting and</span>
+<span class="sd">    setting but when its size would become higher than the max size it does one sort based on the</span>
+<span class="sd">    internal time to decide which items should be removed -- which should be Ok if the resizeTo</span>
+<span class="sd">    isn&#39;t too close to the maxSize so that it becomes an operation that doesn&#39;t happen all the</span>
+<span class="sd">    time).</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">maxSize</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">resizeTo</span><span class="o">=</span><span class="mi">70</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        ============== =========================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        maxSize        (int) This is the maximum size of the cache. When some </span>
+<span class="sd">                       item is added and the cache would become bigger than </span>
+<span class="sd">                       this, it&#39;s resized to the value passed on resizeTo.</span>
+<span class="sd">        resizeTo       (int) When a resize operation happens, this is the size </span>
+<span class="sd">                       of the final cache.</span>
+<span class="sd">        ============== =========================================================</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">assert</span> <span class="n">resizeTo</span> <span class="o">&lt;</span> <span class="n">maxSize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxSize</span> <span class="o">=</span> <span class="n">maxSize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resizeTo</span> <span class="o">=</span> <span class="n">resizeTo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">_IS_PY3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nextTime</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">__next__</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nextTime</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">next</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">item</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nextTime</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxSize</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_resizeTo</span><span class="p">()</span>
+            
+            <span class="n">item</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nextTime</span><span class="p">()]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">item</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nextTime</span><span class="p">()</span>
+            
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        
+<div class="viewcode-block" id="LRUCache.get"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.lru_cache.LRUCache.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span></div>
+        
+<div class="viewcode-block" id="LRUCache.clear"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.lru_cache.LRUCache.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+ 
+    <span class="k">if</span> <span class="n">_IS_PY3</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+        
+        <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+        
+        <span class="k">def</span> <span class="nf">_resizeTo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">ordered</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">2</span><span class="p">))[:</span><span class="bp">self</span><span class="o">.</span><span class="n">resizeTo</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ordered</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+                
+        <span class="k">def</span> <span class="nf">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accessTime</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            :param bool accessTime:</span>
+<span class="sd">                If True sorts the returned items by the internal access time.</span>
+<span class="sd">            &#39;&#39;&#39;</span>
+            <span class="k">if</span> <span class="n">accessTime</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+                    <span class="k">yield</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">yield</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    
+    <span class="k">else</span><span class="p">:</span>
+<div class="viewcode-block" id="LRUCache.values"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.lru_cache.LRUCache.values">[docs]</a>        <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">itervalues</span><span class="p">()]</span></div>
+        
+<div class="viewcode-block" id="LRUCache.keys"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.lru_cache.LRUCache.keys">[docs]</a>        <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">itervalues</span><span class="p">()]</span></div>
+            
+        
+        <span class="k">def</span> <span class="nf">_resizeTo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">ordered</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">itervalues</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">2</span><span class="p">))[:</span><span class="bp">self</span><span class="o">.</span><span class="n">resizeTo</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ordered</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+                
+<div class="viewcode-block" id="LRUCache.iteritems"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.lru_cache.LRUCache.iteritems">[docs]</a>        <span class="k">def</span> <span class="nf">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accessTime</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            ============= ======================================================</span>
+<span class="sd">            **Arguments**</span>
+<span class="sd">            accessTime    (bool) If True sorts the returned items by the </span>
+<span class="sd">                          internal access time.</span>
+<span class="sd">            ============= ======================================================</span>
+<span class="sd">            &#39;&#39;&#39;</span>
+            <span class="k">if</span> <span class="n">accessTime</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">itervalues</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+                    <span class="k">yield</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="k">yield</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

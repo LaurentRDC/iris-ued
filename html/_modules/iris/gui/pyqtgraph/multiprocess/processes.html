@@ -1,0 +1,566 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.multiprocess.processes &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.multiprocess.processes</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">subprocess</span><span class="o">,</span> <span class="nn">atexit</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">random</span><span class="o">,</span> <span class="nn">socket</span><span class="o">,</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">multiprocessing.connection</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pickle</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">from</span> <span class="nn">.remoteproxy</span> <span class="k">import</span> <span class="n">RemoteEventHandler</span><span class="p">,</span> <span class="n">ClosedError</span><span class="p">,</span> <span class="n">NoResultError</span><span class="p">,</span> <span class="n">LocalObjectProxy</span><span class="p">,</span> <span class="n">ObjectProxy</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">USE_PYSIDE</span>
+<span class="kn">from</span> <span class="nn">..util</span> <span class="k">import</span> <span class="n">cprint</span>  <span class="c1"># color printing for debugging</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Process&#39;</span><span class="p">,</span> <span class="s1">&#39;QtProcess&#39;</span><span class="p">,</span> <span class="s1">&#39;ForkedProcess&#39;</span><span class="p">,</span> <span class="s1">&#39;ClosedError&#39;</span><span class="p">,</span> <span class="s1">&#39;NoResultError&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Process"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.Process">[docs]</a><span class="k">class</span> <span class="nc">Process</span><span class="p">(</span><span class="n">RemoteEventHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Bases: RemoteEventHandler</span>
+<span class="sd">    </span>
+<span class="sd">    This class is used to spawn and control a new python interpreter.</span>
+<span class="sd">    It uses subprocess.Popen to start the new process and communicates with it</span>
+<span class="sd">    using multiprocessing.Connection objects over a network socket.</span>
+<span class="sd">    </span>
+<span class="sd">    By default, the remote process will immediately enter an event-processing</span>
+<span class="sd">    loop that carries out requests send from the parent process.</span>
+<span class="sd">    </span>
+<span class="sd">    Remote control works mainly through proxy objects::</span>
+<span class="sd">    </span>
+<span class="sd">        proc = Process()              ## starts process, returns handle</span>
+<span class="sd">        rsys = proc._import(&#39;sys&#39;)    ## asks remote process to import &#39;sys&#39;, returns</span>
+<span class="sd">                                      ## a proxy which references the imported module</span>
+<span class="sd">        rsys.stdout.write(&#39;hello\n&#39;)  ## This message will be printed from the remote </span>
+<span class="sd">                                      ## process. Proxy objects can usually be used</span>
+<span class="sd">                                      ## exactly as regular objects are.</span>
+<span class="sd">        proc.close()                  ## Request the remote process shut down</span>
+<span class="sd">    </span>
+<span class="sd">    Requests made via proxy objects may be synchronous or asynchronous and may</span>
+<span class="sd">    return objects either by proxy or by value (if they are picklable). See</span>
+<span class="sd">    ProxyObject for more information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_process_count</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># just used for assigning colors to each process for debugging</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">executable</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copySysPath</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">wrapStdout</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ==============  =============================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        name            Optional name for this process used when printing messages</span>
+<span class="sd">                        from the remote process.</span>
+<span class="sd">        target          Optional function to call after starting remote process.</span>
+<span class="sd">                        By default, this is startEventLoop(), which causes the remote</span>
+<span class="sd">                        process to process requests from the parent process until it</span>
+<span class="sd">                        is asked to quit. If you wish to specify a different target,</span>
+<span class="sd">                        it must be picklable (bound methods are not).</span>
+<span class="sd">        copySysPath     If True, copy the contents of sys.path to the remote process</span>
+<span class="sd">        debug           If True, print detailed information about communication</span>
+<span class="sd">                        with the child process.</span>
+<span class="sd">        wrapStdout      If True (default on windows) then stdout and stderr from the</span>
+<span class="sd">                        child process will be caught by the parent process and</span>
+<span class="sd">                        forwarded to its stdout/stderr. This provides a workaround</span>
+<span class="sd">                        for a python bug: http://bugs.python.org/issue3905</span>
+<span class="sd">                        but has the side effect that child output is significantly</span>
+<span class="sd">                        delayed relative to the parent output.</span>
+<span class="sd">        ==============  =============================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">startEventLoop</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">executable</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">executable</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">executable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="o">=</span> <span class="mi">7</span> <span class="k">if</span> <span class="n">debug</span> <span class="ow">is</span> <span class="kc">True</span> <span class="k">else</span> <span class="kc">False</span>  <span class="c1"># 7 causes printing in white</span>
+        
+        <span class="c1">## random authentication key</span>
+        <span class="n">authkey</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+
+        <span class="c1">## Windows seems to have a hard time with hmac </span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">):</span>
+            <span class="n">authkey</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1">#print &quot;key:&quot;, &#39; &#39;.join([str(ord(x)) for x in authkey])</span>
+        <span class="c1">## Listen for connection from remote process (and find free port number)</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">Listener</span><span class="p">((</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">authkey</span><span class="o">=</span><span class="n">authkey</span><span class="p">)</span>
+        <span class="n">port</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">address</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1">## start remote process, instruct it to run target function</span>
+        <span class="n">sysPath</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span> <span class="k">if</span> <span class="n">copySysPath</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">bootstrap</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s1">&#39;bootstrap.py&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debugMsg</span><span class="p">(</span><span class="s1">&#39;Starting child process (</span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">executable</span><span class="p">,</span> <span class="n">bootstrap</span><span class="p">))</span>
+
+        <span class="c1"># Decide on printing color for this process</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+            <span class="n">procDebug</span> <span class="o">=</span> <span class="p">(</span><span class="n">Process</span><span class="o">.</span><span class="n">_process_count</span><span class="o">%</span><span class="mi">6</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># pick a color for this process to print in</span>
+            <span class="n">Process</span><span class="o">.</span><span class="n">_process_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">procDebug</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="n">wrapStdout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">wrapStdout</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">wrapStdout</span><span class="p">:</span>
+            <span class="c1">## note: we need all three streams to have their own PIPE due to this bug:</span>
+            <span class="c1">## http://bugs.python.org/issue3905</span>
+            <span class="n">stdout</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+            <span class="n">stderr</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">((</span><span class="n">executable</span><span class="p">,</span> <span class="n">bootstrap</span><span class="p">),</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="c1">## to circumvent the bug and still make the output visible, we use </span>
+            <span class="c1">## background threads to pass data from pipes to stdout/stderr</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stdoutForwarder</span> <span class="o">=</span> <span class="n">FileForwarder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="s2">&quot;stdout&quot;</span><span class="p">,</span> <span class="n">procDebug</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stderrForwarder</span> <span class="o">=</span> <span class="n">FileForwarder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">&quot;stderr&quot;</span><span class="p">,</span> <span class="n">procDebug</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">((</span><span class="n">executable</span><span class="p">,</span> <span class="n">bootstrap</span><span class="p">),</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+
+        <span class="n">targetStr</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>  <span class="c1">## double-pickle target so that child has a chance to </span>
+                                          <span class="c1">## set its sys.path properly before unpickling the target</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span> <span class="c1"># we must send pid to child because windows does not have getppid</span>
+        
+        <span class="c1">## Send everything the remote process needs to start correctly</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="o">+</span><span class="s1">&#39;_child&#39;</span><span class="p">,</span> 
+            <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span> 
+            <span class="n">authkey</span><span class="o">=</span><span class="n">authkey</span><span class="p">,</span> 
+            <span class="n">ppid</span><span class="o">=</span><span class="n">pid</span><span class="p">,</span> 
+            <span class="n">targetStr</span><span class="o">=</span><span class="n">targetStr</span><span class="p">,</span> 
+            <span class="n">path</span><span class="o">=</span><span class="n">sysPath</span><span class="p">,</span> 
+            <span class="n">pyside</span><span class="o">=</span><span class="n">USE_PYSIDE</span><span class="p">,</span>
+            <span class="n">debug</span><span class="o">=</span><span class="n">procDebug</span>
+            <span class="p">)</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        
+        <span class="c1">## open connection for remote process</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debugMsg</span><span class="p">(</span><span class="s1">&#39;Listening for child process on port </span><span class="si">%d</span><span class="s1">, authkey=</span><span class="si">%s</span><span class="s1">..&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">port</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">authkey</span><span class="p">)))</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">conn</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">err</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>  <span class="c1"># interrupted; try again</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span>
+
+        <span class="n">RemoteEventHandler</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="o">+</span><span class="s1">&#39;_parent&#39;</span><span class="p">,</span> <span class="n">pid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debugMsg</span><span class="p">(</span><span class="s1">&#39;Connected to child process.&#39;</span><span class="p">)</span>
+        
+        <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">join</span><span class="p">)</span>
+
+        
+<div class="viewcode-block" id="Process.join"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.Process.join">[docs]</a>    <span class="k">def</span> <span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debugMsg</span><span class="p">(</span><span class="s1">&#39;Joining child process..&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="n">timeout</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Timed out waiting for remote process to end.&#39;</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.05</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debugMsg</span><span class="p">(</span><span class="s1">&#39;Child process exited. (</span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.debugMsg"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.Process.debugMsg">[docs]</a>    <span class="k">def</span> <span class="nf">debugMsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_stdoutForwarder&#39;</span><span class="p">):</span>
+            <span class="c1">## Lock output from subprocess to make sure we do not get line collisions</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stdoutForwarder</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stderrForwarder</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+                    <span class="n">RemoteEventHandler</span><span class="o">.</span><span class="n">debugMsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">RemoteEventHandler</span><span class="o">.</span><span class="n">debugMsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div></div>
+
+        
+<span class="k">def</span> <span class="nf">startEventLoop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">authkey</span><span class="p">,</span> <span class="n">ppid</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">os</span>
+        <span class="n">cprint</span><span class="o">.</span><span class="n">cout</span><span class="p">(</span><span class="n">debug</span><span class="p">,</span> <span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">] connecting to server at port localhost:</span><span class="si">%d</span><span class="s1">, authkey=</span><span class="si">%s</span><span class="s1">..</span><span class="se">\n</span><span class="s1">&#39;</span> 
+                    <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">port</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">authkey</span><span class="p">)),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">Client</span><span class="p">((</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">port</span><span class="p">)),</span> <span class="n">authkey</span><span class="o">=</span><span class="n">authkey</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="n">cprint</span><span class="o">.</span><span class="n">cout</span><span class="p">(</span><span class="n">debug</span><span class="p">,</span> <span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">] connected; starting remote proxy.</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">global</span> <span class="n">HANDLER</span>
+    <span class="c1">#ppid = 0 if not hasattr(os, &#39;getppid&#39;) else os.getppid()</span>
+    <span class="n">HANDLER</span> <span class="o">=</span> <span class="n">RemoteEventHandler</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ppid</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">HANDLER</span><span class="o">.</span><span class="n">processRequests</span><span class="p">()</span>  <span class="c1"># exception raised when the loop should exit</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ClosedError</span><span class="p">:</span>
+            <span class="k">break</span>
+
+
+<div class="viewcode-block" id="ForkedProcess"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.ForkedProcess">[docs]</a><span class="k">class</span> <span class="nc">ForkedProcess</span><span class="p">(</span><span class="n">RemoteEventHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ForkedProcess is a substitute for Process that uses os.fork() to generate a new process.</span>
+<span class="sd">    This is much faster than starting a completely new interpreter and child processes</span>
+<span class="sd">    automatically have a copy of the entire program state from before the fork. This</span>
+<span class="sd">    makes it an appealing approach when parallelizing expensive computations. (see</span>
+<span class="sd">    also Parallelizer)</span>
+<span class="sd">    </span>
+<span class="sd">    However, fork() comes with some caveats and limitations:</span>
+
+<span class="sd">    - fork() is not available on Windows.</span>
+<span class="sd">    - It is not possible to have a QApplication in both parent and child process</span>
+<span class="sd">      (unless both QApplications are created _after_ the call to fork())</span>
+<span class="sd">      Attempts by the forked process to access Qt GUI elements created by the parent</span>
+<span class="sd">      will most likely cause the child to crash.</span>
+<span class="sd">    - Likewise, database connections are unlikely to function correctly in a forked child.</span>
+<span class="sd">    - Threads are not copied by fork(); the new process </span>
+<span class="sd">      will have only one thread that starts wherever fork() was called in the parent process.</span>
+<span class="sd">    - Forked processes are unceremoniously terminated when join() is called; they are not </span>
+<span class="sd">      given any opportunity to clean up. (This prevents them calling any cleanup code that</span>
+<span class="sd">      was only intended to be used by the parent process)</span>
+<span class="sd">    - Normally when fork()ing, open file handles are shared with the parent process, </span>
+<span class="sd">      which is potentially dangerous. ForkedProcess is careful to close all file handles </span>
+<span class="sd">      that are not explicitly needed--stdout, stderr, and a single pipe to the parent </span>
+<span class="sd">      process.</span>
+<span class="sd">      </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">preProxy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">randomReseed</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        When initializing, an optional target may be given. </span>
+<span class="sd">        If no target is specified, self.eventLoop will be used.</span>
+<span class="sd">        If None is given, no target will be called (and it will be up </span>
+<span class="sd">        to the caller to properly shut down the forked process)</span>
+<span class="sd">        </span>
+<span class="sd">        preProxy may be a dict of values that will appear as ObjectProxy</span>
+<span class="sd">        in the remote process (but do not need to be sent explicitly since </span>
+<span class="sd">        they are available immediately before the call to fork().</span>
+<span class="sd">        Proxies will be availabe as self.proxies[name].</span>
+<span class="sd">        </span>
+<span class="sd">        If randomReseed is True, the built-in random and numpy.random generators</span>
+<span class="sd">        will be reseeded in the child process.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasJoined</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">target</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eventLoop</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="n">conn</span><span class="p">,</span> <span class="n">remoteConn</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Pipe</span><span class="p">()</span>
+        
+        <span class="n">proxyIDs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">preProxy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">preProxy</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">proxyId</span> <span class="o">=</span> <span class="n">LocalObjectProxy</span><span class="o">.</span><span class="n">registerObject</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="n">proxyIDs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">proxyId</span>
+        
+        <span class="n">ppid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>  <span class="c1"># write this down now; windows doesn&#39;t have getppid</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isParent</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="c1">## We are now in the forked process; need to be extra careful what we touch while here.</span>
+            <span class="c1">##   - no reading/writing file handles/sockets owned by parent process (stdout is ok)</span>
+            <span class="c1">##   - don&#39;t touch QtGui or QApplication at all; these are landmines.</span>
+            <span class="c1">##   - don&#39;t let the process call exit handlers</span>
+            
+            <span class="n">os</span><span class="o">.</span><span class="n">setpgrp</span><span class="p">()</span>  <span class="c1">## prevents signals (notably keyboard interrupt) being forwarded from parent to this process</span>
+            
+            <span class="c1">## close all file handles we do not want shared with parent</span>
+            <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1">## otherwise we screw with interactive prompts.</span>
+            <span class="n">fid</span> <span class="o">=</span> <span class="n">remoteConn</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">closerange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">fid</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">closerange</span><span class="p">(</span><span class="n">fid</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span> <span class="c1">## just guessing on the maximum descriptor count..</span>
+            
+            <span class="c1">## Override any custom exception hooks</span>
+            <span class="k">def</span> <span class="nf">excepthook</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+                <span class="kn">import</span> <span class="nn">traceback</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exception</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">excepthook</span> <span class="o">=</span> <span class="n">excepthook</span> 
+            
+            <span class="c1">## Make it harder to access QApplication instance</span>
+            <span class="k">for</span> <span class="n">qtlib</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;PyQt4&#39;</span><span class="p">,</span> <span class="s1">&#39;PySide&#39;</span><span class="p">,</span> <span class="s1">&#39;PyQt5&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">qtlib</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">qtlib</span><span class="o">+</span><span class="s1">&#39;.QtGui&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">QApplication</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">qtlib</span><span class="o">+</span><span class="s1">&#39;.QtGui&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">qtlib</span><span class="o">+</span><span class="s1">&#39;.QtCore&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            
+            <span class="c1">## sabotage atexit callbacks</span>
+            <span class="n">atexit</span><span class="o">.</span><span class="n">_exithandlers</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">_exit</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+            
+            <span class="k">if</span> <span class="n">randomReseed</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;numpy.random&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s1">&#39;numpy.random&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span> <span class="o">^</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">*</span><span class="mi">10000</span><span class="o">%</span><span class="mi">10000</span><span class="p">))</span>
+                <span class="k">if</span> <span class="s1">&#39;random&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s1">&#39;random&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span> <span class="o">^</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">*</span><span class="mi">10000</span><span class="o">%</span><span class="mi">10000</span><span class="p">))</span>
+            
+            <span class="c1">#ppid = 0 if not hasattr(os, &#39;getppid&#39;) else os.getppid()</span>
+            <span class="n">RemoteEventHandler</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remoteConn</span><span class="p">,</span> <span class="n">name</span><span class="o">+</span><span class="s1">&#39;_child&#39;</span><span class="p">,</span> <span class="n">pid</span><span class="o">=</span><span class="n">ppid</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">forkedProxies</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">proxyId</span> <span class="ow">in</span> <span class="n">proxyIDs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">forkedProxies</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ObjectProxy</span><span class="p">(</span><span class="n">ppid</span><span class="p">,</span> <span class="n">proxyId</span><span class="o">=</span><span class="n">proxyId</span><span class="p">,</span> <span class="n">typeStr</span><span class="o">=</span><span class="nb">repr</span><span class="p">(</span><span class="n">preProxy</span><span class="p">[</span><span class="n">name</span><span class="p">]))</span>
+            
+            <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">target</span><span class="p">()</span>
+                
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isParent</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">childPid</span> <span class="o">=</span> <span class="n">pid</span>
+            <span class="n">remoteConn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">RemoteEventHandler</span><span class="o">.</span><span class="n">handlers</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1">## don&#39;t want to inherit any of this from the parent.</span>
+            
+            <span class="n">RemoteEventHandler</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="o">+</span><span class="s1">&#39;_parent&#39;</span><span class="p">,</span> <span class="n">pid</span><span class="o">=</span><span class="n">pid</span><span class="p">)</span>
+            <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">join</span><span class="p">)</span>
+        
+        
+<div class="viewcode-block" id="ForkedProcess.eventLoop"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.ForkedProcess.eventLoop">[docs]</a>    <span class="k">def</span> <span class="nf">eventLoop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">processRequests</span><span class="p">()</span>  <span class="c1"># exception raised when the loop should exit</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">ClosedError</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error occurred in forked event loop:&quot;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">excepthook</span><span class="p">(</span><span class="o">*</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">())</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ForkedProcess.join"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.ForkedProcess.join">[docs]</a>    <span class="k">def</span> <span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasJoined</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1">#os.kill(pid, 9)  </span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">callSync</span><span class="o">=</span><span class="s1">&#39;sync&#39;</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">noCleanup</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1">## ask the child process to exit and require that it return a confirmation.</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childPid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>  <span class="c1">## probably remote process has already quit</span>
+            <span class="k">pass</span>  
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasJoined</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="ForkedProcess.kill"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.ForkedProcess.kill">[docs]</a>    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Immediately kill the forked remote process. </span>
+<span class="sd">        This is generally safe because forked processes are already</span>
+<span class="sd">        expected to _avoid_ any cleanup at exit.&quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">kill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childPid</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGKILL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasJoined</span> <span class="o">=</span> <span class="kc">True</span></div></div>
+        
+        
+
+<span class="c1">##Special set of subclasses that implement a Qt event loop instead.</span>
+        
+<span class="k">class</span> <span class="nc">RemoteQtEventHandler</span><span class="p">(</span><span class="n">RemoteEventHandler</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="n">RemoteEventHandler</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">startEventTimer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QTimer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">timeout</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processRequests</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">processRequests</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">RemoteEventHandler</span><span class="o">.</span><span class="n">processRequests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ClosedError</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+            <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="c1">#raise SystemExit</span>
+
+<div class="viewcode-block" id="QtProcess"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.QtProcess">[docs]</a><span class="k">class</span> <span class="nc">QtProcess</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    QtProcess is essentially the same as Process, with two major differences:</span>
+<span class="sd">    </span>
+<span class="sd">    - The remote process starts by running startQtEventLoop() which creates a </span>
+<span class="sd">      QApplication in the remote process and uses a QTimer to trigger</span>
+<span class="sd">      remote event processing. This allows the remote process to have its own </span>
+<span class="sd">      GUI.</span>
+<span class="sd">    - A QTimer is also started on the parent process which polls for requests</span>
+<span class="sd">      from the child process. This allows Qt signals emitted within the child </span>
+<span class="sd">      process to invoke slots on the parent process and vice-versa. This can </span>
+<span class="sd">      be disabled using processRequests=False in the constructor.</span>
+<span class="sd">      </span>
+<span class="sd">    Example::</span>
+<span class="sd">    </span>
+<span class="sd">        proc = QtProcess()            </span>
+<span class="sd">        rQtGui = proc._import(&#39;PyQt4.QtGui&#39;)</span>
+<span class="sd">        btn = rQtGui.QPushButton(&#39;button on child process&#39;)</span>
+<span class="sd">        btn.show()</span>
+<span class="sd">        </span>
+<span class="sd">        def slot():</span>
+<span class="sd">            print(&#39;slot invoked on parent process&#39;)</span>
+<span class="sd">        btn.clicked.connect(proxy(slot))   # be sure to send a proxy of the slot</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;target&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwds</span><span class="p">:</span>
+            <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">startQtEventLoop</span>
+        <span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span>  <span class="c1">## avoid module-level import to keep bootstrap snappy.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_processRequests</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;processRequests&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processRequests</span> <span class="ow">and</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must create QApplication before starting QtProcess, or use QtProcess(processRequests=False)&quot;</span><span class="p">)</span>
+        <span class="n">Process</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startEventTimer</span><span class="p">()</span>
+        
+<div class="viewcode-block" id="QtProcess.startEventTimer"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.QtProcess.startEventTimer">[docs]</a>    <span class="k">def</span> <span class="nf">startEventTimer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtCore</span>  <span class="c1">## avoid module-level import to keep bootstrap snappy.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QTimer</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processRequests</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">startRequestProcessing</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="QtProcess.startRequestProcessing"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.QtProcess.startRequestProcessing">[docs]</a>    <span class="k">def</span> <span class="nf">startRequestProcessing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mf">0.01</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start listening for requests coming from the child process.</span>
+<span class="sd">        This allows signals to be connected from the child process to the parent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">timeout</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processRequests</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">interval</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtProcess.stopRequestProcessing"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.QtProcess.stopRequestProcessing">[docs]</a>    <span class="k">def</span> <span class="nf">stopRequestProcessing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="QtProcess.processRequests"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.multiprocess.html#iris.gui.pyqtgraph.multiprocess.processes.QtProcess.processRequests">[docs]</a>    <span class="k">def</span> <span class="nf">processRequests</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">Process</span><span class="o">.</span><span class="n">processRequests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ClosedError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div></div>
+    
+<span class="k">def</span> <span class="nf">startQtEventLoop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">authkey</span><span class="p">,</span> <span class="n">ppid</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">os</span>
+        <span class="n">cprint</span><span class="o">.</span><span class="n">cout</span><span class="p">(</span><span class="n">debug</span><span class="p">,</span> <span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">] connecting to server at port localhost:</span><span class="si">%d</span><span class="s1">, authkey=</span><span class="si">%s</span><span class="s1">..</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">port</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">authkey</span><span class="p">)),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">Client</span><span class="p">((</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">port</span><span class="p">)),</span> <span class="n">authkey</span><span class="o">=</span><span class="n">authkey</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="n">cprint</span><span class="o">.</span><span class="n">cout</span><span class="p">(</span><span class="n">debug</span><span class="p">,</span> <span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">] connected; starting remote proxy.</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
+    <span class="c1">#print app</span>
+    <span class="k">if</span> <span class="n">app</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">app</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="p">([])</span>
+        <span class="n">app</span><span class="o">.</span><span class="n">setQuitOnLastWindowClosed</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>  <span class="c1">## generally we want the event loop to stay open </span>
+                                              <span class="c1">## until it is explicitly closed by the parent process.</span>
+    
+    <span class="k">global</span> <span class="n">HANDLER</span>
+    <span class="n">HANDLER</span> <span class="o">=</span> <span class="n">RemoteQtEventHandler</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ppid</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+    <span class="n">HANDLER</span><span class="o">.</span><span class="n">startEventTimer</span><span class="p">()</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">exec_</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="k">class</span> <span class="nc">FileForwarder</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Background thread that forwards data from one pipe to another. </span>
+<span class="sd">    This is used to catch data from stdout/stderr of the child process</span>
+<span class="sd">    and print it back out to stdout/stderr. We need this because this</span>
+<span class="sd">    bug: http://bugs.python.org/issue3905  _requires_ us to catch</span>
+<span class="sd">    stdout/stderr.</span>
+
+<span class="sd">    *output* may be a file or &#39;stdout&#39; or &#39;stderr&#39;. In the latter cases,</span>
+<span class="sd">    sys.stdout/stderr are retrieved once for every line that is output,</span>
+<span class="sd">    which ensures that the correct behavior is achieved even if </span>
+<span class="sd">    sys.stdout/stderr are replaced at runtime.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">color</span><span class="p">):</span>
+        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="nb">input</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">==</span> <span class="s1">&#39;stdout&#39;</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+                    <span class="n">cprint</span><span class="o">.</span><span class="n">cout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">==</span> <span class="s1">&#39;stderr&#39;</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+                    <span class="n">cprint</span><span class="o">.</span><span class="n">cerr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

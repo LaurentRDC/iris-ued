@@ -1,0 +1,587 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.widgets.TableWidget &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.widgets.TableWidget</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="n">asUnicode</span><span class="p">,</span> <span class="n">basestring</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">metaarray</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;TableWidget&#39;</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_defersort</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">defersort</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="c1"># may be called recursively; only the first call needs to block sorting</span>
+        <span class="n">setSorting</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sorting</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sorting</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">isSortingEnabled</span><span class="p">()</span>
+            <span class="n">setSorting</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setSortingEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">setSorting</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setSortingEnabled</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sorting</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sorting</span> <span class="o">=</span> <span class="kc">None</span>
+                
+    <span class="k">return</span> <span class="n">defersort</span>
+
+
+<div class="viewcode-block" id="TableWidget"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget">[docs]</a><span class="k">class</span> <span class="nc">TableWidget</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidget</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extends QTableWidget with some useful functions for automatic data handling</span>
+<span class="sd">    and copy / export context menu. Can automatically format and display a variety</span>
+<span class="sd">    of data types (see :func:`setData() &lt;pyqtgraph.TableWidget.setData&gt;` for more</span>
+<span class="sd">    information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        All positional arguments are passed to QTableWidget.__init__().</span>
+<span class="sd">        </span>
+<span class="sd">        ===================== =================================================</span>
+<span class="sd">        **Keyword Arguments**</span>
+<span class="sd">        editable              (bool) If True, cells in the table can be edited</span>
+<span class="sd">                              by the user. Default is False.</span>
+<span class="sd">        sortable              (bool) If True, the table may be soted by</span>
+<span class="sd">                              clicking on column headers. Note that this also</span>
+<span class="sd">                              causes rows to appear initially shuffled until</span>
+<span class="sd">                              a sort column is selected. Default is True.</span>
+<span class="sd">                              *(added in version 0.9.9)*</span>
+<span class="sd">        ===================== =================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">itemClass</span> <span class="o">=</span> <span class="n">TableWidgetItem</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">setVerticalScrollMode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ScrollPerPixel</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSelectionMode</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QAbstractItemView</span><span class="o">.</span><span class="n">ContiguousSelection</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSizePolicy</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Preferred</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Preferred</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        
+        <span class="n">kwds</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;sortable&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">kwds</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;editable&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setEditable</span><span class="p">(</span><span class="n">kwds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;editable&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSortingEnabled</span><span class="p">(</span><span class="n">kwds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;sortable&#39;</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Invalid keyword arguments &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">kwds</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sorting</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># used when temporarily disabling sorting</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span> <span class="o">=</span> <span class="p">{</span><span class="kc">None</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span> <span class="c1"># stores per-column formats and entire table format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sortModes</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># stores per-column sort mode</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">itemChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">handleItemChanged</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMenu</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="s1">&#39;Copy Selection&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">copySel</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="s1">&#39;Copy All&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">copyAll</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="s1">&#39;Save Selection&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">saveSel</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="s1">&#39;Save All&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">saveAll</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="TableWidget.clear"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Clear all contents from the table.&quot;&quot;&quot;</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidget</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeadersSet</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeadersSet</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setRowCount</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setColumnCount</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sortModes</span> <span class="o">=</span> <span class="p">{}</span></div>
+        
+<div class="viewcode-block" id="TableWidget.setData"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setData">[docs]</a>    <span class="k">def</span> <span class="nf">setData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the data displayed in the table.</span>
+<span class="sd">        Allowed formats are:</span>
+<span class="sd">        </span>
+<span class="sd">        * numpy arrays</span>
+<span class="sd">        * numpy record arrays </span>
+<span class="sd">        * metaarrays</span>
+<span class="sd">        * list-of-lists  [[1,2,3], [4,5,6]]</span>
+<span class="sd">        * dict-of-lists  {&#39;x&#39;: [1,2,3], &#39;y&#39;: [4,5,6]}</span>
+<span class="sd">        * list-of-dicts  [{&#39;x&#39;: 1, &#39;y&#39;: 4}, {&#39;x&#39;: 2, &#39;y&#39;: 5}, ...]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">appendData</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span></div>
+        
+    <span class="nd">@_defersort</span>
+<div class="viewcode-block" id="TableWidget.appendData"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.appendData">[docs]</a>    <span class="k">def</span> <span class="nf">appendData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add new rows to the table.</span>
+<span class="sd">        </span>
+<span class="sd">        See :func:`setData() &lt;pyqtgraph.TableWidget.setData&gt;` for accepted</span>
+<span class="sd">        data types.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">startRow</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()</span>
+        
+        <span class="n">fn0</span><span class="p">,</span> <span class="n">header0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteratorFn</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fn0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">return</span>
+        <span class="n">it0</span> <span class="o">=</span> <span class="n">fn0</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">first</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">it0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">fn1</span><span class="p">,</span> <span class="n">header1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteratorFn</span><span class="p">(</span><span class="n">first</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fn1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">return</span>
+        
+        <span class="n">firstVals</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">fn1</span><span class="p">(</span><span class="n">first</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setColumnCount</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">firstVals</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeadersSet</span> <span class="ow">and</span> <span class="n">header0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">verticalHeaderItem</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">())]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRowCount</span><span class="p">(</span><span class="n">startRow</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">header0</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setVerticalHeaderLabels</span><span class="p">(</span><span class="n">labels</span> <span class="o">+</span> <span class="n">header0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeadersSet</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeadersSet</span> <span class="ow">and</span> <span class="n">header1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setHorizontalHeaderLabels</span><span class="p">(</span><span class="n">header1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeadersSet</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="n">i</span> <span class="o">=</span> <span class="n">startRow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">firstVals</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">it0</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">fn1</span><span class="p">(</span><span class="n">row</span><span class="p">)])</span>
+            
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sorting</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">sortIndicatorSection</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">columnCount</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sortByColumn</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AscendingOrder</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="TableWidget.setEditable"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setEditable">[docs]</a>    <span class="k">def</span> <span class="nf">setEditable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">editable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">editable</span> <span class="o">=</span> <span class="n">editable</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">setEditable</span><span class="p">(</span><span class="n">editable</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="TableWidget.setFormat"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setFormat">[docs]</a>    <span class="k">def</span> <span class="nf">setFormat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Specify the default text formatting for the entire table, or for a</span>
+<span class="sd">        single column if *column* is specified.</span>
+<span class="sd">        </span>
+<span class="sd">        If a string is specified, it is used as a format string for converting</span>
+<span class="sd">        float values (and all other types are converted using str). If a </span>
+<span class="sd">        function is specified, it will be called with the item as its only</span>
+<span class="sd">        argument and must return a string. Setting format = None causes the </span>
+<span class="sd">        default formatter to be used instead.</span>
+<span class="sd">        </span>
+<span class="sd">        Added in version 0.9.9.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">format</span><span class="p">,</span> <span class="n">basestring</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">format</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Format argument must string, callable, or None. (got </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="nb">format</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="nb">format</span>
+        
+        
+        <span class="k">if</span> <span class="n">column</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># update format of all items that do not have a column format </span>
+            <span class="c1"># specified</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()):</span>
+                        <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="n">item</span><span class="o">.</span><span class="n">setFormat</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># set all items in the column to use this format, or the default </span>
+            <span class="c1"># table format if None was specified.</span>
+            <span class="k">if</span> <span class="nb">format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()):</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">column</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">setFormat</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span></div>
+        
+    
+<div class="viewcode-block" id="TableWidget.iteratorFn"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iteratorFn">[docs]</a>    <span class="k">def</span> <span class="nf">iteratorFn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="c1">## Return 1) a function that will provide an iterator for data and 2) a list of header strings</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="o">.</span><span class="n">__iter__</span><span class="p">(),</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;implements&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">implements</span><span class="p">(</span><span class="s1">&#39;MetaArray&#39;</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">axisHasColumns</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="p">[</span><span class="n">asUnicode</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columnName</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+            <span class="k">elif</span> <span class="n">data</span><span class="o">.</span><span class="n">axisHasValues</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">xvals</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterFirstAxis</span><span class="p">,</span> <span class="n">header</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterFirstAxis</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">void</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterate</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Don&#39;t know how to iterate over data type: </span><span class="si">{!s}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="TableWidget.iterFirstAxis"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iterFirstAxis">[docs]</a>    <span class="k">def</span> <span class="nf">iterFirstAxis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">yield</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div>
+            
+<div class="viewcode-block" id="TableWidget.iterate"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.iterate">[docs]</a>    <span class="k">def</span> <span class="nf">iterate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="c1"># for numpy.void, which can be iterated but mysteriously </span>
+        <span class="c1"># has no __iter__ (??)</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">x</span></div>
+        
+<div class="viewcode-block" id="TableWidget.appendRow"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.appendRow">[docs]</a>    <span class="k">def</span> <span class="nf">appendRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">appendData</span><span class="p">([</span><span class="n">data</span><span class="p">])</span></div>
+        
+    <span class="nd">@_defersort</span>
+<div class="viewcode-block" id="TableWidget.addRow"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.addRow">[docs]</a>    <span class="k">def</span> <span class="nf">addRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setRowCount</span><span class="p">(</span><span class="n">row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span></div>
+        
+    <span class="nd">@_defersort</span>
+<div class="viewcode-block" id="TableWidget.setRow"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setRow">[docs]</a>    <span class="k">def</span> <span class="nf">setRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRowCount</span><span class="p">(</span><span class="n">row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemClass</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">setEditable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">editable</span><span class="p">)</span>
+            <span class="n">sortMode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sortModes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sortMode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">setSortMode</span><span class="p">(</span><span class="n">sortMode</span><span class="p">)</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="kc">None</span><span class="p">])</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">setFormat</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># Required--the text-change callback is invoked</span></div>
+                                <span class="c1"># when we call setItem.</span>
+
+<div class="viewcode-block" id="TableWidget.setSortMode"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.setSortMode">[docs]</a>    <span class="k">def</span> <span class="nf">setSortMode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the mode used to sort *column*.</span>
+<span class="sd">        </span>
+<span class="sd">        ============== ========================================================</span>
+<span class="sd">        **Sort Modes**</span>
+<span class="sd">        value          Compares item.value if available; falls back to text</span>
+<span class="sd">                       comparison.</span>
+<span class="sd">        text           Compares item.text()</span>
+<span class="sd">        index          Compares by the order in which items were inserted.</span>
+<span class="sd">        ============== ========================================================</span>
+<span class="sd">        </span>
+<span class="sd">        Added in version 0.9.9</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()):</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">column</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;setSortMode&#39;</span><span class="p">):</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">setSortMode</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sortModes</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">mode</span></div>
+        
+<div class="viewcode-block" id="TableWidget.sizeHint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.sizeHint">[docs]</a>    <span class="k">def</span> <span class="nf">sizeHint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># based on http://stackoverflow.com/a/7195443/54056</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columnWidth</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()))</span>
+        <span class="n">width</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">sizeHint</span><span class="p">()</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="n">width</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">sizeHint</span><span class="p">()</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="n">width</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frameWidth</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowHeight</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()))</span>
+        <span class="n">height</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">sizeHint</span><span class="p">()</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="n">height</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">sizeHint</span><span class="p">()</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QSize</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span></div>
+         
+<div class="viewcode-block" id="TableWidget.serialize"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">useSelection</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert entire table (or just selected area) into tab-separated text values&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">useSelection</span><span class="p">:</span>
+            <span class="n">selection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selectedRanges</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">topRow</span><span class="p">(),</span>
+                              <span class="n">selection</span><span class="o">.</span><span class="n">bottomRow</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">leftColumn</span><span class="p">(),</span>
+                                 <span class="n">selection</span><span class="o">.</span><span class="n">rightColumn</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()))</span>
+            <span class="n">columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()))</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeadersSet</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeadersSet</span><span class="p">:</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+            
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeaderItem</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()))</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeadersSet</span><span class="p">:</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verticalHeaderItem</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()))</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asUnicode</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            
+        <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+<div class="viewcode-block" id="TableWidget.copySel"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.copySel">[docs]</a>    <span class="k">def</span> <span class="nf">copySel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy selected data to clipboard.&quot;&quot;&quot;</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">clipboard</span><span class="p">()</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">useSelection</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TableWidget.copyAll"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.copyAll">[docs]</a>    <span class="k">def</span> <span class="nf">copyAll</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy all data to clipboard.&quot;&quot;&quot;</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">clipboard</span><span class="p">()</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">useSelection</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TableWidget.saveSel"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.saveSel">[docs]</a>    <span class="k">def</span> <span class="nf">saveSel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save selected data to file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">useSelection</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TableWidget.saveAll"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.saveAll">[docs]</a>    <span class="k">def</span> <span class="nf">saveAll</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save all data to file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">useSelection</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TableWidget.save"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">fileName</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QFileDialog</span><span class="o">.</span><span class="n">getSaveFileName</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Save As..&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;Tab-separated values (*.tsv)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fileName</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TableWidget.contextMenuEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.contextMenuEvent">[docs]</a>    <span class="k">def</span> <span class="nf">contextMenuEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span><span class="o">.</span><span class="n">popup</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">globalPos</span><span class="p">())</span></div>
+        
+<div class="viewcode-block" id="TableWidget.keyPressEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.keyPressEvent">[docs]</a>    <span class="k">def</span> <span class="nf">keyPressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">Key_C</span> <span class="ow">and</span> <span class="n">ev</span><span class="o">.</span><span class="n">modifiers</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ControlModifier</span><span class="p">:</span>
+            <span class="n">ev</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">copySel</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidget</span><span class="o">.</span><span class="n">keyPressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TableWidget.handleItemChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TableWidget.TableWidget.handleItemChanged">[docs]</a>    <span class="k">def</span> <span class="nf">handleItemChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">item</span><span class="o">.</span><span class="n">itemChanged</span><span class="p">()</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">TableWidgetItem</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidgetItem</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidgetItem</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_blockValueChange</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_defaultFormat</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%0.3g</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sortMode</span> <span class="o">=</span> <span class="s1">&#39;value&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">index</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ItemIsSelectable</span> <span class="o">|</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ItemIsEnabled</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFlags</span><span class="p">(</span><span class="n">flags</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFormat</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">setEditable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">editable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set whether this item is user-editable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">editable</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setFlags</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">|</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ItemIsEditable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setFlags</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">()</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ItemIsEditable</span><span class="p">)</span>
+            
+    <span class="k">def</span> <span class="nf">setSortMode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the mode used to sort this item against others in its column.</span>
+<span class="sd">        </span>
+<span class="sd">        ============== ========================================================</span>
+<span class="sd">        **Sort Modes**</span>
+<span class="sd">        value          Compares item.value if available; falls back to text</span>
+<span class="sd">                       comparison.</span>
+<span class="sd">        text           Compares item.text()</span>
+<span class="sd">        index          Compares by the order in which items were inserted.</span>
+<span class="sd">        ============== ========================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">modes</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">modes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Sort mode must be one of </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">modes</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sortMode</span> <span class="o">=</span> <span class="n">mode</span>
+        
+    <span class="k">def</span> <span class="nf">setFormat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Define the conversion from item value to displayed text. </span>
+<span class="sd">        </span>
+<span class="sd">        If a string is specified, it is used as a format string for converting</span>
+<span class="sd">        float values (and all other types are converted using str). If a </span>
+<span class="sd">        function is specified, it will be called with the item as its only</span>
+<span class="sd">        argument and must return a string.</span>
+<span class="sd">        </span>
+<span class="sd">        Added in version 0.9.9.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fmt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">basestring</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">fmt</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Format argument must string, callable, or None. (got </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">fmt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="o">=</span> <span class="n">fmt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_updateText</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">_updateText</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_blockValueChange</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_text</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_blockValueChange</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">setValue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_updateText</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">itemChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called when the data of this item has changed.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">()</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_text</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">textChanged</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">textChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called when this item&#39;s text has changed for any reason.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blockValueChange</span><span class="p">:</span>
+            <span class="c1"># text change was result of value or format change; do not</span>
+            <span class="c1"># propagate.</span>
+            <span class="k">return</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_defaultFormat</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">asUnicode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sortMode</span> <span class="o">==</span> <span class="s1">&#39;index&#39;</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">index</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sortMode</span> <span class="o">==</span> <span class="s1">&#39;value&#39;</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="p">([])</span>
+    <span class="n">win</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="p">()</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">TableWidget</span><span class="p">()</span>
+    <span class="n">win</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">win</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span><span class="mi">600</span><span class="p">)</span>
+    <span class="n">win</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    
+    <span class="n">ll</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">]]</span> <span class="o">*</span> <span class="mi">20</span>
+    <span class="n">ld</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}]</span> <span class="o">*</span> <span class="mi">20</span>
+    <span class="n">dl</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">)),</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">)),</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">))}</span>
+    
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="n">ra</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">20</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">)])</span>
+    
+    <span class="n">t</span><span class="o">.</span><span class="n">setData</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span>
+    
+    <span class="n">ma</span> <span class="o">=</span> <span class="n">metaarray</span><span class="o">.</span><span class="n">MetaArray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">20</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span> <span class="n">info</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">20</span><span class="p">)},</span> 
+        <span class="p">{</span><span class="s1">&#39;cols&#39;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;x&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;y&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;z&#39;</span><span class="p">},</span>
+        <span class="p">]}</span>
+    <span class="p">])</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">setData</span><span class="p">(</span><span class="n">ma</span><span class="p">)</span>
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

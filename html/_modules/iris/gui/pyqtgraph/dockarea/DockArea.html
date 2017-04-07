@@ -1,0 +1,422 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.dockarea.DockArea &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.dockarea.DockArea</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span>
+<span class="kn">from</span> <span class="nn">.Container</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.DockDrop</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.Dock</span> <span class="k">import</span> <span class="n">Dock</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">debug</span> <span class="k">as</span> <span class="n">debug</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="n">basestring</span>
+
+
+<div class="viewcode-block" id="DockArea"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea">[docs]</a><span class="k">class</span> <span class="nc">DockArea</span><span class="p">(</span><span class="n">Container</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">,</span> <span class="n">DockDrop</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temporary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">home</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">Container</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">DockDrop</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allowedAreas</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">setSpacing</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">docks</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakValueDictionary</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raiseOverlay</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporary</span> <span class="o">=</span> <span class="n">temporary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tempAreas</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">home</span> <span class="o">=</span> <span class="n">home</span>
+        
+<div class="viewcode-block" id="DockArea.type"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.type">[docs]</a>    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;top&quot;</span></div>
+        
+<div class="viewcode-block" id="DockArea.addDock"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.addDock">[docs]</a>    <span class="k">def</span> <span class="nf">addDock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dock</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="n">relativeTo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a dock to this area.</span>
+<span class="sd">        </span>
+<span class="sd">        ============== =================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        dock           The new Dock object to add. If None, then a new Dock will be </span>
+<span class="sd">                       created.</span>
+<span class="sd">        position       &#39;bottom&#39;, &#39;top&#39;, &#39;left&#39;, &#39;right&#39;, &#39;above&#39;, or &#39;below&#39;</span>
+<span class="sd">        relativeTo     If relativeTo is None, then the new Dock is added to fill an </span>
+<span class="sd">                       entire edge of the window. If relativeTo is another Dock, then </span>
+<span class="sd">                       the new Dock is placed adjacent to it (or in a tabbed </span>
+<span class="sd">                       configuration for &#39;above&#39; and &#39;below&#39;). </span>
+<span class="sd">        ============== =================================================================</span>
+<span class="sd">        </span>
+<span class="sd">        All extra keyword arguments are passed to Dock.__init__() if *dock* is</span>
+<span class="sd">        None.        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dock</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dock</span> <span class="o">=</span> <span class="n">Dock</span><span class="p">(</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        
+        
+        <span class="c1">## Determine the container to insert this dock into.</span>
+        <span class="c1">## If there is no neighbor, then the container is the top.</span>
+        <span class="k">if</span> <span class="n">relativeTo</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">relativeTo</span> <span class="ow">is</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span>
+                <span class="n">neighbor</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span>
+                <span class="n">neighbor</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">relativeTo</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+                <span class="n">relativeTo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">docks</span><span class="p">[</span><span class="n">relativeTo</span><span class="p">]</span>
+            <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getContainer</span><span class="p">(</span><span class="n">relativeTo</span><span class="p">)</span>
+            <span class="n">neighbor</span> <span class="o">=</span> <span class="n">relativeTo</span>
+        
+        <span class="c1">## what container type do we need?</span>
+        <span class="n">neededContainer</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;bottom&#39;</span><span class="p">:</span> <span class="s1">&#39;vertical&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;top&#39;</span><span class="p">:</span> <span class="s1">&#39;vertical&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;left&#39;</span><span class="p">:</span> <span class="s1">&#39;horizontal&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;right&#39;</span><span class="p">:</span> <span class="s1">&#39;horizontal&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;above&#39;</span><span class="p">:</span> <span class="s1">&#39;tab&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;below&#39;</span><span class="p">:</span> <span class="s1">&#39;tab&#39;</span>
+        <span class="p">}[</span><span class="n">position</span><span class="p">]</span>
+        
+        <span class="c1">## Can&#39;t insert new containers into a tab container; insert outside instead.</span>
+        <span class="k">if</span> <span class="n">neededContainer</span> <span class="o">!=</span> <span class="n">container</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="ow">and</span> <span class="n">container</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;tab&#39;</span><span class="p">:</span>
+            <span class="n">neighbor</span> <span class="o">=</span> <span class="n">container</span>
+            <span class="n">container</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="n">container</span><span class="p">()</span>
+            
+        <span class="c1">## Decide if the container we have is suitable.</span>
+        <span class="c1">## If not, insert a new container inside.</span>
+        <span class="k">if</span> <span class="n">neededContainer</span> <span class="o">!=</span> <span class="n">container</span><span class="o">.</span><span class="n">type</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">neighbor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addContainer</span><span class="p">(</span><span class="n">neededContainer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addContainer</span><span class="p">(</span><span class="n">neededContainer</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">)</span>
+            
+        <span class="c1">## Insert the new dock before/after its neighbor</span>
+        <span class="n">insertPos</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;bottom&#39;</span><span class="p">:</span> <span class="s1">&#39;after&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;top&#39;</span><span class="p">:</span> <span class="s1">&#39;before&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;left&#39;</span><span class="p">:</span> <span class="s1">&#39;before&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;right&#39;</span><span class="p">:</span> <span class="s1">&#39;after&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;above&#39;</span><span class="p">:</span> <span class="s1">&#39;before&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;below&#39;</span><span class="p">:</span> <span class="s1">&#39;after&#39;</span>
+        <span class="p">}[</span><span class="n">position</span><span class="p">]</span>
+        <span class="c1">#print &quot;request insert&quot;, dock, insertPos, neighbor</span>
+        <span class="n">old</span> <span class="o">=</span> <span class="n">dock</span><span class="o">.</span><span class="n">container</span><span class="p">()</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">dock</span><span class="p">,</span> <span class="n">insertPos</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">)</span>
+        <span class="n">dock</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">docks</span><span class="p">[</span><span class="n">dock</span><span class="o">.</span><span class="n">name</span><span class="p">()]</span> <span class="o">=</span> <span class="n">dock</span>
+        <span class="k">if</span> <span class="n">old</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">old</span><span class="o">.</span><span class="n">apoptose</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">dock</span></div>
+        
+<div class="viewcode-block" id="DockArea.moveDock"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.moveDock">[docs]</a>    <span class="k">def</span> <span class="nf">moveDock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dock</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Move an existing Dock to a new location. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## Moving to the edge of a tabbed dock causes a drop outside the tab box</span>
+        <span class="k">if</span> <span class="n">position</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">neighbor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">neighbor</span><span class="o">.</span><span class="n">container</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">neighbor</span><span class="o">.</span><span class="n">container</span><span class="p">()</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;tab&#39;</span><span class="p">:</span>
+            <span class="n">neighbor</span> <span class="o">=</span> <span class="n">neighbor</span><span class="o">.</span><span class="n">container</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addDock</span><span class="p">(</span><span class="n">dock</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="DockArea.getContainer"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.getContainer">[docs]</a>    <span class="k">def</span> <span class="nf">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">container</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="DockArea.makeContainer"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.makeContainer">[docs]</a>    <span class="k">def</span> <span class="nf">makeContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">typ</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">typ</span> <span class="o">==</span> <span class="s1">&#39;vertical&#39;</span><span class="p">:</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">VContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">typ</span> <span class="o">==</span> <span class="s1">&#39;horizontal&#39;</span><span class="p">:</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">HContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">typ</span> <span class="o">==</span> <span class="s1">&#39;tab&#39;</span><span class="p">:</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">TContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new</span></div>
+        
+<div class="viewcode-block" id="DockArea.addContainer"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.addContainer">[docs]</a>    <span class="k">def</span> <span class="nf">addContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a new container around obj&quot;&quot;&quot;</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">makeContainer</span><span class="p">(</span><span class="n">typ</span><span class="p">)</span>
+        
+        <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getContainer</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="s1">&#39;before&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="c1">#print &quot;Add container:&quot;, new, &quot; -&gt; &quot;, container</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raiseOverlay</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">new</span></div>
+    
+<div class="viewcode-block" id="DockArea.insert"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.insert">[docs]</a>    <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">neighbor</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span><span class="o">.</span><span class="n">containerChanged</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span> <span class="o">=</span> <span class="n">new</span>
+        <span class="c1">#print self, &quot;set top:&quot;, new</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">_container</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raiseOverlay</span><span class="p">()</span></div>
+        <span class="c1">#print &quot;Insert top:&quot;, new</span>
+        
+<div class="viewcode-block" id="DockArea.count"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="mi">1</span></div>
+        
+        
+    <span class="c1">#def paintEvent(self, ev):</span>
+        <span class="c1">#self.drawDockOverlay()</span>
+        
+<div class="viewcode-block" id="DockArea.resizeEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.resizeEvent">[docs]</a>    <span class="k">def</span> <span class="nf">resizeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resizeOverlay</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">())</span></div>
+        
+<div class="viewcode-block" id="DockArea.addTempArea"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.addTempArea">[docs]</a>    <span class="k">def</span> <span class="nf">addTempArea</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">home</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">area</span> <span class="o">=</span> <span class="n">DockArea</span><span class="p">(</span><span class="n">temporary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">home</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tempAreas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+            <span class="n">win</span> <span class="o">=</span> <span class="n">TempAreaWindow</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+            <span class="n">area</span><span class="o">.</span><span class="n">win</span> <span class="o">=</span> <span class="n">win</span>
+            <span class="n">win</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">home</span><span class="o">.</span><span class="n">addTempArea</span><span class="p">()</span>
+        <span class="c1">#print &quot;added temp area&quot;, area, area.window()</span>
+        <span class="k">return</span> <span class="n">area</span></div>
+        
+<div class="viewcode-block" id="DockArea.floatDock"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.floatDock">[docs]</a>    <span class="k">def</span> <span class="nf">floatDock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dock</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Removes *dock* from this DockArea and places it in a new window.&quot;&quot;&quot;</span>
+        <span class="n">area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addTempArea</span><span class="p">()</span>
+        <span class="n">area</span><span class="o">.</span><span class="n">win</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">dock</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+        <span class="n">area</span><span class="o">.</span><span class="n">moveDock</span><span class="p">(</span><span class="n">dock</span><span class="p">,</span> <span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+        
+        
+<div class="viewcode-block" id="DockArea.removeTempArea"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.removeTempArea">[docs]</a>    <span class="k">def</span> <span class="nf">removeTempArea</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tempAreas</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+        <span class="c1">#print &quot;close window&quot;, area.window()</span>
+        <span class="n">area</span><span class="o">.</span><span class="n">window</span><span class="p">()</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="DockArea.saveState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a serialized (storable) representation of the state of</span>
+<span class="sd">        all Docks in this DockArea.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">main</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">childState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span><span class="p">)</span>
+
+        <span class="n">state</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;main&#39;</span><span class="p">:</span> <span class="n">main</span><span class="p">,</span> <span class="s1">&#39;float&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tempAreas</span><span class="p">:</span>
+            <span class="n">geo</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">win</span><span class="o">.</span><span class="n">geometry</span><span class="p">()</span>
+            <span class="n">geo</span> <span class="o">=</span> <span class="p">(</span><span class="n">geo</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="n">geo</span><span class="o">.</span><span class="n">y</span><span class="p">(),</span> <span class="n">geo</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="n">geo</span><span class="o">.</span><span class="n">height</span><span class="p">())</span>
+            <span class="n">state</span><span class="p">[</span><span class="s1">&#39;float&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">a</span><span class="o">.</span><span class="n">saveState</span><span class="p">(),</span> <span class="n">geo</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">state</span></div>
+        
+<div class="viewcode-block" id="DockArea.childState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.childState">[docs]</a>    <span class="k">def</span> <span class="nf">childState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Dock</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;dock&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="p">{})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">childs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">count</span><span class="p">()):</span>
+                <span class="n">childs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childState</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="n">i</span><span class="p">)))</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">type</span><span class="p">(),</span> <span class="n">childs</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">saveState</span><span class="p">())</span></div>
+        
+        
+<div class="viewcode-block" id="DockArea.restoreState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore Dock configuration as generated by saveState.</span>
+<span class="sd">        </span>
+<span class="sd">        Note that this function does not create any Docks--it will only </span>
+<span class="sd">        restore the arrangement of an existing set of Docks.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c1">## 1) make dict of all docks and list of existing containers</span>
+        <span class="n">containers</span><span class="p">,</span> <span class="n">docks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findAll</span><span class="p">()</span>
+        <span class="n">oldTemps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tempAreas</span><span class="p">[:]</span>
+        <span class="c1">#print &quot;found docks:&quot;, docks</span>
+        
+        <span class="c1">## 2) create container structure, move docks into new containers</span>
+        <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">buildFromState</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">],</span> <span class="n">docks</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        
+        <span class="c1">## 3) create floating areas, populate</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;float&#39;</span><span class="p">]:</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addTempArea</span><span class="p">()</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">buildFromState</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;main&#39;</span><span class="p">],</span> <span class="n">docks</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">win</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="o">*</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        
+        <span class="c1">## 4) Add any remaining docks to the bottom</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">docks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">moveDock</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="s1">&#39;below&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        
+        <span class="c1">#print &quot;\nKill old containers:&quot;</span>
+        <span class="c1">## 5) kill old containers</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">containers</span><span class="p">:</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">oldTemps</span><span class="p">:</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">apoptose</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="DockArea.buildFromState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.buildFromState">[docs]</a>    <span class="k">def</span> <span class="nf">buildFromState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">docks</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">typ</span><span class="p">,</span> <span class="n">contents</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">pfx</span> <span class="o">=</span> <span class="s2">&quot;  &quot;</span> <span class="o">*</span> <span class="n">depth</span>
+        <span class="k">if</span> <span class="n">typ</span> <span class="o">==</span> <span class="s1">&#39;dock&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">docks</span><span class="p">[</span><span class="n">contents</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">docks</span><span class="p">[</span><span class="n">contents</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Cannot restore dock state; no dock with name &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span> <span class="o">%</span> <span class="n">contents</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">makeContainer</span><span class="p">(</span><span class="n">typ</span><span class="p">)</span>
+            
+        <span class="n">root</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;after&#39;</span><span class="p">)</span>
+        <span class="c1">#print pfx+&quot;Add:&quot;, obj, &quot; -&gt; &quot;, root</span>
+        
+        <span class="k">if</span> <span class="n">typ</span> <span class="o">!=</span> <span class="s1">&#39;dock&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">contents</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">buildFromState</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">docks</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">depth</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">apoptose</span><span class="p">(</span><span class="n">propagate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">restoreState</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>  <span class="c1">## this has to be done later?</span></div>
+        
+
+<div class="viewcode-block" id="DockArea.findAll"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.findAll">[docs]</a>    <span class="k">def</span> <span class="nf">findAll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span>
+        
+        <span class="c1">## check all temp areas first</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tempAreas</span><span class="p">:</span>
+                <span class="n">c1</span><span class="p">,</span> <span class="n">d1</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">findAll</span><span class="p">()</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">c1</span><span class="p">)</span>
+                <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">d1</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Dock</span><span class="p">):</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">()]</span> <span class="o">=</span> <span class="n">obj</span>
+        <span class="k">elif</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">count</span><span class="p">()):</span>
+                <span class="n">o2</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="n">c2</span><span class="p">,</span> <span class="n">d2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findAll</span><span class="p">(</span><span class="n">o2</span><span class="p">)</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">c2</span><span class="p">)</span>
+                <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">d2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DockArea.apoptose"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.apoptose">[docs]</a>    <span class="k">def</span> <span class="nf">apoptose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#print &quot;apoptose area:&quot;, self.temporary, self.topContainer, self.topContainer.count()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">topContainer</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporary</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">home</span><span class="o">.</span><span class="n">removeTempArea</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+                <span class="c1">#self.close()</span>
+
+<div class="viewcode-block" id="DockArea.clear"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">docks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findAll</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">dock</span> <span class="ow">in</span> <span class="n">docks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">dock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+            
+    <span class="c1">## PySide bug: We need to explicitly redefine these methods</span>
+    <span class="c1">## or else drag/drop events will not be delivered.</span>
+<div class="viewcode-block" id="DockArea.dragEnterEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.dragEnterEvent">[docs]</a>    <span class="k">def</span> <span class="nf">dragEnterEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">DockDrop</span><span class="o">.</span><span class="n">dragEnterEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DockArea.dragMoveEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.dragMoveEvent">[docs]</a>    <span class="k">def</span> <span class="nf">dragMoveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">DockDrop</span><span class="o">.</span><span class="n">dragMoveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DockArea.dragLeaveEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.dragLeaveEvent">[docs]</a>    <span class="k">def</span> <span class="nf">dragLeaveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">DockDrop</span><span class="o">.</span><span class="n">dragLeaveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DockArea.dropEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.DockArea.dropEvent">[docs]</a>    <span class="k">def</span> <span class="nf">dropEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">DockDrop</span><span class="o">.</span><span class="n">dropEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TempAreaWindow"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.TempAreaWindow">[docs]</a><span class="k">class</span> <span class="nc">TempAreaWindow</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TempAreaWindow.closeEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.dockarea.html#iris.gui.pyqtgraph.dockarea.DockArea.TempAreaWindow.closeEvent">[docs]</a>    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centralWidget</span><span class="p">()</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

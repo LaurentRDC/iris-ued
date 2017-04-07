@@ -1,0 +1,856 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.parametertree.Parameter &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.parametertree.Parameter</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">weakref</span><span class="o">,</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">..pgcollections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="n">asUnicode</span><span class="p">,</span> <span class="n">basestring</span>
+<span class="kn">from</span> <span class="nn">.ParameterItem</span> <span class="k">import</span> <span class="n">ParameterItem</span>
+
+<span class="n">PARAM_TYPES</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">PARAM_NAMES</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="registerParameterType"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.registerParameterType">[docs]</a><span class="k">def</span> <span class="nf">registerParameterType</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="n">override</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">PARAM_TYPES</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">PARAM_TYPES</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">override</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Parameter type &#39;</span><span class="si">%s</span><span class="s2">&#39; already exists (use override=True to replace)&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+    <span class="n">PARAM_TYPES</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls</span>
+    <span class="n">PARAM_NAMES</span><span class="p">[</span><span class="n">cls</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span></div>
+
+<span class="k">def</span> <span class="nf">__reload__</span><span class="p">(</span><span class="n">old</span><span class="p">):</span>
+    <span class="n">PARAM_TYPES</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">old</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;PARAM_TYPES&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="n">PARAM_NAMES</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">old</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;PARAM_NAMES&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+
+<div class="viewcode-block" id="Parameter"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter">[docs]</a><span class="k">class</span> <span class="nc">Parameter</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Parameter is the basic unit of data in a parameter tree. Each parameter has</span>
+<span class="sd">    a name, a type, a value, and several other properties that modify the behavior of the </span>
+<span class="sd">    Parameter. Parameters may have parent / child / sibling relationships to construct</span>
+<span class="sd">    organized hierarchies. Parameters generally do not have any inherent GUI or visual</span>
+<span class="sd">    interpretation; instead they manage ParameterItem instances which take care of</span>
+<span class="sd">    display and user interaction.</span>
+<span class="sd">    </span>
+<span class="sd">    Note: It is fairly uncommon to use the Parameter class directly; mostly you </span>
+<span class="sd">    will use subclasses which provide specialized type and data handling. The static</span>
+<span class="sd">    pethod Parameter.create(...) is an easy way to generate instances of these subclasses.</span>
+<span class="sd">       </span>
+<span class="sd">    For more Parameter types, see ParameterTree.parameterTypes module.</span>
+<span class="sd">    </span>
+<span class="sd">    ===================================  =========================================================</span>
+<span class="sd">    **Signals:**</span>
+<span class="sd">    sigStateChanged(self, change, info)  Emitted when anything changes about this parameter at </span>
+<span class="sd">                                         all.</span>
+<span class="sd">                                         The second argument is a string indicating what changed </span>
+<span class="sd">                                         (&#39;value&#39;, &#39;childAdded&#39;, etc..)</span>
+<span class="sd">                                         The third argument can be any extra information about </span>
+<span class="sd">                                         the change</span>
+<span class="sd">    sigTreeStateChanged(self, changes)   Emitted when any child in the tree changes state</span>
+<span class="sd">                                         (but only if monitorChildren() is called)</span>
+<span class="sd">                                         the format of *changes* is [(param, change, info), ...]</span>
+<span class="sd">    sigValueChanged(self, value)         Emitted when value is finished changing</span>
+<span class="sd">    sigValueChanging(self, value)        Emitted immediately for all value changes, </span>
+<span class="sd">                                         including during editing.</span>
+<span class="sd">    sigChildAdded(self, child, index)    Emitted when a child is added</span>
+<span class="sd">    sigChildRemoved(self, child)         Emitted when a child is removed</span>
+<span class="sd">    sigRemoved(self)                     Emitted when this parameter is removed</span>
+<span class="sd">    sigParentChanged(self, parent)       Emitted when this parameter&#39;s parent has changed</span>
+<span class="sd">    sigLimitsChanged(self, limits)       Emitted when this parameter&#39;s limits have changed</span>
+<span class="sd">    sigDefaultChanged(self, default)     Emitted when this parameter&#39;s default value has changed</span>
+<span class="sd">    sigNameChanged(self, name)           Emitted when this parameter&#39;s name has changed</span>
+<span class="sd">    sigOptionsChanged(self, opts)        Emitted when any of this parameter&#39;s options have changed</span>
+<span class="sd">    ===================================  =========================================================</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">## name, type, limits, etc.</span>
+    <span class="c1">## can also carry UI hints (slider vs spinbox, etc.)</span>
+    
+    <span class="n">sigValueChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, value   emitted when value is finished being edited</span>
+    <span class="n">sigValueChanging</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, value  emitted as value is being edited</span>
+    
+    <span class="n">sigChildAdded</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, child, index</span>
+    <span class="n">sigChildRemoved</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, child</span>
+    <span class="n">sigRemoved</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="c1">## self</span>
+    <span class="n">sigParentChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, parent</span>
+    <span class="n">sigLimitsChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, limits</span>
+    <span class="n">sigDefaultChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, default</span>
+    <span class="n">sigNameChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, name</span>
+    <span class="n">sigOptionsChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1">## self, {opt:val, ...}</span>
+    
+    <span class="c1">## Emitted when anything changes about this parameter at all.</span>
+    <span class="c1">## The second argument is a string indicating what changed (&#39;value&#39;, &#39;childAdded&#39;, etc..)</span>
+    <span class="c1">## The third argument can be any extra information about the change</span>
+    <span class="n">sigStateChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span> <span class="c1">## self, change, info</span>
+    
+    <span class="c1">## emitted when any child in the tree changes state</span>
+    <span class="c1">## (but only if monitorChildren() is called)</span>
+    <span class="n">sigTreeStateChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>  <span class="c1"># self, changes</span>
+                                                         <span class="c1"># changes = [(param, change, info), ...]</span>
+    
+    <span class="c1"># bad planning.</span>
+    <span class="c1">#def __new__(cls, *args, **opts):</span>
+        <span class="c1">#try:</span>
+            <span class="c1">#cls = PARAM_TYPES[opts[&#39;type&#39;]]</span>
+        <span class="c1">#except KeyError:</span>
+            <span class="c1">#pass</span>
+        <span class="c1">#return QtCore.QObject.__new__(cls, *args, **opts)</span>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Parameter.create"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="o">**</span><span class="n">opts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Static method that creates a new Parameter (or subclass) instance using </span>
+<span class="sd">        opts[&#39;type&#39;] to select the appropriate class.</span>
+<span class="sd">        </span>
+<span class="sd">        All options are passed directly to the new Parameter&#39;s __init__ method.</span>
+<span class="sd">        Use registerParameterType() to add new class types.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">typ</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">typ</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cls</span> <span class="o">=</span> <span class="n">Parameter</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cls</span> <span class="o">=</span> <span class="n">PARAM_TYPES</span><span class="p">[</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="o">**</span><span class="n">opts</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a Parameter object. Although it is rare to directly create a</span>
+<span class="sd">        Parameter instance, the options available to this method are also allowed</span>
+<span class="sd">        by most Parameter subclasses.</span>
+<span class="sd">        </span>
+<span class="sd">        =======================      =========================================================</span>
+<span class="sd">        **Keyword Arguments:**</span>
+<span class="sd">        name                         The name to give this Parameter. This is the name that</span>
+<span class="sd">                                     will appear in the left-most column of a ParameterTree</span>
+<span class="sd">                                     for this Parameter.</span>
+<span class="sd">        value                        The value to initially assign to this Parameter.</span>
+<span class="sd">        default                      The default value for this Parameter (most Parameters</span>
+<span class="sd">                                     provide an option to &#39;reset to default&#39;).</span>
+<span class="sd">        children                     A list of children for this Parameter. Children</span>
+<span class="sd">                                     may be given either as a Parameter instance or as a</span>
+<span class="sd">                                     dictionary to pass to Parameter.create(). In this way,</span>
+<span class="sd">                                     it is possible to specify complex hierarchies of</span>
+<span class="sd">                                     Parameters from a single nested data structure.</span>
+<span class="sd">        readonly                     If True, the user will not be allowed to edit this</span>
+<span class="sd">                                     Parameter. (default=False)</span>
+<span class="sd">        enabled                      If False, any widget(s) for this parameter will appear</span>
+<span class="sd">                                     disabled. (default=True)</span>
+<span class="sd">        visible                      If False, the Parameter will not appear when displayed</span>
+<span class="sd">                                     in a ParameterTree. (default=True)</span>
+<span class="sd">        renamable                    If True, the user may rename this Parameter.</span>
+<span class="sd">                                     (default=False)</span>
+<span class="sd">        removable                    If True, the user may remove this Parameter.</span>
+<span class="sd">                                     (default=False)</span>
+<span class="sd">        expanded                     If True, the Parameter will appear expanded when</span>
+<span class="sd">                                     displayed in a ParameterTree (its children will be</span>
+<span class="sd">                                     visible). (default=True)</span>
+<span class="sd">        title                        (str or None) If specified, then the parameter will be </span>
+<span class="sd">                                     displayed to the user using this string as its name. </span>
+<span class="sd">                                     However, the parameter will still be referred to </span>
+<span class="sd">                                     internally using the *name* specified above. Note that</span>
+<span class="sd">                                     this option is not compatible with renamable=True.</span>
+<span class="sd">                                     (default=None; added in version 0.9.9)</span>
+<span class="sd">        =======================      =========================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        
+        <span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;readonly&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s1">&#39;visible&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;enabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;renamable&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s1">&#39;removable&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s1">&#39;strictNaming&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># forces name to be usable as a python variable</span>
+            <span class="s1">&#39;expanded&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="c1">#&#39;limits&#39;: None,  ## This is a bad plan--each parameter type may have a different data type for limits.</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">childs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="p">{}</span>   <span class="c1">## map name:child</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakKeyDictionary</span><span class="p">()</span>  <span class="c1">## keeps track of tree items representing this parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parent</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">treeStateChanges</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1">## cache of tree state changes to be delivered on next emit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blockTreeChangeEmit</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#self.monitoringChildren = False  ## prevent calling monitorChildren more than once</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;value&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;name&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Parameter must have a string name specified in opts.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setName</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">addChildren</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;children&#39;</span><span class="p">,</span> <span class="p">[]))</span>
+            
+        <span class="k">if</span> <span class="s1">&#39;value&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="ow">and</span> <span class="s1">&#39;default&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span>
+    
+        <span class="c1">## Connect all state changed signals to the general sigStateChanged</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigValueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">param</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emitStateChanged</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigChildAdded</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">param</span><span class="p">,</span> <span class="o">*</span><span class="n">data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emitStateChanged</span><span class="p">(</span><span class="s1">&#39;childAdded&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigChildRemoved</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">param</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emitStateChanged</span><span class="p">(</span><span class="s1">&#39;childRemoved&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigParentChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">param</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emitStateChanged</span><span class="p">(</span><span class="s1">&#39;parent&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigLimitsChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">param</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emitStateChanged</span><span class="p">(</span><span class="s1">&#39;limits&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigDefaultChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">param</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emitStateChanged</span><span class="p">(</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigNameChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">param</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emitStateChanged</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigOptionsChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">param</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emitStateChanged</span><span class="p">(</span><span class="s1">&#39;options&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        
+        <span class="c1">#self.watchParam(self)  ## emit treechange signals if our own state changes</span>
+        
+<div class="viewcode-block" id="Parameter.name"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.name">[docs]</a>    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the name of this Parameter.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Parameter.setName"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setName">[docs]</a>    <span class="k">def</span> <span class="nf">setName</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Attempt to change the name of this parameter; return the actual name. </span>
+<span class="sd">        (The parameter may reject the name change or automatically pick a different name)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;strictNaming&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s1">r&#39;\W&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">r&#39;\d&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Parameter name &#39;</span><span class="si">%s</span><span class="s2">&#39; is invalid. (Must contain only alphanumeric and underscore characters and may not start with a number)&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">_renameChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>  <span class="c1">## first ask parent if it&#39;s ok to rename</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigNameChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">name</span></div>
+
+<div class="viewcode-block" id="Parameter.type"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.type">[docs]</a>    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the type string for this Parameter.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="Parameter.isType"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.isType">[docs]</a>    <span class="k">def</span> <span class="nf">isType</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">typ</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return True if this parameter type matches the name *typ*.</span>
+<span class="sd">        This can occur either of two ways:</span>
+<span class="sd">        </span>
+<span class="sd">        - If self.type() == *typ*</span>
+<span class="sd">        - If this parameter&#39;s class is registered with the name *typ*</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="n">typ</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">global</span> <span class="n">PARAM_TYPES</span>
+        <span class="n">cls</span> <span class="o">=</span> <span class="n">PARAM_TYPES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">typ</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Type name &#39;</span><span class="si">%s</span><span class="s2">&#39; is not registered.&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">typ</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span> <span class="ow">is</span> <span class="n">cls</span></div>
+        
+<div class="viewcode-block" id="Parameter.childPath"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.childPath">[docs]</a>    <span class="k">def</span> <span class="nf">childPath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the path of parameter names from self to child.</span>
+<span class="sd">        If child is not a (grand)child of self, return None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="n">child</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+            <span class="n">child</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">child</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">path</span></div>
+
+<div class="viewcode-block" id="Parameter.setValue"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setValue">[docs]</a>    <span class="k">def</span> <span class="nf">setValue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">blockSignal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the value of this Parameter; return the actual value that was set.</span>
+<span class="sd">        (this may be different from the value that was requested)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">blockSignal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sigValueChanged</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="n">blockSignal</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigValueChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">blockSignal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sigValueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">blockSignal</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="Parameter.value"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.value">[docs]</a>    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the value of this Parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Parameter.getValues"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.getValues">[docs]</a>    <span class="k">def</span> <span class="nf">getValues</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a tree of all values that are children of this parameter&quot;&quot;&quot;</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">vals</span><span class="p">[</span><span class="n">ch</span><span class="o">.</span><span class="n">name</span><span class="p">()]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">ch</span><span class="o">.</span><span class="n">getValues</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">vals</span></div>
+    
+<div class="viewcode-block" id="Parameter.saveState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a structure representing the entire state of the parameter tree.</span>
+<span class="sd">        The tree state may be restored from this structure using restoreState().</span>
+
+<span class="sd">        If *filter* is set to &#39;user&#39;, then only user-settable data will be included in the</span>
+<span class="sd">        returned state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">filter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">global</span> <span class="n">PARAM_NAMES</span>
+                <span class="n">state</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PARAM_NAMES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">filter</span> <span class="o">==</span> <span class="s1">&#39;user&#39;</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">()}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unrecognized filter argument: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">filter</span><span class="p">)</span>
+
+        <span class="n">ch</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">ch</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="n">ch</span><span class="o">.</span><span class="n">saveState</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">))</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">state</span><span class="p">[</span><span class="s1">&#39;children&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ch</span>
+        <span class="k">return</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="Parameter.restoreState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">addChildren</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">removeChildren</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">blockSignals</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore the state of this parameter and its children from a structure generated using saveState()</span>
+<span class="sd">        If recursive is True, then attempt to restore the state of child parameters as well.</span>
+<span class="sd">        If addChildren is True, then any children which are referenced in the state object will be</span>
+<span class="sd">        created if they do not already exist.</span>
+<span class="sd">        If removeChildren is True, then any children which are not referenced in the state object will </span>
+<span class="sd">        be removed.</span>
+<span class="sd">        If blockSignals is True, no signals will be emitted until the tree has been completely restored. </span>
+<span class="sd">        This prevents signal handlers from responding to a partially-rebuilt network.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">childState</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;children&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        
+        <span class="c1">## list of children may be stored either as list or dict.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">childState</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">cs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">childState</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+                <span class="n">cs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+            <span class="n">childState</span> <span class="o">=</span> <span class="n">cs</span>
+        
+        <span class="k">if</span> <span class="n">blockSignals</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">blockTreeChangeSignal</span><span class="p">()</span>
+            
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setOpts</span><span class="p">(</span><span class="o">**</span><span class="n">state</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">recursive</span><span class="p">:</span>
+                <span class="k">return</span>
+            
+            <span class="n">ptr</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1">## pointer to first child that has not been restored yet</span>
+            <span class="n">foundChilds</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="c1">#print &quot;==============&quot;, self.name()</span>
+            
+            <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">childState</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">ch</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+                <span class="c1">#typ = ch.get(&#39;type&#39;, None)</span>
+                <span class="c1">#print(&#39;child: %s, %s&#39; % (self.name()+&#39;.&#39;+name, typ))</span>
+                
+                <span class="c1">## First, see if there is already a child with this name</span>
+                <span class="n">gotChild</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ch2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="p">[</span><span class="n">ptr</span><span class="p">:]):</span>
+                    <span class="c1">#print &quot;  &quot;, ch2.name(), ch2.type()</span>
+                    <span class="k">if</span> <span class="n">ch2</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span> <span class="c1"># or not ch2.isType(typ):</span>
+                        <span class="k">continue</span>
+                    <span class="n">gotChild</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="c1">#print &quot;    found it&quot;</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1">## move parameter to next position</span>
+                        <span class="c1">#self.removeChild(ch2)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">insertChild</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span> <span class="n">ch2</span><span class="p">)</span>
+                        <span class="c1">#print &quot;  moved to position&quot;, ptr</span>
+                    <span class="n">ch2</span><span class="o">.</span><span class="n">restoreState</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">,</span> <span class="n">addChildren</span><span class="o">=</span><span class="n">addChildren</span><span class="p">,</span> <span class="n">removeChildren</span><span class="o">=</span><span class="n">removeChildren</span><span class="p">)</span>
+                    <span class="n">foundChilds</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ch2</span><span class="p">)</span>
+                    
+                    <span class="k">break</span>
+                
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">gotChild</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">addChildren</span><span class="p">:</span>
+                        <span class="c1">#print &quot;  ignored child&quot;</span>
+                        <span class="k">continue</span>
+                    <span class="c1">#print &quot;    created new&quot;</span>
+                    <span class="n">ch2</span> <span class="o">=</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">ch</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">insertChild</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span> <span class="n">ch2</span><span class="p">)</span>
+                    <span class="n">foundChilds</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ch2</span><span class="p">)</span>
+                    
+                <span class="n">ptr</span> <span class="o">+=</span> <span class="mi">1</span>
+                
+            <span class="k">if</span> <span class="n">removeChildren</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="p">[:]:</span>
+                    <span class="k">if</span> <span class="n">ch</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">foundChilds</span><span class="p">:</span>
+                        <span class="c1">#print &quot;  remove:&quot;, ch</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">removeChild</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">blockSignals</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unblockTreeChangeSignal</span><span class="p">()</span></div>
+            
+            
+        
+<div class="viewcode-block" id="Parameter.defaultValue"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.defaultValue">[docs]</a>    <span class="k">def</span> <span class="nf">defaultValue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the default value for this parameter.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="Parameter.setDefault"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setDefault">[docs]</a>    <span class="k">def</span> <span class="nf">setDefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the default value for this parameter.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">val</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigDefaultChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Parameter.setToDefault"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setToDefault">[docs]</a>    <span class="k">def</span> <span class="nf">setToDefault</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set this parameter&#39;s value to the default.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasDefault</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">defaultValue</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Parameter.hasDefault"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hasDefault">[docs]</a>    <span class="k">def</span> <span class="nf">hasDefault</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if this parameter has a default value.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;default&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span></div>
+        
+<div class="viewcode-block" id="Parameter.valueIsDefault"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.valueIsDefault">[docs]</a>    <span class="k">def</span> <span class="nf">valueIsDefault</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if this parameter&#39;s value is equal to the default value.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">defaultValue</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="Parameter.setLimits"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setLimits">[docs]</a>    <span class="k">def</span> <span class="nf">setLimits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limits</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set limits on the acceptable values for this parameter. </span>
+<span class="sd">        The format of limits depends on the type of the parameter and</span>
+<span class="sd">        some parameters do not make use of limits at all.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s1">&#39;limits&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;limits&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">limits</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;limits&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">limits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigLimitsChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limits</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">limits</span></div>
+
+<div class="viewcode-block" id="Parameter.writable"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.writable">[docs]</a>    <span class="k">def</span> <span class="nf">writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True if this parameter&#39;s value can be changed by the user.</span>
+<span class="sd">        Note that the value of the parameter can *always* be changed by</span>
+<span class="sd">        calling setValue().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Parameter.setWritable"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setWritable">[docs]</a>    <span class="k">def</span> <span class="nf">setWritable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set whether this Parameter should be editable by the user. (This is </span>
+<span class="sd">        exactly the opposite of setReadonly).&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOpts</span><span class="p">(</span><span class="n">readonly</span><span class="o">=</span><span class="ow">not</span> <span class="n">writable</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Parameter.readonly"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.readonly">[docs]</a>    <span class="k">def</span> <span class="nf">readonly</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return True if this parameter is read-only. (this is the opposite of writable())</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;readonly&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Parameter.setReadonly"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setReadonly">[docs]</a>    <span class="k">def</span> <span class="nf">setReadonly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set whether this Parameter&#39;s value may be edited by the user</span>
+<span class="sd">        (this is the opposite of setWritable()).&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOpts</span><span class="p">(</span><span class="n">readonly</span><span class="o">=</span><span class="n">readonly</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Parameter.setOpts"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setOpts">[docs]</a>    <span class="k">def</span> <span class="nf">setOpts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set any arbitrary options on this parameter.</span>
+<span class="sd">        The exact behavior of this function will depend on the parameter type, but</span>
+<span class="sd">        most parameters will accept a common set of options: value, name, limits,</span>
+<span class="sd">        default, readonly, removable, renamable, visible, enabled, and expanded.</span>
+<span class="sd">        </span>
+<span class="sd">        See :func:`Parameter.__init__ &lt;pyqtgraph.parametertree.Parameter.__init__&gt;`</span>
+<span class="sd">        for more information on default options.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setName</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;limits&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setLimits</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setDefault</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">changed</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">changed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigOptionsChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">changed</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Parameter.emitStateChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.emitStateChanged">[docs]</a>    <span class="k">def</span> <span class="nf">emitStateChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">changeDesc</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="c1">## Emits stateChanged signal and </span>
+        <span class="c1">## requests emission of new treeStateChanged signal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigStateChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">changeDesc</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="c1">#self.treeStateChanged(self, changeDesc, data)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">treeStateChanges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="p">,</span> <span class="n">changeDesc</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emitTreeChanges</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Parameter.makeTreeItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.makeTreeItem">[docs]</a>    <span class="k">def</span> <span class="nf">makeTreeItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a TreeWidgetItem suitable for displaying/controlling the content of </span>
+<span class="sd">        this parameter. This is called automatically when a ParameterTree attempts</span>
+<span class="sd">        to display this Parameter.</span>
+<span class="sd">        Most subclasses will want to override this function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;itemClass&#39;</span><span class="p">):</span>
+            <span class="c1">#print &quot;Param:&quot;, self, &quot;Make item from itemClass:&quot;, self.itemClass</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemClass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ParameterItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Parameter.addChild"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.addChild">[docs]</a>    <span class="k">def</span> <span class="nf">addChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">autoIncrementName</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add another parameter to the end of this parameter&#39;s child list.</span>
+<span class="sd">        </span>
+<span class="sd">        See insertChild() for a description of the *autoIncrementName* </span>
+<span class="sd">        argument.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">insertChild</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="p">),</span> <span class="n">child</span><span class="p">,</span> <span class="n">autoIncrementName</span><span class="o">=</span><span class="n">autoIncrementName</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Parameter.addChildren"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.addChildren">[docs]</a>    <span class="k">def</span> <span class="nf">addChildren</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">children</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a list or dict of children to this parameter. This method calls</span>
+<span class="sd">        addChild once for each value in *children*.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## If children was specified as dict, then assume keys are the names.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">ch2</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">opts</span> <span class="ow">in</span> <span class="n">children</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">opts</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;name&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+                    <span class="n">opts</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="n">ch2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">ch2</span>
+        
+        <span class="k">for</span> <span class="n">chOpts</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+            <span class="c1">#print self, &quot;Add child:&quot;, type(chOpts), id(chOpts)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addChild</span><span class="p">(</span><span class="n">chOpts</span><span class="p">)</span></div>
+        
+        
+<div class="viewcode-block" id="Parameter.insertChild"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.insertChild">[docs]</a>    <span class="k">def</span> <span class="nf">insertChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">autoIncrementName</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Insert a new child at pos.</span>
+<span class="sd">        If pos is a Parameter, then insert at the position of that Parameter.</span>
+<span class="sd">        If child is a dict, then a parameter is constructed using</span>
+<span class="sd">        :func:`Parameter.create &lt;pyqtgraph.parametertree.Parameter.create&gt;`.</span>
+<span class="sd">        </span>
+<span class="sd">        By default, the child&#39;s &#39;autoIncrementName&#39; option determines whether</span>
+<span class="sd">        the name will be adjusted to avoid prior name collisions. This </span>
+<span class="sd">        behavior may be overridden by specifying the *autoIncrementName* </span>
+<span class="sd">        argument. This argument was added in version 0.9.9.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">child</span> <span class="o">=</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">child</span><span class="p">)</span>
+        
+        <span class="n">name</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="ow">and</span> <span class="n">child</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">autoIncrementName</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="p">(</span><span class="n">autoIncrementName</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">child</span><span class="o">.</span><span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;autoIncrementName&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)):</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incrementName</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">setName</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Already have child named </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+            
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">treeChangeBlocker</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+                
+            <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">child</span><span class="p">)</span>
+            
+            <span class="n">child</span><span class="o">.</span><span class="n">parentChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigChildAdded</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">sigTreeStateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">treeStateChanged</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">child</span></div>
+        
+<div class="viewcode-block" id="Parameter.removeChild"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.removeChild">[docs]</a>    <span class="k">def</span> <span class="nf">removeChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove a child parameter.&quot;&quot;&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">child</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Parameter </span><span class="si">%s</span><span class="s2"> is not my child; can&#39;t remove.&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">child</span><span class="p">))</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">child</span><span class="p">))</span>
+        <span class="n">child</span><span class="o">.</span><span class="n">parentChanged</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigChildRemoved</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">sigTreeStateChanged</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">treeStateChanged</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">):</span>  <span class="c1">## already disconnected</span>
+            <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Parameter.clearChildren"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.clearChildren">[docs]</a>    <span class="k">def</span> <span class="nf">clearChildren</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove all child parameters.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="p">[:]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeChild</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Parameter.children"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  
+        <span class="sd">&quot;&quot;&quot;Return a list of this parameter&#39;s children.</span>
+<span class="sd">        Warning: this overrides QObject.children</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="p">[:]</span></div>
+    
+<div class="viewcode-block" id="Parameter.hasChildren"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hasChildren">[docs]</a>    <span class="k">def</span> <span class="nf">hasChildren</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return True if this Parameter has children.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="Parameter.parentChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.parentChanged">[docs]</a>    <span class="k">def</span> <span class="nf">parentChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method is called when the parameter&#39;s parent has changed.</span>
+<span class="sd">        It may be useful to extend this method in subclasses.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parent</span> <span class="o">=</span> <span class="n">parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigParentChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Parameter.parent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.parent">[docs]</a>    <span class="k">def</span> <span class="nf">parent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the parent of this parameter.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent</span></div>
+        
+<div class="viewcode-block" id="Parameter.remove"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove this parameter from its parent&#39;s child list&quot;&quot;&quot;</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Cannot remove; no parent.&quot;</span><span class="p">)</span>
+        <span class="n">parent</span><span class="o">.</span><span class="n">removeChild</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigRemoved</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Parameter.incrementName"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.incrementName">[docs]</a>    <span class="k">def</span> <span class="nf">incrementName</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1">## return an unused name by adding a number to the name given</span>
+        <span class="n">base</span><span class="p">,</span> <span class="n">num</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;(.*)(\d*)&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span><span class="p">()</span>
+        <span class="n">numLen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">numLen</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="n">numLen</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">newName</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%%</span><span class="s2">0</span><span class="si">%d</span><span class="s2">d&quot;</span><span class="o">%</span><span class="n">numLen</span><span class="p">)</span> <span class="o">%</span> <span class="n">num</span>
+            <span class="k">if</span> <span class="n">newName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">newName</span>
+            <span class="n">num</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">childs</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">ch</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the value of a child parameter. The name may also be a tuple giving</span>
+<span class="sd">        the path to a sub-parameter::</span>
+<span class="sd">        </span>
+<span class="sd">            value = param[(&#39;child&#39;, &#39;grandchild&#39;)]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">(</span><span class="n">names</span><span class="p">,)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="o">*</span><span class="n">names</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the value of a child parameter. The name may also be a tuple giving</span>
+<span class="sd">        the path to a sub-parameter::</span>
+<span class="sd">        </span>
+<span class="sd">            param[(&#39;child&#39;, &#39;grandchild&#39;)] = value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">(</span><span class="n">names</span><span class="p">,)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="o">*</span><span class="n">names</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Parameter.child"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.child">[docs]</a>    <span class="k">def</span> <span class="nf">child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a child parameter. </span>
+<span class="sd">        Accepts the name of the child or a tuple (path, to, child)</span>
+
+<span class="sd">        Added in version 0.9.9. Ealier versions used the &#39;param&#39; method, which is still</span>
+<span class="sd">        implemented for backward compatibility.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">param</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Parameter </span><span class="si">%s</span><span class="s2"> has no child named </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">param</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="o">*</span><span class="n">names</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">param</span></div>
+        
+<div class="viewcode-block" id="Parameter.param"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.param">[docs]</a>    <span class="k">def</span> <span class="nf">param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">names</span><span class="p">):</span>
+        <span class="c1"># for backward compatibility.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="o">*</span><span class="n">names</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">asUnicode</span><span class="p">(</span><span class="s2">&quot;&lt;</span><span class="si">%s</span><span class="s2"> &#39;</span><span class="si">%s</span><span class="s2">&#39; at 0x</span><span class="si">%x</span><span class="s2">&gt;&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+       
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="c1">## Leaving this undocumented because I might like to remove it in the future..</span>
+        <span class="c1">#print type(self), attr</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;names&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">traceback</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_stack</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: Use of Parameter.subParam is deprecated. Use Parameter.param(name) instead.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+       
+    <span class="k">def</span> <span class="nf">_renameChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1">## Only to be called from Parameter.rename</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="n">name</span>
+
+<div class="viewcode-block" id="Parameter.registerItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.registerItem">[docs]</a>    <span class="k">def</span> <span class="nf">registerItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+        
+<div class="viewcode-block" id="Parameter.hide"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hide">[docs]</a>    <span class="k">def</span> <span class="nf">hide</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hide this parameter. It and its children will no longer be visible in any ParameterTree</span>
+<span class="sd">        widgets it is connected to.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Parameter.show"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.show">[docs]</a>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Show this parameter. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;visible&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigOptionsChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;visible&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="Parameter.treeChangeBlocker"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.treeChangeBlocker">[docs]</a>    <span class="k">def</span> <span class="nf">treeChangeBlocker</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an object that can be used to temporarily block and accumulate</span>
+<span class="sd">        sigTreeStateChanged signals. This is meant to be used when numerous changes are </span>
+<span class="sd">        about to be made to the tree and only one change signal should be</span>
+<span class="sd">        emitted at the end.</span>
+<span class="sd">        </span>
+<span class="sd">        Example::</span>
+
+<span class="sd">            with param.treeChangeBlocker():</span>
+<span class="sd">                param.addChild(...)</span>
+<span class="sd">                param.removeChild(...)</span>
+<span class="sd">                param.setValue(...)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">SignalBlocker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blockTreeChangeSignal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">unblockTreeChangeSignal</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Parameter.blockTreeChangeSignal"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.blockTreeChangeSignal">[docs]</a>    <span class="k">def</span> <span class="nf">blockTreeChangeSignal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Used to temporarily block and accumulate tree change signals.</span>
+<span class="sd">        *You must remember to unblock*, so it is advisable to use treeChangeBlocker() instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blockTreeChangeEmit</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="Parameter.unblockTreeChangeSignal"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.unblockTreeChangeSignal">[docs]</a>    <span class="k">def</span> <span class="nf">unblockTreeChangeSignal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Unblocks enission of sigTreeStateChanged and flushes the changes out through a single signal.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blockTreeChangeEmit</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emitTreeChanges</span><span class="p">()</span></div>
+        
+        
+<div class="viewcode-block" id="Parameter.treeStateChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.treeStateChanged">[docs]</a>    <span class="k">def</span> <span class="nf">treeStateChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">changes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called when the state of any sub-parameter has changed. </span>
+<span class="sd">        </span>
+<span class="sd">        ==============  ================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        param           The immediate child whose tree state has changed.</span>
+<span class="sd">                        note that the change may have originated from a grandchild.</span>
+<span class="sd">        changes         List of tuples describing all changes that have been made</span>
+<span class="sd">                        in this event: (param, changeDescr, data)</span>
+<span class="sd">        ==============  ================================================================</span>
+<span class="sd">                     </span>
+<span class="sd">        This function can be extended to react to tree state changes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">treeStateChanges</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">changes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emitTreeChanges</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="Parameter.emitTreeChanges"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.emitTreeChanges">[docs]</a>    <span class="k">def</span> <span class="nf">emitTreeChanges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">blockTreeChangeEmit</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">changes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">treeStateChanges</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">treeStateChanges</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">changes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sigTreeStateChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">changes</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SignalBlocker"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.Parameter.SignalBlocker">[docs]</a><span class="k">class</span> <span class="nc">SignalBlocker</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enterFn</span><span class="p">,</span> <span class="n">exitFn</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enterFn</span> <span class="o">=</span> <span class="n">enterFn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exitFn</span> <span class="o">=</span> <span class="n">exitFn</span>
+        
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enterFn</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">tb</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exitFn</span><span class="p">()</span></div>
+    
+    
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

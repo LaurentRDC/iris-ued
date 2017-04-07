@@ -1,0 +1,1403 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.parametertree package &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iris.gui.pyqtgraph.pixmaps package" href="iris.gui.pyqtgraph.pixmaps.html" />
+    <link rel="prev" title="iris.gui.pyqtgraph.opengl.items package" href="iris.gui.pyqtgraph.opengl.items.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iris-gui-pyqtgraph-parametertree-package">
+<h1>iris.gui.pyqtgraph.parametertree package<a class="headerlink" href="#iris-gui-pyqtgraph-parametertree-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.parametertree.Parameter">
+<span id="iris-gui-pyqtgraph-parametertree-parameter-module"></span><h2>iris.gui.pyqtgraph.parametertree.Parameter module<a class="headerlink" href="#module-iris.gui.pyqtgraph.parametertree.Parameter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.Parameter.</code><code class="descname">Parameter</code><span class="sig-paren">(</span><em>**opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtCore.QObject</span></code></p>
+<p>A Parameter is the basic unit of data in a parameter tree. Each parameter has
+a name, a type, a value, and several other properties that modify the behavior of the 
+Parameter. Parameters may have parent / child / sibling relationships to construct
+organized hierarchies. Parameters generally do not have any inherent GUI or visual
+interpretation; instead they manage ParameterItem instances which take care of
+display and user interaction.</p>
+<p>Note: It is fairly uncommon to use the Parameter class directly; mostly you 
+will use subclasses which provide specialized type and data handling. The static
+pethod Parameter.create(...) is an easy way to generate instances of these subclasses.</p>
+<p>For more Parameter types, see ParameterTree.parameterTypes module.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="38%" />
+<col width="62%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Signals:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>sigStateChanged(self, change, info)</td>
+<td>Emitted when anything changes about this parameter at
+all.
+The second argument is a string indicating what changed
+(&#8216;value&#8217;, &#8216;childAdded&#8217;, etc..)
+The third argument can be any extra information about
+the change</td>
+</tr>
+<tr class="row-odd"><td>sigTreeStateChanged(self, changes)</td>
+<td>Emitted when any child in the tree changes state
+(but only if monitorChildren() is called)
+the format of <em>changes</em> is [(param, change, info), ...]</td>
+</tr>
+<tr class="row-even"><td>sigValueChanged(self, value)</td>
+<td>Emitted when value is finished changing</td>
+</tr>
+<tr class="row-odd"><td>sigValueChanging(self, value)</td>
+<td>Emitted immediately for all value changes,
+including during editing.</td>
+</tr>
+<tr class="row-even"><td>sigChildAdded(self, child, index)</td>
+<td>Emitted when a child is added</td>
+</tr>
+<tr class="row-odd"><td>sigChildRemoved(self, child)</td>
+<td>Emitted when a child is removed</td>
+</tr>
+<tr class="row-even"><td>sigRemoved(self)</td>
+<td>Emitted when this parameter is removed</td>
+</tr>
+<tr class="row-odd"><td>sigParentChanged(self, parent)</td>
+<td>Emitted when this parameter&#8217;s parent has changed</td>
+</tr>
+<tr class="row-even"><td>sigLimitsChanged(self, limits)</td>
+<td>Emitted when this parameter&#8217;s limits have changed</td>
+</tr>
+<tr class="row-odd"><td>sigDefaultChanged(self, default)</td>
+<td>Emitted when this parameter&#8217;s default value has changed</td>
+</tr>
+<tr class="row-even"><td>sigNameChanged(self, name)</td>
+<td>Emitted when this parameter&#8217;s name has changed</td>
+</tr>
+<tr class="row-odd"><td>sigOptionsChanged(self, opts)</td>
+<td>Emitted when any of this parameter&#8217;s options have changed</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.addChild">
+<code class="descname">addChild</code><span class="sig-paren">(</span><em>child</em>, <em>autoIncrementName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.addChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.addChild" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add another parameter to the end of this parameter&#8217;s child list.</p>
+<p>See insertChild() for a description of the <em>autoIncrementName</em> 
+argument.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.addChildren">
+<code class="descname">addChildren</code><span class="sig-paren">(</span><em>children</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.addChildren"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.addChildren" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a list or dict of children to this parameter. This method calls
+addChild once for each value in <em>children</em>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.blockTreeChangeSignal">
+<code class="descname">blockTreeChangeSignal</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.blockTreeChangeSignal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.blockTreeChangeSignal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to temporarily block and accumulate tree change signals.
+<em>You must remember to unblock</em>, so it is advisable to use treeChangeBlocker() instead.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.child">
+<code class="descname">child</code><span class="sig-paren">(</span><em>*names</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.child"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.child" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a child parameter. 
+Accepts the name of the child or a tuple (path, to, child)</p>
+<p>Added in version 0.9.9. Ealier versions used the &#8216;param&#8217; method, which is still
+implemented for backward compatibility.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.childPath">
+<code class="descname">childPath</code><span class="sig-paren">(</span><em>child</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.childPath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.childPath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the path of parameter names from self to child.
+If child is not a (grand)child of self, return None.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.children">
+<code class="descname">children</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.children" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of this parameter&#8217;s children.
+Warning: this overrides QObject.children</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.clearChildren">
+<code class="descname">clearChildren</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.clearChildren"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.clearChildren" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all child parameters.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.create">
+<em class="property">static </em><code class="descname">create</code><span class="sig-paren">(</span><em>**opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static method that creates a new Parameter (or subclass) instance using 
+opts[&#8216;type&#8217;] to select the appropriate class.</p>
+<p>All options are passed directly to the new Parameter&#8217;s __init__ method.
+Use registerParameterType() to add new class types.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.defaultValue">
+<code class="descname">defaultValue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.defaultValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.defaultValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the default value for this parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.emitStateChanged">
+<code class="descname">emitStateChanged</code><span class="sig-paren">(</span><em>changeDesc</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.emitStateChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.emitStateChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.emitTreeChanges">
+<code class="descname">emitTreeChanges</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.emitTreeChanges"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.emitTreeChanges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.getValues">
+<code class="descname">getValues</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.getValues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.getValues" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tree of all values that are children of this parameter</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hasChildren">
+<code class="descname">hasChildren</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.hasChildren"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hasChildren" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if this Parameter has children.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hasDefault">
+<code class="descname">hasDefault</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.hasDefault"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hasDefault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if this parameter has a default value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hide">
+<code class="descname">hide</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.hide"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.hide" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hide this parameter. It and its children will no longer be visible in any ParameterTree
+widgets it is connected to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.incrementName">
+<code class="descname">incrementName</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.incrementName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.incrementName" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.insertChild">
+<code class="descname">insertChild</code><span class="sig-paren">(</span><em>pos</em>, <em>child</em>, <em>autoIncrementName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.insertChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.insertChild" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert a new child at pos.
+If pos is a Parameter, then insert at the position of that Parameter.
+If child is a dict, then a parameter is constructed using
+<code class="xref py py-func docutils literal"><span class="pre">Parameter.create</span></code>.</p>
+<p>By default, the child&#8217;s &#8216;autoIncrementName&#8217; option determines whether
+the name will be adjusted to avoid prior name collisions. This 
+behavior may be overridden by specifying the <em>autoIncrementName</em> 
+argument. This argument was added in version 0.9.9.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.isType">
+<code class="descname">isType</code><span class="sig-paren">(</span><em>typ</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.isType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.isType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if this parameter type matches the name <em>typ</em>.
+This can occur either of two ways:</p>
+<ul class="simple">
+<li>If self.type() == <em>typ</em></li>
+<li>If this parameter&#8217;s class is registered with the name <em>typ</em></li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.makeTreeItem">
+<code class="descname">makeTreeItem</code><span class="sig-paren">(</span><em>depth</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.makeTreeItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.makeTreeItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a TreeWidgetItem suitable for displaying/controlling the content of 
+this parameter. This is called automatically when a ParameterTree attempts
+to display this Parameter.
+Most subclasses will want to override this function.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.name">
+<code class="descname">name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the name of this Parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.param">
+<code class="descname">param</code><span class="sig-paren">(</span><em>*names</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.parent">
+<code class="descname">parent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.parent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the parent of this parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.parentChanged">
+<code class="descname">parentChanged</code><span class="sig-paren">(</span><em>parent</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.parentChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.parentChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method is called when the parameter&#8217;s parent has changed.
+It may be useful to extend this method in subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.readonly">
+<code class="descname">readonly</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.readonly"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.readonly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if this parameter is read-only. (this is the opposite of writable())</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.registerItem">
+<code class="descname">registerItem</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.registerItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.registerItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.remove">
+<code class="descname">remove</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove this parameter from its parent&#8217;s child list</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.removeChild">
+<code class="descname">removeChild</code><span class="sig-paren">(</span><em>child</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.removeChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.removeChild" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a child parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.restoreState">
+<code class="descname">restoreState</code><span class="sig-paren">(</span><em>state</em>, <em>recursive=True</em>, <em>addChildren=True</em>, <em>removeChildren=True</em>, <em>blockSignals=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.restoreState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.restoreState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restore the state of this parameter and its children from a structure generated using saveState()
+If recursive is True, then attempt to restore the state of child parameters as well.
+If addChildren is True, then any children which are referenced in the state object will be
+created if they do not already exist.
+If removeChildren is True, then any children which are not referenced in the state object will 
+be removed.
+If blockSignals is True, no signals will be emitted until the tree has been completely restored. 
+This prevents signal handlers from responding to a partially-rebuilt network.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.saveState">
+<code class="descname">saveState</code><span class="sig-paren">(</span><em>filter=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.saveState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.saveState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a structure representing the entire state of the parameter tree.
+The tree state may be restored from this structure using restoreState().</p>
+<p>If <em>filter</em> is set to &#8216;user&#8217;, then only user-settable data will be included in the
+returned state.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setDefault">
+<code class="descname">setDefault</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.setDefault"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setDefault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the default value for this parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setLimits">
+<code class="descname">setLimits</code><span class="sig-paren">(</span><em>limits</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.setLimits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setLimits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set limits on the acceptable values for this parameter. 
+The format of limits depends on the type of the parameter and
+some parameters do not make use of limits at all.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setName">
+<code class="descname">setName</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.setName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attempt to change the name of this parameter; return the actual name. 
+(The parameter may reject the name change or automatically pick a different name)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setOpts">
+<code class="descname">setOpts</code><span class="sig-paren">(</span><em>**opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.setOpts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setOpts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set any arbitrary options on this parameter.
+The exact behavior of this function will depend on the parameter type, but
+most parameters will accept a common set of options: value, name, limits,
+default, readonly, removable, renamable, visible, enabled, and expanded.</p>
+<p>See <code class="xref py py-func docutils literal"><span class="pre">Parameter.__init__</span></code>
+for more information on default options.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setReadonly">
+<code class="descname">setReadonly</code><span class="sig-paren">(</span><em>readonly=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.setReadonly"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setReadonly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set whether this Parameter&#8217;s value may be edited by the user
+(this is the opposite of setWritable()).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setToDefault">
+<code class="descname">setToDefault</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.setToDefault"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setToDefault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set this parameter&#8217;s value to the default.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setValue">
+<code class="descname">setValue</code><span class="sig-paren">(</span><em>value</em>, <em>blockSignal=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.setValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the value of this Parameter; return the actual value that was set.
+(this may be different from the value that was requested)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setWritable">
+<code class="descname">setWritable</code><span class="sig-paren">(</span><em>writable=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.setWritable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.setWritable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set whether this Parameter should be editable by the user. (This is 
+exactly the opposite of setReadonly).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.show">
+<code class="descname">show</code><span class="sig-paren">(</span><em>s=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show this parameter.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigChildAdded">
+<code class="descname">sigChildAdded</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigChildAdded" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigChildRemoved">
+<code class="descname">sigChildRemoved</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigChildRemoved" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigDefaultChanged">
+<code class="descname">sigDefaultChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigDefaultChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigLimitsChanged">
+<code class="descname">sigLimitsChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigLimitsChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigNameChanged">
+<code class="descname">sigNameChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigNameChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigOptionsChanged">
+<code class="descname">sigOptionsChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigOptionsChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigParentChanged">
+<code class="descname">sigParentChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigParentChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigRemoved">
+<code class="descname">sigRemoved</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigRemoved" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigStateChanged">
+<code class="descname">sigStateChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigStateChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigTreeStateChanged">
+<code class="descname">sigTreeStateChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigTreeStateChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigValueChanged">
+<code class="descname">sigValueChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigValueChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigValueChanging">
+<code class="descname">sigValueChanging</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.sigValueChanging" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.treeChangeBlocker">
+<code class="descname">treeChangeBlocker</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.treeChangeBlocker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.treeChangeBlocker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an object that can be used to temporarily block and accumulate
+sigTreeStateChanged signals. This is meant to be used when numerous changes are 
+about to be made to the tree and only one change signal should be
+emitted at the end.</p>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">param</span><span class="o">.</span><span class="n">treeChangeBlocker</span><span class="p">():</span>
+    <span class="n">param</span><span class="o">.</span><span class="n">addChild</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="n">param</span><span class="o">.</span><span class="n">removeChild</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="n">param</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.treeStateChanged">
+<code class="descname">treeStateChanged</code><span class="sig-paren">(</span><em>param</em>, <em>changes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.treeStateChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.treeStateChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the state of any sub-parameter has changed.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="82%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Arguments:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>param</td>
+<td>The immediate child whose tree state has changed.
+note that the change may have originated from a grandchild.</td>
+</tr>
+<tr class="row-odd"><td>changes</td>
+<td>List of tuples describing all changes that have been made
+in this event: (param, changeDescr, data)</td>
+</tr>
+</tbody>
+</table>
+<p>This function can be extended to react to tree state changes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.type">
+<code class="descname">type</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the type string for this Parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.unblockTreeChangeSignal">
+<code class="descname">unblockTreeChangeSignal</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.unblockTreeChangeSignal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.unblockTreeChangeSignal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unblocks enission of sigTreeStateChanged and flushes the changes out through a single signal.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.value">
+<code class="descname">value</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the value of this Parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.valueIsDefault">
+<code class="descname">valueIsDefault</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.valueIsDefault"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.valueIsDefault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if this parameter&#8217;s value is equal to the default value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.Parameter.writable">
+<code class="descname">writable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#Parameter.writable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter.writable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if this parameter&#8217;s value can be changed by the user.
+Note that the value of the parameter can <em>always</em> be changed by
+calling setValue().</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.SignalBlocker">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.Parameter.</code><code class="descname">SignalBlocker</code><span class="sig-paren">(</span><em>enterFn</em>, <em>exitFn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#SignalBlocker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.SignalBlocker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iris.gui.pyqtgraph.parametertree.Parameter.registerParameterType">
+<code class="descclassname">iris.gui.pyqtgraph.parametertree.Parameter.</code><code class="descname">registerParameterType</code><span class="sig-paren">(</span><em>name</em>, <em>cls</em>, <em>override=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/Parameter.html#registerParameterType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.Parameter.registerParameterType" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.parametertree.ParameterItem">
+<span id="iris-gui-pyqtgraph-parametertree-parameteritem-module"></span><h2>iris.gui.pyqtgraph.parametertree.ParameterItem module<a class="headerlink" href="#module-iris.gui.pyqtgraph.parametertree.ParameterItem" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.ParameterItem.</code><code class="descname">ParameterItem</code><span class="sig-paren">(</span><em>param</em>, <em>depth=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QTreeWidgetItem</span></code></p>
+<p>Abstract ParameterTree item. 
+Used to represent the state of a Parameter from within a ParameterTree.</p>
+<ul class="simple">
+<li>Sets first column of item to name</li>
+<li>generates context menu if item is renamable or removable</li>
+<li>handles child added / removed events</li>
+<li>provides virtual functions for handling changes from parameter</li>
+</ul>
+<p>For more ParameterItem types, see ParameterTree.parameterTypes module.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.childAdded">
+<code class="descname">childAdded</code><span class="sig-paren">(</span><em>param</em>, <em>child</em>, <em>pos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.childAdded"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.childAdded" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.childRemoved">
+<code class="descname">childRemoved</code><span class="sig-paren">(</span><em>param</em>, <em>child</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.childRemoved"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.childRemoved" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.columnChangedEvent">
+<code class="descname">columnChangedEvent</code><span class="sig-paren">(</span><em>col</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.columnChangedEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.columnChangedEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the text in a column has been edited (or otherwise changed).
+By default, we only use changes to column 0 to rename the parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.contextMenuEvent">
+<code class="descname">contextMenuEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.contextMenuEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.contextMenuEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.defaultChanged">
+<code class="descname">defaultChanged</code><span class="sig-paren">(</span><em>param</em>, <em>default</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.defaultChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.defaultChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the parameter&#8217;s default value has changed</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.editName">
+<code class="descname">editName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.editName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.editName" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.focusNext">
+<code class="descname">focusNext</code><span class="sig-paren">(</span><em>forward=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.focusNext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.focusNext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give focus to the next (or previous) focusable item in the parameter tree</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.isFocusable">
+<code class="descname">isFocusable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.isFocusable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.isFocusable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if this item should be included in the tab-focus order</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.limitsChanged">
+<code class="descname">limitsChanged</code><span class="sig-paren">(</span><em>param</em>, <em>limits</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.limitsChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.limitsChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the parameter&#8217;s limits have changed</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.nameChanged">
+<code class="descname">nameChanged</code><span class="sig-paren">(</span><em>param</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.nameChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.nameChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.optsChanged">
+<code class="descname">optsChanged</code><span class="sig-paren">(</span><em>param</em>, <em>opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.optsChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.optsChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when any options are changed that are not
+name, value, default, or limits</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.parentChanged">
+<code class="descname">parentChanged</code><span class="sig-paren">(</span><em>param</em>, <em>parent</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.parentChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.parentChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.requestRemove">
+<code class="descname">requestRemove</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.requestRemove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.requestRemove" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.selected">
+<code class="descname">selected</code><span class="sig-paren">(</span><em>sel</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.selected"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.selected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when this item has been selected (sel=True) OR deselected (sel=False)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.setFocus">
+<code class="descname">setFocus</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.setFocus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.setFocus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give input focus to this item.
+Can be reimplemented to display editor widgets, etc.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.treeWidgetChanged">
+<code class="descname">treeWidgetChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.treeWidgetChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.treeWidgetChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when this item is added or removed from a tree.
+Expansion, visibility, and column widgets must all be configured AFTER 
+the item is added to a tree, not during __init__.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.valueChanged">
+<code class="descname">valueChanged</code><span class="sig-paren">(</span><em>param</em>, <em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterItem.html#ParameterItem.valueChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem.valueChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.parametertree.ParameterSystem">
+<span id="iris-gui-pyqtgraph-parametertree-parametersystem-module"></span><h2>iris.gui.pyqtgraph.parametertree.ParameterSystem module<a class="headerlink" href="#module-iris.gui.pyqtgraph.parametertree.ParameterSystem" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.ParameterSystem.</code><code class="descname">ParameterSystem</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterSystem.html#ParameterSystem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter" title="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter</span></code></a></p>
+<p>ParameterSystem is a subclass of GroupParameter that manages a tree of 
+sub-parameters with a set of interdependencies&#8211;changing any one parameter
+may affect other parameters in the system.</p>
+<p>See parametertree/SystemSolver for more information.</p>
+<p>NOTE: This API is experimental and may change substantially across minor 
+version numbers.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.setSystem">
+<code class="descname">setSystem</code><span class="sig-paren">(</span><em>sys</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterSystem.html#ParameterSystem.setSystem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.setSystem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateAllParams">
+<code class="descname">updateAllParams</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterSystem.html#ParameterSystem.updateAllParams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateAllParams" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateParamState">
+<code class="descname">updateParamState</code><span class="sig-paren">(</span><em>param</em>, <em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterSystem.html#ParameterSystem.updateParamState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateParamState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateSystem">
+<code class="descname">updateSystem</code><span class="sig-paren">(</span><em>param</em>, <em>changes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterSystem.html#ParameterSystem.updateSystem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateSystem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.parametertree.ParameterTree">
+<span id="iris-gui-pyqtgraph-parametertree-parametertree-module"></span><h2>iris.gui.pyqtgraph.parametertree.ParameterTree module<a class="headerlink" href="#module-iris.gui.pyqtgraph.parametertree.ParameterTree" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.ParameterTree.</code><code class="descname">ParameterTree</code><span class="sig-paren">(</span><em>parent=None</em>, <em>showHeader=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget" title="iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.widgets.TreeWidget.TreeWidget</span></code></a></p>
+<p>Widget used to display or control data from a hierarchy of Parameters</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.addParameters">
+<code class="descname">addParameters</code><span class="sig-paren">(</span><em>param</em>, <em>root=None</em>, <em>depth=0</em>, <em>showTop=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.addParameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.addParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds one top-level <code class="xref py py-class docutils literal"><span class="pre">Parameter</span></code>
+to the view.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Arguments:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>param</td>
+<td>The <code class="xref py py-class docutils literal"><span class="pre">Parameter</span></code>
+to add.</td>
+</tr>
+<tr class="row-odd"><td>root</td>
+<td>The item within the tree to which <em>param</em> should be added.
+By default, <em>param</em> is added as a top-level item.</td>
+</tr>
+<tr class="row-even"><td>showTop</td>
+<td>If False, then <em>param</em> will be hidden, and only its
+children will be visible in the tree.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all parameters from the tree.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.contextMenuEvent">
+<code class="descname">contextMenuEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.contextMenuEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.contextMenuEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.focusNext">
+<code class="descname">focusNext</code><span class="sig-paren">(</span><em>item</em>, <em>forward=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.focusNext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.focusNext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give input focus to the next (or previous) item after <em>item</em></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.focusPrevious">
+<code class="descname">focusPrevious</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.focusPrevious"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.focusPrevious" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.itemChangedEvent">
+<code class="descname">itemChangedEvent</code><span class="sig-paren">(</span><em>item</em>, <em>col</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.itemChangedEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.itemChangedEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.nextFocusableChild">
+<code class="descname">nextFocusableChild</code><span class="sig-paren">(</span><em>root</em>, <em>startItem=None</em>, <em>forward=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.nextFocusableChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.nextFocusableChild" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.selectionChanged">
+<code class="descname">selectionChanged</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.selectionChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.selectionChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.setParameters">
+<code class="descname">setParameters</code><span class="sig-paren">(</span><em>param</em>, <em>showTop=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.setParameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.setParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the top-level <code class="xref py py-class docutils literal"><span class="pre">Parameter</span></code>
+to be displayed in this ParameterTree.</p>
+<p>If <em>showTop</em> is False, then the top-level parameter is hidden and only 
+its children will be visible. This is a convenience method equivalent 
+to:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tree</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+<span class="n">tree</span><span class="o">.</span><span class="n">addParameters</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">showTop</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.wheelEvent">
+<code class="descname">wheelEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/ParameterTree.html#ParameterTree.wheelEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.ParameterTree.ParameterTree.wheelEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.parametertree.SystemSolver">
+<span id="iris-gui-pyqtgraph-parametertree-systemsolver-module"></span><h2>iris.gui.pyqtgraph.parametertree.SystemSolver module<a class="headerlink" href="#module-iris.gui.pyqtgraph.parametertree.SystemSolver" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.SystemSolver.</code><code class="descname">SystemSolver</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>This abstract class is used to formalize and manage user interaction with a 
+complex system of equations (related to &#8220;constraint satisfaction problems&#8221;).
+It is often the case that devices must be controlled
+through a large number of free variables, and interactions between these 
+variables make the system difficult to manage and conceptualize as a user
+interface. This class does _not_ attempt to numerically solve the system
+of equations. Rather, it provides a framework for subdividing the system
+into manageable pieces and specifying closed-form solutions to these small 
+pieces.</p>
+<p>For an example, see the simple Camera class below.</p>
+<p>Theory of operation: Conceptualize the system as 1) a set of variables
+whose values may be either user-specified or automatically generated, and 
+2) a set of functions that define <em>how</em> each variable should be generated. 
+When a variable is accessed (as an instance attribute), the solver first
+checks to see if it already has a value (either user-supplied, or cached
+from a previous calculation). If it does not, then the solver calls a 
+method on itself (the method must be named <cite>_variableName</cite>) that will
+either return the calculated value (which usually involves acccessing
+other variables in the system), or raise RuntimeError if it is unable to
+calculate the value (usually because the user has not provided sufficient
+input to fully constrain the system).</p>
+<p>Each method that calculates a variable value may include multiple 
+try/except blocks, so that if one method generates a RuntimeError, it may 
+fall back on others. 
+In this way, the system may be solved by recursively searching the tree of 
+possible relationships between variables. This allows the user flexibility
+in deciding which variables are the most important to specify, while 
+avoiding the apparent combinatorial explosion of calculation pathways
+that must be considered by the developer.</p>
+<p>Solved values are cached for efficiency, and automatically cleared when 
+a state change invalidates the cache. The rules for this are simple: any
+time a value is set, it invalidates the cache <em>unless</em> the previous value
+was None (which indicates that no other variable has yet requested that 
+value). More complex cache management may be defined in subclasses.</p>
+<p>Subclasses must define:</p>
+<ol class="arabic">
+<li><p class="first">The <em>defaultState</em> class attribute: This is a dict containing a 
+description of the variables in the system&#8211;their default values,
+data types, and the ways they can be constrained. The format is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="n">name</span><span class="p">:</span> <span class="p">[</span><span class="n">value</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">allowed_constraints</span><span class="p">],</span> <span class="o">...</span><span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><em>value</em> is the default value. May be None if it has not been specified
+yet.</li>
+<li><em>type</em> may be float, int, bool, np.ndarray, ...</li>
+<li><dl class="first docutils">
+<dt><em>constraint</em> may be None, single value, or (min, max)</dt>
+<dd><ul class="first last">
+<li>None indicates that the value is not constrained&#8211;it may be 
+automatically generated if the value is requested.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><em>allowed_constraints</em> is a string composed of (n)one, (f)ixed, and (r)ange.</li>
+</ul>
+<p>Note: do not put mutable objects inside defaultState!</p>
+</li>
+<li><p class="first">For each variable that may be automatically determined, a method must 
+be defined with the name <cite>_variableName</cite>. This method may either return
+the</p>
+</li>
+</ol>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.check_constraint">
+<code class="descname">check_constraint</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver.check_constraint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.check_constraint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.defaultState">
+<code class="descname">defaultState</code><em class="property"> = OrderedDict()</em><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.defaultState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the value for parameter <em>name</em>.</p>
+<p>If the value has not been specified, then attempt to compute it from
+other interacting parameters.</p>
+<p>If no value can be determined, then raise RuntimeError.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset all variables in the solver to their default state.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.resetUnfixed">
+<code class="descname">resetUnfixed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver.resetUnfixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.resetUnfixed" title="Permalink to this definition">¶</a></dt>
+<dd><p>For any variable that does not have a fixed value, reset
+its value to None.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.restoreState">
+<code class="descname">restoreState</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver.restoreState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.restoreState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restore the state of all values and constraints in the solver.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.saveState">
+<code class="descname">saveState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver.saveState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.saveState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a serializable description of the solver&#8217;s current state.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.set">
+<code class="descname">set</code><span class="sig-paren">(</span><em>name</em>, <em>value=None</em>, <em>constraint=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver.set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a variable <em>name</em> to <em>value</em>. The actual set value is returned (in
+some cases, the value may be cast into another type).</p>
+<p>If <em>value</em> is None, then the value is left to be determined in the 
+future. At any time, the value may be re-assigned arbitrarily unless
+a constraint is given.</p>
+<p>If <em>constraint</em> is True (the default), then supplying a value that 
+violates a previously specified constraint will raise an exception.</p>
+<p>If <em>constraint</em> is &#8216;fixed&#8217;, then the value is set (if provided) and
+the variable will not be updated automatically in the future.</p>
+<p>If <em>constraint</em> is a tuple, then the value is constrained to be within the 
+given (min, max). Either constraint may be None to disable 
+it. In some cases, a constraint cannot be satisfied automatically,
+and the user will be forced to resolve the constraint manually.</p>
+<p>If <em>constraint</em> is None, then any constraints are removed for the variable.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.solve">
+<code class="descname">solve</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/SystemSolver.html#SystemSolver.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.SystemSolver.SystemSolver.solve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.parametertree.parameterTypes">
+<span id="iris-gui-pyqtgraph-parametertree-parametertypes-module"></span><h2>iris.gui.pyqtgraph.parametertree.parameterTypes module<a class="headerlink" href="#module-iris.gui.pyqtgraph.parametertree.parameterTypes" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">ActionParameter</code><span class="sig-paren">(</span><em>**opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ActionParameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter" title="iris.gui.pyqtgraph.parametertree.Parameter.Parameter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.Parameter.Parameter</span></code></a></p>
+<p>Used for displaying a button within the tree.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameter.activate">
+<code class="descname">activate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ActionParameter.activate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameter.activate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameter.itemClass">
+<code class="descname">itemClass</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameter.itemClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem" title="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem"><code class="xref py py-class docutils literal"><span class="pre">ActionParameterItem</span></code></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameter.sigActivated">
+<code class="descname">sigActivated</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameter.sigActivated" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">ActionParameterItem</code><span class="sig-paren">(</span><em>param</em>, <em>depth</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ActionParameterItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem" title="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem</span></code></a></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem.buttonClicked">
+<code class="descname">buttonClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ActionParameterItem.buttonClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem.buttonClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem.paramRenamed">
+<code class="descname">paramRenamed</code><span class="sig-paren">(</span><em>param</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ActionParameterItem.paramRenamed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem.paramRenamed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem.treeWidgetChanged">
+<code class="descname">treeWidgetChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ActionParameterItem.treeWidgetChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ActionParameterItem.treeWidgetChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.EventProxy">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">EventProxy</code><span class="sig-paren">(</span><em>qobj</em>, <em>callback</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#EventProxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.EventProxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtCore.QObject</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.EventProxy.eventFilter">
+<code class="descname">eventFilter</code><span class="sig-paren">(</span><em>obj</em>, <em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#EventProxy.eventFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.EventProxy.eventFilter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">GroupParameter</code><span class="sig-paren">(</span><em>**opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter" title="iris.gui.pyqtgraph.parametertree.Parameter.Parameter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.Parameter.Parameter</span></code></a></p>
+<p>Group parameters are used mainly as a generic parent item that holds (and groups!) a set
+of child parameters.</p>
+<p>It also provides a simple mechanism for displaying a button or combo
+that can be used to add new parameters to the group. To enable this, the group 
+must be initialized with the &#8216;addText&#8217; option (the text will be displayed on
+a button which, when clicked, will cause addNew() to be called). If the &#8216;addList&#8217;
+option is specified as well, then a dropdown-list of addable items will be displayed
+instead of a button.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter.addNew">
+<code class="descname">addNew</code><span class="sig-paren">(</span><em>typ=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameter.addNew"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter.addNew" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method is called when the user has requested to add a new item to the group.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter.itemClass">
+<code class="descname">itemClass</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter.itemClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem" title="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem"><code class="xref py py-class docutils literal"><span class="pre">GroupParameterItem</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter.setAddList">
+<code class="descname">setAddList</code><span class="sig-paren">(</span><em>vals</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameter.setAddList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameter.setAddList" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the list of options available for the user to add to the group.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">GroupParameterItem</code><span class="sig-paren">(</span><em>param</em>, <em>depth</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameterItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem" title="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem</span></code></a></p>
+<p>Group parameters are used mainly as a generic parent item that holds (and groups!) a set
+of child parameters. It also provides a simple mechanism for displaying a button or combo
+that can be used to add new parameters to the group.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.addChanged">
+<code class="descname">addChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameterItem.addChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.addChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when &#8220;add new&#8221; combo is changed
+The parameter MUST have an &#8216;addNew&#8217; method defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.addChild">
+<code class="descname">addChild</code><span class="sig-paren">(</span><em>child</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameterItem.addChild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.addChild" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.addClicked">
+<code class="descname">addClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameterItem.addClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.addClicked" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when &#8220;add new&#8221; button is clicked
+The parameter MUST have an &#8216;addNew&#8217; method defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.optsChanged">
+<code class="descname">optsChanged</code><span class="sig-paren">(</span><em>param</em>, <em>changed</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameterItem.optsChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.optsChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.treeWidgetChanged">
+<code class="descname">treeWidgetChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameterItem.treeWidgetChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.treeWidgetChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.updateAddList">
+<code class="descname">updateAddList</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameterItem.updateAddList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.updateAddList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.updateDepth">
+<code class="descname">updateDepth</code><span class="sig-paren">(</span><em>depth</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#GroupParameterItem.updateDepth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.GroupParameterItem.updateDepth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">ListParameter</code><span class="sig-paren">(</span><em>**opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ListParameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter" title="iris.gui.pyqtgraph.parametertree.Parameter.Parameter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.Parameter.Parameter</span></code></a></p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameter.itemClass">
+<code class="descname">itemClass</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameter.itemClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem" title="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem"><code class="xref py py-class docutils literal"><span class="pre">ListParameterItem</span></code></a></p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameter.mapping">
+<em class="property">static </em><code class="descname">mapping</code><span class="sig-paren">(</span><em>limits</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ListParameter.mapping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameter.mapping" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameter.setLimits">
+<code class="descname">setLimits</code><span class="sig-paren">(</span><em>limits</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ListParameter.setLimits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameter.setLimits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">ListParameterItem</code><span class="sig-paren">(</span><em>param</em>, <em>depth</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ListParameterItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem" title="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem</span></code></a></p>
+<p>WidgetParameterItem subclass providing comboBox that lets the user select from a list of options.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem.limitsChanged">
+<code class="descname">limitsChanged</code><span class="sig-paren">(</span><em>param</em>, <em>limits</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ListParameterItem.limitsChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem.limitsChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem.makeWidget">
+<code class="descname">makeWidget</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ListParameterItem.makeWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem.makeWidget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem.setValue">
+<code class="descname">setValue</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ListParameterItem.setValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem.setValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem.value">
+<code class="descname">value</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#ListParameterItem.value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.ListParameterItem.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.SimpleParameter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">SimpleParameter</code><span class="sig-paren">(</span><em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#SimpleParameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.SimpleParameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter" title="iris.gui.pyqtgraph.parametertree.Parameter.Parameter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.Parameter.Parameter</span></code></a></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.SimpleParameter.colorValue">
+<code class="descname">colorValue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#SimpleParameter.colorValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.SimpleParameter.colorValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.SimpleParameter.itemClass">
+<code class="descname">itemClass</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.SimpleParameter.itemClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem" title="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem"><code class="xref py py-class docutils literal"><span class="pre">WidgetParameterItem</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.SimpleParameter.saveColorState">
+<code class="descname">saveColorState</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#SimpleParameter.saveColorState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.SimpleParameter.saveColorState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameter">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">TextParameter</code><span class="sig-paren">(</span><em>**opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#TextParameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.Parameter.Parameter" title="iris.gui.pyqtgraph.parametertree.Parameter.Parameter"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.Parameter.Parameter</span></code></a></p>
+<p>Editable string; displayed as large text box in the tree.</p>
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameter.itemClass">
+<code class="descname">itemClass</code><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameter.itemClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameterItem" title="iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameterItem"><code class="xref py py-class docutils literal"><span class="pre">TextParameterItem</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameterItem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">TextParameterItem</code><span class="sig-paren">(</span><em>param</em>, <em>depth</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#TextParameterItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameterItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem" title="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem</span></code></a></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameterItem.makeWidget">
+<code class="descname">makeWidget</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#TextParameterItem.makeWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameterItem.makeWidget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameterItem.treeWidgetChanged">
+<code class="descname">treeWidgetChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#TextParameterItem.treeWidgetChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.TextParameterItem.treeWidgetChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.parametertree.parameterTypes.</code><code class="descname">WidgetParameterItem</code><span class="sig-paren">(</span><em>param</em>, <em>depth</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem" title="iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.parametertree.ParameterItem.ParameterItem</span></code></a></p>
+<p>ParameterTree item with:</p>
+<ul class="simple">
+<li>label in second column for displaying value</li>
+<li>simple widget for editing value (displayed instead of label when item is selected)</li>
+<li>button that resets value to default</li>
+</ul>
+<table border="1" class="docutils">
+<colgroup>
+<col width="30%" />
+<col width="70%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Registered Types:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>int</td>
+<td>Displays a <code class="xref py py-class docutils literal"><span class="pre">SpinBox</span></code> in integer
+mode.</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>Displays a <code class="xref py py-class docutils literal"><span class="pre">SpinBox</span></code>.</td>
+</tr>
+<tr class="row-even"><td>bool</td>
+<td>Displays a QCheckBox</td>
+</tr>
+<tr class="row-odd"><td>str</td>
+<td>Displays a QLineEdit</td>
+</tr>
+<tr class="row-even"><td>color</td>
+<td>Displays a <code class="xref py py-class docutils literal"><span class="pre">ColorButton</span></code></td>
+</tr>
+<tr class="row-odd"><td>colormap</td>
+<td>Displays a <code class="xref py py-class docutils literal"><span class="pre">GradientWidget</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>This class can be subclassed by overriding makeWidget() to provide a custom widget.</p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.defaultChanged">
+<code class="descname">defaultChanged</code><span class="sig-paren">(</span><em>param</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.defaultChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.defaultChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.defaultClicked">
+<code class="descname">defaultClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.defaultClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.defaultClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.hideEditor">
+<code class="descname">hideEditor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.hideEditor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.hideEditor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.isFocusable">
+<code class="descname">isFocusable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.isFocusable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.isFocusable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.limitsChanged">
+<code class="descname">limitsChanged</code><span class="sig-paren">(</span><em>param</em>, <em>limits</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.limitsChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.limitsChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the parameter&#8217;s limits have changed</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.makeWidget">
+<code class="descname">makeWidget</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.makeWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.makeWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a single widget that should be placed in the second tree column.
+The widget must be given three attributes:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="14%" />
+<col width="86%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>sigChanged</td>
+<td>a signal that is emitted when the widget&#8217;s value is changed</td>
+</tr>
+<tr class="row-even"><td>value</td>
+<td>a function that returns the value</td>
+</tr>
+<tr class="row-odd"><td>setValue</td>
+<td>a function that sets the value</td>
+</tr>
+</tbody>
+</table>
+<p>This is a good function to override in subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.optsChanged">
+<code class="descname">optsChanged</code><span class="sig-paren">(</span><em>param</em>, <em>opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.optsChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.optsChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when any options are changed that are not
+name, value, default, or limits</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.selected">
+<code class="descname">selected</code><span class="sig-paren">(</span><em>sel</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.selected"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.selected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when this item has been selected (sel=True) OR deselected (sel=False)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.setFocus">
+<code class="descname">setFocus</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.setFocus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.setFocus" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.showEditor">
+<code class="descname">showEditor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.showEditor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.showEditor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.treeWidgetChanged">
+<code class="descname">treeWidgetChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.treeWidgetChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.treeWidgetChanged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when this item is added or removed from a tree.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.updateDefaultBtn">
+<code class="descname">updateDefaultBtn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.updateDefaultBtn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.updateDefaultBtn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.updateDisplayLabel">
+<code class="descname">updateDisplayLabel</code><span class="sig-paren">(</span><em>value=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.updateDisplayLabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.updateDisplayLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the display label to reflect the value of the parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.valueChanged">
+<code class="descname">valueChanged</code><span class="sig-paren">(</span><em>param</em>, <em>val</em>, <em>force=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.valueChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.valueChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.widgetEventFilter">
+<code class="descname">widgetEventFilter</code><span class="sig-paren">(</span><em>obj</em>, <em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.widgetEventFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.widgetEventFilter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.widgetValueChanged">
+<code class="descname">widgetValueChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.widgetValueChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.widgetValueChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.widgetValueChanging">
+<code class="descname">widgetValueChanging</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/parametertree/parameterTypes.html#WidgetParameterItem.widgetValueChanging"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.parametertree.parameterTypes.WidgetParameterItem.widgetValueChanging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the widget&#8217;s value is changing, but not finalized.
+For example: editing text before pressing enter or changing focus.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.parametertree">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-iris.gui.pyqtgraph.parametertree" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">iris.gui.pyqtgraph.parametertree package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.parametertree.Parameter">iris.gui.pyqtgraph.parametertree.Parameter module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.parametertree.ParameterItem">iris.gui.pyqtgraph.parametertree.ParameterItem module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.parametertree.ParameterSystem">iris.gui.pyqtgraph.parametertree.ParameterSystem module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.parametertree.ParameterTree">iris.gui.pyqtgraph.parametertree.ParameterTree module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.parametertree.SystemSolver">iris.gui.pyqtgraph.parametertree.SystemSolver module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.parametertree.parameterTypes">iris.gui.pyqtgraph.parametertree.parameterTypes module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.parametertree">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="iris.html">iris package</a><ul>
+  <li><a href="iris.gui.html">iris.gui package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.html">iris.gui.pyqtgraph package</a><ul>
+      <li>Previous: <a href="iris.gui.pyqtgraph.opengl.items.html" title="previous chapter">iris.gui.pyqtgraph.opengl.items package</a></li>
+      <li>Next: <a href="iris.gui.pyqtgraph.pixmaps.html" title="next chapter">iris.gui.pyqtgraph.pixmaps package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/iris.gui.pyqtgraph.parametertree.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/iris.gui.pyqtgraph.parametertree.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,800 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.PlotItem package &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iris.gui.pyqtgraph.graphicsItems.ViewBox package" href="iris.gui.pyqtgraph.graphicsItems.ViewBox.html" />
+    <link rel="prev" title="iris.gui.pyqtgraph.graphicsItems package" href="iris.gui.pyqtgraph.graphicsItems.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iris-gui-pyqtgraph-graphicsitems-plotitem-package">
+<h1>iris.gui.pyqtgraph.graphicsItems.PlotItem package<a class="headerlink" href="#iris-gui-pyqtgraph-graphicsitems-plotitem-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem">
+<span id="iris-gui-pyqtgraph-graphicsitems-plotitem-plotitem-module"></span><h2>iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem module<a class="headerlink" href="#module-iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem" title="Permalink to this headline">¶</a></h2>
+<p>PlotItem.py -  Graphics item implementing a scalable ViewBox with plotting powers.
+Copyright 2010  Luke Campagnola
+Distributed under MIT/X11 license. See license.txt for more infomation.</p>
+<p>This class is one of the workhorses of pyqtgraph. It implements a graphics item with 
+plots, labels, and scales which can be viewed inside a QGraphicsScene. If you want
+a widget that can be added to your GUI, see PlotWidget instead.</p>
+<dl class="docutils">
+<dt>This class is very heavily featured:</dt>
+<dd><ul class="first last simple">
+<li>Automatically creates and manages PlotCurveItems</li>
+<li>Fast display and update of plots</li>
+<li>Manages zoom/pan ViewBox, scale, and label elements</li>
+<li>Automatic scaling when data changes</li>
+<li>Control panel with a huge feature set including averaging, decimation,
+display, power spectrum, svg/png export, plot linking, and more.</li>
+</ul>
+</dd>
+</dl>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.</code><code class="descname">PlotItem</code><span class="sig-paren">(</span><em>parent=None</em>, <em>name=None</em>, <em>labels=None</em>, <em>title=None</em>, <em>viewBox=None</em>, <em>axisItems=None</em>, <em>enableMenu=True</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.GraphicsWidget.GraphicsWidget" title="iris.gui.pyqtgraph.graphicsItems.GraphicsWidget.GraphicsWidget"><code class="xref py py-class docutils literal"><span class="pre">iris.gui.pyqtgraph.graphicsItems.GraphicsWidget.GraphicsWidget</span></code></a></p>
+<p><strong>Bases:</strong> <code class="xref py py-class docutils literal"><span class="pre">GraphicsWidget</span></code></p>
+<p>Plot graphics item that can be added to any graphics scene. Implements axes, titles, and interactive viewbox. 
+PlotItem also provides some basic analysis functionality that may be accessed from the context menu.
+Use <code class="xref py py-func docutils literal"><span class="pre">plot()</span></code> to create a new PlotDataItem and add it to the view.
+Use <code class="xref py py-func docutils literal"><span class="pre">addItem()</span></code> to add any QGraphicsItem to the view.</p>
+<p>This class wraps several methods from its internal ViewBox:
+<code class="xref py py-func docutils literal"><span class="pre">setXRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setYRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">autoRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setXLink</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setYLink</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setAutoPan</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setAutoVisible</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setLimits</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">viewRect</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">viewRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setMouseEnabled</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">enableAutoRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">disableAutoRange</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">setAspectLocked</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">invertY</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">invertX</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">register</span></code>,
+<code class="xref py py-func docutils literal"><span class="pre">unregister</span></code></p>
+<p>The ViewBox itself can be accessed by calling <code class="xref py py-func docutils literal"><span class="pre">getViewBox()</span></code></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="78%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Signals:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>sigYRangeChanged</td>
+<td>wrapped from <code class="xref py py-class docutils literal"><span class="pre">ViewBox</span></code></td>
+</tr>
+<tr class="row-odd"><td>sigXRangeChanged</td>
+<td>wrapped from <code class="xref py py-class docutils literal"><span class="pre">ViewBox</span></code></td>
+</tr>
+<tr class="row-even"><td>sigRangeChanged</td>
+<td>wrapped from <code class="xref py py-class docutils literal"><span class="pre">ViewBox</span></code></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addAvgCurve">
+<code class="descname">addAvgCurve</code><span class="sig-paren">(</span><em>curve</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.addAvgCurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addAvgCurve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addCurve">
+<code class="descname">addCurve</code><span class="sig-paren">(</span><em>c</em>, <em>params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.addCurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addCurve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addDataItem">
+<code class="descname">addDataItem</code><span class="sig-paren">(</span><em>item</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.addDataItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addDataItem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addItem">
+<code class="descname">addItem</code><span class="sig-paren">(</span><em>item</em>, <em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.addItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a graphics item to the view box. 
+If the item has plot data (PlotDataItem, PlotCurveItem, ScatterPlotItem), it may
+be included in analysis performed by the PlotItem.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addLegend">
+<code class="descname">addLegend</code><span class="sig-paren">(</span><em>size=None</em>, <em>offset=(30</em>, <em>30)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.addLegend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addLegend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new LegendItem and anchor it over the internal ViewBox.
+Plots will be automatically displayed in the legend if they
+are created with the &#8216;name&#8217; argument.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addLine">
+<code class="descname">addLine</code><span class="sig-paren">(</span><em>x=None</em>, <em>y=None</em>, <em>z=None</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.addLine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.addLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an InfiniteLine and add to the plot.</p>
+<p>If <em>x</em> is specified,
+the line will be vertical. If <em>y</em> is specified, the line will be
+horizontal. All extra keyword arguments are passed to
+<code class="xref py py-func docutils literal"><span class="pre">InfiniteLine.__init__()</span></code>.
+Returns the item created.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.alphaState">
+<code class="descname">alphaState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.alphaState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.alphaState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.autoBtnClicked">
+<code class="descname">autoBtnClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.autoBtnClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.autoBtnClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.autoRange">
+<code class="descname">autoRange</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.autoRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.avgParamListClicked">
+<code class="descname">avgParamListClicked</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.avgParamListClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.avgParamListClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.avgToggled">
+<code class="descname">avgToggled</code><span class="sig-paren">(</span><em>b</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.avgToggled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.avgToggled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all items from the ViewBox.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.clearPlots">
+<code class="descname">clearPlots</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.clearPlots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.clearPlots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.clipToViewMode">
+<code class="descname">clipToViewMode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.clipToViewMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.clipToViewMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.disableAutoRange">
+<code class="descname">disableAutoRange</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.disableAutoRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.downsampleMode">
+<code class="descname">downsampleMode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.downsampleMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.downsampleMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.enableAutoRange">
+<code class="descname">enableAutoRange</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.enableAutoRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.enableAutoScale">
+<code class="descname">enableAutoScale</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.enableAutoScale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.enableAutoScale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable auto-scaling. The plot will continuously scale to fit the boundaries of its data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getAxis">
+<code class="descname">getAxis</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.getAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getAxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the specified AxisItem. 
+<em>name</em> should be &#8216;left&#8217;, &#8216;bottom&#8217;, &#8216;top&#8217;, or &#8216;right&#8217;.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getContextMenus">
+<code class="descname">getContextMenus</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.getContextMenus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getContextMenus" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getLabel">
+<code class="descname">getLabel</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.getLabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getLabel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getMenu">
+<code class="descname">getMenu</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.getMenu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getMenu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getScale">
+<code class="descname">getScale</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.getScale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getScale" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getViewBox">
+<code class="descname">getViewBox</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.getViewBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.getViewBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the <code class="xref py py-class docutils literal"><span class="pre">ViewBox</span></code> contained within.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.hideAxis">
+<code class="descname">hideAxis</code><span class="sig-paren">(</span><em>axis</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.hideAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.hideAxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hide one of the PlotItem&#8217;s axes. (&#8216;left&#8217;, &#8216;bottom&#8217;, &#8216;right&#8217;, or &#8216;top&#8217;)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.hideButtons">
+<code class="descname">hideButtons</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.hideButtons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.hideButtons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Causes auto-scale button (&#8216;A&#8217; in lower-left corner) to be hidden for this PlotItem</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.hoverEvent">
+<code class="descname">hoverEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.hoverEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.hoverEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.implements">
+<code class="descname">implements</code><span class="sig-paren">(</span><em>interface=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.implements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.implements" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.invertX">
+<code class="descname">invertX</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.invertX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.invertY">
+<code class="descname">invertY</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.invertY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.lastFileDir">
+<code class="descname">lastFileDir</code><em class="property"> = None</em><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.lastFileDir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.listDataItems">
+<code class="descname">listDataItems</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.listDataItems"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.listDataItems" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of all data items (PlotDataItem, PlotCurveItem, ScatterPlotItem, etc)
+contained in this PlotItem.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.m">
+<code class="descname">m</code><em class="property"> = 'unregister'</em><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.m" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.menuEnabled">
+<code class="descname">menuEnabled</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.menuEnabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.menuEnabled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add and return a new plot.
+See <code class="xref py py-func docutils literal"><span class="pre">PlotDataItem.__init__</span></code> for data arguments</p>
+<dl class="docutils">
+<dt>Extra allowed arguments are:</dt>
+<dd>clear    - clear all plots before displaying new data
+params   - meta-parameters to associate with this data</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.pointMode">
+<code class="descname">pointMode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.pointMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.pointMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.recomputeAverages">
+<code class="descname">recomputeAverages</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.recomputeAverages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.recomputeAverages" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.register">
+<code class="descname">register</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.register" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.registerPlot">
+<code class="descname">registerPlot</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.registerPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.registerPlot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.removeItem">
+<code class="descname">removeItem</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.removeItem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.removeItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove an item from the internal ViewBox.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.replot">
+<code class="descname">replot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.replot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.replot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.resizeEvent">
+<code class="descname">resizeEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.resizeEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.resizeEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.restoreState">
+<code class="descname">restoreState</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.restoreState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.restoreState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.saveState">
+<code class="descname">saveState</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.saveState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.saveState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.scatterPlot">
+<code class="descname">scatterPlot</code><span class="sig-paren">(</span><em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.scatterPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.scatterPlot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setAspectLocked">
+<code class="descname">setAspectLocked</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setAspectLocked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setAutoPan">
+<code class="descname">setAutoPan</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setAutoPan" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setAutoVisible">
+<code class="descname">setAutoVisible</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setAutoVisible" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setClipToView">
+<code class="descname">setClipToView</code><span class="sig-paren">(</span><em>clip</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.setClipToView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setClipToView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the default clip-to-view mode for all PlotDataItems managed by this plot.
+If <em>clip</em> is True, then PlotDataItems will attempt to draw only points within the visible
+range of the ViewBox.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setDownsampling">
+<code class="descname">setDownsampling</code><span class="sig-paren">(</span><em>ds=None</em>, <em>auto=None</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.setDownsampling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setDownsampling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the default downsampling mode for all PlotDataItems managed by this plot.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Arguments:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>ds</td>
+<td>(int) Reduce visible plot samples by this factor, or
+(bool) To enable/disable downsampling without changing the value.</td>
+</tr>
+<tr class="row-odd"><td>auto</td>
+<td>(bool) If True, automatically pick <em>ds</em> based on visible range</td>
+</tr>
+<tr class="row-even"><td>mode</td>
+<td>&#8216;subsample&#8217;: Downsample by taking the first of N samples.
+This method is fastest and least accurate.
+&#8216;mean&#8217;: Downsample by taking the mean of N samples.
+&#8216;peak&#8217;: Downsample by drawing a saw wave that follows the min
+and max of the original data. This method produces the best
+visual representation of the data but is slower.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setExportMode">
+<code class="descname">setExportMode</code><span class="sig-paren">(</span><em>export</em>, <em>opts=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.setExportMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setExportMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setLabel">
+<code class="descname">setLabel</code><span class="sig-paren">(</span><em>axis</em>, <em>text=None</em>, <em>units=None</em>, <em>unitPrefix=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.setLabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the label for an axis. Basic HTML formatting is allowed.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="82%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Arguments:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>axis</td>
+<td>must be one of &#8216;left&#8217;, &#8216;bottom&#8217;, &#8216;right&#8217;, or &#8216;top&#8217;</td>
+</tr>
+<tr class="row-odd"><td>text</td>
+<td>text to display along the axis. HTML allowed.</td>
+</tr>
+<tr class="row-even"><td>units</td>
+<td>units to display after the title. If units are given,
+then an SI prefix will be automatically appended
+and the axis values will be scaled accordingly.
+(ie, use &#8216;V&#8217; instead of &#8216;mV&#8217;; &#8216;m&#8217; will be added automatically)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setLabels">
+<code class="descname">setLabels</code><span class="sig-paren">(</span><em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.setLabels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setLabels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function allowing multiple labels and/or title to be set in one call.
+Keyword arguments can be &#8216;title&#8217;, &#8216;left&#8217;, &#8216;bottom&#8217;, &#8216;right&#8217;, or &#8216;top&#8217;.
+Values may be strings or a tuple of arguments to pass to setLabel.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setLimits">
+<code class="descname">setLimits</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setLimits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setLogMode">
+<code class="descname">setLogMode</code><span class="sig-paren">(</span><em>x=None</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.setLogMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setLogMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set log scaling for x and/or y axes.
+This informs PlotDataItems to transform logarithmically and switches
+the axes to use log ticking.</p>
+<p>Note that <em>no other items</em> in the scene will be affected by
+this; there is (currently) no generic way to redisplay a GraphicsItem
+with log coordinates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setMenuEnabled">
+<code class="descname">setMenuEnabled</code><span class="sig-paren">(</span><em>enableMenu=True</em>, <em>enableViewBoxMenu='same'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.setMenuEnabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setMenuEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable or disable the context menu for this PlotItem.
+By default, the ViewBox&#8217;s context menu will also be affected.
+(use enableViewBoxMenu=None to leave the ViewBox unchanged)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setMouseEnabled">
+<code class="descname">setMouseEnabled</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setMouseEnabled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setRange">
+<code class="descname">setRange</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setTitle">
+<code class="descname">setTitle</code><span class="sig-paren">(</span><em>title=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.setTitle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setTitle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the title of the plot. Basic HTML formatting is allowed.
+If title is None, then the title will be hidden.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setXLink">
+<code class="descname">setXLink</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setXLink" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setXRange">
+<code class="descname">setXRange</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setXRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setYLink">
+<code class="descname">setYLink</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setYLink" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setYRange">
+<code class="descname">setYRange</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.setYRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showAxis">
+<code class="descname">showAxis</code><span class="sig-paren">(</span><em>axis</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.showAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showAxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show or hide one of the plot&#8217;s axes.
+axis must be one of &#8216;left&#8217;, &#8216;bottom&#8217;, &#8216;right&#8217;, or &#8216;top&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showButtons">
+<code class="descname">showButtons</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.showButtons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showButtons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Causes auto-scale button (&#8216;A&#8217; in lower-left corner) to be visible for this PlotItem</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showGrid">
+<code class="descname">showGrid</code><span class="sig-paren">(</span><em>x=None</em>, <em>y=None</em>, <em>alpha=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.showGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show or hide the grid for either axis.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Arguments:</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>x</td>
+<td>(bool) Whether to show the X grid</td>
+</tr>
+<tr class="row-odd"><td>y</td>
+<td>(bool) Whether to show the Y grid</td>
+</tr>
+<tr class="row-even"><td>alpha</td>
+<td>(0.0-1.0) Opacity of the grid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showLabel">
+<code class="descname">showLabel</code><span class="sig-paren">(</span><em>axis</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.showLabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show or hide one of the plot&#8217;s axis labels (the axis itself will be unaffected).
+axis must be one of &#8216;left&#8217;, &#8216;bottom&#8217;, &#8216;right&#8217;, or &#8216;top&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showScale">
+<code class="descname">showScale</code><span class="sig-paren">(</span><em>*args</em>, <em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.showScale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.showScale" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.sigRangeChanged">
+<code class="descname">sigRangeChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.sigRangeChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.sigXRangeChanged">
+<code class="descname">sigXRangeChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.sigXRangeChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.sigYRangeChanged">
+<code class="descname">sigYRangeChanged</code><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.sigYRangeChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.unregister">
+<code class="descname">unregister</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.unregister" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateAlpha">
+<code class="descname">updateAlpha</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.updateAlpha"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateAlpha" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateButtons">
+<code class="descname">updateButtons</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.updateButtons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateButtons" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateDecimation">
+<code class="descname">updateDecimation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.updateDecimation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateDecimation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateDownsampling">
+<code class="descname">updateDownsampling</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.updateDownsampling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateDownsampling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateGrid">
+<code class="descname">updateGrid</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.updateGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateGrid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateLogMode">
+<code class="descname">updateLogMode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.updateLogMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateLogMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateParamList">
+<code class="descname">updateParamList</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.updateParamList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateParamList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateSpectrumMode">
+<code class="descname">updateSpectrumMode</code><span class="sig-paren">(</span><em>b=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.updateSpectrumMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.updateSpectrumMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.viewGeometry">
+<code class="descname">viewGeometry</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.viewGeometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.viewGeometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the screen geometry of the viewbox</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.viewRange">
+<code class="descname">viewRange</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.viewRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.viewRect">
+<code class="descname">viewRect</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.viewRect" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.viewStateChanged">
+<code class="descname">viewStateChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.viewStateChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.viewStateChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.widgetGroupInterface">
+<code class="descname">widgetGroupInterface</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.widgetGroupInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.widgetGroupInterface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.writeCsv">
+<code class="descname">writeCsv</code><span class="sig-paren">(</span><em>fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.writeCsv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.writeCsv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.writeImage">
+<code class="descname">writeImage</code><span class="sig-paren">(</span><em>fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.writeImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.writeImage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.writeSvg">
+<code class="descname">writeSvg</code><span class="sig-paren">(</span><em>fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.writeSvg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.writeSvg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.writeSvgCurves">
+<code class="descname">writeSvgCurves</code><span class="sig-paren">(</span><em>fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/PlotItem.html#PlotItem.writeSvgCurves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem.PlotItem.writeSvgCurves" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="iris-gui-pyqtgraph-graphicsitems-plotitem-plotconfigtemplate-pyqt-module">
+<h2>iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt module<a class="headerlink" href="#iris-gui-pyqtgraph-graphicsitems-plotitem-plotconfigtemplate-pyqt-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5">
+<span id="iris-gui-pyqtgraph-graphicsitems-plotitem-plotconfigtemplate-pyqt5-module"></span><h2>iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5 module<a class="headerlink" href="#module-iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5.Ui_Form">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5.</code><code class="descname">Ui_Form</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/plotConfigTemplate_pyqt5.html#Ui_Form"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5.Ui_Form" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5.Ui_Form.retranslateUi">
+<code class="descname">retranslateUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/plotConfigTemplate_pyqt5.html#Ui_Form.retranslateUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5.Ui_Form.retranslateUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5.Ui_Form.setupUi">
+<code class="descname">setupUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/graphicsItems/PlotItem/plotConfigTemplate_pyqt5.html#Ui_Form.setupUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5.Ui_Form.setupUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="iris-gui-pyqtgraph-graphicsitems-plotitem-plotconfigtemplate-pyside-module">
+<h2>iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyside module<a class="headerlink" href="#iris-gui-pyqtgraph-graphicsitems-plotitem-plotconfigtemplate-pyside-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.graphicsItems.PlotItem">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-iris.gui.pyqtgraph.graphicsItems.PlotItem" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">iris.gui.pyqtgraph.graphicsItems.PlotItem package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem">iris.gui.pyqtgraph.graphicsItems.PlotItem.PlotItem module</a></li>
+<li><a class="reference internal" href="#iris-gui-pyqtgraph-graphicsitems-plotitem-plotconfigtemplate-pyqt-module">iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5">iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt5 module</a></li>
+<li><a class="reference internal" href="#iris-gui-pyqtgraph-graphicsitems-plotitem-plotconfigtemplate-pyside-module">iris.gui.pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyside module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.graphicsItems.PlotItem">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="iris.html">iris package</a><ul>
+  <li><a href="iris.gui.html">iris.gui package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.html">iris.gui.pyqtgraph package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.graphicsItems.html">iris.gui.pyqtgraph.graphicsItems package</a><ul>
+      <li>Previous: <a href="iris.gui.pyqtgraph.graphicsItems.html" title="previous chapter">iris.gui.pyqtgraph.graphicsItems package</a></li>
+      <li>Next: <a href="iris.gui.pyqtgraph.graphicsItems.ViewBox.html" title="next chapter">iris.gui.pyqtgraph.graphicsItems.ViewBox package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/iris.gui.pyqtgraph.graphicsItems.PlotItem.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/iris.gui.pyqtgraph.graphicsItems.PlotItem.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.widgets.ColorMapWidget &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.widgets.ColorMapWidget</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">parametertree</span> <span class="k">as</span> <span class="n">ptree</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">..pgcollections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ColorMapWidget&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ColorMapWidget"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget">[docs]</a><span class="k">class</span> <span class="nc">ColorMapWidget</span><span class="p">(</span><span class="n">ptree</span><span class="o">.</span><span class="n">ParameterTree</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides a widget allowing the user to customize color mapping</span>
+<span class="sd">    for multi-column data. Given a list of field names, the user may specify</span>
+<span class="sd">    multiple criteria for assigning colors to each record in a numpy record array.</span>
+<span class="sd">    Multiple criteria are evaluated and combined into a single color for each</span>
+<span class="sd">    record by user-defined compositing methods.</span>
+<span class="sd">    </span>
+<span class="sd">    For simpler color mapping using a single gradient editor, see </span>
+<span class="sd">    :class:`GradientWidget &lt;pyqtgraph.GradientWidget&gt;`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sigColorMapChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">ptree</span><span class="o">.</span><span class="n">ParameterTree</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> <span class="n">showHeader</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">ColorMapParameter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setParameters</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">sigTreeStateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapChanged</span><span class="p">)</span>
+        
+        <span class="c1">## wrap a couple methods </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">setFields</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">map</span>
+
+<div class="viewcode-block" id="ColorMapWidget.mapChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.mapChanged">[docs]</a>    <span class="k">def</span> <span class="nf">mapChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigColorMapChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ColorMapWidget.widgetGroupInterface"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.widgetGroupInterface">[docs]</a>    <span class="k">def</span> <span class="nf">widgetGroupInterface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigColorMapChanged</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">saveState</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">restoreState</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ColorMapWidget.saveState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">saveState</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ColorMapWidget.restoreState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.ColorMapWidget.ColorMapWidget.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">restoreState</span><span class="p">(</span><span class="n">state</span><span class="p">)</span></div></div>
+        
+
+<span class="k">class</span> <span class="nc">ColorMapParameter</span><span class="p">(</span><span class="n">ptree</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">GroupParameter</span><span class="p">):</span>
+    <span class="n">sigColorMapChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">ptree</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">GroupParameter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Color Map&#39;</span><span class="p">,</span> <span class="n">addText</span><span class="o">=</span><span class="s1">&#39;Add Mapping..&#39;</span><span class="p">,</span> <span class="n">addList</span><span class="o">=</span><span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigTreeStateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapChanged</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">mapChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigColorMapChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">addNew</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mode&#39;</span><span class="p">,</span> <span class="s1">&#39;range&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="n">RangeColorMapItem</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;enum&#39;</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="n">EnumColorMapItem</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addChild</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">item</span>
+        
+    <span class="k">def</span> <span class="nf">fieldNames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">setFields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the list of fields to be used by the mapper. </span>
+<span class="sd">        </span>
+<span class="sd">        The format of *fields* is::</span>
+<span class="sd">        </span>
+<span class="sd">            [ (fieldName, {options}), ... ]</span>
+<span class="sd">        </span>
+<span class="sd">        ============== ============================================================</span>
+<span class="sd">        Field Options:</span>
+<span class="sd">        mode           Either &#39;range&#39; or &#39;enum&#39; (default is range). For &#39;range&#39;, </span>
+<span class="sd">                       The user may specify a gradient of colors to be applied </span>
+<span class="sd">                       linearly across a specific range of values. For &#39;enum&#39;, </span>
+<span class="sd">                       the user specifies a single color for each unique value</span>
+<span class="sd">                       (see *values* option).</span>
+<span class="sd">        units          String indicating the units of the data for this field.</span>
+<span class="sd">        values         List of unique values for which the user may assign a </span>
+<span class="sd">                       color when mode==&#39;enum&#39;. Optionally may specify a dict </span>
+<span class="sd">                       instead {value: name}.</span>
+<span class="sd">        ============== ============================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>
+        <span class="c1">#self.fields = fields</span>
+        <span class="c1">#self.fields.sort()</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fieldNames</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAddList</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;byte&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an array of colors corresponding to *data*. </span>
+<span class="sd">        </span>
+<span class="sd">        ==============  =================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        data            A numpy record array where the fields in data.dtype match those</span>
+<span class="sd">                        defined by a prior call to setFields().</span>
+<span class="sd">        mode            Either &#39;byte&#39; or &#39;float&#39;. For &#39;byte&#39;, the method returns an array</span>
+<span class="sd">                        of dtype ubyte with values scaled 0-255. For &#39;float&#39;, colors are</span>
+<span class="sd">                        returned as 0.0-1.0 float values.</span>
+<span class="sd">        ==============  =================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">tuple</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())],</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="n">k</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span><span class="mi">4</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;Enabled&#39;</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="n">chans</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;Channels..&#39;</span><span class="p">)</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="s1">&#39;Red&#39;</span><span class="p">,</span> <span class="s1">&#39;Green&#39;</span><span class="p">,</span> <span class="s1">&#39;Blue&#39;</span><span class="p">,</span> <span class="s1">&#39;Alpha&#39;</span><span class="p">]):</span>
+                <span class="n">mask</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">chans</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
+            
+            <span class="n">colors2</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            
+            <span class="n">op</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;Operation&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;Add&#39;</span><span class="p">:</span>
+                <span class="n">colors</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">+</span> <span class="n">colors2</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;Multiply&#39;</span><span class="p">:</span>
+                <span class="n">colors</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">*=</span> <span class="n">colors2</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;Overlay&#39;</span><span class="p">:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">colors2</span><span class="p">[:,</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+                <span class="n">c3</span> <span class="o">=</span> <span class="n">colors</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="n">colors2</span> <span class="o">*</span> <span class="n">a</span>
+                <span class="n">c3</span><span class="p">[:,</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[:,</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">colors</span><span class="p">[:,</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span> <span class="o">*</span> <span class="n">a</span>
+                <span class="n">colors</span> <span class="o">=</span> <span class="n">c3</span>
+            <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;Set&#39;</span><span class="p">:</span>
+                <span class="n">colors</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">colors2</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            
+                
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">colors</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;byte&#39;</span><span class="p">:</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="p">(</span><span class="n">colors</span> <span class="o">*</span> <span class="mi">255</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">colors</span>
+            
+    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">itemState</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">saveState</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="s1">&#39;user&#39;</span><span class="p">)</span>
+            <span class="n">itemState</span><span class="p">[</span><span class="s1">&#39;field&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">fieldName</span>
+            <span class="n">items</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">()]</span> <span class="o">=</span> <span class="n">itemState</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">,</span> <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="n">items</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">state</span>
+
+    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;fields&#39;</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setFields</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;fields&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">itemState</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;items&#39;</span><span class="p">]:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addNew</span><span class="p">(</span><span class="n">itemState</span><span class="p">[</span><span class="s1">&#39;field&#39;</span><span class="p">])</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">restoreState</span><span class="p">(</span><span class="n">itemState</span><span class="p">)</span>
+        
+    
+<span class="k">class</span> <span class="nc">RangeColorMapItem</span><span class="p">(</span><span class="n">ptree</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">SimpleParameter</span><span class="p">):</span>
+    <span class="n">mapType</span> <span class="o">=</span> <span class="s1">&#39;range&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fieldName</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">ptree</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">SimpleParameter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">autoIncrementName</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;colormap&#39;</span><span class="p">,</span> <span class="n">removable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">renamable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+            <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+                <span class="c1">#dict(name=&quot;Field&quot;, type=&#39;list&#39;, value=name, values=fields),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Min&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">siPrefix</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Max&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">siPrefix</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Operation&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;list&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;Multiply&#39;</span><span class="p">,</span> <span class="s1">&#39;Set&#39;</span><span class="p">]),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Channels..&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="n">expanded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Red&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Green&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Blue&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Alpha&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="p">]),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Enabled&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;NaN&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;color&#39;</span><span class="p">),</span>
+            <span class="p">])</span>
+    
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fieldName</span><span class="p">]</span>
+        
+        <span class="n">scaled</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">((</span><span class="n">data</span><span class="o">-</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;Min&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;Max&#39;</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;Min&#39;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">cmap</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">scaled</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+        
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">nanColor</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;NaN&#39;</span><span class="p">]</span>
+        <span class="n">nanColor</span> <span class="o">=</span> <span class="p">(</span><span class="n">nanColor</span><span class="o">.</span><span class="n">red</span><span class="p">()</span><span class="o">/</span><span class="mf">255.</span><span class="p">,</span> <span class="n">nanColor</span><span class="o">.</span><span class="n">green</span><span class="p">()</span><span class="o">/</span><span class="mf">255.</span><span class="p">,</span> <span class="n">nanColor</span><span class="o">.</span><span class="n">blue</span><span class="p">()</span><span class="o">/</span><span class="mf">255.</span><span class="p">,</span> <span class="n">nanColor</span><span class="o">.</span><span class="n">alpha</span><span class="p">()</span><span class="o">/</span><span class="mf">255.</span><span class="p">)</span>
+        <span class="n">colors</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">nanColor</span>
+        
+        <span class="k">return</span> <span class="n">colors</span>        
+
+<span class="k">class</span> <span class="nc">EnumColorMapItem</span><span class="p">(</span><span class="n">ptree</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">GroupParameter</span><span class="p">):</span>
+    <span class="n">mapType</span> <span class="o">=</span> <span class="s1">&#39;enum&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fieldName</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;values&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">v</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">])</span>
+        <span class="n">childs</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;color&#39;</span><span class="p">}</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">]</span>
+        
+        <span class="n">childs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">val</span><span class="p">,</span><span class="n">vname</span> <span class="ow">in</span> <span class="n">vals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">ch</span> <span class="o">=</span> <span class="n">ptree</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">vname</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;color&#39;</span><span class="p">)</span>
+            <span class="n">ch</span><span class="o">.</span><span class="n">maskValue</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="n">childs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+        
+        <span class="n">ptree</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">GroupParameter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">autoIncrementName</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">removable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">renamable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+            <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Values&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">childs</span><span class="p">),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Operation&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;list&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;Multiply&#39;</span><span class="p">,</span> <span class="s1">&#39;Set&#39;</span><span class="p">]),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Channels..&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="n">expanded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Red&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Green&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Blue&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Alpha&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="p">]),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Enabled&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Default&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;color&#39;</span><span class="p">),</span>
+            <span class="p">])</span>
+    
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fieldName</span><span class="p">]</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">colorTuple</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;Default&#39;</span><span class="p">]))</span> <span class="o">/</span> <span class="mf">255.</span>
+        <span class="n">colors</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">default</span>
+        
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;Values&#39;</span><span class="p">):</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">data</span> <span class="o">==</span> <span class="n">v</span><span class="o">.</span><span class="n">maskValue</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">colorTuple</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">()))</span> <span class="o">/</span> <span class="mf">255.</span>
+            <span class="n">colors</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
+        <span class="c1">#scaled = np.clip((data-self[&#39;Min&#39;]) / (self[&#39;Max&#39;]-self[&#39;Min&#39;]), 0, 1)</span>
+        <span class="c1">#cmap = self.value()</span>
+        <span class="c1">#colors = cmap.map(scaled, mode=&#39;float&#39;)</span>
+        
+        <span class="c1">#mask = np.isnan(data) | np.isinf(data)</span>
+        <span class="c1">#nanColor = self[&#39;NaN&#39;]</span>
+        <span class="c1">#nanColor = (nanColor.red()/255., nanColor.green()/255., nanColor.blue()/255., nanColor.alpha()/255.)</span>
+        <span class="c1">#colors[mask] = nanColor</span>
+        
+        <span class="k">return</span> <span class="n">colors</span>
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

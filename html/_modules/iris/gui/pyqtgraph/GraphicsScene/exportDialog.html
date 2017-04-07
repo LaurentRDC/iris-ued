@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.GraphicsScene.exportDialog &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.GraphicsScene.exportDialog</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">USE_PYSIDE</span><span class="p">,</span> <span class="n">USE_PYQT5</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">exporters</span> <span class="k">as</span> <span class="n">exporters</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">..graphicsItems.ViewBox</span> <span class="k">import</span> <span class="n">ViewBox</span>
+<span class="kn">from</span> <span class="nn">..graphicsItems.PlotItem</span> <span class="k">import</span> <span class="n">PlotItem</span>
+
+<span class="k">if</span> <span class="n">USE_PYSIDE</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">exportDialogTemplate_pyside</span> <span class="k">as</span> <span class="n">exportDialogTemplate</span>
+<span class="k">elif</span> <span class="n">USE_PYQT5</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">exportDialogTemplate_pyqt5</span> <span class="k">as</span> <span class="n">exportDialogTemplate</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">exportDialogTemplate_pyqt</span> <span class="k">as</span> <span class="n">exportDialogTemplate</span>
+
+
+<div class="viewcode-block" id="ExportDialog"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog">[docs]</a><span class="k">class</span> <span class="nc">ExportDialog</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scene</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Export&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shown</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentExporter</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scene</span> <span class="o">=</span> <span class="n">scene</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsRectItem</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">DashLine</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span> <span class="o">=</span> <span class="n">exportDialogTemplate</span><span class="o">.</span><span class="n">Ui_Form</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">setupUi</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">closeBtn</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">exportBtn</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exportClicked</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">copyBtn</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">copyClicked</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">itemTree</span><span class="o">.</span><span class="n">currentItemChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exportItemChanged</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">formatList</span><span class="o">.</span><span class="n">currentItemChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exportFormatChanged</span><span class="p">)</span>
+        
+
+<div class="viewcode-block" id="ExportDialog.show"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.show">[docs]</a>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">## Select next exportable parent of the item originally clicked on</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ViewBox</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">PlotItem</span><span class="p">)</span> <span class="ow">and</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span>
+            <span class="c1">## if this is a ViewBox inside a PlotItem, select the parent instead.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ViewBox</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">parentItem</span><span class="p">(),</span> <span class="n">PlotItem</span><span class="p">):</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateItemList</span><span class="p">(</span><span class="n">select</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activateWindow</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raise_</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">shown</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shown</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">vcenter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">getViewWidget</span><span class="p">()</span><span class="o">.</span><span class="n">geometry</span><span class="p">()</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">vcenter</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">()</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">vcenter</span><span class="o">.</span><span class="n">y</span><span class="p">()</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">()</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">())</span></div>
+        
+<div class="viewcode-block" id="ExportDialog.updateItemList"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateItemList">[docs]</a>    <span class="k">def</span> <span class="nf">updateItemList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">select</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">itemTree</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">si</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTreeWidgetItem</span><span class="p">([</span><span class="s2">&quot;Entire Scene&quot;</span><span class="p">])</span>
+        <span class="n">si</span><span class="o">.</span><span class="n">gitem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">itemTree</span><span class="o">.</span><span class="n">addTopLevelItem</span><span class="p">(</span><span class="n">si</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">itemTree</span><span class="o">.</span><span class="n">setCurrentItem</span><span class="p">(</span><span class="n">si</span><span class="p">)</span>
+        <span class="n">si</span><span class="o">.</span><span class="n">setExpanded</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">updateItemTree</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">si</span><span class="p">,</span> <span class="n">select</span><span class="o">=</span><span class="n">select</span><span class="p">)</span></div>
+                
+<div class="viewcode-block" id="ExportDialog.updateItemTree"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateItemTree">[docs]</a>    <span class="k">def</span> <span class="nf">updateItemTree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">treeItem</span><span class="p">,</span> <span class="n">select</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">si</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ViewBox</span><span class="p">):</span>
+            <span class="n">si</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTreeWidgetItem</span><span class="p">([</span><span class="s1">&#39;ViewBox&#39;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">PlotItem</span><span class="p">):</span>
+            <span class="n">si</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTreeWidgetItem</span><span class="p">([</span><span class="s1">&#39;Plot&#39;</span><span class="p">])</span>
+            
+        <span class="k">if</span> <span class="n">si</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">si</span><span class="o">.</span><span class="n">gitem</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="n">treeItem</span><span class="o">.</span><span class="n">addChild</span><span class="p">(</span><span class="n">si</span><span class="p">)</span>
+            <span class="n">treeItem</span> <span class="o">=</span> <span class="n">si</span>
+            <span class="k">if</span> <span class="n">si</span><span class="o">.</span><span class="n">gitem</span> <span class="ow">is</span> <span class="n">select</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">itemTree</span><span class="o">.</span><span class="n">setCurrentItem</span><span class="p">(</span><span class="n">si</span><span class="p">)</span>
+            
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">childItems</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateItemTree</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">treeItem</span><span class="p">,</span> <span class="n">select</span><span class="o">=</span><span class="n">select</span><span class="p">)</span></div>
+        
+            
+<div class="viewcode-block" id="ExportDialog.exportItemChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportItemChanged">[docs]</a>    <span class="k">def</span> <span class="nf">exportItemChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">prev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">gitem</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">:</span>
+            <span class="n">newBounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">views</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">viewRect</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">newBounds</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">gitem</span><span class="o">.</span><span class="n">sceneBoundingRect</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="o">.</span><span class="n">setRect</span><span class="p">(</span><span class="n">newBounds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateFormatList</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ExportDialog.updateFormatList"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.updateFormatList">[docs]</a>    <span class="k">def</span> <span class="nf">updateFormatList</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">formatList</span><span class="o">.</span><span class="n">currentItem</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">current</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">formatList</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exporterClasses</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">gotCurrent</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">exp</span> <span class="ow">in</span> <span class="n">exporters</span><span class="o">.</span><span class="n">listExporters</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">formatList</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exporterClasses</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Name</span><span class="p">]</span> <span class="o">=</span> <span class="n">exp</span>
+            <span class="k">if</span> <span class="n">exp</span><span class="o">.</span><span class="n">Name</span> <span class="o">==</span> <span class="n">current</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">formatList</span><span class="o">.</span><span class="n">setCurrentRow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">formatList</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">gotCurrent</span> <span class="o">=</span> <span class="kc">True</span>
+                
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">gotCurrent</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">formatList</span><span class="o">.</span><span class="n">setCurrentRow</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ExportDialog.exportFormatChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportFormatChanged">[docs]</a>    <span class="k">def</span> <span class="nf">exportFormatChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">prev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">currentExporter</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">paramTree</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">return</span>
+        <span class="n">expClass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exporterClasses</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">())]</span>
+        <span class="n">exp</span> <span class="o">=</span> <span class="n">expClass</span><span class="p">(</span><span class="n">item</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">itemTree</span><span class="o">.</span><span class="n">currentItem</span><span class="p">()</span><span class="o">.</span><span class="n">gitem</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">paramTree</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">paramTree</span><span class="o">.</span><span class="n">setParameters</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentExporter</span> <span class="o">=</span> <span class="n">exp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">copyBtn</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">allowCopy</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ExportDialog.exportClicked"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.exportClicked">[docs]</a>    <span class="k">def</span> <span class="nf">exportClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentExporter</span><span class="o">.</span><span class="n">export</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ExportDialog.copyClicked"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.copyClicked">[docs]</a>    <span class="k">def</span> <span class="nf">copyClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentExporter</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ExportDialog.close"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectBox</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExportDialog.closeEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.GraphicsScene.html#iris.gui.pyqtgraph.GraphicsScene.exportDialog.ExportDialog.closeEvent">[docs]</a>    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

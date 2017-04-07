@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.SignalProxy &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.SignalProxy</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">from</span> <span class="nn">.Qt</span> <span class="k">import</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">.ptime</span> <span class="k">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">ThreadsafeTimer</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;SignalProxy&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="SignalProxy"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SignalProxy.SignalProxy">[docs]</a><span class="k">class</span> <span class="nc">SignalProxy</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Object which collects rapid-fire signals and condenses them</span>
+<span class="sd">    into a single signal or a rate-limited stream of signals. </span>
+<span class="sd">    Used, for example, to prevent a SpinBox from generating multiple </span>
+<span class="sd">    signals when the mouse wheel is rolled over it.</span>
+<span class="sd">    </span>
+<span class="sd">    Emits sigDelayed after input signals have stopped for a certain period of time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">sigDelayed</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">rateLimit</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">slot</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialization arguments:</span>
+<span class="sd">        signal - a bound Signal or pyqtSignal instance</span>
+<span class="sd">        delay - Time (in seconds) to wait for signals to stop before emitting (default 0.3s)</span>
+<span class="sd">        slot - Optional function to connect sigDelayed to.</span>
+<span class="sd">        rateLimit - (signals/sec) if greater than 0, this allows signals to stream out at a </span>
+<span class="sd">                    steady rate while they are being received.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signalReceived</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signal</span> <span class="o">=</span> <span class="n">signal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="n">delay</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rateLimit</span> <span class="o">=</span> <span class="n">rateLimit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">ThreadsafeTimer</span><span class="o">.</span><span class="n">ThreadsafeTimer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">timeout</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slot</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lastFlushTime</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">slot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigDelayed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="SignalProxy.setDelay"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SignalProxy.SignalProxy.setDelay">[docs]</a>    <span class="k">def</span> <span class="nf">setDelay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delay</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="n">delay</span></div>
+        
+<div class="viewcode-block" id="SignalProxy.signalReceived"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SignalProxy.SignalProxy.signalReceived">[docs]</a>    <span class="k">def</span> <span class="nf">signalReceived</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Received signal. Cancel previous timer and store args to be forwarded later.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">block</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rateLimit</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">delay</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastFlushTime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">leakTime</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lastFlush</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastFlushTime</span>
+                <span class="n">leakTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="n">lastFlush</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">rateLimit</span><span class="p">))</span> <span class="o">-</span> <span class="n">now</span><span class="p">)</span>
+                
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">((</span><span class="nb">min</span><span class="p">(</span><span class="n">leakTime</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delay</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span></div>
+            
+        
+<div class="viewcode-block" id="SignalProxy.flush"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SignalProxy.SignalProxy.flush">[docs]</a>    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If there is a signal queued up, send it now.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">block</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1">#self.emit(self.signal, *self.args)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigDelayed</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lastFlushTime</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+        
+<div class="viewcode-block" id="SignalProxy.disconnect"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SignalProxy.SignalProxy.disconnect">[docs]</a>    <span class="k">def</span> <span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signalReceived</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigDelayed</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slot</span><span class="p">())</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span></div></div>
+   
+   
+
+<span class="c1">#def proxyConnect(source, signal, slot, delay=0.3):</span>
+    <span class="c1">#&quot;&quot;&quot;Connect a signal to a slot with delay. Returns the SignalProxy</span>
+    <span class="c1">#object that was created. Be sure to store this object so it is not</span>
+    <span class="c1">#garbage-collected immediately.&quot;&quot;&quot;</span>
+    <span class="c1">#sp = SignalProxy(source, signal, delay)</span>
+    <span class="c1">#if source is None:</span>
+        <span class="c1">#sp.connect(sp, QtCore.SIGNAL(&#39;signal&#39;), slot)</span>
+    <span class="c1">#else:</span>
+        <span class="c1">#sp.connect(sp, signal, slot)</span>
+    <span class="c1">#return sp</span>
+    
+    
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">.Qt</span> <span class="k">import</span> <span class="n">QtGui</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="p">([])</span>
+    <span class="n">win</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="p">()</span>
+    <span class="n">spin</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QSpinBox</span><span class="p">()</span>
+    <span class="n">win</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="n">spin</span><span class="p">)</span>
+    <span class="n">win</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Raw signal:&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">fn2</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Delayed signal:&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+    
+    
+    <span class="n">spin</span><span class="o">.</span><span class="n">valueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+    <span class="c1">#proxy = proxyConnect(spin, QtCore.SIGNAL(&#39;valueChanged(int)&#39;), fn)</span>
+    <span class="n">proxy</span> <span class="o">=</span> <span class="n">SignalProxy</span><span class="p">(</span><span class="n">spin</span><span class="o">.</span><span class="n">valueChanged</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">slot</span><span class="o">=</span><span class="n">fn2</span><span class="p">)</span>
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

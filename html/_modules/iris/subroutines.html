@@ -1,0 +1,254 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.subroutines &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.subroutines</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Array manipulation subroutines</span>
+
+<span class="sd">@author: Laurent P. Rene de Cotret</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+<span class="kn">from</span> <span class="nn">skimage.feature</span> <span class="k">import</span> <span class="n">register_translation</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="k">import</span> <span class="n">catch_warnings</span><span class="p">,</span> <span class="n">simplefilter</span>
+
+<span class="kn">from</span> <span class="nn">.optimizations</span> <span class="k">import</span> <span class="n">pmap</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">find_center</span>
+
+<div class="viewcode-block" id="diff_avg"><a class="viewcode-back" href="../../iris.html#iris.subroutines.diff_avg">[docs]</a><span class="k">def</span> <span class="nf">diff_avg</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mad</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">mad_dist</span> <span class="o">=</span> <span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Average diffraction pictures from the same time-delay together. Median-abolute-difference (MAD)</span>
+<span class="sd">    filtering can also be used to clean up the data.</span>
+
+<span class="sd">    It is assumed that the pictures have been aligned already.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    arr : ndarray</span>
+<span class="sd">        Array to be averaged.</span>
+<span class="sd">    weights : ndarray or None, optional</span>
+<span class="sd">        Array representing how much an image should be &#39;worth&#39;. E.g.: a weight below 1 means that</span>
+<span class="sd">        a picture is not bright enough, and therefore it should count more in the averaging.</span>
+<span class="sd">        If None (default), total picture intensity is used to weight each picture.</span>
+<span class="sd">    mad : bool, optional</span>
+<span class="sd">        If True (default), the distributions of pixel intensities across scans are included based on a </span>
+<span class="sd">        mean absolute difference (MAD) approach. Set to False for faster performance.</span>
+<span class="sd">    mad_dist : float, optional</span>
+<span class="sd">        The number of mean-absolute-differences allowable inside the pixel intensity distribution.</span>
+<span class="sd">        Setting this number lower will &#39;filter&#39; out more pixels.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    avg : ndarray, ndim 2</span>
+<span class="sd">        &#39;Average&#39; of arr.</span>
+<span class="sd">    err : ndarray, ndim 2</span>
+<span class="sd">        Standard error in the mean.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Making sure it is an array</span>
+    <span class="c1"># Remove unphysical pixel values by replacing with NaN</span>
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">arr</span><span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="o">**</span><span class="mi">16</span><span class="p">)]</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="c1"># Handle weights of images</span>
+    <span class="c1"># The sum of weights should be equal to 1 per picture</span>
+    <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">weights</span> <span class="o">*=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">n</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>    <span class="c1"># Normalize weights</span>
+
+    <span class="c1"># Apply weights along axis 2</span>
+    <span class="n">arr</span> <span class="o">*=</span> <span class="n">weights</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    
+    <span class="c1"># Median absolute deviation outliers test</span>
+    <span class="c1"># Robust estimator of outliers, as explained here:</span>
+    <span class="c1"># http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/</span>
+    <span class="k">if</span> <span class="n">mad</span><span class="p">:</span>
+        <span class="n">absdiff</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">arr</span> <span class="o">-</span> <span class="n">n</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">keepdims</span> <span class="o">=</span> <span class="kc">True</span><span class="p">))</span>
+        <span class="n">estimator</span> <span class="o">=</span> <span class="n">mad_dist</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">absdiff</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">keepdims</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">arr</span><span class="p">[</span><span class="n">absdiff</span> <span class="o">&gt;</span> <span class="n">estimator</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">nan</span>
+    
+    <span class="c1"># Final averaging</span>
+    <span class="c1"># Error in the mean is only approximate, but much faster.</span>
+    <span class="c1"># For a true measure of error, see scipy.stats.sem (masked standard error in mean)</span>
+    <span class="k">with</span> <span class="n">catch_warnings</span><span class="p">():</span>
+        <span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+        <span class="n">avg</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> 
+        <span class="n">err</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">avg</span><span class="p">,</span> <span class="n">err</span></div>
+
+<span class="n">non</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span> <span class="k">if</span> <span class="n">s</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+<span class="n">mom</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+<div class="viewcode-block" id="shift_image"><a class="viewcode-back" href="../../iris.html#iris.subroutines.shift_image">[docs]</a><span class="k">def</span> <span class="nf">shift_image</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Shift an image on at a 1-pixel resolution.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    arr : ndarray</span>
+<span class="sd">    shift : ndarray</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    out : ndarray</span>
+<span class="sd">        Invalid pixels are set to NaN</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">shift</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+    <span class="n">shifted</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">shifted</span><span class="p">[</span><span class="n">mom</span><span class="p">(</span><span class="n">y</span><span class="p">):</span><span class="n">non</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">mom</span><span class="p">(</span><span class="n">x</span><span class="p">):</span><span class="n">non</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">mom</span><span class="p">(</span><span class="o">-</span><span class="n">y</span><span class="p">):</span><span class="n">non</span><span class="p">(</span><span class="o">-</span><span class="n">y</span><span class="p">),</span> <span class="n">mom</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">):</span><span class="n">non</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">shifted</span></div>
+
+<div class="viewcode-block" id="powder_align"><a class="viewcode-back" href="../../iris.html#iris.subroutines.powder_align">[docs]</a><span class="k">def</span> <span class="nf">powder_align</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">guess_center</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">window_size</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">ring_width</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Align powder diffraction images together, making use of the azimuthal symmetry</span>
+<span class="sd">    of the patterns to speed up computations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    images : iterable</span>
+<span class="sd">        Iterable of ndarrays</span>
+<span class="sd">    guess_center : array_like, shape (2,)</span>
+<span class="sd">        Initial guess for a center</span>
+<span class="sd">    radius : int    </span>
+
+<span class="sd">    window_size : int, optional</span>
+
+<span class="sd">    ring_width : int, optional</span>
+<span class="sd">        </span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    aligned : tuple of ndarrays, ndim 2</span>
+<span class="sd">        Aligned images</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">images</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+    <span class="n">center</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">guess_center</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+    
+    <span class="n">aligned</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="n">find_center</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">guess_center</span> <span class="o">=</span> <span class="n">center</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span><span class="p">,</span> 
+                                     <span class="n">window_size</span> <span class="o">=</span> <span class="n">window_size</span><span class="p">,</span> <span class="n">ring_width</span> <span class="o">=</span> <span class="n">ring_width</span><span class="p">)</span>
+        <span class="n">aligned</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shift_image</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="o">-</span><span class="n">shift</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">aligned</span></div>
+
+<div class="viewcode-block" id="diff_align"><a class="viewcode-back" href="../../iris.html#iris.subroutines.diff_align">[docs]</a><span class="k">def</span> <span class="nf">diff_align</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">reference</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">upsample_factor</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">processes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Align diffraction images to each other. Optimized for single-crystal images for now.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    images : iterable</span>
+<span class="sd">        Iterable of ndarrays</span>
+<span class="sd">    reference : ndarray or None, optional</span>
+<span class="sd">        If not None, this is the reference image to which all images will be aligned. Otherwise,</span>
+<span class="sd">        images will be aligned to the first element of the iterable &#39;images&#39;.</span>
+<span class="sd">    upsample_factor : int, optional</span>
+<span class="sd">        Images will be aligned to within 1 / upsample_factor of a pixel. </span>
+<span class="sd">        For example upsample_factor == 20 means the images will be aligned within 1/20th of a pixel. </span>
+<span class="sd">    processes : int or None, optional</span>
+<span class="sd">        Number of processors to use for this task. If None, all CPUs are used.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    aligned : tuple of ndarrays, ndim 2</span>
+<span class="sd">        Aligned images</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">images</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+
+    <span class="c1"># TODO: crop images to a subimage, that is used for alignment</span>
+    <span class="n">aligned</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">reference</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">reference</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+        <span class="n">aligned</span> <span class="o">=</span> <span class="p">[</span><span class="n">reference</span><span class="p">]</span>
+    
+    <span class="k">return</span> <span class="n">aligned</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">pmap</span><span class="p">(</span><span class="n">_align_im</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;reference&#39;</span><span class="p">:</span> <span class="n">reference</span><span class="p">,</span> 
+                                                            <span class="s1">&#39;upsample_factor&#39;</span><span class="p">:</span> <span class="n">upsample_factor</span><span class="p">},</span> 
+                                                  <span class="n">processes</span> <span class="o">=</span> <span class="n">processes</span><span class="p">))</span></div>
+
+<span class="k">def</span> <span class="nf">_align_im</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">upsample_factor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Align a single image to a reference. &quot;&quot;&quot;</span>
+    <span class="n">shifts</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">register_translation</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">upsample_factor</span> <span class="o">=</span> <span class="n">upsample_factor</span><span class="p">,</span> <span class="n">space</span> <span class="o">=</span> <span class="s1">&#39;real&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">shift_image</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="o">-</span><span class="n">shifts</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

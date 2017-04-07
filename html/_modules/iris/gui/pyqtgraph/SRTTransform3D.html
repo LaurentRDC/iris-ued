@@ -1,0 +1,404 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.SRTTransform3D &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.SRTTransform3D</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">from</span> <span class="nn">.Qt</span> <span class="k">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span>
+<span class="kn">from</span> <span class="nn">.Vector</span> <span class="k">import</span> <span class="n">Vector</span>
+<span class="kn">from</span> <span class="nn">.Transform3D</span> <span class="k">import</span> <span class="n">Transform3D</span>
+<span class="kn">from</span> <span class="nn">.Vector</span> <span class="k">import</span> <span class="n">Vector</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="SRTTransform3D"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D">[docs]</a><span class="k">class</span> <span class="nc">SRTTransform3D</span><span class="p">(</span><span class="n">Transform3D</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;4x4 Transform matrix that can always be represented as a combination of 3 matrices: scale * rotate * translate</span>
+<span class="sd">    This transform has no shear; angles are always preserved.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">Transform3D</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">init</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">init</span><span class="o">.</span><span class="n">__class__</span> <span class="ow">is</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">:</span>
+            <span class="n">init</span> <span class="o">=</span> <span class="n">SRTTransform</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">restoreState</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">SRTTransform3D</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;pos&#39;</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">init</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">]),</span>
+                <span class="s1">&#39;scale&#39;</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">init</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]),</span>
+                <span class="s1">&#39;angle&#39;</span><span class="p">:</span> <span class="n">init</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;axis&#39;</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">init</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]),</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">SRTTransform</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;pos&#39;</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">init</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">]),</span>
+                <span class="s1">&#39;scale&#39;</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">init</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]),</span>
+                <span class="s1">&#39;angle&#39;</span><span class="p">:</span> <span class="n">init</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;axis&#39;</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMatrix4x4</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setFromMatrix</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Cannot build SRTTransform3D from argument type:&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">init</span><span class="p">))</span>
+
+        
+<div class="viewcode-block" id="SRTTransform3D.getScale"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.getScale">[docs]</a>    <span class="k">def</span> <span class="nf">getScale</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.getRotation"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.getRotation">[docs]</a>    <span class="k">def</span> <span class="nf">getRotation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return (angle, axis) of rotation&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">],</span> <span class="n">Vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">])</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.getTranslation"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.getTranslation">[docs]</a>    <span class="k">def</span> <span class="nf">getTranslation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span></div>
+    
+<div class="viewcode-block" id="SRTTransform3D.reset"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;pos&#39;</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span>
+            <span class="s1">&#39;scale&#39;</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+            <span class="s1">&#39;angle&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>  <span class="c1">## in degrees</span>
+            <span class="s1">&#39;axis&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.translate"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.translate">[docs]</a>    <span class="k">def</span> <span class="nf">translate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adjust the translation of this transform&quot;&quot;&quot;</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">Vector</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setTranslate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">t</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.setTranslate"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.setTranslate">[docs]</a>    <span class="k">def</span> <span class="nf">setTranslate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the translation of this transform&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Vector</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.scale"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.scale">[docs]</a>    <span class="k">def</span> <span class="nf">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;adjust the scale of this transform&quot;&quot;&quot;</span>
+        <span class="c1">## try to prevent accidentally setting 0 scale on z axis</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;__len__&#39;</span><span class="p">):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span>
+            
+        <span class="n">s</span> <span class="o">=</span> <span class="n">Vector</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setScale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">s</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.setScale"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.setScale">[docs]</a>    <span class="k">def</span> <span class="nf">setScale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the scale of this transform&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;__len__&#39;</span><span class="p">):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Vector</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.rotate"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.rotate">[docs]</a>    <span class="k">def</span> <span class="nf">rotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot;Adjust the rotation of this transform&quot;&quot;&quot;</span>
+        <span class="n">origAxis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">origAxis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">axis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">origAxis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">axis</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">origAxis</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRotate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">angle</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMatrix4x4</span><span class="p">()</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">],</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">])</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">angle</span><span class="p">,</span> <span class="o">*</span><span class="n">axis</span><span class="p">)</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setFromMatrix</span><span class="p">(</span><span class="n">m</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.setRotate"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.setRotate">[docs]</a>    <span class="k">def</span> <span class="nf">setRotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot;Set the transformation rotation to angle (in degrees)&quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Vector</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="SRTTransform3D.setFromMatrix"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.setFromMatrix">[docs]</a>    <span class="k">def</span> <span class="nf">setFromMatrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set this transform mased on the elements of *m*</span>
+<span class="sd">        The input matrix must be affine AND have no shear,</span>
+<span class="sd">        otherwise the conversion will most likely fail.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">numpy.linalg</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">row</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+        <span class="c1">## translation is 4th column</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+        
+        <span class="c1">## scale is vector-length of first three columns</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:</span><span class="mi">3</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>
+        <span class="c1">## see whether there is an inversion</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">scale</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1">## doesn&#39;t really matter which axis we invert</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale</span>
+        
+        <span class="c1">## rotation axis is the eigenvector with eigenvalue=1</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">m</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">/</span> <span class="n">scale</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">evals</span><span class="p">,</span> <span class="n">evecs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Rotation matrix: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scale: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">scale</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original matrix: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
+            <span class="k">raise</span>
+        <span class="n">eigIndex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">evals</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">eigIndex</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;eigenvalues: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">evals</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;eigenvectors: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">evecs</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;index: </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">eigIndex</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">evals</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Could not determine rotation axis.&quot;</span><span class="p">)</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">evecs</span><span class="p">[:,</span><span class="n">eigIndex</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">real</span>
+        <span class="n">axis</span> <span class="o">/=</span> <span class="p">((</span><span class="n">axis</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="o">**</span><span class="mf">0.5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">axis</span>
+        
+        <span class="c1">## trace(r) == 2 cos(angle) + 1, so:</span>
+        <span class="n">cos</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">trace</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>  <span class="c1">## this only gets us abs(angle)</span>
+        
+        <span class="c1">## The off-diagonal values can be used to correct the angle ambiguity, </span>
+        <span class="c1">## but we need to figure out which element to use:</span>
+        <span class="n">axisInd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+        <span class="n">rInd</span><span class="p">,</span><span class="n">sign</span> <span class="o">=</span> <span class="p">[((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)][</span><span class="n">axisInd</span><span class="p">]</span>
+        
+        <span class="c1">## Then we have r-r.T = sin(angle) * 2 * sign * axis[axisInd];</span>
+        <span class="c1">## solve for sin(angle)</span>
+        <span class="n">sin</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="n">r</span><span class="o">.</span><span class="n">T</span><span class="p">)[</span><span class="n">rInd</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">axis</span><span class="p">[</span><span class="n">axisInd</span><span class="p">])</span>
+        
+        <span class="c1">## finally, we get the complete angle from arctan(sin/cos)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">sin</span><span class="p">,</span> <span class="n">cos</span><span class="p">)</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="SRTTransform3D.as2D"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.as2D">[docs]</a>    <span class="k">def</span> <span class="nf">as2D</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a QTransform representing the x,y portion of this transform (if possible)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">SRTTransform</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    <span class="c1">#def __div__(self, t):</span>
+        <span class="c1">#&quot;&quot;&quot;A / B  ==  B^-1 * A&quot;&quot;&quot;</span>
+        <span class="c1">#dt = t.inverted()[0] * self</span>
+        <span class="c1">#return SRTTransform(dt)</span>
+        
+    <span class="c1">#def __mul__(self, t):</span>
+        <span class="c1">#return SRTTransform(QtGui.QTransform.__mul__(self, t))</span>
+
+<div class="viewcode-block" id="SRTTransform3D.saveState"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">]</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span>
+        <span class="c1">#if s[0] == 0:</span>
+            <span class="c1">#raise Exception(&#39;Invalid scale: %s&#39; % str(s))</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;pos&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> 
+            <span class="s1">&#39;scale&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> 
+            <span class="s1">&#39;angle&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">],</span> 
+            <span class="s1">&#39;axis&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="SRTTransform3D.restoreState"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Vector</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pos&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">)))</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">))</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span><span class="p">,)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">3</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">scale</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Vector</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;angle&#39;</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;axis&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SRTTransform3D.update"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">Transform3D</span><span class="o">.</span><span class="n">setToIdentity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c1">## modifications to the transform are multiplied on the right, so we need to reverse order here.</span>
+        <span class="n">Transform3D</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+        <span class="n">Transform3D</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">],</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">])</span>
+        <span class="n">Transform3D</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span></div>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">saveState</span><span class="p">())</span>
+        
+<div class="viewcode-block" id="SRTTransform3D.matrix"><a class="viewcode-back" href="../../../../iris.gui.pyqtgraph.html#iris.gui.pyqtgraph.SRTTransform3D.SRTTransform3D.matrix">[docs]</a>    <span class="k">def</span> <span class="nf">matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nd</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">nd</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">copyDataTo</span><span class="p">())</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">nd</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">copyDataTo</span><span class="p">())</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+            <span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">m</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">m</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Argument &#39;nd&#39; must be 2 or 3&quot;</span><span class="p">)</span></div></div>
+        
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">widgets</span>
+    <span class="kn">import</span> <span class="nn">GraphicsView</span>
+    <span class="kn">from</span> <span class="nn">functions</span> <span class="k">import</span> <span class="o">*</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="p">([])</span>
+    <span class="n">win</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="p">()</span>
+    <span class="n">win</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">cw</span> <span class="o">=</span> <span class="n">GraphicsView</span><span class="o">.</span><span class="n">GraphicsView</span><span class="p">()</span>
+    <span class="c1">#cw.enableMouse()  </span>
+    <span class="n">win</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="n">cw</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsScene</span><span class="p">()</span>
+    <span class="n">cw</span><span class="o">.</span><span class="n">setScene</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">win</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span><span class="mi">600</span><span class="p">)</span>
+    <span class="n">cw</span><span class="o">.</span><span class="n">enableMouse</span><span class="p">()</span>
+    <span class="n">cw</span><span class="o">.</span><span class="n">setRange</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="o">-</span><span class="mf">100.</span><span class="p">,</span> <span class="o">-</span><span class="mf">100.</span><span class="p">,</span> <span class="mf">200.</span><span class="p">,</span> <span class="mf">200.</span><span class="p">))</span>
+    
+    <span class="k">class</span> <span class="nc">Item</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsItem</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsItem</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsRectItem</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPen</span><span class="p">(</span><span class="n">mkPen</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t1</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsTextItem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t1</span><span class="o">.</span><span class="n">setHtml</span><span class="p">(</span><span class="s1">&#39;&lt;span style=&quot;color: #F00&quot;&gt;R&lt;/span&gt;&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t1</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsLineItem</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l2</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsLineItem</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l1</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPen</span><span class="p">(</span><span class="n">mkPen</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l2</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPen</span><span class="p">(</span><span class="n">mkPen</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)))</span>
+        <span class="k">def</span> <span class="nf">boundingRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">()</span>
+        <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">pass</span>
+            
+    <span class="c1">#s.addItem(b)</span>
+    <span class="c1">#s.addItem(t1)</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">Item</span><span class="p">()</span>
+    <span class="n">s</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="n">l1</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsLineItem</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">l2</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsLineItem</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">l1</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPen</span><span class="p">(</span><span class="n">mkPen</span><span class="p">(</span><span class="s1">&#39;r&#39;</span><span class="p">)))</span>
+    <span class="n">l2</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPen</span><span class="p">(</span><span class="n">mkPen</span><span class="p">(</span><span class="s1">&#39;r&#39;</span><span class="p">)))</span>
+    <span class="n">s</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">l1</span><span class="p">)</span>
+    <span class="n">s</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">l2</span><span class="p">)</span>
+    
+    <span class="n">tr1</span> <span class="o">=</span> <span class="n">SRTTransform</span><span class="p">()</span>
+    <span class="n">tr2</span> <span class="o">=</span> <span class="n">SRTTransform</span><span class="p">()</span>
+    <span class="n">tr3</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTransform</span><span class="p">()</span>
+    <span class="n">tr3</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">tr3</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;QTransform -&gt; Transform: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">SRTTransform</span><span class="p">(</span><span class="n">tr3</span><span class="p">)))</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;tr1: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">tr1</span><span class="p">))</span>
+    
+    <span class="n">tr2</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">tr2</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;tr2: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">tr2</span><span class="p">))</span>
+    
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">tr2</span><span class="o">/</span><span class="n">tr1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;tr2 / tr1 = </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;tr2 * tr1 = </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">tr2</span><span class="o">*</span><span class="n">tr1</span><span class="p">))</span>
+    
+    <span class="n">tr4</span> <span class="o">=</span> <span class="n">SRTTransform</span><span class="p">()</span>
+    <span class="n">tr4</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">tr4</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;tr1 * tr4 = </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">tr1</span><span class="o">*</span><span class="n">tr4</span><span class="p">))</span>
+    
+    <span class="n">w1</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">TestROI</span><span class="p">((</span><span class="mi">19</span><span class="p">,</span><span class="mi">19</span><span class="p">),</span> <span class="p">(</span><span class="mi">22</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span> <span class="n">invertible</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1">#w2 = widgets.TestROI((0,0), (150, 150))</span>
+    <span class="n">w1</span><span class="o">.</span><span class="n">setZValue</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">s</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">w1</span><span class="p">)</span>
+    <span class="c1">#s.addItem(w2)</span>
+    <span class="n">w1Base</span> <span class="o">=</span> <span class="n">w1</span><span class="o">.</span><span class="n">getState</span><span class="p">()</span>
+    <span class="c1">#w2Base = w2.getState()</span>
+    <span class="k">def</span> <span class="nf">update</span><span class="p">():</span>
+        <span class="n">tr1</span> <span class="o">=</span> <span class="n">w1</span><span class="o">.</span><span class="n">getGlobalTransform</span><span class="p">(</span><span class="n">w1Base</span><span class="p">)</span>
+        <span class="c1">#tr2 = w2.getGlobalTransform(w2Base)</span>
+        <span class="n">item</span><span class="o">.</span><span class="n">setTransform</span><span class="p">(</span><span class="n">tr1</span><span class="p">)</span>
+        
+    <span class="c1">#def update2():</span>
+        <span class="c1">#tr1 = w1.getGlobalTransform(w1Base)</span>
+        <span class="c1">#tr2 = w2.getGlobalTransform(w2Base)</span>
+        <span class="c1">#t1.setTransform(tr1)</span>
+        <span class="c1">#w1.setState(w1Base)</span>
+        <span class="c1">#w1.applyGlobalTransform(tr2)</span>
+        
+    <span class="n">w1</span><span class="o">.</span><span class="n">sigRegionChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+    <span class="c1">#w2.sigRegionChanged.connect(update2)</span>
+    
+<span class="kn">from</span> <span class="nn">.SRTTransform</span> <span class="k">import</span> <span class="n">SRTTransform</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  <li><a href="../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

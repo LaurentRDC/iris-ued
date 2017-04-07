@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.parametertree.ParameterSystem &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.parametertree.ParameterSystem</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.parameterTypes</span> <span class="k">import</span> <span class="n">GroupParameter</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">.SystemSolver</span> <span class="k">import</span> <span class="n">SystemSolver</span>
+
+
+<div class="viewcode-block" id="ParameterSystem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem">[docs]</a><span class="k">class</span> <span class="nc">ParameterSystem</span><span class="p">(</span><span class="n">GroupParameter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ParameterSystem is a subclass of GroupParameter that manages a tree of </span>
+<span class="sd">    sub-parameters with a set of interdependencies--changing any one parameter</span>
+<span class="sd">    may affect other parameters in the system.</span>
+<span class="sd">    </span>
+<span class="sd">    See parametertree/SystemSolver for more information.</span>
+<span class="sd">    </span>
+<span class="sd">    NOTE: This API is experimental and may change substantially across minor </span>
+<span class="sd">    version numbers. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="n">GroupParameter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_system</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fixParams</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># all auto-generated &#39;fixed&#39; params</span>
+        <span class="n">sys</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;system&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setSystem</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreChange</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># params whose changes should be ignored temporarily</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigTreeStateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">updateSystem</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="ParameterSystem.setSystem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.setSystem">[docs]</a>    <span class="k">def</span> <span class="nf">setSystem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sys</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_system</span> <span class="o">=</span> <span class="n">sys</span>
+        
+        <span class="c1"># auto-generate defaults to match child parameters</span>
+        <span class="n">defaults</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+            <span class="n">constraints</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">):</span>
+                <span class="n">constraints</span> <span class="o">+=</span> <span class="s1">&#39;n&#39;</span>
+                
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">param</span><span class="o">.</span><span class="n">readonly</span><span class="p">():</span>
+                <span class="n">constraints</span> <span class="o">+=</span> <span class="s1">&#39;f&#39;</span>
+                <span class="k">if</span> <span class="s1">&#39;n&#39;</span> <span class="ow">in</span> <span class="n">constraints</span><span class="p">:</span>
+                    <span class="n">ch</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">addChild</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_fixParams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+                    <span class="n">param</span><span class="o">.</span><span class="n">setReadonly</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="n">param</span><span class="o">.</span><span class="n">setOpts</span><span class="p">(</span><span class="n">expanded</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">vals</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+                    <span class="n">ch</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">addChild</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+                    <span class="c1">#self._fixParams.append(ch)</span>
+                
+            <span class="n">defaults</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">type</span><span class="p">(),</span> <span class="kc">None</span><span class="p">,</span> <span class="n">constraints</span><span class="p">]</span>
+        
+        <span class="n">sys</span><span class="o">.</span><span class="n">defaultState</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">defaults</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">vals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateAllParams</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="ParameterSystem.updateSystem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateSystem">[docs]</a>    <span class="k">def</span> <span class="nf">updateSystem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">changes</span><span class="p">):</span>
+        <span class="n">changes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ch</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">changes</span> <span class="k">if</span> <span class="n">ch</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreChange</span><span class="p">]</span>
+        
+        <span class="c1">#resets = [ch[0] for ch in changes if ch[1] == &#39;setToDefault&#39;]</span>
+        <span class="n">sets</span> <span class="o">=</span> <span class="p">[</span><span class="n">ch</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">changes</span> <span class="k">if</span> <span class="n">ch</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;value&#39;</span><span class="p">]</span>
+        <span class="c1">#for param in resets:</span>
+            <span class="c1">#setattr(self._system, param.name(), None)</span>
+
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">sets</span><span class="p">:</span>
+            <span class="c1">#if param in resets:</span>
+                <span class="c1">#continue</span>
+            
+            <span class="c1">#if param in self._fixParams:</span>
+                <span class="c1">#param.parent().setWritable(param.value())</span>
+            <span class="c1">#else:</span>
+            <span class="k">if</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixParams</span><span class="p">:</span>
+                <span class="n">parent</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">value</span><span class="p">():</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_system</span><span class="p">,</span> <span class="n">parent</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="n">parent</span><span class="o">.</span><span class="n">value</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_system</span><span class="p">,</span> <span class="n">parent</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_system</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="n">param</span><span class="o">.</span><span class="n">value</span><span class="p">())</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateAllParams</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="ParameterSystem.updateAllParams"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateAllParams">[docs]</a>    <span class="k">def</span> <span class="nf">updateAllParams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigTreeStateChanged</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">updateSystem</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system</span><span class="o">.</span><span class="n">_vars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">param</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_system</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">updateParamState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="s1">&#39;autoSet&#39;</span><span class="p">)</span>
+                        <span class="n">param</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">updateParamState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="s1">&#39;fixed&#39;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">updateParamState</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="s1">&#39;autoUnset&#39;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigTreeStateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">updateSystem</span><span class="p">)</span></div>
+                
+<div class="viewcode-block" id="ParameterSystem.updateParamState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.parametertree.html#iris.gui.pyqtgraph.parametertree.ParameterSystem.ParameterSystem.updateParamState">[docs]</a>    <span class="k">def</span> <span class="nf">updateParamState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;autoSet&#39;</span><span class="p">:</span>
+            <span class="n">bg</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">((</span><span class="mi">200</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">255</span><span class="p">))</span>
+            <span class="n">bold</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">readonly</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;autoUnset&#39;</span><span class="p">:</span>
+            <span class="n">bg</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">bold</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">readonly</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;fixed&#39;</span><span class="p">:</span>
+            <span class="n">bg</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+            <span class="n">bold</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">readonly</span> <span class="o">=</span> <span class="kc">False</span>
+            
+        <span class="n">param</span><span class="o">.</span><span class="n">setReadonly</span><span class="p">(</span><span class="n">readonly</span><span class="p">)</span></div></div>
+        
+        <span class="c1">#for item in param.items:</span>
+            <span class="c1">#item.setBackground(0, bg)</span>
+            <span class="c1">#f = item.font(0)</span>
+            <span class="c1">#f.setWeight(f.Bold if bold else f.Normal)</span>
+            <span class="c1">#item.setFont(0, f)</span>
+            
+            
+            
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

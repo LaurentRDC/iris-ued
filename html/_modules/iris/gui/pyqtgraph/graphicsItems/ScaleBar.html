@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.ScaleBar &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.graphicsItems.ScaleBar</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">.GraphicsObject</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.GraphicsWidgetAnchor</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.TextItem</span> <span class="k">import</span> <span class="n">TextItem</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">getConfigOption</span>
+<span class="kn">from</span> <span class="nn">..Point</span> <span class="k">import</span> <span class="n">Point</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ScaleBar&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ScaleBar"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ScaleBar.ScaleBar">[docs]</a><span class="k">class</span> <span class="nc">ScaleBar</span><span class="p">(</span><span class="n">GraphicsObject</span><span class="p">,</span> <span class="n">GraphicsWidgetAnchor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Displays a rectangular bar to indicate the relative scale of objects on the view.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">brush</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">GraphicsObject</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">GraphicsWidgetAnchor</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFlag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ItemHasNoContents</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAcceptedMouseButtons</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">NoButton</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">brush</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">brush</span> <span class="o">=</span> <span class="n">getConfigOption</span><span class="p">(</span><span class="s1">&#39;foreground&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">brush</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">(</span><span class="n">brush</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="n">pen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="k">if</span> <span class="n">offset</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">bar</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsRectItem</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bar</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bar</span><span class="o">.</span><span class="n">setBrush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">brush</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bar</span><span class="o">.</span><span class="n">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">TextItem</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">fn</span><span class="o">.</span><span class="n">siFormat</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">suffix</span><span class="p">),</span> <span class="n">anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ScaleBar.parentChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ScaleBar.ScaleBar.parentChanged">[docs]</a>    <span class="k">def</span> <span class="nf">parentChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">view</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">sigRangeChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">updateBar</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateBar</span><span class="p">()</span></div>
+        
+        
+<div class="viewcode-block" id="ScaleBar.updateBar"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ScaleBar.ScaleBar.updateBar">[docs]</a>    <span class="k">def</span> <span class="nf">updateBar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parentItem</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">view</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">mapFromViewToItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">mapFromViewToItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">p2</span><span class="o">-</span><span class="n">p1</span><span class="p">)</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bar</span><span class="o">.</span><span class="n">setRect</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="o">-</span><span class="n">w</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_width</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="o">-</span><span class="n">w</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ScaleBar.boundingRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ScaleBar.ScaleBar.boundingRect">[docs]</a>    <span class="k">def</span> <span class="nf">boundingRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ScaleBar.setParentItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.ScaleBar.ScaleBar.setParentItem">[docs]</a>    <span class="k">def</span> <span class="nf">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">GraphicsObject</span><span class="o">.</span><span class="n">setParentItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
+            <span class="n">anchorx</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">anchory</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">anchor</span> <span class="o">=</span> <span class="p">(</span><span class="n">anchorx</span><span class="p">,</span> <span class="n">anchory</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">anchor</span><span class="p">(</span><span class="n">itemPos</span><span class="o">=</span><span class="n">anchor</span><span class="p">,</span> <span class="n">parentPos</span><span class="o">=</span><span class="n">anchor</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div></div>
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

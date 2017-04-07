@@ -1,0 +1,191 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.util.cprint &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.util.cprint</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Cross-platform color text printing</span>
+
+<span class="sd">Based on colorama (see pyqtgraph/util/colorama/README.txt)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">.colorama.winterm</span> <span class="k">import</span> <span class="n">WinTerm</span><span class="p">,</span> <span class="n">WinColor</span><span class="p">,</span> <span class="n">WinStyle</span>
+<span class="kn">from</span> <span class="nn">.colorama.win32</span> <span class="k">import</span> <span class="n">windll</span>
+<span class="kn">from</span> <span class="nn">..python2_3</span> <span class="k">import</span> <span class="n">basestring</span>
+
+<span class="n">_WIN</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">windll</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">winterm</span> <span class="o">=</span> <span class="n">WinTerm</span><span class="p">()</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">_WIN</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="winset"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.cprint.winset">[docs]</a><span class="k">def</span> <span class="nf">winset</span><span class="p">(</span><span class="n">reset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">back</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">reset</span><span class="p">:</span>
+        <span class="n">winterm</span><span class="o">.</span><span class="n">reset_all</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">fore</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">winterm</span><span class="o">.</span><span class="n">fore</span><span class="p">(</span><span class="n">fore</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">back</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">winterm</span><span class="o">.</span><span class="n">back</span><span class="p">(</span><span class="n">back</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">winterm</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="n">style</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span></div>
+
+<span class="n">ANSI</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">WIN</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">color</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="s1">&#39;BLACK&#39;</span><span class="p">,</span> <span class="s1">&#39;RED&#39;</span><span class="p">,</span> <span class="s1">&#39;GREEN&#39;</span><span class="p">,</span> <span class="s1">&#39;YELLOW&#39;</span><span class="p">,</span> <span class="s1">&#39;BLUE&#39;</span><span class="p">,</span> <span class="s1">&#39;MAGENTA&#39;</span><span class="p">,</span> <span class="s1">&#39;CYAN&#39;</span><span class="p">,</span> <span class="s1">&#39;WHITE&#39;</span><span class="p">]):</span>
+    <span class="nb">globals</span><span class="p">()[</span><span class="n">color</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+    <span class="nb">globals</span><span class="p">()[</span><span class="s1">&#39;BR_&#39;</span> <span class="o">+</span> <span class="n">color</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">8</span>
+    <span class="nb">globals</span><span class="p">()[</span><span class="s1">&#39;BACK_&#39;</span> <span class="o">+</span> <span class="n">color</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">40</span>
+    <span class="n">ANSI</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[</span><span class="si">%d</span><span class="s2">m&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="mi">30</span><span class="o">+</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">ANSI</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[2;</span><span class="si">%d</span><span class="s2">m&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="mi">30</span><span class="o">+</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">ANSI</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">40</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[</span><span class="si">%d</span><span class="s2">m&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="mi">40</span><span class="o">+</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;GREY&#39;</span> <span class="k">if</span> <span class="n">color</span> <span class="o">==</span> <span class="s1">&#39;WHITE&#39;</span> <span class="k">else</span> <span class="n">color</span>
+    <span class="n">WIN</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;fore&#39;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">WinColor</span><span class="p">,</span> <span class="n">color</span><span class="p">),</span> <span class="s1">&#39;style&#39;</span><span class="p">:</span> <span class="n">WinStyle</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">}</span>
+    <span class="n">WIN</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;fore&#39;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">WinColor</span><span class="p">,</span> <span class="n">color</span><span class="p">),</span> <span class="s1">&#39;style&#39;</span><span class="p">:</span> <span class="n">WinStyle</span><span class="o">.</span><span class="n">BRIGHT</span><span class="p">}</span>
+    <span class="n">WIN</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">40</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;back&#39;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">WinColor</span><span class="p">,</span> <span class="n">color</span><span class="p">)}</span>
+
+<span class="n">RESET</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">ANSI</span><span class="p">[</span><span class="n">RESET</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+<span class="n">WIN</span><span class="p">[</span><span class="n">RESET</span><span class="p">]</span> <span class="o">=</span>  <span class="p">{</span><span class="s1">&#39;reset&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="cprint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.cprint.cprint">[docs]</a><span class="k">def</span> <span class="nf">cprint</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Print with color. Examples::</span>
+
+<span class="sd">        # colors are BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE</span>
+<span class="sd">        cprint(&#39;stdout&#39;, RED, &#39;This is in red. &#39;, RESET, &#39;and this is normal\n&#39;)</span>
+
+<span class="sd">        # Adding BR_ before the color manes it bright</span>
+<span class="sd">        cprint(&#39;stdout&#39;, BR_GREEN, &#39;This is bright green.\n&#39;, RESET)</span>
+
+<span class="sd">        # Adding BACK_ changes background color</span>
+<span class="sd">        cprint(&#39;stderr&#39;, BACK_BLUE, WHITE, &#39;This is white-on-blue.&#39;, -1)</span>
+
+<span class="sd">        # Integers 0-7 for normal, 8-15 for bright, and 40-47 for background.</span>
+<span class="sd">        # -1 to reset.</span>
+<span class="sd">        cprint(&#39;stderr&#39;, 1, &#39;This is in red.&#39;, -1)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;stream&#39;</span><span class="p">,</span> <span class="s1">&#39;stdout&#39;</span><span class="p">)</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="n">stream</span> <span class="o">==</span> <span class="s1">&#39;stderr&#39;</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="n">stream</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;stderr&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="s1">&#39;isatty&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">stream</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">_WIN</span><span class="p">:</span>
+            <span class="c1"># convert to win32 calls</span>
+            <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+                    <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">kwds</span> <span class="o">=</span> <span class="n">WIN</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+                    <span class="n">winset</span><span class="p">(</span><span class="n">stderr</span><span class="o">=</span><span class="n">err</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># convert to ANSI</span>
+            <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+                    <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ANSI</span><span class="p">[</span><span class="n">arg</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># ignore colors</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+                <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="cout"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.cprint.cout">[docs]</a><span class="k">def</span> <span class="nf">cout</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Shorthand for cprint(&#39;stdout&#39;, ...)&quot;&quot;&quot;</span>
+    <span class="n">cprint</span><span class="p">(</span><span class="s1">&#39;stdout&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="cerr"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.util.html#iris.gui.pyqtgraph.util.cprint.cerr">[docs]</a><span class="k">def</span> <span class="nf">cerr</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Shorthand for cprint(&#39;stderr&#39;, ...)&quot;&quot;&quot;</span>
+    <span class="n">cprint</span><span class="p">(</span><span class="s1">&#39;stderr&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

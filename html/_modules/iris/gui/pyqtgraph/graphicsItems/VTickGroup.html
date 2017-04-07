@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.VTickGroup &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.graphicsItems.VTickGroup</h1><div class="highlight"><pre>
+<span></span><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">))</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">))</span>
+
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">.UIGraphicsItem</span> <span class="k">import</span> <span class="n">UIGraphicsItem</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;VTickGroup&#39;</span><span class="p">]</span>
+<div class="viewcode-block" id="VTickGroup"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.VTickGroup.VTickGroup">[docs]</a><span class="k">class</span> <span class="nc">VTickGroup</span><span class="p">(</span><span class="n">UIGraphicsItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **Bases:** :class:`UIGraphicsItem &lt;pyqtgraph.UIGraphicsItem&gt;`</span>
+<span class="sd">    </span>
+<span class="sd">    Draws a set of tick marks which always occupy the same vertical range of the view,</span>
+<span class="sd">    but have x coordinates relative to the data within the view.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xvals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yrange</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pen</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ==============  ===================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        xvals           A list of x values (in data coordinates) at which to draw ticks.</span>
+<span class="sd">        yrange          A list of [low, high] limits for the tick. 0 is the bottom of</span>
+<span class="sd">                        the view, 1 is the top. [0.8, 1] would draw ticks in the top</span>
+<span class="sd">                        fifth of the view.</span>
+<span class="sd">        pen             The pen to use for drawing ticks. Default is grey. Can be specified</span>
+<span class="sd">                        as any argument valid for :func:`mkPen&lt;pyqtgraph.mkPen&gt;`</span>
+<span class="sd">        ==============  ===================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">yrange</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">yrange</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">xvals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">xvals</span> <span class="o">=</span> <span class="p">[]</span>
+            
+        <span class="n">UIGraphicsItem</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="n">pen</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pen</span> <span class="o">=</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsPathItem</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xvals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yrange</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">pen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setYRange</span><span class="p">(</span><span class="n">yrange</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setXVals</span><span class="p">(</span><span class="n">xvals</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="VTickGroup.setPen"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.VTickGroup.VTickGroup.setPen">[docs]</a>    <span class="k">def</span> <span class="nf">setPen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the pen to use for drawing ticks. Can be specified as any arguments valid</span>
+<span class="sd">        for :func:`mkPen&lt;pyqtgraph.mkPen&gt;`&quot;&quot;&quot;</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">pen</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VTickGroup.setXVals"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.VTickGroup.VTickGroup.setXVals">[docs]</a>    <span class="k">def</span> <span class="nf">setXVals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the x values for the ticks. </span>
+<span class="sd">        </span>
+<span class="sd">        ==============   =====================================================================</span>
+<span class="sd">        **Arguments:**</span>
+<span class="sd">        vals             A list of x values (in data/plot coordinates) at which to draw ticks.</span>
+<span class="sd">        ==============   =====================================================================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xvals</span> <span class="o">=</span> <span class="n">vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rebuildTicks</span><span class="p">()</span></div>
+        <span class="c1">#self.valid = False</span>
+        
+<div class="viewcode-block" id="VTickGroup.setYRange"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.VTickGroup.VTickGroup.setYRange">[docs]</a>    <span class="k">def</span> <span class="nf">setYRange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the y range [low, high] that the ticks are drawn on. 0 is the bottom of </span>
+<span class="sd">        the view, 1 is the top.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yrange</span> <span class="o">=</span> <span class="n">vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rebuildTicks</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="VTickGroup.dataBounds"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.VTickGroup.VTickGroup.dataBounds">[docs]</a>    <span class="k">def</span> <span class="nf">dataBounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1">## item should never affect view autoscaling</span></div>
+            
+<div class="viewcode-block" id="VTickGroup.yRange"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.VTickGroup.VTickGroup.yRange">[docs]</a>    <span class="k">def</span> <span class="nf">yRange</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">yrange</span></div>
+            
+<div class="viewcode-block" id="VTickGroup.rebuildTicks"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.VTickGroup.VTickGroup.rebuildTicks">[docs]</a>    <span class="k">def</span> <span class="nf">rebuildTicks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPainterPath</span><span class="p">()</span>
+        <span class="n">yrange</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">yRange</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xvals</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">lineTo</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="VTickGroup.paint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.VTickGroup.VTickGroup.paint">[docs]</a>    <span class="k">def</span> <span class="nf">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">UIGraphicsItem</span><span class="o">.</span><span class="n">paint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        
+        <span class="n">br</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">()</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="n">br</span><span class="o">.</span><span class="n">setY</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">yrange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+        <span class="n">br</span><span class="o">.</span><span class="n">setHeight</span><span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">yrange</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">br</span><span class="o">.</span><span class="n">y</span><span class="p">())</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">br</span><span class="o">.</span><span class="n">height</span><span class="p">())</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pen</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">drawPath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div></div>
+
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

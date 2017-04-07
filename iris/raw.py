@@ -318,8 +318,8 @@ class RawDataset(object):
             averaged, error = diff_avg(cube, mad = mad, mad_dist = 3)
 
             with DiffractionDataset(name = filename, mode = 'r+') as processed:
-                processed.processed_measurements_group['intensity'][:,:,i] = n.nan_to_num(averaged)
-                processed.processed_measurements_group['error'][:,:,i] = n.nan_to_num(error)
+                processed.processed_measurements_group['intensity'].write_direct(n.nan_to_num(averaged), source_sel = n.s_[:,:], dest_sel = n.s_[:,:,i])
+                processed.processed_measurements_group['error'].write_direct(n.nan_to_num(error), source_sel = n.s_[:,:], dest_sel = n.s_[:,:,i])
             
             callback(round(100*i / len(self.time_points)))
 

@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.graphicsItems.LabelItem &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.graphicsItems.LabelItem</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">from</span> <span class="nn">.GraphicsWidget</span> <span class="k">import</span> <span class="n">GraphicsWidget</span>
+<span class="kn">from</span> <span class="nn">.GraphicsWidgetAnchor</span> <span class="k">import</span> <span class="n">GraphicsWidgetAnchor</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">getConfigOption</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LabelItem&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="LabelItem"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LabelItem.LabelItem">[docs]</a><span class="k">class</span> <span class="nc">LabelItem</span><span class="p">(</span><span class="n">GraphicsWidget</span><span class="p">,</span> <span class="n">GraphicsWidgetAnchor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    GraphicsWidget displaying text.</span>
+<span class="sd">    Used mainly as axis labels, titles, etc.</span>
+<span class="sd">    </span>
+<span class="sd">    Note: To display text inside a scaled view (ViewBox, PlotWidget, etc) use TextItem</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">GraphicsWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="n">GraphicsWidgetAnchor</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsTextItem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;justify&#39;</span><span class="p">:</span> <span class="s1">&#39;center&#39;</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sizeHint</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAngle</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+            
+<div class="viewcode-block" id="LabelItem.setAttr"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LabelItem.LabelItem.setAttr">[docs]</a>    <span class="k">def</span> <span class="nf">setAttr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set default text properties. See setText() for accepted parameters.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+        
+<div class="viewcode-block" id="LabelItem.setText"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LabelItem.LabelItem.setText">[docs]</a>    <span class="k">def</span> <span class="nf">setText</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the text and text properties in the label. Accepts optional arguments for auto-generating</span>
+<span class="sd">        a CSS style string:</span>
+
+<span class="sd">        ==================== ==============================</span>
+<span class="sd">        **Style Arguments:**</span>
+<span class="sd">        color                (str) example: &#39;CCFF00&#39;</span>
+<span class="sd">        size                 (str) example: &#39;8pt&#39;</span>
+<span class="sd">        bold                 (bool)</span>
+<span class="sd">        italic               (bool)</span>
+<span class="sd">        ==================== ==============================</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+        <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        
+        <span class="n">optlist</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;color&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">getConfigOption</span><span class="p">(</span><span class="s1">&#39;foreground&#39;</span><span class="p">)</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">mkColor</span><span class="p">(</span><span class="n">color</span><span class="p">)</span>
+        <span class="n">optlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;color: #&#39;</span> <span class="o">+</span> <span class="n">fn</span><span class="o">.</span><span class="n">colorStr</span><span class="p">(</span><span class="n">color</span><span class="p">)[:</span><span class="mi">6</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;size&#39;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="n">optlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;font-size: &#39;</span> <span class="o">+</span> <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;bold&#39;</span> <span class="ow">in</span> <span class="n">opts</span> <span class="ow">and</span> <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;bold&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+            <span class="n">optlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;font-weight: &#39;</span> <span class="o">+</span> <span class="p">{</span><span class="kc">True</span><span class="p">:</span><span class="s1">&#39;bold&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">:</span><span class="s1">&#39;normal&#39;</span><span class="p">}[</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;bold&#39;</span><span class="p">]])</span>
+        <span class="k">if</span> <span class="s1">&#39;italic&#39;</span> <span class="ow">in</span> <span class="n">opts</span> <span class="ow">and</span> <span class="n">opts</span><span class="p">[</span><span class="s1">&#39;italic&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+            <span class="n">optlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;font-style: &#39;</span> <span class="o">+</span> <span class="p">{</span><span class="kc">True</span><span class="p">:</span><span class="s1">&#39;italic&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">:</span><span class="s1">&#39;normal&#39;</span><span class="p">}[</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;italic&#39;</span><span class="p">]])</span>
+        <span class="n">full</span> <span class="o">=</span> <span class="s2">&quot;&lt;span style=&#39;</span><span class="si">%s</span><span class="s2">&#39;&gt;</span><span class="si">%s</span><span class="s2">&lt;/span&gt;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39;; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">optlist</span><span class="p">),</span> <span class="n">text</span><span class="p">)</span>
+        <span class="c1">#print full</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">setHtml</span><span class="p">(</span><span class="n">full</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateMin</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resizeEvent</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGeometry</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="LabelItem.resizeEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LabelItem.LabelItem.resizeEvent">[docs]</a>    <span class="k">def</span> <span class="nf">resizeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="c1">#c1 = self.boundingRect().center()</span>
+        <span class="c1">#c2 = self.item.mapToParent(self.item.boundingRect().center()) # + self.item.pos()</span>
+        <span class="c1">#dif = c1 - c2</span>
+        <span class="c1">#self.item.moveBy(dif.x(), dif.y())</span>
+        <span class="c1">#print c1, c2, dif, self.item.pos()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemRect</span><span class="p">()</span>
+        <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapFromItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapFromItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPointF</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">rect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rect</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;justify&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;left&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bounds</span><span class="o">.</span><span class="n">moveLeft</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">left</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bounds</span><span class="o">.</span><span class="n">moveTop</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">top</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="n">left</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bounds</span><span class="o">.</span><span class="n">moveBottom</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">bottom</span><span class="p">())</span>
+                
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;justify&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;center&#39;</span><span class="p">:</span>
+            <span class="n">bounds</span><span class="o">.</span><span class="n">moveCenter</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">center</span><span class="p">())</span>
+            <span class="c1">#bounds = self.itemRect()</span>
+            <span class="c1">#self.item.setPos(self.width()/2. - bounds.width()/2., 0)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span><span class="p">[</span><span class="s1">&#39;justify&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;right&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bounds</span><span class="o">.</span><span class="n">moveRight</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">right</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bounds</span><span class="o">.</span><span class="n">moveBottom</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">bottom</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="n">left</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bounds</span><span class="o">.</span><span class="n">moveTop</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">top</span><span class="p">())</span>
+            <span class="c1">#bounds = self.itemRect()</span>
+            <span class="c1">#self.item.setPos(self.width() - bounds.width(), 0)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">setPos</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">topLeft</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemRect</span><span class="p">()</span><span class="o">.</span><span class="n">topLeft</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateMin</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="LabelItem.setAngle"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LabelItem.LabelItem.setAngle">[docs]</a>    <span class="k">def</span> <span class="nf">setAngle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">angle</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">resetTransform</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateMin</span><span class="p">()</span></div>
+        
+        
+<div class="viewcode-block" id="LabelItem.updateMin"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LabelItem.LabelItem.updateMin">[docs]</a>    <span class="k">def</span> <span class="nf">updateMin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemRect</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMinimumWidth</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">width</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMinimumHeight</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">height</span><span class="p">())</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sizeHint</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">MinimumSize</span><span class="p">:</span> <span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="n">bounds</span><span class="o">.</span><span class="n">height</span><span class="p">()),</span>
+            <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">PreferredSize</span><span class="p">:</span> <span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="n">bounds</span><span class="o">.</span><span class="n">height</span><span class="p">()),</span>
+            <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">MaximumSize</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>  <span class="c1">#bounds.width()*2, bounds.height()*2),</span>
+            <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">MinimumDescent</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1">##?? what is this?</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateGeometry</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="LabelItem.sizeHint"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LabelItem.LabelItem.sizeHint">[docs]</a>    <span class="k">def</span> <span class="nf">sizeHint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hint</span><span class="p">,</span> <span class="n">constraint</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">hint</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sizeHint</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QSizeF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QSizeF</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_sizeHint</span><span class="p">[</span><span class="n">hint</span><span class="p">])</span></div>
+        
+<div class="viewcode-block" id="LabelItem.itemRect"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.graphicsItems.html#iris.gui.pyqtgraph.graphicsItems.LabelItem.LabelItem.itemRect">[docs]</a>    <span class="k">def</span> <span class="nf">itemRect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">mapRectToParent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">())</span></div></div>
+        
+    <span class="c1">#def paint(self, p, *args):</span>
+        <span class="c1">#p.setPen(fn.mkPen(&#39;r&#39;))</span>
+        <span class="c1">#p.drawRect(self.rect())</span>
+        <span class="c1">#p.setPen(fn.mkPen(&#39;g&#39;))</span>
+        <span class="c1">#p.drawRect(self.itemRect())</span>
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

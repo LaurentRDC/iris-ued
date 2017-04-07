@@ -23,7 +23,7 @@ def error_aware(message):
                 return func(self, *args, **kwargs)
             except:
                 exc = traceback.format_exc()
-                self.error_message_signal.emit(message + '\n \n \n' + exc)
+                self.error_message_signal.emit(message + '\n\n\n' + exc)
         return aware_func
     return wrap
 

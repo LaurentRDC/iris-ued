@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.widgets.CheckTable &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.widgets.CheckTable</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">VerticalLabel</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CheckTable&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CheckTable"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable">[docs]</a><span class="k">class</span> <span class="nc">CheckTable</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+    
+    <span class="n">sigStateChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span> <span class="c1"># (row, col, state)</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">columns</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGridLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">setSpacing</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">VerticalLabel</span><span class="o">.</span><span class="n">VerticalLabel</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rowWidgets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oldRows</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1">## remember settings from removed rows; reapply if they reappear.</span>
+        
+
+<div class="viewcode-block" id="CheckTable.updateRows"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.updateRows">[docs]</a>    <span class="k">def</span> <span class="nf">updateRows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="p">[:]:</span>
+            <span class="k">if</span> <span class="n">r</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">removeRow</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">r</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">addRow</span><span class="p">(</span><span class="n">r</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CheckTable.addRow"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.addRow">[docs]</a>    <span class="k">def</span> <span class="nf">addRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">checks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">check</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QCheckBox</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="n">check</span><span class="o">.</span><span class="n">col</span> <span class="o">=</span> <span class="n">c</span>
+            <span class="n">check</span><span class="o">.</span><span class="n">row</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">check</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span>
+            <span class="n">checks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">check</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">oldRows</span><span class="p">:</span>
+                <span class="n">check</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">oldRows</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">col</span><span class="p">])</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="c1">#QtCore.QObject.connect(check, QtCore.SIGNAL(&#39;stateChanged(int)&#39;), self.checkChanged)</span>
+            <span class="n">check</span><span class="o">.</span><span class="n">stateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">checkChanged</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rowWidgets</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">label</span><span class="p">]</span> <span class="o">+</span> <span class="n">checks</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="CheckTable.removeRow"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.removeRow">[docs]</a>    <span class="k">def</span> <span class="nf">removeRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oldRows</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">saveState</span><span class="p">()[</span><span class="s1">&#39;rows&#39;</span><span class="p">][</span><span class="n">row</span><span class="p">]</span>  <span class="c1">## save for later</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowWidgets</span><span class="p">[</span><span class="n">row</span><span class="p">]:</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">setParent</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="c1">#QtCore.QObject.disconnect(w, QtCore.SIGNAL(&#39;stateChanged(int)&#39;), self.checkChanged)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QCheckBox</span><span class="p">):</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">stateChanged</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">checkChanged</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rowWidgets</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="p">)):</span>
+            <span class="n">widgets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowWidgets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">widgets</span><span class="p">)):</span>
+                <span class="n">widgets</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">setParent</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">widgets</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CheckTable.checkChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.checkChanged">[docs]</a>    <span class="k">def</span> <span class="nf">checkChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="o">.</span><span class="n">sender</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c1">#self.emit(QtCore.SIGNAL(&#39;stateChanged&#39;), check.row, check.col, state)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigStateChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">check</span><span class="o">.</span><span class="n">row</span><span class="p">,</span> <span class="n">check</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="CheckTable.saveState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="p">)):</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">+</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowWidgets</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">:]]</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;cols&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="s1">&#39;rows&#39;</span><span class="p">:</span> <span class="n">rows</span><span class="p">}</span></div>
+        
+<div class="viewcode-block" id="CheckTable.restoreState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.CheckTable.CheckTable.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;rows&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateRows</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;rows&#39;</span><span class="p">]:</span>
+            <span class="n">rowNum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rowNames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rowWidgets</span><span class="p">[</span><span class="n">rowNum</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">])</span></div></div>
+            
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

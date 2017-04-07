@@ -1,0 +1,333 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.console package &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iris.gui.pyqtgraph.dockarea package" href="iris.gui.pyqtgraph.dockarea.html" />
+    <link rel="prev" title="iris.gui.pyqtgraph.canvas package" href="iris.gui.pyqtgraph.canvas.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iris-gui-pyqtgraph-console-package">
+<h1>iris.gui.pyqtgraph.console package<a class="headerlink" href="#iris-gui-pyqtgraph-console-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.console.CmdInput">
+<span id="iris-gui-pyqtgraph-console-cmdinput-module"></span><h2>iris.gui.pyqtgraph.console.CmdInput module<a class="headerlink" href="#module-iris.gui.pyqtgraph.console.CmdInput" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.console.CmdInput.CmdInput">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.console.CmdInput.</code><code class="descname">CmdInput</code><span class="sig-paren">(</span><em>parent</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/CmdInput.html#CmdInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.CmdInput.CmdInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QLineEdit</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.CmdInput.CmdInput.execCmd">
+<code class="descname">execCmd</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/CmdInput.html#CmdInput.execCmd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.CmdInput.CmdInput.execCmd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.CmdInput.CmdInput.keyPressEvent">
+<code class="descname">keyPressEvent</code><span class="sig-paren">(</span><em>ev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/CmdInput.html#CmdInput.keyPressEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.CmdInput.CmdInput.keyPressEvent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.CmdInput.CmdInput.setHistory">
+<code class="descname">setHistory</code><span class="sig-paren">(</span><em>num</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/CmdInput.html#CmdInput.setHistory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.CmdInput.CmdInput.setHistory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iris.gui.pyqtgraph.console.CmdInput.CmdInput.sigExecuteCmd">
+<code class="descname">sigExecuteCmd</code><a class="headerlink" href="#iris.gui.pyqtgraph.console.CmdInput.CmdInput.sigExecuteCmd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.console.Console">
+<span id="iris-gui-pyqtgraph-console-console-module"></span><h2>iris.gui.pyqtgraph.console.Console module<a class="headerlink" href="#module-iris.gui.pyqtgraph.console.Console" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.console.Console.</code><code class="descname">ConsoleWidget</code><span class="sig-paren">(</span><em>parent=None</em>, <em>namespace=None</em>, <em>historyFile=None</em>, <em>text=None</em>, <em>editor=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<p>Widget displaying console output and accepting command input.
+Implements:</p>
+<ul class="simple">
+<li>eval python expressions / exec python statements</li>
+<li>storable history of commands</li>
+<li>exception handling allowing commands to be interpreted in the context of any level in the exception stack frame</li>
+</ul>
+<p>Why not just use python in an interactive shell (or ipython) ? There are a few reasons:</p>
+<ul class="simple">
+<li>pyside does not yet allow Qt event processing and interactive shell at the same time</li>
+<li>on some systems, typing in the console _blocks_ the qt event loop until the user presses enter. This can 
+be baffling and frustrating to users since it would appear the program has frozen.</li>
+<li>some terminals (eg windows cmd.exe) have notoriously unfriendly interfaces</li>
+<li>ability to add extra features like exception stack introspection</li>
+<li>ability to have multiple interactive prompts, including for spawned sub-processes</li>
+</ul>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.catchAllExceptions">
+<code class="descname">catchAllExceptions</code><span class="sig-paren">(</span><em>catch=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.catchAllExceptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.catchAllExceptions" title="Permalink to this definition">¶</a></dt>
+<dd><p>If True, the console will catch all unhandled exceptions and display the stack
+trace. Each exception caught clears the last.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.catchNextException">
+<code class="descname">catchNextException</code><span class="sig-paren">(</span><em>catch=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.catchNextException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.catchNextException" title="Permalink to this definition">¶</a></dt>
+<dd><p>If True, the console will catch the next unhandled exception and display the stack
+trace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.checkException">
+<code class="descname">checkException</code><span class="sig-paren">(</span><em>excType</em>, <em>exc</em>, <em>tb</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.checkException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.checkException" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.clearExceptionClicked">
+<code class="descname">clearExceptionClicked</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.clearExceptionClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.clearExceptionClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.cmdDblClicked">
+<code class="descname">cmdDblClicked</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.cmdDblClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.cmdDblClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.cmdSelected">
+<code class="descname">cmdSelected</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.cmdSelected"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.cmdSelected" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.currentFrame">
+<code class="descname">currentFrame</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.currentFrame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.currentFrame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.disableExceptionHandling">
+<code class="descname">disableExceptionHandling</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.disableExceptionHandling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.disableExceptionHandling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.displayException">
+<code class="descname">displayException</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.displayException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.displayException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the current exception and stack.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.enableExceptionHandling">
+<code class="descname">enableExceptionHandling</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.enableExceptionHandling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.enableExceptionHandling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.exceptionHandler">
+<code class="descname">exceptionHandler</code><span class="sig-paren">(</span><em>excType</em>, <em>exc</em>, <em>tb</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.exceptionHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.exceptionHandler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.execMulti">
+<code class="descname">execMulti</code><span class="sig-paren">(</span><em>nextLine</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.execMulti"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.execMulti" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.execSingle">
+<code class="descname">execSingle</code><span class="sig-paren">(</span><em>cmd</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.execSingle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.execSingle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.flush">
+<code class="descname">flush</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.flush"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.flush" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.globals">
+<code class="descname">globals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.globals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.globals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.loadHistory">
+<code class="descname">loadHistory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.loadHistory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.loadHistory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the list of previously-invoked command strings (or None).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.locals">
+<code class="descname">locals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.locals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.locals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.runCmd">
+<code class="descname">runCmd</code><span class="sig-paren">(</span><em>cmd</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.runCmd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.runCmd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.saveHistory">
+<code class="descname">saveHistory</code><span class="sig-paren">(</span><em>history</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.saveHistory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.saveHistory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store the list of previously-invoked command strings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.stackItemClicked">
+<code class="descname">stackItemClicked</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.stackItemClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.stackItemClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.stackItemDblClicked">
+<code class="descname">stackItemDblClicked</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.stackItemDblClicked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.stackItemDblClicked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.systrace">
+<code class="descname">systrace</code><span class="sig-paren">(</span><em>frame</em>, <em>event</em>, <em>arg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.systrace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.systrace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.updateSysTrace">
+<code class="descname">updateSysTrace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.updateSysTrace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.updateSysTrace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.Console.ConsoleWidget.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>strn</em>, <em>html=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/Console.html#ConsoleWidget.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.Console.ConsoleWidget.write" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="iris-gui-pyqtgraph-console-template-pyqt-module">
+<h2>iris.gui.pyqtgraph.console.template_pyqt module<a class="headerlink" href="#iris-gui-pyqtgraph-console-template-pyqt-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.console.template_pyqt5">
+<span id="iris-gui-pyqtgraph-console-template-pyqt5-module"></span><h2>iris.gui.pyqtgraph.console.template_pyqt5 module<a class="headerlink" href="#module-iris.gui.pyqtgraph.console.template_pyqt5" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iris.gui.pyqtgraph.console.template_pyqt5.Ui_Form">
+<em class="property">class </em><code class="descclassname">iris.gui.pyqtgraph.console.template_pyqt5.</code><code class="descname">Ui_Form</code><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/template_pyqt5.html#Ui_Form"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.template_pyqt5.Ui_Form" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.template_pyqt5.Ui_Form.retranslateUi">
+<code class="descname">retranslateUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/template_pyqt5.html#Ui_Form.retranslateUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.template_pyqt5.Ui_Form.retranslateUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iris.gui.pyqtgraph.console.template_pyqt5.Ui_Form.setupUi">
+<code class="descname">setupUi</code><span class="sig-paren">(</span><em>Form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iris/gui/pyqtgraph/console/template_pyqt5.html#Ui_Form.setupUi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iris.gui.pyqtgraph.console.template_pyqt5.Ui_Form.setupUi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="iris-gui-pyqtgraph-console-template-pyside-module">
+<h2>iris.gui.pyqtgraph.console.template_pyside module<a class="headerlink" href="#iris-gui-pyqtgraph-console-template-pyside-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iris.gui.pyqtgraph.console">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-iris.gui.pyqtgraph.console" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">iris.gui.pyqtgraph.console package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.console.CmdInput">iris.gui.pyqtgraph.console.CmdInput module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.console.Console">iris.gui.pyqtgraph.console.Console module</a></li>
+<li><a class="reference internal" href="#iris-gui-pyqtgraph-console-template-pyqt-module">iris.gui.pyqtgraph.console.template_pyqt module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.console.template_pyqt5">iris.gui.pyqtgraph.console.template_pyqt5 module</a></li>
+<li><a class="reference internal" href="#iris-gui-pyqtgraph-console-template-pyside-module">iris.gui.pyqtgraph.console.template_pyside module</a></li>
+<li><a class="reference internal" href="#module-iris.gui.pyqtgraph.console">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="iris.html">iris package</a><ul>
+  <li><a href="iris.gui.html">iris.gui package</a><ul>
+  <li><a href="iris.gui.pyqtgraph.html">iris.gui.pyqtgraph package</a><ul>
+      <li>Previous: <a href="iris.gui.pyqtgraph.canvas.html" title="previous chapter">iris.gui.pyqtgraph.canvas package</a></li>
+      <li>Next: <a href="iris.gui.pyqtgraph.dockarea.html" title="next chapter">iris.gui.pyqtgraph.dockarea package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/iris.gui.pyqtgraph.console.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/iris.gui.pyqtgraph.console.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

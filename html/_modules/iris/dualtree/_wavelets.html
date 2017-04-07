@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.dualtree._wavelets &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.dualtree._wavelets</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Extension of PyWavelets to complex wavelets suitable for the Dual-Tree Complex Wavelet Transform.</span>
+
+<span class="sd">Author : Laurent P. René de Cotret</span>
+
+<span class="sd">The wavelet coefficients are taken from Ivan Selesnick&#39;s Matlab code hosted at</span>
+<span class="sd">http://eeweb.poly.edu/iselesni/WaveletSoftware/</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="k">import</span> <span class="n">join</span><span class="p">,</span> <span class="n">dirname</span>
+<span class="kn">from</span> <span class="nn">pywt</span> <span class="k">import</span> <span class="n">Wavelet</span><span class="p">,</span> <span class="n">wavelist</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="k">import</span> <span class="n">warn</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;dualtree_wavelet&#39;</span><span class="p">,</span> <span class="s1">&#39;dualtree_first_stage&#39;</span><span class="p">]</span>
+
+<span class="n">DATADIR</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+<span class="n">ALL_QSHIFT</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;qshift1&#39;</span><span class="p">,</span> <span class="s1">&#39;qshift2&#39;</span><span class="p">,</span> <span class="s1">&#39;qshift3&#39;</span><span class="p">,</span> <span class="s1">&#39;qshift4&#39;</span><span class="p">,</span> <span class="s1">&#39;qshift5&#39;</span><span class="p">,</span> <span class="s1">&#39;qshift6&#39;</span><span class="p">)</span>
+<span class="n">ALL_COMPLEX_WAV</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;kingsbury99&#39;</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ALL_QSHIFT</span>
+<span class="n">ALL_FIRST_STAGE</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;kingsbury99_fs&#39;</span><span class="p">,)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">wav</span> <span class="k">for</span> <span class="n">wav</span> <span class="ow">in</span> <span class="n">wavelist</span><span class="p">(</span><span class="n">kind</span> <span class="o">=</span> <span class="s1">&#39;discrete&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">wav</span> <span class="o">!=</span> <span class="s1">&#39;dmey&#39;</span><span class="p">])</span>
+
+<span class="c1"># lru_cache only exists as of Python 3.2</span>
+<span class="c1"># In case it cannot be found, use a trivial decorator</span>
+<span class="k">def</span> <span class="nf">_trivial_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">func</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">lru_cache</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">warn</span><span class="p">(</span><span class="s1">&#39;functools.lru_cache could not be found. Performance will be affected.&#39;</span><span class="p">,</span> <span class="ne">ImportWarning</span><span class="p">)</span>
+    <span class="n">lru_cache</span> <span class="o">=</span> <span class="n">_trivial_decorator</span>
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ALL_COMPLEX_WAV</span><span class="p">))</span>
+<div class="viewcode-block" id="dualtree_wavelet"><a class="viewcode-back" href="../../../iris.dualtree.html#iris.dualtree.dualtree_wavelet">[docs]</a><span class="k">def</span> <span class="nf">dualtree_wavelet</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a complex wavelet suitable for dual-tree cwt from a name.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str, {&#39;qshift1&#39;, &#39;qshift2&#39;, &#39;qshift3&#39;, &#39;qshift4&#39;, &#39;kingsbury99&#39;}</span>
+<span class="sd">        Valid arguments can be found in dualtree.ALL_COMPLEX_WAV</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    real, imag : pywt.Wavelet objects.</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If illegal wavelet name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ALL_COMPLEX_WAV</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> is not associated with any implemented complex wavelet. Possible choices are </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ALL_COMPLEX_WAV</span><span class="p">))</span>
+    
+    <span class="c1"># This function is simply for now</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;kingsbury99&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">kingsbury99</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">_qshift</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ALL_FIRST_STAGE</span><span class="p">))</span>
+<div class="viewcode-block" id="dualtree_first_stage"><a class="viewcode-back" href="../../../iris.dualtree.html#iris.dualtree.dualtree_first_stage">[docs]</a><span class="k">def</span> <span class="nf">dualtree_first_stage</span><span class="p">(</span><span class="n">wavelet</span> <span class="o">=</span> <span class="s1">&#39;kingsbury99_fs&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns two wavelets to be used in the dual-tree complex wavelet transform, at the first stage.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wavelet : str or Wavelet</span>
+<span class="sd">        Wavelet to be shifted for first-stage use. Valid arguments can be found in dualtree.ALL_FIRST_STAGE</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+<span class="sd">    wav1, wav2 : Wavelet objects</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If invalid first stage wavelet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Special case, preshifted</span>
+    <span class="k">if</span> <span class="n">wavelet</span> <span class="o">==</span> <span class="s1">&#39;kingsbury99_fs&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">kingsbury99_fs</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavelet</span><span class="p">,</span> <span class="n">Wavelet</span><span class="p">):</span>
+        <span class="n">wavelet</span> <span class="o">=</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">wavelet</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">wavelet</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ALL_FIRST_STAGE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> is an invalid first stage wavelet.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wavelet</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+    
+    <span class="c1"># extend filter bank with zeros</span>
+    <span class="n">filter_bank</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">copy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">wavelet</span><span class="o">.</span><span class="n">filter_bank</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">filt</span> <span class="ow">in</span> <span class="n">filter_bank</span><span class="p">:</span>
+        <span class="n">extended</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">filt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="n">extended</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">filt</span>
+        <span class="n">filt</span> <span class="o">=</span> <span class="n">extended</span>
+
+    <span class="c1"># Shift deconstruction filters to one side, and reconstruction</span>
+    <span class="c1"># to the other side</span>
+    <span class="n">shifted_fb</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">copy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">wavelet</span><span class="o">.</span><span class="n">filter_bank</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">filt</span> <span class="ow">in</span> <span class="n">shifted_fb</span><span class="p">[::</span><span class="mi">2</span><span class="p">]:</span>    <span class="c1"># Deconstruction filters</span>
+        <span class="n">filt</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">filt</span> <span class="ow">in</span> <span class="n">shifted_fb</span><span class="p">[</span><span class="mi">2</span><span class="p">::]:</span>    <span class="c1"># Reconstruction filters</span>
+        <span class="n">filt</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">wavelet</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">filter_bank</span> <span class="o">=</span> <span class="n">filter_bank</span><span class="p">),</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">wavelet</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">filter_bank</span> <span class="o">=</span> <span class="n">shifted_fb</span><span class="p">)</span></div>
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ALL_QSHIFT</span><span class="p">))</span>
+<span class="k">def</span> <span class="nf">_qshift</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a complex qshift wavelet by name.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Wavelet to use. Valid arguments can be found in dualtree.ALL_QSHIFT</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    wav1, wav2 : pywt.Wavelet objects</span>
+<span class="sd">        real and imaginary wavelet</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------ </span>
+<span class="sd">    ValueError </span>
+<span class="sd">        If illegal wavelet family name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;h0a&#39;</span><span class="p">,</span> <span class="s1">&#39;h0b&#39;</span><span class="p">,</span> <span class="s1">&#39;g0a&#39;</span><span class="p">,</span> <span class="s1">&#39;g0b&#39;</span><span class="p">,</span> <span class="s1">&#39;h1a&#39;</span><span class="p">,</span> <span class="s1">&#39;h1b&#39;</span><span class="p">,</span> <span class="s1">&#39;g1a&#39;</span><span class="p">,</span> <span class="s1">&#39;g1b&#39;</span><span class="p">)</span>
+    
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">DATADIR</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.npz&#39;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">n</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">mat</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">dec_real_low</span><span class="p">,</span> <span class="n">dec_imag_low</span><span class="p">,</span> <span class="n">rec_real_low</span><span class="p">,</span> <span class="n">rec_imag_low</span><span class="p">,</span> 
+             <span class="n">dec_real_high</span><span class="p">,</span> <span class="n">dec_imag_high</span><span class="p">,</span> <span class="n">rec_real_high</span><span class="p">,</span> <span class="n">rec_imag_high</span><span class="p">)</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">mat</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wavelet does not define (</span><span class="si">{0}</span><span class="s1">) coefficients&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">filters</span><span class="p">)))</span>
+    
+    <span class="n">real_filter_bank</span> <span class="o">=</span> <span class="p">[</span><span class="n">dec_real_low</span><span class="p">,</span> <span class="n">dec_real_high</span><span class="p">,</span> <span class="n">rec_real_low</span><span class="p">,</span> <span class="n">rec_real_high</span><span class="p">]</span>
+    <span class="n">imag_filter_bank</span> <span class="o">=</span> <span class="p">[</span><span class="n">dec_imag_low</span><span class="p">,</span> <span class="n">dec_imag_high</span><span class="p">,</span> <span class="n">rec_imag_low</span><span class="p">,</span> <span class="n">rec_imag_high</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;real:&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">filter_bank</span> <span class="o">=</span> <span class="n">real_filter_bank</span><span class="p">),</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;imag:&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">filter_bank</span> <span class="o">=</span> <span class="n">imag_filter_bank</span><span class="p">)</span>
+
+
+<span class="c1">#############################################################################################</span>
+<span class="c1">#                           EXAMPLE COMPLEX WAVELETS FROM</span>
+<span class="c1">#               http://eeweb.poly.edu/iselesni/WaveletSoftware/dt1D.html </span>
+<span class="c1">#############################################################################################</span>
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">kingsbury99_fs</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a first-stage complex wavelet as published in [1]. </span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Kingsbury, N. &#39;Image Processing with Complex Wavelets&#39;. Philocophical Transactions of the Royal Society A pp. 2543-2560, September 1999</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">real_dec_lo</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.69587998903400</span><span class="p">,</span><span class="mf">0.69587998903400</span><span class="p">,</span> <span class="mf">0.08838834764832</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.01122679215254</span><span class="p">,</span> <span class="mf">0.01122679215254</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">real_dec_hi</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01122679215254</span><span class="p">,</span> <span class="mf">0.01122679215254</span><span class="p">,</span> <span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.08838834764832</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.69587998903400</span><span class="p">,</span> <span class="mf">0.69587998903400</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08838834764832</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">real_rec_lo</span><span class="p">,</span> <span class="n">real_rec_hi</span> <span class="o">=</span> <span class="n">real_dec_lo</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">real_dec_hi</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">imag_dec_lo</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.01122679215254</span><span class="p">,</span> <span class="mf">0.01122679215254</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.69587998903400</span><span class="p">,</span> <span class="mf">0.69587998903400</span><span class="p">,</span> <span class="mf">0.08838834764832</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">imag_dec_hi</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08838834764832</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.69587998903400</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.69587998903400</span><span class="p">,</span> <span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.08838834764832</span><span class="p">,</span> <span class="mf">0.01122679215254</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01122679215254</span><span class="p">])</span>
+    <span class="n">imag_rec_lo</span><span class="p">,</span> <span class="n">imag_rec_hi</span> <span class="o">=</span> <span class="n">imag_dec_lo</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">imag_dec_hi</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">real_fb</span> <span class="o">=</span> <span class="p">[</span><span class="n">real_dec_lo</span><span class="p">,</span> <span class="n">real_dec_hi</span><span class="p">,</span> <span class="n">real_rec_lo</span><span class="p">,</span> <span class="n">real_rec_hi</span><span class="p">]</span>
+    <span class="n">imag_fb</span> <span class="o">=</span> <span class="p">[</span><span class="n">imag_dec_lo</span><span class="p">,</span> <span class="n">imag_dec_hi</span><span class="p">,</span> <span class="n">imag_rec_lo</span><span class="p">,</span> <span class="n">imag_rec_hi</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;real:&#39;</span><span class="p">,</span> <span class="n">filter_bank</span> <span class="o">=</span> <span class="n">real_fb</span><span class="p">),</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;imag:&#39;</span><span class="p">,</span> <span class="n">filter_bank</span> <span class="o">=</span> <span class="n">imag_fb</span><span class="p">)</span>
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">kingsbury99</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a late-stage complex wavelet as published in [1].</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Kingsbury, N. &#39;Image Processing with Complex Wavelets&#39;. Philocophical Transactions of the Royal Society A pp. 2543-2560, September 1999</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">real_dec_lo</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mf">0.03516384000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08832942000000</span><span class="p">,</span> <span class="mf">0.23389032000000</span><span class="p">,</span> <span class="mf">0.76027237000000</span><span class="p">,</span> <span class="mf">0.58751830000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.11430184000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">real_dec_hi</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.11430184000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.58751830000000</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.76027237000000</span><span class="p">,</span> <span class="mf">0.23389032000000</span><span class="p">,</span> <span class="mf">0.08832942000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.03516384000000</span><span class="p">])</span>
+    <span class="n">real_rec_lo</span><span class="p">,</span> <span class="n">real_rec_hi</span> <span class="o">=</span> <span class="n">real_dec_lo</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">real_dec_hi</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">imag_dec_lo</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.11430184000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.58751830000000</span><span class="p">,</span> <span class="mf">0.76027237000000</span><span class="p">,</span> <span class="mf">0.23389032000000</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08832942000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.03516384000000</span><span class="p">])</span>
+    <span class="n">imag_dec_hi</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.03516384000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.08832942000000</span><span class="p">,</span> <span class="mf">0.23389032000000</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.76027237000000</span><span class="p">,</span> <span class="mf">0.58751830000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.11430184000000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">imag_rec_lo</span><span class="p">,</span> <span class="n">imag_rec_hi</span> <span class="o">=</span> <span class="n">imag_dec_lo</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">imag_dec_hi</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">real_fb</span> <span class="o">=</span> <span class="p">[</span><span class="n">real_dec_lo</span><span class="p">,</span> <span class="n">real_dec_hi</span><span class="p">,</span> <span class="n">real_rec_lo</span><span class="p">,</span> <span class="n">real_rec_hi</span><span class="p">]</span>
+    <span class="n">imag_fb</span> <span class="o">=</span> <span class="p">[</span><span class="n">imag_dec_lo</span><span class="p">,</span> <span class="n">imag_dec_hi</span><span class="p">,</span> <span class="n">imag_rec_lo</span><span class="p">,</span> <span class="n">imag_rec_hi</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;real:&#39;</span><span class="p">,</span> <span class="n">filter_bank</span> <span class="o">=</span> <span class="n">real_fb</span><span class="p">),</span> <span class="n">Wavelet</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;imag:&#39;</span><span class="p">,</span> <span class="n">filter_bank</span> <span class="o">=</span> <span class="n">imag_fb</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

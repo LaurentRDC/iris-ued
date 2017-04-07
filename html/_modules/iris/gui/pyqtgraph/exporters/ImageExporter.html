@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.exporters.ImageExporter &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.exporters.ImageExporter</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.Exporter</span> <span class="k">import</span> <span class="n">Exporter</span>
+<span class="kn">from</span> <span class="nn">..parametertree</span> <span class="k">import</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtSvg</span><span class="p">,</span> <span class="n">USE_PYSIDE</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">fn</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ImageExporter&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ImageExporter"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter">[docs]</a><span class="k">class</span> <span class="nc">ImageExporter</span><span class="p">(</span><span class="n">Exporter</span><span class="p">):</span>
+    <span class="n">Name</span> <span class="o">=</span> <span class="s2">&quot;Image File (PNG, TIF, JPG, ...)&quot;</span>
+    <span class="n">allowCopy</span> <span class="o">=</span> <span class="kc">True</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">Exporter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="n">tr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTargetRect</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGraphicsItem</span><span class="p">):</span>
+            <span class="n">scene</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scene</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="n">bgbrush</span> <span class="o">=</span> <span class="n">scene</span><span class="o">.</span><span class="n">views</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">backgroundBrush</span><span class="p">()</span>
+        <span class="n">bg</span> <span class="o">=</span> <span class="n">bgbrush</span><span class="o">.</span><span class="n">color</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">bgbrush</span><span class="o">.</span><span class="n">style</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">NoBrush</span><span class="p">:</span>
+            <span class="n">bg</span><span class="o">.</span><span class="n">setAlpha</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">tr</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="s1">&#39;limits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">tr</span><span class="o">.</span><span class="n">height</span><span class="p">(),</span> <span class="s1">&#39;limits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;antialias&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;background&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;color&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">bg</span><span class="p">},</span>
+        <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sigValueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">widthChanged</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sigValueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">heightChanged</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="ImageExporter.widthChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.widthChanged">[docs]</a>    <span class="k">def</span> <span class="nf">widthChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">sr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSourceRect</span><span class="p">()</span>
+        <span class="n">ar</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sr</span><span class="o">.</span><span class="n">height</span><span class="p">())</span> <span class="o">/</span> <span class="n">sr</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">ar</span><span class="p">,</span> <span class="n">blockSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">heightChanged</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ImageExporter.heightChanged"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.heightChanged">[docs]</a>    <span class="k">def</span> <span class="nf">heightChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">sr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSourceRect</span><span class="p">()</span>
+        <span class="n">ar</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sr</span><span class="o">.</span><span class="n">width</span><span class="p">())</span> <span class="o">/</span> <span class="n">sr</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">ar</span><span class="p">,</span> <span class="n">blockSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">widthChanged</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ImageExporter.parameters"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.parameters">[docs]</a>    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span></div>
+    
+<div class="viewcode-block" id="ImageExporter.export"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.exporters.html#iris.gui.pyqtgraph.exporters.ImageExporter.ImageExporter.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">toBytes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fileName</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">toBytes</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">copy</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">USE_PYSIDE</span><span class="p">:</span>
+                <span class="nb">filter</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;*.&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QImageWriter</span><span class="o">.</span><span class="n">supportedImageFormats</span><span class="p">()]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">filter</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;*.&quot;</span><span class="o">+</span><span class="nb">bytes</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QImageWriter</span><span class="o">.</span><span class="n">supportedImageFormats</span><span class="p">()]</span>
+            <span class="n">preferred</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;*.png&#39;</span><span class="p">,</span> <span class="s1">&#39;*.tif&#39;</span><span class="p">,</span> <span class="s1">&#39;*.jpg&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preferred</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">:</span>
+                    <span class="nb">filter</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                    <span class="nb">filter</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fileSaveDialog</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">)</span>
+            <span class="k">return</span>
+            
+        <span class="n">targetRect</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRect</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">])</span>
+        <span class="n">sourceRect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSourceRect</span><span class="p">()</span>
+        
+        
+        <span class="c1">#self.png = QtGui.QImage(targetRect.size(), QtGui.QImage.Format_ARGB32)</span>
+        <span class="c1">#self.png.fill(pyqtgraph.mkColor(self.params[&#39;background&#39;]))</span>
+        <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">h</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Cannot export image with size=0 (requested export size is </span><span class="si">%d</span><span class="s2">x</span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="n">h</span><span class="p">))</span>
+        <span class="n">bg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ubyte</span><span class="p">)</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span>
+        <span class="n">bg</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span><span class="o">.</span><span class="n">blue</span><span class="p">()</span>
+        <span class="n">bg</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span><span class="o">.</span><span class="n">green</span><span class="p">()</span>
+        <span class="n">bg</span><span class="p">[:,:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span><span class="o">.</span><span class="n">red</span><span class="p">()</span>
+        <span class="n">bg</span><span class="p">[:,:,</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span><span class="o">.</span><span class="n">alpha</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">png</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">makeQImage</span><span class="p">(</span><span class="n">bg</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1">## set resolution of image:</span>
+        <span class="n">origTargetRect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTargetRect</span><span class="p">()</span>
+        <span class="n">resolutionScale</span> <span class="o">=</span> <span class="n">targetRect</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">/</span> <span class="n">origTargetRect</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="c1">#self.png.setDotsPerMeterX(self.png.dotsPerMeterX() * resolutionScale)</span>
+        <span class="c1">#self.png.setDotsPerMeterY(self.png.dotsPerMeterY() * resolutionScale)</span>
+        
+        <span class="n">painter</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPainter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">png</span><span class="p">)</span>
+        <span class="c1">#dtr = painter.deviceTransform()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setExportMode</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;antialias&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;antialias&#39;</span><span class="p">],</span> <span class="s1">&#39;background&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">],</span> <span class="s1">&#39;painter&#39;</span><span class="p">:</span> <span class="n">painter</span><span class="p">,</span> <span class="s1">&#39;resolutionScale&#39;</span><span class="p">:</span> <span class="n">resolutionScale</span><span class="p">})</span>
+            <span class="n">painter</span><span class="o">.</span><span class="n">setRenderHint</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPainter</span><span class="o">.</span><span class="n">Antialiasing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;antialias&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getScene</span><span class="p">()</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">painter</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="n">targetRect</span><span class="p">),</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="n">sourceRect</span><span class="p">))</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setExportMode</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+            <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">clipboard</span><span class="p">()</span><span class="o">.</span><span class="n">setImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">png</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">toBytes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">png</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">png</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span></div></div>
+        
+<span class="n">ImageExporter</span><span class="o">.</span><span class="n">register</span><span class="p">()</span>        
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  <li><a href="../exporters.html">iris.gui.pyqtgraph.exporters</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

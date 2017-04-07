@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.widgets &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.widgets</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">..dualtree</span> <span class="k">import</span> <span class="n">ALL_FIRST_STAGE</span><span class="p">,</span> <span class="n">ALL_COMPLEX_WAV</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="k">import</span> <span class="n">join</span><span class="p">,</span> <span class="n">dirname</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">pyqtgraph</span> <span class="k">as</span> <span class="n">pg</span>
+<span class="kn">from</span> <span class="nn">.pyqtgraph</span> <span class="k">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">spectrum_colors</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="k">import</span> <span class="n">fluence</span>
+
+<span class="n">image_folder</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s1">&#39;images&#39;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="ProcessedDataViewer"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.widgets.ProcessedDataViewer">[docs]</a><span class="k">class</span> <span class="nc">ProcessedDataViewer</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Widget displaying the result of processing from RawDataset.process()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_viewer</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">ImageView</span><span class="p">(</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_info</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_viewer</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">PlotWidget</span><span class="p">(</span><span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;Peak dynamics measurement&#39;</span><span class="p">,</span> 
+                                                  <span class="n">labels</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;left&#39;</span><span class="p">:</span> <span class="s1">&#39;Intensity (a. u.)&#39;</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;ps&#39;</span><span class="p">)})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_viewer</span><span class="o">.</span><span class="n">getPlotItem</span><span class="p">()</span><span class="o">.</span><span class="n">enableAutoRange</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_viewer</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>
+
+        <span class="c1"># Single-crystal peak dynamics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_region</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">ROI</span><span class="p">(</span><span class="n">pos</span> <span class="o">=</span> <span class="p">[</span><span class="mi">800</span><span class="p">,</span><span class="mi">800</span><span class="p">],</span> <span class="n">size</span> <span class="o">=</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span><span class="mi">200</span><span class="p">],</span> <span class="n">pen</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">mkPen</span><span class="p">(</span><span class="s1">&#39;r&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_region</span><span class="o">.</span><span class="n">addScaleHandle</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_region</span><span class="o">.</span><span class="n">addScaleHandle</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_viewer</span><span class="o">.</span><span class="n">getView</span><span class="p">()</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_region</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_region</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>
+
+        <span class="c1"># QSlider properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_slider</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QSlider</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">,</span> <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_slider</span><span class="o">.</span><span class="n">setTickPosition</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QSlider</span><span class="o">.</span><span class="n">TicksBelow</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_slider</span><span class="o">.</span><span class="n">setTickInterval</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_slider</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">autolevel_cb</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QCheckBox</span><span class="p">(</span><span class="s1">&#39;Enable auto-level&#39;</span><span class="p">,</span> <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">autolevel_cb</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">autorange_cb</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QCheckBox</span><span class="p">(</span><span class="s1">&#39;Enable auto-range&#39;</span><span class="p">,</span> <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">autolevel_cb</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_pd_btn</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPushButton</span><span class="p">(</span><span class="s1">&#39;Show/hide peak dynamics&#39;</span><span class="p">,</span> <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_pd_btn</span><span class="o">.</span><span class="n">setCheckable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_pd_btn</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_pd_btn</span><span class="o">.</span><span class="n">toggled</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_viewer</span><span class="o">.</span><span class="n">setVisible</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_pd_btn</span><span class="o">.</span><span class="n">toggled</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_region</span><span class="o">.</span><span class="n">setVisible</span><span class="p">)</span>
+
+        <span class="c1"># Final assembly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image_viewer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_viewer</span><span class="p">)</span>
+
+        <span class="n">checkboxes</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="n">checkboxes</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">autolevel_cb</span><span class="p">)</span>
+        <span class="n">checkboxes</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">autorange_cb</span><span class="p">)</span>
+
+        <span class="n">cmd_bar</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="n">cmd_bar</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">checkboxes</span><span class="p">)</span>
+        <span class="n">cmd_bar</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">show_pd_btn</span><span class="p">)</span>
+        <span class="n">cmd_bar</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_slider</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">cmd_bar</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+    
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">pyqtSlot</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+<div class="viewcode-block" id="ProcessedDataViewer.update_info"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.widgets.ProcessedDataViewer.update_info">[docs]</a>    <span class="k">def</span> <span class="nf">update_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the widget with dataset information</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        info : dict </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_slider</span><span class="o">.</span><span class="n">setRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_info</span><span class="p">[</span><span class="s1">&#39;time_points&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+
+        <span class="c1"># TODO: set tick labels to time points</span>
+    
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">pyqtSlot</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+<div class="viewcode-block" id="ProcessedDataViewer.update_peak_dynamics"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.widgets.ProcessedDataViewer.update_peak_dynamics">[docs]</a>    <span class="k">def</span> <span class="nf">update_peak_dynamics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_points</span><span class="p">,</span> <span class="n">integrated_intensity</span><span class="p">):</span>
+        <span class="n">pens</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">pg</span><span class="o">.</span><span class="n">mkPen</span><span class="p">,</span> <span class="n">spectrum_colors</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">time_points</span><span class="p">))))</span>
+        <span class="n">brushes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">pg</span><span class="o">.</span><span class="n">mkBrush</span><span class="p">,</span> <span class="n">spectrum_colors</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">time_points</span><span class="p">))))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peak_dynamics_viewer</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_points</span><span class="p">,</span> <span class="n">integrated_intensity</span><span class="p">,</span> <span class="n">pen</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">symbol</span> <span class="o">=</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> 
+                                       <span class="n">symbolPen</span> <span class="o">=</span> <span class="n">pens</span><span class="p">,</span> <span class="n">symbolBrush</span> <span class="o">=</span> <span class="n">brushes</span><span class="p">,</span> <span class="n">symbolSize</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">clear</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span></div>
+    
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">pyqtSlot</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+<div class="viewcode-block" id="ProcessedDataViewer.display"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.widgets.ProcessedDataViewer.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Display an image in the form of an ndarray.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        image : ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># autoLevels = False ensures that the colormap stays the same</span>
+        <span class="c1"># when &#39;sliding&#39; through data. This makes it easier to compare</span>
+        <span class="c1"># data at different time points.</span>
+        <span class="c1"># Similarly for autoRange = False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_viewer</span><span class="o">.</span><span class="n">setImage</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">autoLevels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">autolevel_cb</span><span class="o">.</span><span class="n">isChecked</span><span class="p">(),</span> 
+                                          <span class="n">autoRange</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">autorange_cb</span><span class="o">.</span><span class="n">isChecked</span><span class="p">())</span></div></div>
+
+<div class="viewcode-block" id="IrisStatusBar"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.widgets.IrisStatusBar">[docs]</a><span class="k">class</span> <span class="nc">IrisStatusBar</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QStatusBar</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Status bar displaying a status message.</span>
+
+<span class="sd">    Slots</span>
+<span class="sd">    -----</span>
+<span class="sd">    update_status [str]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base_message</span> <span class="o">=</span> <span class="s1">&#39;Ready.&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_label</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addPermanentWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status_label</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QTimer</span><span class="p">(</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">setSingleShot</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">pyqtSlot</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<div class="viewcode-block" id="IrisStatusBar.update_status"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.widgets.IrisStatusBar.update_status">[docs]</a>    <span class="k">def</span> <span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Update the permanent status label with a temporary message. </span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        message : str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_label</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">singleShot</span><span class="p">(</span><span class="mi">1</span><span class="n">e5</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_message</span><span class="p">))</span></div></div>
+
+<div class="viewcode-block" id="DatasetInfoWidget"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.widgets.DatasetInfoWidget">[docs]</a><span class="k">class</span> <span class="nc">DatasetInfoWidget</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidget</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Display of dataset information as a table.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_info</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setRowCount</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># This will always be true, but the number of</span>
+                            <span class="c1"># columns will change depending on the dataset</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># Resize to content</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSizePolicy</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Fixed</span><span class="p">)</span>
+
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">pyqtSlot</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+<div class="viewcode-block" id="DatasetInfoWidget.update_info"><a class="viewcode-back" href="../../../iris.gui.html#iris.gui.widgets.DatasetInfoWidget.update_info">[docs]</a>    <span class="k">def</span> <span class="nf">update_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Update the widget with dataset information</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        info : dict </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setColumnCount</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_info</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">column</span><span class="p">,</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_info</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="c1"># Items like time_points and nscans are long lists. Summarize using length</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">value</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">key</span> <span class="o">+=</span> <span class="s1">&#39; (len)&#39;</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">value</span><span class="p">)))</span>
+            
+            <span class="c1"># TODO: change font of key text to bold</span>
+            <span class="n">key_item</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidgetItem</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+            <span class="n">ft</span> <span class="o">=</span> <span class="n">key_item</span><span class="o">.</span><span class="n">font</span><span class="p">()</span>
+            <span class="n">ft</span><span class="o">.</span><span class="n">setBold</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">key_item</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">ft</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">key_item</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QTableWidgetItem</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">setResizeMode</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QHeaderView</span><span class="o">.</span><span class="n">Stretch</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">setResizeMode</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QHeaderView</span><span class="o">.</span><span class="n">Stretch</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

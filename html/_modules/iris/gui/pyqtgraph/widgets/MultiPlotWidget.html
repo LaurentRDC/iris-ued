@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iris.gui.pyqtgraph.widgets.MultiPlotWidget &#8212; iris  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iris.gui.pyqtgraph.widgets.MultiPlotWidget</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">MultiPlotWidget.py -  Convenience class--GraphicsView widget displaying a MultiPlotItem</span>
+<span class="sd">Copyright 2010  Luke Campagnola</span>
+<span class="sd">Distributed under MIT/X11 license. See license.txt for more infomation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">..Qt</span> <span class="k">import</span> <span class="n">QtCore</span>
+<span class="kn">from</span> <span class="nn">.GraphicsView</span> <span class="k">import</span> <span class="n">GraphicsView</span>
+<span class="kn">from</span> <span class="nn">..graphicsItems</span> <span class="k">import</span> <span class="n">MultiPlotItem</span> <span class="k">as</span> <span class="n">MultiPlotItem</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MultiPlotWidget&#39;</span><span class="p">]</span>
+<div class="viewcode-block" id="MultiPlotWidget"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget">[docs]</a><span class="k">class</span> <span class="nc">MultiPlotWidget</span><span class="p">(</span><span class="n">GraphicsView</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Widget implementing a graphicsView with a single MultiPlotItem inside.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minPlotHeight</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mPlotItem</span> <span class="o">=</span> <span class="n">MultiPlotItem</span><span class="o">.</span><span class="n">MultiPlotItem</span><span class="p">()</span>
+        <span class="n">GraphicsView</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enableMouse</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setCentralItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mPlotItem</span><span class="p">)</span>
+        <span class="c1">## Explicitly wrap methods from mPlotItem</span>
+        <span class="c1">#for m in [&#39;setData&#39;]:</span>
+            <span class="c1">#setattr(self, m, getattr(self.mPlotItem, m))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setVerticalScrollBarPolicy</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ScrollBarAsNeeded</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setHorizontalScrollBarPolicy</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ScrollBarAsNeeded</span><span class="p">)</span>
+                
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>  <span class="c1">## implicitly wrap methods from plotItem</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mPlotItem</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mPlotItem</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="s1">&#39;__call__&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">m</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MultiPlotWidget.setMinimumPlotHeight"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.setMinimumPlotHeight">[docs]</a>    <span class="k">def</span> <span class="nf">setMinimumPlotHeight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">min</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the minimum height for each sub-plot displayed. </span>
+<span class="sd">        </span>
+<span class="sd">        If the total height of all plots is greater than the height of the </span>
+<span class="sd">        widget, then a scroll bar will appear to provide access to the entire</span>
+<span class="sd">        set of plots.</span>
+<span class="sd">        </span>
+<span class="sd">        Added in version 0.9.9</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minPlotHeight</span> <span class="o">=</span> <span class="nb">min</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resizeEvent</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MultiPlotWidget.widgetGroupInterface"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.widgetGroupInterface">[docs]</a>    <span class="k">def</span> <span class="nf">widgetGroupInterface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">MultiPlotWidget</span><span class="o">.</span><span class="n">saveState</span><span class="p">,</span> <span class="n">MultiPlotWidget</span><span class="o">.</span><span class="n">restoreState</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MultiPlotWidget.saveState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.saveState">[docs]</a>    <span class="k">def</span> <span class="nf">saveState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+        <span class="c1">#return self.plotItem.saveState()</span>
+        
+<div class="viewcode-block" id="MultiPlotWidget.restoreState"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.restoreState">[docs]</a>    <span class="k">def</span> <span class="nf">restoreState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+        <span class="c1">#return self.plotItem.restoreState(state)</span>
+
+<div class="viewcode-block" id="MultiPlotWidget.close"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mPlotItem</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mPlotItem</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setParent</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">GraphicsView</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MultiPlotWidget.setRange"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.setRange">[docs]</a>    <span class="k">def</span> <span class="nf">setRange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="n">GraphicsView</span><span class="o">.</span><span class="n">setRange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">centralWidget</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">range</span>
+            <span class="n">minHeight</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mPlotItem</span><span class="o">.</span><span class="n">plots</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">minPlotHeight</span>
+            <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">minHeight</span><span class="p">:</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">setHeight</span><span class="p">(</span><span class="n">minHeight</span><span class="p">)</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">setWidth</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">width</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">centralWidget</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">r</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MultiPlotWidget.resizeEvent"><a class="viewcode-back" href="../../../../../iris.gui.pyqtgraph.widgets.html#iris.gui.pyqtgraph.widgets.MultiPlotWidget.MultiPlotWidget.resizeEvent">[docs]</a>    <span class="k">def</span> <span class="nf">resizeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">autoPixelRange</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">range</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QRectF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">height</span><span class="p">())</span>
+        <span class="n">MultiPlotWidget</span><span class="o">.</span><span class="n">setRange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">range</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">disableAutoPixel</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1">## we do this because some subclasses like to redefine setRange in an incompatible way.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateMatrix</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  <li><a href="../../pyqtgraph.html">iris.gui.pyqtgraph</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
