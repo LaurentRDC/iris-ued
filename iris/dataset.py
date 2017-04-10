@@ -118,17 +118,28 @@ class DiffractionDataset(h5py.File):
         -------
         arr : ndarray or None
             Time-delay data. If out is provided, None is returned.
+        
+        Raises
+        ------
+        ValueError
+            If timedelay does not exist.
         """
         dataset = self.processed_measurements_group['intensity']
 
         if timedelay is None:
-            if not out:
+            if out is None:
                 out = n.empty_like(dataset)
             dataset.read_direct(out)
 
         else:
-            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
-            if not out:
+            # time_index cannot be cast to int() if n.argwhere returns an empty array
+            # catch the corresponding TypeError
+            try:
+                time_index = int(n.argwhere(n.array(self.corrected_time_points) == float(timedelay)))
+            except TypeError:
+                raise ValueError('Time-delay {} does not exist.'.format(timedelay))
+
+            if out is None:
                 out = n.empty(self.resolution)
             dataset.read_direct(out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
 
@@ -150,23 +161,34 @@ class DiffractionDataset(h5py.File):
         -------
         arr : ndarray or None
             Time-delay error. If out is provided, None is returned.
+
+        Raises
+        ------
+        ValueError
+            If timedelay does not exist.
         """
         dataset = self.processed_measurements_group['error']
 
         if timedelay is None:
-            if not out:
+            if out is None:
                 out = n.empty_like(dataset)
             dataset.read_direct(out)
 
         else:
-            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
-            if not out:
+            # time_index cannot be cast to int() if n.argwhere returns an empty array
+            # catch the corresponding TypeError
+            try:
+                time_index = int(n.argwhere(n.array(self.corrected_time_points) == float(timedelay)))
+            except TypeError:
+                raise ValueError('Time-delay {} does not exist.'.format(timedelay))
+
+            if out is None:
                 out = n.empty(self.resolution)
             dataset.read_direct(out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
         
         return out
     
-    def time_series(self, rect):
+    def time_series(self, rect, out = None):
         """
         Integrated intensity over time inside bounds.
 
@@ -174,15 +196,17 @@ class DiffractionDataset(h5py.File):
         ----------
         rect : 4-tuple of ints
             Bounds of the region in px.
+        out : ndarray or None, optional
+            1-D ndarray in which to store the results. The shape
+            should be compatible with (len(time_points),)
         
         Returns
         -------
         out : ndarray, ndim 1
         """
-        # TODO: out parameter?
         x1, x2, y1, y2 = rect
-        data = n.array(self.processed_measurements_group['intensity'][y1:y2, x1:x2, :])  # Numpy axes are transposed
-        return n.sum(n.sum(data, axis = 0), axis = 0)
+        data = self.processed_measurements_group['intensity'][y1:y2, x1:x2, :]  # Numpy axes are transposed
+        return n.sum(data, axis = (0,1), out = out)
 
     def pumpoff_data(self, scan, out = None):
         """
@@ -204,11 +228,11 @@ class DiffractionDataset(h5py.File):
         #Scans start at 1, ndarray indices start at 0
         dataset = self.pumpoff_pictures_group['pumpoff_pictures']
         if scan:
-            if not out:
+            if out is None:
                 out = n.empty(self.resolution)
             dataset.read_direct(out, source_sel = n.s_[:,:,scan - 1], dest_sel = n.s_[:,:])
         else:
-            if not out:
+            if out is None:
                 out = n.empty_like(dataset)
             dataset.read_direct(out)
         
@@ -287,13 +311,13 @@ class PowderDiffractionDataset(DiffractionDataset):
         dataset = self.powder_group['intensity']
 
         if timedelay is None:
-            if not out:
+            if out is None:
                 out = n.empty_like(dataset)
             dataset.read_direct(out)
 
         else:
             time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
-            if not out:
+            if out is None:
                 out = n.empty_like(self.scattering_length)
             dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
 
@@ -321,13 +345,13 @@ class PowderDiffractionDataset(DiffractionDataset):
         dataset = self.powder_group['error']
 
         if timedelay is None:
-            if not out:
+            if out is None:
                 out = n.empty_like(dataset)
             dataset.read_direct(out)
         
         else:
             time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
-            if not out:
+            if out is None:
                 out = n.empty_like(self.scattering_length)
             dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])  
         return out
@@ -356,19 +380,19 @@ class PowderDiffractionDataset(DiffractionDataset):
         dataset = self.powder_group['baseline']
 
         if timedelay is None:
-            if not out:
+            if out is None:
                 out = n.empty_like(dataset)
             dataset.read_direct(out)
         
         else:
             time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
-            if not out:
+            if out is None:
                 out = n.empty_like(self.scattering_length)
             dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:]) 
         
         return out
     
-    def powder_time_series(self, smin, smax, bgr = False):
+    def powder_time_series(self, smin, smax, bgr = False, out = None):
         """
         Integrated intensity in a scattering angle range, over time.
         Diffracted intensity is integrated in the closed interval [smin, smax]
@@ -381,19 +405,25 @@ class PowderDiffractionDataset(DiffractionDataset):
             Higher scattering angle bound [rad/A]. 
         bgr : bool, optional
             If True, background is removed. Default is False.
+        out : ndarray or None, optional
+            1-D ndarray in which to store the results. The shape
+            should be compatible with (len(time_points),)
         
         Returns
         -------
         out : ndarray, shape (N,)
             Integrated diffracted intensity over time.
         """
+        # TODO: handle out parameter more efficiently?
         # Python slices are semi-open by design, therefore i_max + 1 is used
         # so that the integration interval is closed.
         i_min, i_max = n.argmin(n.abs(smin - self.scattering_length)), n.argmin(n.abs(smax - self.scattering_length))
         trace = n.array(self.powder_group['intensity'][:, i_min:i_max + 1])
         if bgr :
             trace -= n.array(self.powder_group['baseline'][:, i_min:i_max + 1])
-
+        
+        if out is not None:
+            return n.sum(axis = 1, out = out)
         return n.squeeze(n.sum(trace, axis = 1))
     
     def compute_baseline(self, first_stage, wavelet, max_iter = 100, level = 'max'):
