@@ -55,7 +55,16 @@ class IrisController(QtCore.QObject):
         self.worker = None
         self.raw_dataset = None
         self.dataset = None
-    
+
+        # array containers
+        # Preallocation is important for arrays that change often. Then,
+        # we can take advantage of the out parameter
+        # These attributes are not initialized to None since None is a valid
+        # out parameter
+        # TODO: is it worth it?
+        self._averaged_data_container = False
+        self._powder_time_series_container = False
+
     @error_aware('Raw data could not be displayed.')
     @QtCore.pyqtSlot(float, int)
     def display_raw_data(self, timedelay, scan):
@@ -64,12 +73,22 @@ class IrisController(QtCore.QObject):
     @error_aware('Processed data could not be displayed.')
     @QtCore.pyqtSlot(float)
     def display_averaged_data(self, timedelay):
-        self.averaged_data_signal.emit(self.dataset.averaged_data(timedelay))
+        # Preallocation of full images is important because the whole block cannot be
+        # loaded into memory, contrary to powder data
+        # Source of 'cache miss' could be that _average_data_container is None,
+        # new dataset loaded has different shape than before, etc.
+        try:
+            self.dataset.averaged_data(timedelay, out = self._averaged_data_container)
+        except:
+            self._averaged_data_container = self.dataset.averaged_data(timedelay)
+        self.averaged_data_signal.emit(self._averaged_data_container)
     
     @error_aware('Powder data could not be displayed.')
     @QtCore.pyqtSlot(bool)
     def display_powder_data(self, bgr):
         """ Emit a powder data signal with/out background """
+        # Preallocation isn't so important for powder data because the whole block
+        # is loaded
         self.powder_data_signal.emit(self.dataset.scattering_length, 
                                      self.dataset.powder_data(timedelay = None, bgr = bgr), 
                                      self.dataset.powder_error(timedelay = None),
@@ -95,8 +114,13 @@ class IrisController(QtCore.QObject):
     @error_aware('Powder time-series could not be calculated.')
     @QtCore.pyqtSlot(float, float, bool)
     def powder_time_series(self, smin, smax, bgr):
-        self.powder_time_series_signal.emit(
-            self.dataset.time_points, self.dataset.powder_time_series(smin = smin, smax = smax, bgr = bgr))
+        try:
+            self.dataset.powder_time_series(smin = smin, smax = smax, bgr = bgr, 
+                                            out = self._powder_time_series_container)
+        except:
+            self._powder_time_series_container = self.dataset.powder_time_series(smin = smin, smax = smax, bgr = bgr)
+        finally:
+            self.powder_time_series_signal.emit(self.dataset.time_points, self._powder_time_series_container)
     
     @error_aware('Single-crystal time-series could not be computed.')
     @QtCore.pyqtSlot(object)
@@ -108,7 +132,7 @@ class IrisController(QtCore.QObject):
         ----------
         ROI: PyQtGraph.ROI object
         """
-
+        # TODO: array container
         rect = ROI.parentBounds().toRect()
 
         #If coordinate is negative, return 0
