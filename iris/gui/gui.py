@@ -118,7 +118,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
 
         # Single crystal peak dynamics
-        self.processed_viewer.peak_dynamics_region.sigRegionChangeFinished.connect(self.controller.time_series_from_ROI)
+        self.processed_viewer.peak_dynamics_region.sigRegionChanged.connect(self.controller.time_series_from_ROI)
         self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
 
         ######################################################################

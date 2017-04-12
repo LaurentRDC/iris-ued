@@ -132,7 +132,7 @@ class IrisController(QtCore.QObject):
         ----------
         ROI: PyQtGraph.ROI object
         """
-        # TODO: array container
+        # TODO: preallocation
         rect = ROI.parentBounds().toRect()
 
         #If coordinate is negative, return 0

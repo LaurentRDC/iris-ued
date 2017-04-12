@@ -276,7 +276,6 @@ class RawDataset(object):
                 pumpoff_background = n.zeros(shape = self.resolution, dtype = n.uint16)
             processed.processed_measurements_group.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = n.uint16, **ckwargs)
 
-        # Prepare container for the large array of averaged pictures
         shape = self.resolution + (len(self.time_points),)
         with DiffractionDataset(name = filename, mode = 'r+') as processed:
             gp = processed.processed_measurements_group

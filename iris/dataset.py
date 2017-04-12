@@ -266,7 +266,7 @@ class DiffractionDataset(h5py.File):
         ckwargs['compression'] = dataset.compression
         ckwargs['fletcher32'] = dataset.fletcher32
         ckwargs['shuffle'] = dataset.shuffle
-        ckwargs['chunks'] = True if dataset.chunks else False
+        ckwargs['chunks'] = True if dataset.chunks else None
         if dataset.compression_opts: #could be None
             ckwargs.update(dataset.compression_opts)
         return ckwargs
@@ -275,6 +275,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     """ 
     Abstraction of HDF5 files for powder diffraction datasets.
     """
+    _powder_group_name = '/powder'
 
     first_stage = ExperimentalParameter(name = 'powder_wavelet_baseline_first_stage', output = str)
     wavelet = ExperimentalParameter(name = 'powder_baseline_wavelet', output = str)
@@ -283,7 +284,7 @@ class PowderDiffractionDataset(DiffractionDataset):
 
     @property
     def powder_group(self):
-        return self.require_group('/powder')
+        return self.require_group(self._powder_group_name)
     
     @property
     def scattering_length(self):
@@ -441,18 +442,22 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         level : int or 'max', optional
         """
-        background = baseline(array = self.powder_data(timedelay = None, bgr = False), max_iter = max_iter, 
-                              level = level, first_stage = first_stage, wavelet = wavelet, background_regions = tuple(),
-                              mask = None, axis = 1)
+        baseline_args = {'array': self.powder_data(timedelay = None, bgr = False), 
+                         'max_iter': max_iter, 'level': level, 
+                         'first_stage': first_stage, 'wavelet': wavelet,
+                         'mask': None, 'axis': 1}
+        
         
         if not self.baseline_removed:
-            self.powder_group.create_dataset(name = 'baseline', data = background, **self.compression_params)
+            self.powder_group.create_dataset(name = 'baseline', data = baseline(**baseline_args), 
+                                             **self.compression_params)
         else:
-            self.powder_group['baseline'].write_direct(background)
+            self.powder_group['baseline'].write_direct(baseline(**baseline_args))
         
         # Record parameters
         if level == 'max':
             level = dualtree_max_level(data = self.scattering_length, first_stage = first_stage, wavelet = wavelet)
+            
         self.level = level
         self.first_stage = first_stage
         self.wavelet = wavelet

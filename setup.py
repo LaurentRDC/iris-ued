@@ -1,10 +1,20 @@
 # -*- coding: utf-8 -*-
+from Cython.Build import cythonize
 from itertools import chain
+import numpy
 from setuptools import setup, find_packages
 import glob
 
 __version__ = '3.1'
 __author__ = 'Laurent P. René de Cotret'
+
+#extensions = [
+#    Extension(name = 'iris.subroutines',
+#              sources = ['iris\\subroutines.pyx'],
+#              include_dirs = [numpy.get_include()],
+#             )
+#]
+
 
 #To create a Windows installer for this, run:
 # >>> python setup.py bdist_wininst
@@ -29,6 +39,7 @@ setup(
                         'scikit-image', 
                         'PyWavelets >= 0.5.1', 
                         'tifffile'],
+    #ext_modules = cythonize(extensions),
     data_files = [('iris\\gui\\images', image_list),
                   ('iris\\dualtree\\data', wavelets),
                   ('iris\\gui\\qdarkstyle', rc)]
