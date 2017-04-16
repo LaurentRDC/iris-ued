@@ -1,5 +1,6 @@
 from ..dualtree import ALL_FIRST_STAGE, ALL_COMPLEX_WAV
 from . import pyqtgraph as pg
+from .pyqtgraph import opengl as gl
 from .pyqtgraph import QtGui, QtCore
 import numpy as n
 
@@ -27,6 +28,12 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
+
+        # Surface plot
+        self.powder_surface_widget = gl.GLViewWidget(parent = self)
+        self.powder_surface_widget.setCameraPosition(distance = 50)
+        self.powder_surface_item = gl.GLSurfacePlotItem()
+        self.powder_surface_widget.addItem(self.powder_surface_item)
 
         # Buttons
         self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
@@ -57,9 +64,13 @@ class PowderViewer(QtGui.QWidget):
         command_layout.addWidget(wavelet_label,  0,  2,  1,  1)
         command_layout.addWidget(self.wavelet_cb,  1,  2,  1,  1)
 
+        powder_ensemble = QtGui.QTabWidget(parent = self)
+        powder_ensemble.addTab(self.powder_pattern_viewer, 'Line plot')
+        powder_ensemble.addTab(self.powder_surface_widget, 'Surface plot')
+
         layout = QtGui.QVBoxLayout()
         layout.addLayout(command_layout)
-        layout.addWidget(self.powder_pattern_viewer)
+        layout.addWidget(powder_ensemble)
         layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(layout)
     
@@ -98,12 +109,15 @@ class PowderViewer(QtGui.QWidget):
         self.powder_pattern_viewer.enableAutoRange()
         self.powder_pattern_viewer.clear()
 
+        # Line plot
         for pen, brush, curve, error in zip(pens, brushes, powder_data_block, powder_error_block):
             self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
             error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error)
             self.powder_pattern_viewer.addItem(error_bars)
         
+        # Surface plot
+
         self.baseline_removed_btn.setChecked(bgr)
         self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)

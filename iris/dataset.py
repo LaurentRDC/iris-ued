@@ -33,12 +33,8 @@ class ExperimentalParameter(object):
         self.default = default
     
     def __get__(self, instance, cls):
-        try:
-            return self.output(instance.experimental_parameters_group.attrs[self.name])
-        except:
-            # Some parameters might have a default value, others not.
-            if self.default is not None:
-                return self.default
+        value = instance.experimental_parameters_group.attrs.get(self.name, default = self.default)
+        return self.output(value) if value is not None else None
     
     def __set__(self, instance, value):
         instance.experimental_parameters_group.attrs[self.name] = value
@@ -480,10 +476,10 @@ class PowderDiffractionDataset(DiffractionDataset):
         rerror =  n.stack([e for _, _, e in results], axis = 0)
         
         dataset = self.powder_group.require_dataset(name = 'intensity', shape = rintensity.shape, dtype = rintensity.dtype)
-        dataset[:,:] = rintensity
+        dataset.write_direct(rintensity)
 
         dataset = self.powder_group.require_dataset(name = 'error', shape = rerror.shape, dtype = rerror.dtype)
-        dataset[:,:] = rerror
+        dataset.write_direct(rerror)
         
         # TODO: variable pixel_width and camera distance in the future
         px_radius = results[0][0]
