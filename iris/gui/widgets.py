@@ -147,6 +147,7 @@ class DatasetInfoWidget(QtGui.QTableWidget):
 
         # Resize to content
         self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+        self.resize(self.minimumSize())
 
     @QtCore.pyqtSlot(dict)
     def update_info(self, info):

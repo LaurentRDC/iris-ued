@@ -29,12 +29,6 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
-        # Surface plot
-        self.powder_surface_widget = gl.GLViewWidget(parent = self)
-        self.powder_surface_widget.setCameraPosition(distance = 50)
-        self.powder_surface_item = gl.GLSurfacePlotItem()
-        self.powder_surface_widget.addItem(self.powder_surface_item)
-
         # Buttons
         self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
         self.compute_baseline_btn.clicked.connect(self.baseline_parameters)
@@ -64,15 +58,12 @@ class PowderViewer(QtGui.QWidget):
         command_layout.addWidget(wavelet_label,  0,  2,  1,  1)
         command_layout.addWidget(self.wavelet_cb,  1,  2,  1,  1)
 
-        powder_ensemble = QtGui.QTabWidget(parent = self)
-        powder_ensemble.addTab(self.powder_pattern_viewer, 'Line plot')
-        powder_ensemble.addTab(self.powder_surface_widget, 'Surface plot')
-
         layout = QtGui.QVBoxLayout()
         layout.addLayout(command_layout)
-        layout.addWidget(powder_ensemble)
+        layout.addWidget(self.powder_pattern_viewer)
         layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(layout)
+        self.resize(self.maximumSize())
     
     @QtCore.pyqtSlot()
     def baseline_parameters(self):
@@ -115,8 +106,6 @@ class PowderViewer(QtGui.QWidget):
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
             error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error)
             self.powder_pattern_viewer.addItem(error_bars)
-        
-        # Surface plot
 
         self.baseline_removed_btn.setChecked(bgr)
         self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
