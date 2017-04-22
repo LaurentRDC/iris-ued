@@ -49,6 +49,7 @@ def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
     # The sum of weights should be equal to 1 per picture
     if weights is None:
         weights = n.nansum(arr, axis = (0, 1))
+    
     weights *= arr.shape[2] / n.sum(weights)    # Normalize weights
 
     # Apply weights along axis 2
