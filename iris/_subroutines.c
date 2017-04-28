@@ -1714,7 +1714,6 @@ static const char __pyx_k_id[] = "id";
 static const char __pyx_k_np[] = "np";
 static const char __pyx_k_arr[] = "arr";
 static const char __pyx_k_avg[] = "avg";
-static const char __pyx_k_err[] = "err";
 static const char __pyx_k_obj[] = "obj";
 static const char __pyx_k_row[] = "row";
 static const char __pyx_k_base[] = "base";
@@ -1743,7 +1742,6 @@ static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_name_2[] = "__name__";
 static const char __pyx_k_struct[] = "struct";
 static const char __pyx_k_unpack[] = "unpack";
-static const char __pyx_k_absdiff[] = "absdiff";
 static const char __pyx_k_fortran[] = "fortran";
 static const char __pyx_k_memview[] = "memview";
 static const char __pyx_k_weights[] = "weights";
@@ -1752,7 +1750,6 @@ static const char __pyx_k_diff_avg[] = "_diff_avg";
 static const char __pyx_k_itemsize[] = "itemsize";
 static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_enumerate[] = "enumerate";
-static const char __pyx_k_estimator[] = "estimator";
 static const char __pyx_k_IndexError[] = "IndexError";
 static const char __pyx_k_ValueError[] = "ValueError";
 static const char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
@@ -1813,7 +1810,6 @@ static PyObject *__pyx_n_s_RuntimeError;
 static PyObject *__pyx_n_s_TypeError;
 static PyObject *__pyx_kp_s_Unable_to_convert_item_to_object;
 static PyObject *__pyx_n_s_ValueError;
-static PyObject *__pyx_n_s_absdiff;
 static PyObject *__pyx_n_s_allocate_buffer;
 static PyObject *__pyx_n_s_arr;
 static PyObject *__pyx_n_s_avg;
@@ -1829,9 +1825,7 @@ static PyObject *__pyx_n_s_diff_avg;
 static PyObject *__pyx_n_s_dtype_is_object;
 static PyObject *__pyx_n_s_encode;
 static PyObject *__pyx_n_s_enumerate;
-static PyObject *__pyx_n_s_err;
 static PyObject *__pyx_n_s_error;
-static PyObject *__pyx_n_s_estimator;
 static PyObject *__pyx_n_s_flags;
 static PyObject *__pyx_n_s_format;
 static PyObject *__pyx_n_s_fortran;
@@ -2159,41 +2153,41 @@ static PyObject *__pyx_pf_4iris_12_subroutines__diff_avg(CYTHON_UNUSED PyObject 
   Py_ssize_t __pyx_t_18;
   __Pyx_RefNannySetupContext("_diff_avg", 0);
 
-  /* "iris/_subroutines.pyx":54
- *     cdef cnp.double_t [:,:,:] absdiff, estimator
- *     cdef cnp.double_t [:,:] avg, err
+  /* "iris/_subroutines.pyx":53
+ *     """
+ *     cdef cnp.double_t [:,:] avg
  *     cdef cnp.double_t [:] transverse = np.zeros(shape = (arr.shape[2], ))             # <<<<<<<<<<<<<<
  * 
  *     with nogil:
  */
-  __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_zeros); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_zeros); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = PyInt_FromSsize_t((__pyx_v_arr.shape[2])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_3 = PyInt_FromSsize_t((__pyx_v_arr.shape[2])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_3);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_3);
   __pyx_t_3 = 0;
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_shape, __pyx_t_4) < 0) __PYX_ERR(0, 54, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_shape, __pyx_t_4) < 0) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_empty_tuple, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_empty_tuple, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_t_5 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_5numpy_double_t(__pyx_t_4);
-  if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 54, __pyx_L1_error)
+  if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_transverse = __pyx_t_5;
   __pyx_t_5.memview = NULL;
   __pyx_t_5.data = NULL;
 
-  /* "iris/_subroutines.pyx":56
+  /* "iris/_subroutines.pyx":55
  *     cdef cnp.double_t [:] transverse = np.zeros(shape = (arr.shape[2], ))
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -2207,7 +2201,7 @@ static PyObject *__pyx_pf_4iris_12_subroutines__diff_avg(CYTHON_UNUSED PyObject 
       #endif
       /*try:*/ {
 
-        /* "iris/_subroutines.pyx":59
+        /* "iris/_subroutines.pyx":58
  * 
  *         # Iterate over all 'transverse columns':
  *         for row in range(arr.shape[0]):             # <<<<<<<<<<<<<<
@@ -2218,7 +2212,7 @@ static PyObject *__pyx_pf_4iris_12_subroutines__diff_avg(CYTHON_UNUSED PyObject 
         for (__pyx_t_7 = 0; __pyx_t_7 < __pyx_t_6; __pyx_t_7+=1) {
           __pyx_v_row = __pyx_t_7;
 
-          /* "iris/_subroutines.pyx":60
+          /* "iris/_subroutines.pyx":59
  *         # Iterate over all 'transverse columns':
  *         for row in range(arr.shape[0]):
  *             for column in range(arr.shape[1]):             # <<<<<<<<<<<<<<
@@ -2229,7 +2223,7 @@ static PyObject *__pyx_pf_4iris_12_subroutines__diff_avg(CYTHON_UNUSED PyObject 
           for (__pyx_t_9 = 0; __pyx_t_9 < __pyx_t_8; __pyx_t_9+=1) {
             __pyx_v_column = __pyx_t_9;
 
-            /* "iris/_subroutines.pyx":63
+            /* "iris/_subroutines.pyx":62
  * 
  *                 # Get transverse column affected by weights
  *                 for d in range(arr.shape[2]):             # <<<<<<<<<<<<<<
@@ -2240,7 +2234,7 @@ static PyObject *__pyx_pf_4iris_12_subroutines__diff_avg(CYTHON_UNUSED PyObject 
             for (__pyx_t_11 = 0; __pyx_t_11 < __pyx_t_10; __pyx_t_11+=1) {
               __pyx_v_d = __pyx_t_11;
 
-              /* "iris/_subroutines.pyx":64
+              /* "iris/_subroutines.pyx":63
  *                 # Get transverse column affected by weights
  *                 for d in range(arr.shape[2]):
  *                     transverse[d] = weights[d] * arr[row, column, d]             # <<<<<<<<<<<<<<
@@ -2255,14 +2249,14 @@ static PyObject *__pyx_pf_4iris_12_subroutines__diff_avg(CYTHON_UNUSED PyObject 
               *((__pyx_t_5numpy_double_t *) ( /* dim=0 */ (__pyx_v_transverse.data + __pyx_t_16 * __pyx_v_transverse.strides[0]) )) = ((*((__pyx_t_5numpy_double_t *) ( /* dim=0 */ (__pyx_v_weights.data + __pyx_t_12 * __pyx_v_weights.strides[0]) ))) * (*((__pyx_t_5numpy_double_t *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_arr.data + __pyx_t_13 * __pyx_v_arr.strides[0]) ) + __pyx_t_14 * __pyx_v_arr.strides[1]) ) + __pyx_t_15 * __pyx_v_arr.strides[2]) ))));
             }
 
-            /* "iris/_subroutines.pyx":65
+            /* "iris/_subroutines.pyx":64
  *                 for d in range(arr.shape[2]):
  *                     transverse[d] = weights[d] * arr[row, column, d]
  *                 avg[row, column] = nanmean(transverse)             # <<<<<<<<<<<<<<
  *                 #err[row, column] = cnp.nanstd(transverse)
  * 
  */
-            if (unlikely(!__pyx_v_avg.memview)) { __Pyx_RaiseUnboundMemoryviewSliceNogil("avg"); __PYX_ERR(0, 65, __pyx_L4_error) }
+            if (unlikely(!__pyx_v_avg.memview)) { __Pyx_RaiseUnboundMemoryviewSliceNogil("avg"); __PYX_ERR(0, 64, __pyx_L4_error) }
             __pyx_t_17 = __pyx_v_row;
             __pyx_t_18 = __pyx_v_column;
             *((__pyx_t_5numpy_double_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_avg.data + __pyx_t_17 * __pyx_v_avg.strides[0]) ) + __pyx_t_18 * __pyx_v_avg.strides[1]) )) = __pyx_f_4iris_12_subroutines_nanmean(__pyx_v_transverse);
@@ -2270,7 +2264,7 @@ static PyObject *__pyx_pf_4iris_12_subroutines__diff_avg(CYTHON_UNUSED PyObject 
         }
       }
 
-      /* "iris/_subroutines.pyx":56
+      /* "iris/_subroutines.pyx":55
  *     cdef cnp.double_t [:] transverse = np.zeros(shape = (arr.shape[2], ))
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -2294,14 +2288,14 @@ static PyObject *__pyx_pf_4iris_12_subroutines__diff_avg(CYTHON_UNUSED PyObject 
       }
   }
 
-  /* "iris/_subroutines.pyx":68
+  /* "iris/_subroutines.pyx":67
  *                 #err[row, column] = cnp.nanstd(transverse)
  * 
  *     return avg             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  if (unlikely(!__pyx_v_avg.memview)) { __Pyx_RaiseUnboundLocalError("avg"); __PYX_ERR(0, 68, __pyx_L1_error) }
-  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_avg, 2, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_double_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_double_t, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 68, __pyx_L1_error)
+  if (unlikely(!__pyx_v_avg.memview)) { __Pyx_RaiseUnboundLocalError("avg"); __PYX_ERR(0, 67, __pyx_L1_error) }
+  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_avg, 2, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_5numpy_double_t, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_5numpy_double_t, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 67, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_r = __pyx_t_4;
   __pyx_t_4 = 0;
@@ -16739,7 +16733,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
   {&__pyx_kp_s_Unable_to_convert_item_to_object, __pyx_k_Unable_to_convert_item_to_object, sizeof(__pyx_k_Unable_to_convert_item_to_object), 0, 0, 1, 0},
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
-  {&__pyx_n_s_absdiff, __pyx_k_absdiff, sizeof(__pyx_k_absdiff), 0, 0, 1, 1},
   {&__pyx_n_s_allocate_buffer, __pyx_k_allocate_buffer, sizeof(__pyx_k_allocate_buffer), 0, 0, 1, 1},
   {&__pyx_n_s_arr, __pyx_k_arr, sizeof(__pyx_k_arr), 0, 0, 1, 1},
   {&__pyx_n_s_avg, __pyx_k_avg, sizeof(__pyx_k_avg), 0, 0, 1, 1},
@@ -16755,9 +16748,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_dtype_is_object, __pyx_k_dtype_is_object, sizeof(__pyx_k_dtype_is_object), 0, 0, 1, 1},
   {&__pyx_n_s_encode, __pyx_k_encode, sizeof(__pyx_k_encode), 0, 0, 1, 1},
   {&__pyx_n_s_enumerate, __pyx_k_enumerate, sizeof(__pyx_k_enumerate), 0, 0, 1, 1},
-  {&__pyx_n_s_err, __pyx_k_err, sizeof(__pyx_k_err), 0, 0, 1, 1},
   {&__pyx_n_s_error, __pyx_k_error, sizeof(__pyx_k_error), 0, 0, 1, 1},
-  {&__pyx_n_s_estimator, __pyx_k_estimator, sizeof(__pyx_k_estimator), 0, 0, 1, 1},
   {&__pyx_n_s_flags, __pyx_k_flags, sizeof(__pyx_k_flags), 0, 0, 1, 1},
   {&__pyx_n_s_format, __pyx_k_format, sizeof(__pyx_k_format), 0, 0, 1, 1},
   {&__pyx_n_s_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 0, 1, 1},
@@ -17041,10 +17032,10 @@ static int __Pyx_InitCachedConstants(void) {
  *               cnp.double_t [:] weights):
  *     """
  */
-  __pyx_tuple__20 = PyTuple_Pack(10, __pyx_n_s_arr, __pyx_n_s_weights, __pyx_n_s_absdiff, __pyx_n_s_estimator, __pyx_n_s_avg, __pyx_n_s_err, __pyx_n_s_transverse, __pyx_n_s_row, __pyx_n_s_column, __pyx_n_s_d); if (unlikely(!__pyx_tuple__20)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_tuple__20 = PyTuple_Pack(7, __pyx_n_s_arr, __pyx_n_s_weights, __pyx_n_s_avg, __pyx_n_s_transverse, __pyx_n_s_row, __pyx_n_s_column, __pyx_n_s_d); if (unlikely(!__pyx_tuple__20)) __PYX_ERR(0, 29, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__20);
   __Pyx_GIVEREF(__pyx_tuple__20);
-  __pyx_codeobj__21 = (PyObject*)__Pyx_PyCode_New(2, 0, 10, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__20, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_C_Users_Laurent_onedrive_mcgill, __pyx_n_s_diff_avg, 29, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__21)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_codeobj__21 = (PyObject*)__Pyx_PyCode_New(2, 0, 7, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__20, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_C_Users_Laurent_onedrive_mcgill, __pyx_n_s_diff_avg, 29, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__21)) __PYX_ERR(0, 29, __pyx_L1_error)
 
   /* "View.MemoryView":282
  *         return self.name

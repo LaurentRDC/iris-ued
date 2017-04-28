@@ -128,11 +128,9 @@ def angular_average(image, center, beamblock_rect, error = None, mask = None):
     # values are used as weights in numpy.bincount
     # Create a composite mask that uses beamblock mask, and maximum/minimum
     # radii     
-    composite_mask = n.zeros_like(image, dtype = n.bool)
-    composite_mask[R > r_max] = True
-    composite_mask[R < r_min] = True
-    composite_mask[x1:x2, y1:y2] = True
-    image[ composite_mask ] = 0
+    image[R > r_max] = 0
+    image[R < r_min] = 0
+    image[x1:x2, y1:y2] = 0
     
     # Angular average
     px_bin = n.bincount(R.ravel(), weights = image.ravel())
