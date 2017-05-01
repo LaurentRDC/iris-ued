@@ -11,65 +11,40 @@ from warnings import catch_warnings, simplefilter
 from .optimizations import pmap
 from .utils import find_center
 
-def diff_avg(arr, weights = None, mad = True, mad_dist = 3):
+def diff_avg(arr, weights = None):
     """
-    Average diffraction pictures from the same time-delay together. Median-abolute-difference (MAD)
-    filtering can also be used to clean up the data.
-
-    It is assumed that the pictures have been aligned already.
+    Average diffraction pictures from the same time-delay together. It is assumed that the 
+    pictures have been aligned already.
 
     Parameters
     ----------
-    arr : ndarray
+    arr : ndarray, dtype uint16
         Array to be averaged.
     weights : ndarray or None, optional
         Array representing how much an image should be 'worth'. E.g.: a weight below 1 means that
         a picture is not bright enough, and therefore it should count more in the averaging.
         If None (default), total picture intensity is used to weight each picture.
-    mad : bool, optional
-        If True (default), the distributions of pixel intensities across scans are included based on a 
-        mean absolute difference (MAD) approach. Set to False for faster performance.
-    mad_dist : float, optional
-        The number of mean-absolute-differences allowable inside the pixel intensity distribution.
-        Setting this number lower will 'filter' out more pixels.
     
     Returns
     -------
-    avg : ndarray, ndim 2
+    avg : ndarray, ndim 2, dtype float
         'Average' of arr.
-    err : ndarray, ndim 2
+    err : ndarray, ndim 2, dtype float
         Standard error in the mean.
     """
-    # Making sure it is an array
-    # Remove unphysical pixel values by replacing with NaN
-    arr = n.array(arr, copy = False)
-    arr[n.logical_or(n.isfinite(arr) < 0, n.isfinite(arr) > 2**16)] = n.nan
+    arr = n.array(arr, copy = False, dtype = n.uint16)
 
     # Handle weights of images
     # The sum of weights should be equal to 1 per picture
     if weights is None:
-        weights = n.nansum(arr, axis = (0, 1))
-    
+        weights = n.sum(arr, axis = (0, 1)).astype(n.float)
     weights *= arr.shape[2] / n.sum(weights)    # Normalize weights
 
-    # Apply weights along axis 2
-    arr *= weights[None, None, :]
-    
-    # Median absolute deviation outliers test
-    # Robust estimator of outliers, as explained here:
-    # http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
-    if mad:
-        absdiff = n.abs(arr - n.nanmedian(arr, axis = 2, keepdims = True))
-        estimator = mad_dist*n.median(absdiff, axis = 2, keepdims = True)
-        arr[absdiff > estimator] = n.nan
-    
     # Final averaging
     # Error in the mean is only approximate, but much faster.
     # For a true measure of error, see scipy.stats.sem (masked standard error in mean)
-    with catch_warnings():
-        simplefilter('ignore')
-        avg = n.nanmean(arr, axis = 2) 
-        err = n.nanstd(arr, axis = 2) / n.sqrt(arr.shape[2])
+    avg = n.average(arr, axis = 2, weights = weights) 
+    err = n.std(arr, axis = 2) / n.sqrt(arr.shape[2])
     return avg, err
 
 non = lambda s: s if s < 0 else None

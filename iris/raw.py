@@ -7,10 +7,13 @@ import numpy as n
 from os.path import join, isfile, isdir
 from os import listdir 
 import re
+from skimage import img_as_uint
+from skimage.io import imread
 from skimage.feature import register_translation
 import sys
 from datetime import datetime as dt
 from warnings import warn, catch_warnings
+from skued import pmap
 
 from . import cached_property
 from .io import read, save, RESOLUTION, ImageNotFoundError, cast_to_16_bits
@@ -180,8 +183,7 @@ class RawDataset(object):
         sign = '' if float(timedelay) < 0 else '+'
         str_time = sign + '{0:.2f}'.format(float(timedelay))
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
-        
-        return read(join(self.raw_directory, filename))
+        return img_as_uint(imread(join(self.raw_directory, filename), plugin = 'tifffile'))
     
     def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', sample_type = 'powder', 
                 callback = None, cc = True, window_size = 10, ring_width = 5, mad = True):
@@ -265,13 +267,13 @@ class RawDataset(object):
             # Average background images
             # If background images are not found, save empty backgrounds
             try:
-                pumpon_background = average_tiff(self.raw_directory, 'background.*.pumpon.tif', background = None)
+                pumpon_background = average_tiff(self.raw_directory, 'background.*.pumpon.tif', background = None).astype(n.uint16)
             except ImageNotFoundError:
                 pumpon_background = n.zeros(shape = self.resolution, dtype = n.uint16)
             processed.processed_measurements_group.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = n.uint16, **ckwargs)
 
             try:
-                pumpoff_background = average_tiff(self.raw_directory, 'background.*.pumpoff.tif', background = None)
+                pumpoff_background = average_tiff(self.raw_directory, 'background.*.pumpoff.tif', background = None).astype(n.uint16)
             except ImageNotFoundError:
                 pumpoff_background = n.zeros(shape = self.resolution, dtype = n.uint16)
             processed.processed_measurements_group.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = n.uint16, **ckwargs)
@@ -283,7 +285,7 @@ class RawDataset(object):
             gp.create_dataset(name = 'error', shape = shape, dtype = n.float32, **ckwargs)
 
         # Get reference image for aligning all single crystal images
-        ref_im = self.raw_data(self.time_points[0], self.nscans[0]) - pumpoff_background
+        ref_im = self.raw_data(self.time_points[0], self.nscans[0]) - img_as_uint(pumpoff_background)
 
         # TODO: parallelize this loop
         #       The only reason it is not right now is that
@@ -311,10 +313,10 @@ class RawDataset(object):
             # Evaluates to TRUE on the beamblock
             x1,x2,y1,y2 = beamblock_rect
             cube = n.dstack(images)
-            cube[y1:y2, x1:x2, :] = n.nan
+            cube[y1:y2, x1:x2, :] = 0
 
             # Average appropriately using subroutine
-            averaged, error = diff_avg(cube, mad = mad, mad_dist = 3)
+            averaged, error = diff_avg(cube, weights = None)
 
             with DiffractionDataset(name = filename, mode = 'r+') as processed:
                 processed.processed_measurements_group['intensity'].write_direct(n.nan_to_num(averaged), source_sel = n.s_[:,:], dest_sel = n.s_[:,:,i])

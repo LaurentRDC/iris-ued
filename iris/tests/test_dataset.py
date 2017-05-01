@@ -98,6 +98,16 @@ class TestDiffractionDataset(unittest.TestCase):
             
             with self.assertRaises(ValueError):
                 error_slice = dataset.averaged_error(timedelay = n.sum(dataset.time_points))
+    
+    def test_time_series(self):
+        """ Test that the DiffractionDataset.time_series() method is working """
+        with DiffractionDataset(name = dummy_dataset(), mode = 'r+') as dataset:
+
+            with self.subTest('Test out parameter'):
+                container = n.zeros((len(dataset.time_points), ))
+                x1 = y1 = int(dataset.resolution / 3)
+                x2 = y2 = int((2/3)*dataset.resolution)
+                dataset.time_series((x1, x2, y1, y2), out = container)
 
 class TestPowderDiffractionDataset(unittest.TestCase):
 
