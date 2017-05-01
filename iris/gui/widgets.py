@@ -51,9 +51,10 @@ class ProcessedDataViewer(QtGui.QWidget):
         self.show_pd_btn.toggled.connect(self.peak_dynamics_region.setVisible)
 
         # Final assembly
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(self.image_viewer)
-        self.layout.addWidget(self.peak_dynamics_viewer)
+        viewers = QtGui.QSplitter(QtCore.Qt.Horizontal)
+        viewers.addWidget(self.image_viewer)
+        viewers.addWidget(self.peak_dynamics_viewer)
+        viewers.setHandleWidth(50)
 
         checkboxes = QtGui.QVBoxLayout()
         checkboxes.addWidget(self.autolevel_cb)
@@ -63,6 +64,8 @@ class ProcessedDataViewer(QtGui.QWidget):
         cmd_bar.addLayout(checkboxes)
         cmd_bar.addWidget(self.show_pd_btn)
         cmd_bar.addWidget(self.time_slider)
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addWidget(viewers)
         self.layout.addLayout(cmd_bar)
         self.setLayout(self.layout)
     

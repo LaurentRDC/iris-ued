@@ -5,7 +5,10 @@ import glob
 from itertools import product
 import numpy as n
 from os.path import join
+from functools import partial
 from .io import RESOLUTION, ImageNotFoundError, read
+from skimage import img_as_uint
+from skimage.io import imread
 
 def average_tiff(directory, wildcard, background = None):
     """
@@ -28,24 +31,18 @@ def average_tiff(directory, wildcard, background = None):
     ------
     ImageNotFoundError
         If wildcard does not match any file in the directory
-    """ 
-    #Format background correctly
-    if background is not None:
-        background = background.astype(n.float)
-    else:
-        background = n.zeros(shape = RESOLUTION, dtype = n.float)
-    
+    """     
     #Get file list
     image_list = glob.glob(join(directory, wildcard))
     if not image_list:      #List is empty
         raise ImageNotFoundError('wildcard does not match any file in the dataset directory')
     
-    image = n.zeros(shape = RESOLUTION, dtype = n.float)
-    for filename in image_list:
-        image += read(filename)
-        
-    # average - background
-    return image/len(image_list) - background
+    imreadtiff = partial(imread, plugin = 'tifffile')
+    avg = sum(map(imreadtiff, image_list))/len(image_list)
+
+    if background is not None:
+        return avg - background
+    return avg
 
 MASK_CACHE = dict()
 def find_center(image, guess_center, radius, window_size = 10, ring_width = 10):

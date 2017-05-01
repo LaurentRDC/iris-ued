@@ -10,8 +10,8 @@ class TestDiffAvg(unittest.TestCase):
 
     def test_trivial(self):
         """ Averaging identical pictures """
-        arr = n.ones(shape = (256, 256, 30), dtype = n.float)
-        avg, err = diff_avg(arr, mad = True, mad_dist = 1)
+        arr = n.ones(shape = (256, 256, 10), dtype = n.uint16)
+        avg, err = diff_avg(arr)
 
         self.assertSequenceEqual(avg.shape, (256, 256))
         self.assertSequenceEqual(err.shape, (256, 256))
@@ -21,19 +21,10 @@ class TestDiffAvg(unittest.TestCase):
     
     def test_no_weights_no_mad(self):
         """ Show that diff_avg can be equivalent to numpy.mean() """
-        arr = n.ones(shape = (256, 256, 30), dtype = n.float)
-        avg, err = diff_avg(arr, weights = n.ones((30,)), mad = False)
+        arr = n.ones(shape = (256, 256, 10), dtype = n.uint16)
+        avg, err = diff_avg(arr, weights = n.ones((10,)))
 
         self.assertTrue(n.allclose(n.mean(arr, axis = 2), avg))
-    
-    def test_outliers(self):
-        """ Average 9 identical pictures + 1 outlier picture together. """
-        arr = n.stack([data.camera() for _ in range(10)], axis = 2)
-        arr = arr.astype(n.float)
-        arr[:,:,5] = data.camera() + 1e4   # outliers
-
-        avg, err = diff_avg(arr, weights = n.ones((10,)), mad = True, mad_dist = 1)
-        self.assertTrue(n.allclose(avg, data.camera()))
         
     
 class TestDiffAlign(unittest.TestCase):
