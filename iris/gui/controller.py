@@ -101,7 +101,7 @@ class IrisController(QtCore.QObject):
         info_dict.update({'callback': self.processing_progress_signal.emit, 'raw': self.raw_dataset})
 
         self.worker = WorkThread(function = process, kwargs = info_dict)
-        self.worker.results_signal.connect(self.load_dataset)    # self.dataset.process returns a string path
+        self.worker.results_signal.connect(self.load_dataset)
         self.worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
 
         def in_progress(boolean):
@@ -110,6 +110,18 @@ class IrisController(QtCore.QObject):
         
         self.worker.in_progress_signal.connect(in_progress)
         self.processing_progress_signal.emit(0)
+        self.worker.start()
+    
+    @error_aware('')
+    @QtCore.pyqtSlot(tuple)
+    def promote_to_powder(self, center):
+        """ Promote a DiffractionDataset to a PowderDiffractionDataset """
+        if self.dataset is None:
+            raise RuntimeError('No dataset is loaded')
+        self.worker = WorkThread(function = promote_to_powder, kwargs = {'center': center, 'filename':self.dataset.filename})
+        self.dataset.close()
+        self.dataset = None
+        self.worker.results_signal.connect(self.load_dataset)
         self.worker.start()
 
     @error_aware('Powder time-series could not be calculated.')
@@ -206,4 +218,11 @@ class IrisController(QtCore.QObject):
         if isinstance(self.dataset, PowderDiffractionDataset):
             for attr in ('first_stage', 'wavelet', 'level', 'baseline_removed'):
                 info[attr] = getattr(self.dataset, attr)
-        self.dataset_info_signal.emit(info) 
+        self.dataset_info_signal.emit(info)
+
+def promote_to_powder(filename, center):
+    """ Create a PowderDiffractionDataset from a DiffractionDataset """
+    with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
+        dataset.sample_type = 'powder'
+        dataset.compute_angular_averages(center = center)
+    return filename

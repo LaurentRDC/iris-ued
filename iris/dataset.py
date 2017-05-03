@@ -60,7 +60,6 @@ class DiffractionDataset(h5py.File):
     exposure = ExperimentalParameter('exposure', float)
     energy = ExperimentalParameter('energy', float)
     resolution = ExperimentalParameter('resolution', tuple, default = (2048, 2048))
-    center = ExperimentalParameter('center', tuple)
     beamblock_rect = ExperimentalParameter('beamblock_rect', tuple)
     sample_type = ExperimentalParameter('sample_type', str)
     time_zero_shift = ExperimentalParameter('time_zero_shift', float, default = 0.0)
@@ -273,6 +272,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     """
     _powder_group_name = '/powder'
 
+    center = ExperimentalParameter('center', tuple)
     first_stage = ExperimentalParameter(name = 'powder_wavelet_baseline_first_stage', output = str)
     wavelet = ExperimentalParameter(name = 'powder_baseline_wavelet', output = str)
     level = ExperimentalParameter(name = 'powder_baseline_transform_level', output = int)
@@ -423,7 +423,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             return n.sum(axis = 1, out = out)
         return n.squeeze(n.sum(trace, axis = 1))
     
-    def compute_baseline(self, first_stage, wavelet, max_iter = 100, level = 'max'):
+    def compute_baseline(self, first_stage, wavelet, max_iter = 50, level = 'max'):
         """
         Compute and save the baseline computed from the dualtree package.
 
@@ -443,12 +443,11 @@ class PowderDiffractionDataset(DiffractionDataset):
                          'first_stage': first_stage, 'wavelet': wavelet,
                          'mask': None, 'axis': 1}
         
-        
         if not self.baseline_removed:
             self.powder_group.create_dataset(name = 'baseline', data = baseline_dt(**baseline_args), 
                                              **self.compression_params)
         else:
-            self.powder_group['baseline'].write_direct(baseline(**baseline_args))
+            self.powder_group['baseline'][:, :] = baseline_dt(**baseline_args)
         
         # Record parameters
         if level == 'max':
@@ -459,8 +458,23 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.wavelet = wavelet
         self.baseline_removed = True
     
-    def _compute_angular_averages(self):
-        """ Compute the angular averages."""
+    def compute_angular_averages(self, center = None):
+        """ Compute the angular averages.
+        
+        Parameters
+        ----------
+        center : 2-tuple or None, optional
+            Center of the diffraction patterns. If None (default), the dataset
+            attribute will be used instead.
+        """
+        if self.center is None and center is None:
+            raise RuntimeError('Center attribute must be either saved in the dataset \
+                                as an attribute or be provided.')
+        
+        if center is not None:
+            self.center = center
+        
+        self.sample_type = 'powder'
 
         beamblock_mask = n.zeros(self.resolution, dtype = n.bool)
         x1,x2,y1,y2 = self.beamblock_rect
@@ -471,7 +485,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         results = list()
         for timedelay in self.time_points:
             extras = dict()
-            radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, mask = beamblock_mask, extras = extras) 
+            radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, 
+                                          mask = beamblock_mask, extras = extras) 
             results.append((radius, avg, extras['error']))
         
         # Concatenate arrays for intensity and error

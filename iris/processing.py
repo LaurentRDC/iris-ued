@@ -67,7 +67,7 @@ def uint_subtract_safe(arr1, arr2):
     result[np.greater(arr2, arr1)] = 0
     return result
 
-def process(raw, destination, beamblock_rect, processes = None, callback = None, sample_type = 'powder', **kwargs):
+def process(raw, destination, beamblock_rect, processes = None, callback = None, **kwargs):
     """ 
     Parallel processing of RawDataset into a DiffractionDataset.
 
@@ -84,16 +84,7 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
         CPU cores.
     callback : callable or None, optional
         Callable that takes an int between 0 and 99. This can be used for progress update.
-    sample_type : {'powder', 'single_crystal'}, optional
-        Sample type. If 'powder', angular averaging will be done
     """
-    if sample_type not in ('powder', 'single_crystal'):
-        raise ValueError("Valid sample_type values are 'powder' and 'single_crystal', not '{}'.".format(sample_type))
-    # Preliminary check. If energy is 0kV, then the scattering length calculation will
-    # fail at the end of processing, crashing iris.
-    if raw.energy == 0:
-        raise AttributeError('Energy is 0 kV')
-
     if callback is None:
         callback = lambda i: None
 
@@ -109,7 +100,7 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
         # Copy experimental parameters
         # Center and beamblock_rect will be modified
         # because of reduced resolution later
-        processed.sample_type = sample_type
+        processed.sample_type = 'single_crystal'       # By default
         processed.nscans = raw.nscans
         processed.time_points = raw.time_points
         processed.acquisition_date = raw.acquisition_date
@@ -160,10 +151,6 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
         # Wait and iterate over results, writing to disk
         # This process can also update the progress callback
         for index, avg, err in results:
-            # For powder samples, we keep the first averaged time-point so that
-            # we can determine the center using scikit-uedès powder_center
-            if time_points_processed == 0:
-                first_avg = avg.copy()
 
             time_points_processed += 1
             with DiffractionDataset(name = destination, mode = 'r+') as processed:
@@ -172,13 +159,6 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
                 gp['error'].write_direct(err, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
             
             callback(round(100*time_points_processed / len(raw.time_points)))
-    
-    # Determine the center of diffraction pattern from first_avg
-    if sample_type == 'powder':
-        xc, yc = powder_center(first_avg)
-        with PowderDiffractionDataset(name = destination, mode = 'r+') as powder_dataset:
-            powder_dataset.center = (xc, yc)
-            powder_dataset._compute_angular_averages()
 
     print('Processing has taken {}'.format(str(dt.now() - start_time)))
     return destination

@@ -5,22 +5,25 @@
 
 import functools
 import multiprocessing
-import numpy as n
 import os
-from os.path import join, dirname
 import sys
+from os.path import dirname, join
 
+import numpy as n
+
+from . import pyqtgraph as pg
+from .. import DiffractionDataset, PowderDiffractionDataset, RawDataset
+from .controller import IrisController, error_aware
 from .fluence_calculator import FluenceCalculatorDialog
 from .knife_edge_tool import KnifeEdgeToolDialog
-from . import pyqtgraph as pg
+from .powder_viewer import PowderViewer
+from .processing_dialog import ProcessingDialog
+from .promote_dialog import PromoteToPowderDialog
 from .pyqtgraph import QtCore, QtGui
 from .qdarkstyle import load_stylesheet_pyqt5
-from .. import RawDataset, DiffractionDataset, PowderDiffractionDataset
-from .controller import IrisController, error_aware
-from .widgets import IrisStatusBar, DatasetInfoWidget, ProcessedDataViewer
 from .raw_viewer import RawDataViewer
-from .powder_viewer import PowderViewer
 from .utils import WorkThread
+from .widgets import DatasetInfoWidget, IrisStatusBar, ProcessedDataViewer
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -100,7 +103,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.raw_data_signal.connect(self.raw_data_viewer.display)
 
         # Processing raw dataset
-        self.raw_data_viewer.process_dataset_signal.connect(self.controller.process_raw_dataset)
+        self.raw_data_viewer.process_dataset_signal.connect(self.launch_processsing_dialog)
         self.controller.processing_progress_signal.connect(self.raw_data_viewer.processing_progress_bar.setValue)
 
         ######################################################################
@@ -120,6 +123,9 @@ class Iris(QtGui.QMainWindow):
         # Single crystal peak dynamics
         self.processed_viewer.peak_dynamics_region.sigRegionChanged.connect(self.controller.time_series_from_ROI)
         self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
+
+        # promote to powder dialog
+        self.processed_viewer.promote_to_powder_btn.clicked.connect(self.launch_promote_to_powder_dialog)
 
         ######################################################################
         # POWDER DATA INTERACTION
@@ -167,6 +173,18 @@ class Iris(QtGui.QMainWindow):
         
     def __del__(self):
         self._controller_thread.quit()
+    
+    @QtCore.pyqtSlot()
+    def launch_processsing_dialog(self):
+        processing_dialog = ProcessingDialog(parent = self, raw = self.controller.raw_dataset)
+        processing_dialog.processing_parameters_signal.connect(self.controller.process_raw_dataset)
+        return processing_dialog.exec_()
+    
+    @QtCore.pyqtSlot()
+    def launch_promote_to_powder_dialog(self):
+        promote_dialog = PromoteToPowderDialog(dataset_filename = self.controller.dataset.filename, parent = self)
+        promote_dialog.center_signal.connect(self.controller.promote_to_powder)
+        return promote_dialog.exec_()
     
     @QtCore.pyqtSlot()
     def load_raw_dataset(self):
