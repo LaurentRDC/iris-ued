@@ -50,6 +50,8 @@ class ProcessedDataViewer(QtGui.QWidget):
         self.show_pd_btn.toggled.connect(self.peak_dynamics_viewer.setVisible)
         self.show_pd_btn.toggled.connect(self.peak_dynamics_region.setVisible)
 
+        self.promote_to_powder_btn = QtGui.QPushButton('Promote to powder', parent = self)
+
         # Final assembly
         viewers = QtGui.QSplitter(QtCore.Qt.Horizontal)
         viewers.addWidget(self.image_viewer)
@@ -64,6 +66,7 @@ class ProcessedDataViewer(QtGui.QWidget):
         cmd_bar.addLayout(checkboxes)
         cmd_bar.addWidget(self.show_pd_btn)
         cmd_bar.addWidget(self.time_slider)
+        cmd_bar.addWidget(self.promote_to_powder_btn)
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(viewers)
         self.layout.addLayout(cmd_bar)
