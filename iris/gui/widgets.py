@@ -1,12 +1,12 @@
 from collections.abc import Iterable
-from ..dualtree import ALL_FIRST_STAGE, ALL_COMPLEX_WAV
-from os.path import join, dirname
-from . import pyqtgraph as pg
-from .pyqtgraph import QtGui, QtCore
+from os.path import dirname, join
+
 import numpy as n
 
-from .utils import spectrum_colors
+from . import pyqtgraph as pg
 from ..utils import fluence
+from .pyqtgraph import QtCore, QtGui
+from .utils import spectrum_colors
 
 image_folder = join(dirname(__file__), 'images')
     
