@@ -1,11 +1,12 @@
-from ..dualtree import ALL_FIRST_STAGE, ALL_COMPLEX_WAV
-from . import pyqtgraph as pg
-from .pyqtgraph import opengl as gl
-from .pyqtgraph import QtGui, QtCore
 import numpy as n
+from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
-from .utils import spectrum_colors
+from . import pyqtgraph as pg
 from ..utils import fluence
+from .pyqtgraph import opengl as gl
+from .pyqtgraph import QtCore, QtGui
+from .utils import spectrum_colors
+
 
 class PowderViewer(QtGui.QWidget):
 
