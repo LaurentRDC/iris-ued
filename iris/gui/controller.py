@@ -8,6 +8,7 @@ import traceback
 
 from ..dataset import DiffractionDataset, PowderDiffractionDataset
 from ..raw import RawDataset
+from ..processing import process
 from .utils import WorkThread
 
 def error_aware(message):
@@ -97,9 +98,9 @@ class IrisController(QtCore.QObject):
     @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
-        info_dict.update({'callback': self.processing_progress_signal.emit})
+        info_dict.update({'callback': self.processing_progress_signal.emit, 'raw': self.raw_dataset})
 
-        self.worker = WorkThread(function = self.raw_dataset.process, kwargs = info_dict)
+        self.worker = WorkThread(function = process, kwargs = info_dict)
         self.worker.results_signal.connect(self.load_dataset)    # self.dataset.process returns a string path
         self.worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
 

@@ -226,12 +226,7 @@ class ProcessingOptionsDialog(QtGui.QDialog):
         filename = self.file_dialog.getSaveFileName(filter = '*.hdf5')[0]
 
         # All parameters for the function RawDataset.process go here as keywork arguments
-        self.info_dict.update( {'filename':filename,
-                                'compression': self.compression_cb.currentText(),
-                                'sample_type': 'powder' if self.powder_type_btn.isChecked() else 'single_crystal',
-                                'window_size': int(self.window_size_cb.currentText()),
-                                'ring_width': int(self.ring_width_cb.currentText()),
-                                'cc': self.center_correction_checkbox.isChecked(),
-                                'mad': self.mad_checkbox.isChecked()} )
+        self.info_dict.update( {'destination':filename,
+                                'sample_type': 'powder' if self.powder_type_btn.isChecked() else 'single_crystal'} )
         self.processing_options_signal.emit(self.info_dict)
         super().accept()

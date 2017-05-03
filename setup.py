@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
-from Cython.Build import cythonize
 from itertools import chain
 import numpy
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages
 import glob
 
-__version__ = '3.1'
+__version__ = '3.3'
 __author__ = 'Laurent P. René de Cotret'
-
-extensions = [
-    Extension(name = 'iris._subroutines',
-              sources = ['iris\\_subroutines.pyx'],
-              include_dirs = [numpy.get_include()],
-             )
-]
 
 
 #To create a Windows installer for this, run:
@@ -34,14 +26,10 @@ setup(
     author_email = 'laurent.renedecotret@mail.mcgill.ca',
     url = 'www.physics.mcgill.ca/siwicklab',
     install_requires = ['numpy >= 1.11.2', 
-                        'scipy',
-                        'cython', 
+                        'scipy', 
                         'h5py >= 2.6.0',
-                        'scikit-image', 
-                        'PyWavelets >= 0.5.1', 
-                        'tifffile',
-                        'pypengl'],
-    ext_modules = cythonize(extensions),
+                        'scikit-image',
+                        'scikit-ued'],
     data_files = [('iris\\gui\\images', image_list),
                   ('iris\\dualtree\\data', wavelets),
                   ('iris\\gui\\qdarkstyle', rc)]
