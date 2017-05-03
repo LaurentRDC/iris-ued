@@ -6,8 +6,6 @@ from itertools import product
 import numpy as n
 from os.path import join
 from functools import partial
-from .io import RESOLUTION, ImageNotFoundError, read
-from skimage import img_as_uint
 from skimage.io import imread
 
 def average_tiff(directory, wildcard, background = None):
@@ -31,121 +29,17 @@ def average_tiff(directory, wildcard, background = None):
     ------
     ImageNotFoundError
         If wildcard does not match any file in the directory
-    """     
-    #Get file list
+    """
     image_list = glob.glob(join(directory, wildcard))
     if not image_list:      #List is empty
-        raise ImageNotFoundError('wildcard does not match any file in the dataset directory')
+        raise ValueError('wildcard {} does not match any file in\
+                                  the dataset directory'.format(wildcard))
     
-    imreadtiff = partial(imread, plugin = 'tifffile')
-    avg = sum(map(imreadtiff, image_list))/len(image_list)
+    avg = sum(map(imread, image_list))/len(image_list)
 
     if background is not None:
         return avg - background
     return avg
-
-MASK_CACHE = dict()
-def find_center(image, guess_center, radius, window_size = 10, ring_width = 10):
-    """
-    Find the best guess for diffraction center.
-
-    Parameters
-    ----------
-    image : ndarray, ndim 2
-        Invalid pixels (such as pixels under the beamblock) should be represented by NaN
-    guess_center : 2-tuple
-
-    radius : int
-
-    window_size : int, optional
-
-    ring_width : int, optional
-    """
-    xx, yy = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
-    xc, yc = guess_center
-    xc, yc = int(round(xc)), int(round(yc))
-    centers = product(range(xc - window_size, window_size + xc + 1),
-                      range(yc - window_size, window_size + yc + 1))
-    
-    # Reduce image size down to the bounding bx that encompasses
-    # all possible circles
-    extra = window_size + ring_width + radius
-    reduced = image[yc - extra:yc + extra, xc - extra:xc + extra]
-    xx = xx[yc - extra:yc + extra, xc - extra:xc + extra]
-    yy = yy[yc - extra:yc + extra, xc - extra:xc + extra]
-
-    def integrated(c):
-        """ Integrate intensity over the ring """
-        if c not in MASK_CACHE:
-            rr = n.sqrt((xx - c[0])**2 + (yy - c[1])**2)
-            MASK_CACHE[c] = n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)
-        return reduced[MASK_CACHE[c]].sum()
-    
-    # TODO: average centers that give the same integrated intensity? Pretty rare case maybe...
-    (best_x, best_y), _ = max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
-    return best_x, best_y
-
-def angular_average(image, center, beamblock_rect, error = None, mask = None):
-    """
-    This function returns a radially-averaged pattern computed from a TIFF image.
-    
-    Parameters
-    ----------
-    image : ndarray
-        image data from the diffractometer.
-    center : array-like shape (2,)
-        [x,y] coordinates of the center (in pixels).
-    beamblock_rect : Tuple, shape (4,)
-        Tuple containing x- and y-bounds (in pixels) for the beamblock mask
-        mast_rect = (x1, x2, y1, y2)
-        
-    Returns
-    -------
-    radius : ndarray, shape (N,)
-    intensity : ndarray, shape (N,)
-    error : ndarray, shape (N,)
-    """    
-    image = image.astype(n.float)
-    
-    xc, yc = center     #Center coordinates
-    x1, x2, y1, y2 = beamblock_rect     
-    
-    #Create meshgrid and compute radial positions of the data
-    X, Y = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
-    R = n.rint(n.sqrt( (X - xc)**2 + (Y - yc)**2 )).astype(n.int)
-    
-    #radii beyond r_max don't fit a full circle within the image
-    r_max = min((X.max()/2, Y.max()/2))           #Maximal radius that fits completely in the image
-    r_min = 0
-    if x1 < xc < x2 and y1 < yc < y2:
-        r_min = min([ n.sqrt((xc - x1)**2 + (yc - y1)**2), n.sqrt((xc - x2)**2 + (yc - y2)**2) ])
-
-    # Replace all values in the image corresponding to beamblock or other irrelevant
-    # data by 0: this way, it will never count in any calculation because image
-    # values are used as weights in numpy.bincount
-    # Create a composite mask that uses beamblock mask, and maximum/minimum
-    # radii     
-    image[R > r_max] = 0
-    image[R < r_min] = 0
-    image[x1:x2, y1:y2] = 0
-    
-    # Angular average
-    px_bin = n.bincount(R.ravel(), weights = image.ravel())
-    r_bin = n.bincount(R.ravel())
-    radial_intensity = px_bin/r_bin
-
-    # Error as the standard error in the mean, at each pixel
-    # Standard error = std / sqrt(N)
-    # std = sqrt(var - mean**2)
-    # take a look here: http://bit.ly/2hRk3O4
-    var_bin = n.bincount(R.ravel(), weights = image.ravel()**2)/r_bin
-    radial_intensity_error = n.sqrt(var_bin - radial_intensity**2)/n.sqrt(r_bin)
-
-    # Only return values with radius between r_min and r_max
-    radius = n.unique(R)
-    r_max_index = n.argmin(n.abs(r_max - radius))
-    r_min_index = n.argmin(n.abs(r_min - radius))
-    return radius[r_min_index + 1:r_max_index], radial_intensity[r_min_index + 1:r_max_index], radial_intensity_error[r_min_index + 1:r_max_index]
 
 def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2235):
     """

@@ -8,12 +8,12 @@ import numpy as n
 import os
 from os.path import join
 import re
+from skued.image_analysis import angular_average
+from skued.baseline import baseline_dt, dt_max_level
 from warnings import warn
 
-from .dualtree import baseline, dualtree_max_level
 from .optimizations import cached_property
-from .io import RESOLUTION, read, cast_to_16_bits
-from .utils import angular_average, scattering_length
+from .utils import scattering_length
 
 class ExperimentalParameter(object):
     """ Descriptor to experimental parameters. """
@@ -445,14 +445,14 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         
         if not self.baseline_removed:
-            self.powder_group.create_dataset(name = 'baseline', data = baseline(**baseline_args), 
+            self.powder_group.create_dataset(name = 'baseline', data = baseline_dt(**baseline_args), 
                                              **self.compression_params)
         else:
             self.powder_group['baseline'].write_direct(baseline(**baseline_args))
         
         # Record parameters
         if level == 'max':
-            level = dualtree_max_level(data = self.scattering_length, first_stage = first_stage, wavelet = wavelet)
+            level = dt_max_level(data = self.scattering_length, first_stage = first_stage, wavelet = wavelet)
             
         self.level = level
         self.first_stage = first_stage
@@ -460,16 +460,19 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.baseline_removed = True
     
     def _compute_angular_averages(self):
-        """ Compute the angular averages. This method is 
-        only called by RawDataset.process once"""
+        """ Compute the angular averages."""
+
+        beamblock_mask = n.zeros(self.resolution, dtype = n.bool)
+        x1,x2,y1,y2 = self.beamblock_rect
+        beamblock_mask[y1:y2, x1:x2] = True
 
         # Because it is difficult to know the angular averaged data's shape in advance, 
         # we calculate it first and store it next
         results = list()
         for timedelay in self.time_points:
-            results.append( angular_average(self.averaged_data(timedelay), center = self.center, 
-                                            beamblock_rect = self.beamblock_rect, 
-                                            error = self.averaged_error(timedelay)) )
+            extras = dict()
+            radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, mask = beamblock_mask, extras = extras) 
+            results.append((radius, avg, extras['error']))
         
         # Concatenate arrays for intensity and error
         rintensity = n.stack([I for _, I, _ in results], axis = 0)

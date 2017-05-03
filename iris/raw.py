@@ -7,19 +7,14 @@ import numpy as n
 from os.path import join, isfile, isdir
 from os import listdir 
 import re
-from skimage import img_as_uint
+from functools import partial
 from skimage.io import imread
-from skimage.feature import register_translation
 import sys
 from datetime import datetime as dt
 from warnings import warn, catch_warnings
 from skued import pmap
 
 from . import cached_property
-from .io import read, save, RESOLUTION, ImageNotFoundError, cast_to_16_bits
-from .dataset import DiffractionDataset, PowderDiffractionDataset
-from .subroutines import diff_avg, diff_align, powder_align, shift_image
-from .utils import find_center, average_tiff, angular_average
 
 class ExperimentalParameter(object):
     """ Descriptor to experimental parameters for raw diffraction datasets. """
@@ -94,11 +89,9 @@ class RawDataset(object):
     -------
     raw_data
         Retrieve a raw image from a specific scan and time-delay.
-    
-    process
     """
 
-    resolution = RESOLUTION
+    resolution = (2048, 2048)
     fluence = ExperimentalParameter('Fluence', float, 0)
     current = ExperimentalParameter('Current', float, 0)
     exposure = ExperimentalParameter('Exposure', float, 0)
@@ -150,12 +143,12 @@ class RawDataset(object):
     
     @property
     def pumpon_background(self):
-        backgrounds = tuple(read(filename) for filename in glob.glob(join(self.raw_directory, 'background.*.pumpon.tif')))
+        backgrounds = tuple(map(imread, glob.iglob(join(self.raw_directory, 'background.*.pumpon.tif'))))
         return sum(backgrounds)/len(backgrounds)
     
     @property
     def pumpoff_background(self):
-        backgrounds = tuple(read(filename) for filename in glob.glob(join(self.raw_directory, 'background.*.pumpoff.tif')))
+        backgrounds = tuple(map(imread, glob.iglob(join(self.raw_directory, 'background.*.pumpoff.tif'))))
         return sum(backgrounds)/len(backgrounds)
         
     def raw_data(self, timedelay, scan):
@@ -183,155 +176,12 @@ class RawDataset(object):
         sign = '' if float(timedelay) < 0 else '+'
         str_time = sign + '{0:.2f}'.format(float(timedelay))
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
-        return img_as_uint(imread(join(self.raw_directory, filename), plugin = 'tifffile'))
+        return imread(join(self.raw_directory, filename))
     
-    def process(self, filename, center, radius, beamblock_rect, compression = 'lzf', sample_type = 'powder', 
-                callback = None, cc = True, window_size = 10, ring_width = 5, mad = True):
-        """
-        Processes raw data into something useable by iris.
-        
-        Parameters
-        ----------
-        filename : str {*.hdf5}
-            Filename for the DiffractionDataset object
-        center : 2-tuple
-
-        radius : float
-
-        beamblock_rect : 4-tuple
-
-        compression : str, optional
-
-        sample_type : str {'powder', 'single_crystal'}, optional
-
-        callback : callable or None, optional
-            Callable with one argument executed at the end of each time-delay processing.
-            Argument will be the progress as an integer between 0 and 100.
-        cc : bool, optional
-            Center correction flag. If True, images are shifted before
-            processing to account for electron beam drift.
-        window_size : int, optional
-            Number of pixels the center is allowed to vary.
-        ring_width : int, optional
-            Width of the ring over which the intensity integral is calculated.
-        mad : bool, optional
-            If True (default), the distributions of pixel intensities across scans are included based on a median absolute difference (MAD)
-            approach. Set to False for faster performance.
-        
-        Returns
-        -------
-        path
-        """
-        # Preliminary check. If energy is 0kV, then the scattering length calculation will
-        # fail at the end of processing, crashing iris.
-        if self.energy == 0:
-            raise AttributeError('Energy is 0 kV')
-
-        if callback is None:
-            callback = lambda x: None
-        
-        # Prepare compression kwargs
-        ckwargs = dict()
-        if compression:
-            ckwargs = {'compression' : compression, 'chunks' : True, 'shuffle' : True, 'fletcher32' : True}
-        
-        start_time = dt.now()
-        with DiffractionDataset(name = filename, mode = 'w') as processed:
-
-            # Copy experimental parameters
-            # Center and beamblock_rect will be modified
-            # because of reduced resolution later
-            processed.nscans = self.nscans
-            processed.time_points = self.time_points
-            processed.acquisition_date = self.acquisition_date
-            processed.fluence = self.fluence
-            processed.current = self.current
-            processed.exposure = self.exposure
-            processed.energy = self.energy
-            processed.resolution = self.resolution
-            processed.sample_type = sample_type
-            processed.center = center
-            processed.beamblock_rect = beamblock_rect
-            processed.time_zero_shift = 0.0
-
-            # Copy pumpoff pictures
-            # Subtract background from all pumpoff pictures
-            pumpoff_image_list = glob.glob(join(self.raw_directory, 'data.nscan.*.pumpoff.tif'))
-            pumpoff_cube = n.empty(shape = self.resolution + (len(self.nscans),), dtype = n.uint16)
-            for index, image_filename in enumerate(pumpoff_image_list):
-                scan_str = re.search('[.]\d+[.]', image_filename.split('\\')[-1]).group()
-                scan = int(scan_str.replace('.',''))
-                pumpoff_cube[:, :, scan - 1] = cast_to_16_bits(read(image_filename))
-            processed.pumpoff_pictures_group.create_dataset(name = 'pumpoff_pictures', data = pumpoff_cube, dtype = n.uint16, **ckwargs)
-
-            # Average background images
-            # If background images are not found, save empty backgrounds
-            try:
-                pumpon_background = average_tiff(self.raw_directory, 'background.*.pumpon.tif', background = None).astype(n.uint16)
-            except ImageNotFoundError:
-                pumpon_background = n.zeros(shape = self.resolution, dtype = n.uint16)
-            processed.processed_measurements_group.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = n.uint16, **ckwargs)
-
-            try:
-                pumpoff_background = average_tiff(self.raw_directory, 'background.*.pumpoff.tif', background = None).astype(n.uint16)
-            except ImageNotFoundError:
-                pumpoff_background = n.zeros(shape = self.resolution, dtype = n.uint16)
-            processed.processed_measurements_group.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = n.uint16, **ckwargs)
-
-        shape = self.resolution + (len(self.time_points),)
-        with DiffractionDataset(name = filename, mode = 'r+') as processed:
-            gp = processed.processed_measurements_group
-            gp.create_dataset(name = 'intensity', shape = shape, dtype = n.float32, **ckwargs)
-            gp.create_dataset(name = 'error', shape = shape, dtype = n.float32, **ckwargs)
-
-        # Get reference image for aligning all single crystal images
-        ref_im = self.raw_data(self.time_points[0], self.nscans[0]) - img_as_uint(pumpoff_background)
-
-        # TODO: parallelize this loop
-        #       The only reason it is not right now is that
-        #       each branch of the loop uses ~ 4-6GBs of RAM for
-        #       a 30 scans dataset
-        for i, timedelay in enumerate(self.time_points):
-
-            images = list()
-            for scan in self.nscans:
-                try:
-                    images.append( self.raw_data(timedelay, scan) - pumpon_background )
-                except ImageNotFoundError:
-                    warn('Image at time-delay {} and scan {} was not found.'.format(timedelay, scan))
-            
-            # Center correction is built as a subroutine
-            #
-            if cc and sample_type == 'single_crystal':
-                images = diff_align(images, reference = ref_im)
-            elif cc and sample_type == 'powder':
-                images = powder_align(images, guess_center = center, radius = radius, 
-                                      window_size = window_size, ring_width = ring_width)
-            
-            # Creation of the image 'cube' with appropriate mask
-            # Create beamblock mask right now
-            # Evaluates to TRUE on the beamblock
-            x1,x2,y1,y2 = beamblock_rect
-            cube = n.dstack(images)
-            cube[y1:y2, x1:x2, :] = 0
-
-            # Average appropriately using subroutine
-            averaged, error = diff_avg(cube, weights = None)
-
-            with DiffractionDataset(name = filename, mode = 'r+') as processed:
-                processed.processed_measurements_group['intensity'].write_direct(n.nan_to_num(averaged), source_sel = n.s_[:,:], dest_sel = n.s_[:,:,i])
-                processed.processed_measurements_group['error'].write_direct(n.nan_to_num(error), source_sel = n.s_[:,:], dest_sel = n.s_[:,:,i])
-            
-            callback(round(100*i / len(self.time_points)))
-
-        # Extra step for powder data: angular average
-        # We already have the center + beamblock info
-        # scattering length is the same for all time-delays 
-        # since the center and beamblock_rect don't change.
-        if sample_type == 'powder':
-            with PowderDiffractionDataset(name = filename, mode = 'r+') as processed:
-                processed._compute_angular_averages()
-
-        callback(100)
-        print('Processing has taken {}'.format(str(dt.now() - start_time)))
-        return filename
+    def timedelay_filenames(self, timedelay):
+        """ Generator of filenames of raw data for a specific time-delay """
+        #Template filename looks like:
+        #    'data.timedelay.+1.00.nscan.04.pumpon.tif'
+        sign = '' if float(timedelay) < 0 else '+'
+        str_time = sign + '{0:.2f}'.format(float(timedelay))
+        return glob.glob(join(self.raw_directory, 'data.timedelay.' + str_time + '.nscan.*.pumpon.tif'))
