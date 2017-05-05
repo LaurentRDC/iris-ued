@@ -1,16 +1,12 @@
-from os.path import join, dirname
-from . import pyqtgraph as pg
-from .pyqtgraph import QtGui, QtCore
-import numpy as n
+from os.path import dirname, join
 
-from .utils import spectrum_colors
+import pyqtgraph as pg
+from . import QtCore, QtGui
 
 image_folder = join(dirname(__file__), 'images')
 
 class RawDataViewer(QtGui.QWidget):
 
-    display_raw_data_signal = QtCore.pyqtSignal(float, int)
-    process_dataset_signal = QtCore.pyqtSignal()
     error_message_signal = QtCore.pyqtSignal(str)
 
     def __init__(self, *args, **kwargs):

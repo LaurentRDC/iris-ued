@@ -1,5 +1,6 @@
-from .pyqtgraph import QtGui, QtCore
-from . import pyqtgraph as pg
+from pyqtgraph import QtGui, QtCore
+import pyqtgraph as pg
+
 from ..dataset import DiffractionDataset, PowderDiffractionDataset
 #from ..utils import center_finder
 

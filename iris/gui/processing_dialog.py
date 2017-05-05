@@ -1,9 +1,9 @@
 
-from . import pyqtgraph as pg
+import pyqtgraph as pg
+from pyqtgraph import QtCore, QtGui
+
 from ..processing import process
 from ..raw import RawDataset
-from .pyqtgraph import QtCore, QtGui
-from .utils import WorkThread
 
 class ProcessingDialog(QtGui.QDialog):
     """
