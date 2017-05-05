@@ -1,12 +1,7 @@
-import numpy as n
+import pyqtgraph as pg
+from pyqtgraph import QtCore, QtGui
+from skued import spectrum_colors
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
-
-from . import pyqtgraph as pg
-from ..utils import fluence
-from .pyqtgraph import opengl as gl
-from .pyqtgraph import QtCore, QtGui
-from .utils import spectrum_colors
-
 
 class PowderViewer(QtGui.QWidget):
 
@@ -30,49 +25,11 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
-        # Buttons
-        self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
-        self.compute_baseline_btn.clicked.connect(self.baseline_parameters)
-
-        self.baseline_removed_btn = QtGui.QPushButton('Show baseline-removed', parent = self)
-        self.baseline_removed_btn.setCheckable(True)
-        self.baseline_removed_btn.setChecked(False)
-
-        # Scroll lists for wavelet parameters
-        self.first_stage_cb = QtGui.QComboBox()
-        self.first_stage_cb.addItems(ALL_FIRST_STAGE)
-
-        self.wavelet_cb = QtGui.QComboBox()
-        self.wavelet_cb.addItems(ALL_COMPLEX_WAV)
-
-        first_stage_label = QtGui.QLabel('First stage wav.:', parent = self)
-        first_stage_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        wavelet_label = QtGui.QLabel('Dual-tree wavelet:', parent = self)
-        wavelet_label.setAlignment(QtCore.Qt.AlignCenter)
-        
-        command_layout = QtGui.QGridLayout()
-        command_layout.addWidget(self.baseline_removed_btn,  0,  0,  1,  1)
-        command_layout.addWidget(self.compute_baseline_btn,  1,  0,  1,  1)
-        command_layout.addWidget(first_stage_label,  0,  1,  1,  1)
-        command_layout.addWidget(self.first_stage_cb,  1,  1,  1,  1)
-        command_layout.addWidget(wavelet_label,  0,  2,  1,  1)
-        command_layout.addWidget(self.wavelet_cb,  1,  2,  1,  1)
-
         layout = QtGui.QVBoxLayout()
-        layout.addLayout(command_layout)
         layout.addWidget(self.powder_pattern_viewer)
         layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(layout)
         self.resize(self.maximumSize())
-    
-    @QtCore.pyqtSlot()
-    def baseline_parameters(self):
-        params = {'first_stage': self.first_stage_cb.currentText(),
-                  'wavelet': self.wavelet_cb.currentText(),
-                  'level': 'max',
-                  'max_iter': 100}
-        self.baseline_parameters_signal.emit(params)
     
     @QtCore.pyqtSlot()
     def update_peak_dynamics(self):
