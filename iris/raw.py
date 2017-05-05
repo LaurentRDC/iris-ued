@@ -123,7 +123,7 @@ class RawDataset(object):
     
     @cached_property
     def time_points(self):
-        return tuple(float(t) for t in self.time_points_str)
+        return tuple(map(float, self.time_points_str))
     
     @cached_property
     def time_points_str(self):

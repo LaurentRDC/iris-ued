@@ -47,6 +47,9 @@ class Iris(QtGui.QMainWindow):
         self.controller.moveToThread(self._controller_thread)
         self._controller_thread.start()
 
+        self.dataset_path_signal.connect(self.controller.load_dataset)
+        self.raw_dataset_path_signal.connect(self.controller.load_raw_dataset)
+
         self.controls = ControlBar(parent = self)
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
         self.controls.averaged_data_request.connect(self.controller.display_averaged_data)
@@ -57,6 +60,8 @@ class Iris(QtGui.QMainWindow):
         self.controller.processed_dataset_loaded_signal.connect(self.controls.enable_diffraction_dataset_controls)
         self.controller.powder_dataset_loaded_signal.connect(self.controls.enable_powder_diffraction_dataset_controls)
         self.controller.processing_progress_signal.connect(self.controls.update_processing_progress)
+        self.controller.raw_dataset_metadata.connect(self.controls.update_raw_dataset_metadata)
+        self.controller.dataset_metadata.connect(self.controls.update_dataset_metadata)
 
         #########
         # Viewers
@@ -65,6 +70,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.raw_data_signal.connect(self.raw_data_viewer.setImage)
 
         self.processed_viewer = ProcessedDataViewer(parent = self)
+        self.controls.enable_peak_dynamics.connect(self.processed_viewer.toggle_peak_dynamics)
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
         self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
 
@@ -74,6 +80,8 @@ class Iris(QtGui.QMainWindow):
 
         # UI components
         self.error_dialog = QtGui.QErrorMessage(parent = self)
+        self.controller.error_message_signal.connect(self.error_dialog.showMessage)
+
         self.file_dialog = QtGui.QFileDialog(parent = self)      
         self.menu_bar = self.menuBar()
         self.viewer_stack = QtGui.QTabWidget()
@@ -82,25 +90,30 @@ class Iris(QtGui.QMainWindow):
         self.viewer_stack.addTab(self.processed_viewer, 'View processed dataset')
         self.viewer_stack.addTab(self.powder_viewer, 'View radial averages')
 
+        ###################
+        # Actions
         self.load_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load raw dataset', self)
+        self.load_raw_dataset_action.triggered.connect(self.load_raw_dataset)
+
         self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
+        self.load_dataset_action.triggered.connect(self.load_dataset)
+
         self.file_menu = self.menu_bar.addMenu('&File')
         self.file_menu.addAction(self.load_raw_dataset_action)
         self.file_menu.addAction(self.load_dataset_action)
 
+        #################
+        # Tools
+
         self.fluence_calculator_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Fluence calculator', self)
         self.fluence_calculator_action.triggered.connect(self.launch_fluence_calculator_tool)
-        self.autoindexing_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Autoindexing', self)
-        self.autoindexing_action.setEnabled(False)
+
         self.knife_edge_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Knife-edge analysis', self)
         self.knife_edge_action.triggered.connect(self.launch_knife_edge_tool)
+
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.tools_menu.addAction(self.fluence_calculator_action)
-        self.tools_menu.addAction(self.autoindexing_action)
         self.tools_menu.addAction(self.knife_edge_action)
-
-        # Error handling
-        self.controller.error_message_signal.connect(self.error_dialog.showMessage)
         
         self.layout = QtGui.QHBoxLayout()
         self.layout.addWidget(self.viewer_stack)
@@ -141,6 +154,7 @@ class Iris(QtGui.QMainWindow):
     
     @QtCore.pyqtSlot()
     def load_raw_dataset(self):
+        print('loading')
         path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
         self.raw_dataset_path_signal.emit(path)
 

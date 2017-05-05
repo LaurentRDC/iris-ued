@@ -60,6 +60,16 @@ class ControlBar(QtGui.QWidget):
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
+    @QtCore.pyqtSlot(dict)
+    def update_raw_dataset_metadata(self, metadata):
+        self.raw_dataset_controls.timedelay_widget.setRange(0, len(metadata['time_points']) - 1)
+        self.raw_dataset_controls.scan_widget.setRange(1, len(metadata['nscans']))
+    
+    @QtCore.pyqtSlot(dict)
+    def update_dataset_metadata(self, metadata):
+        self.diffraction_dataset_controls.timedelay_widget.setRange(0, len(metadata['time_points']))
+
+    
     @QtCore.pyqtSlot(int)
     def update_processing_progress(self, value):
         self.raw_dataset_controls.processing_progress_bar.setValue(value)
@@ -92,9 +102,10 @@ class RawDatasetControl(QtGui.QWidget):
         
         #############################
         # Navigating through raw data
+        # TODO: show time point next to sliders
         self.timedelay_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.timedelay_widget.setMinimum(0)
-        self.timedelay_widget.setTracking(True)
+        self.timedelay_widget.setTracking(False)
         self.timedelay_widget.setTickPosition(QtGui.QSlider.TicksBelow)
         self.timedelay_widget.setTickInterval(1)
         td_label = QtGui.QLabel('Time-delay: ')
@@ -102,7 +113,7 @@ class RawDatasetControl(QtGui.QWidget):
 
         self.scan_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.scan_widget.setMinimum(0)
-        self.scan_widget.setTracking(True)
+        self.scan_widget.setTracking(False)
         self.scan_widget.setTickPosition(QtGui.QSlider.TicksBelow)
         self.scan_widget.setTickInterval(1)
         s_label = QtGui.QLabel('Scan: ')
@@ -135,9 +146,10 @@ class DiffractionDatasetControl(QtGui.QWidget):
 
         ################################
         # Diffraction dataset navigation
+        # TODO: show time point next to sliders
         self.timedelay_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.timedelay_widget.setMinimum(0)
-        self.timedelay_widget.setTracking(True)
+        self.timedelay_widget.setTracking(False)
         self.timedelay_widget.setTickPosition(QtGui.QSlider.TicksBelow)
         self.timedelay_widget.setTickInterval(1)
         td_label = QtGui.QLabel('Time-delay: ')
