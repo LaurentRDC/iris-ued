@@ -37,6 +37,15 @@ class ProcessedDataViewer(QtGui.QWidget):
         self.layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(self.layout)
     
+    @QtCore.pyqtSlot(bool)
+    def toggle_peak_dynamics(self, toggle):
+        if toggle: 
+            self.peak_dynamics_region.show()
+            self.peak_dynamics_viewer.show()
+        else: 
+            self.peak_dynamics_region.hide()
+            self.peak_dynamics_viewer.hide()
+    
     @QtCore.pyqtSlot(object, object)
     def update_peak_dynamics(self, time_points, integrated_intensity):
         pens = list(map(pg.mkPen, spectrum_colors(len(time_points))))
@@ -57,5 +66,4 @@ class ProcessedDataViewer(QtGui.QWidget):
         # when 'sliding' through data. This makes it easier to compare
         # data at different time points.
         # Similarly for autoRange = False
-        self.image_viewer.setImage(image, autoLevels = self.autolevel_cb.isChecked(), 
-                                          autoRange = self.autorange_cb.isChecked())
+        self.image_viewer.setImage(image)

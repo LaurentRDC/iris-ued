@@ -34,7 +34,7 @@ class PowderViewer(QtGui.QWidget):
     @QtCore.pyqtSlot()
     def update_peak_dynamics(self):
         """ Update powder peak dynamics settings on demand. """
-        self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion(), self.baseline_removed_btn.isChecked())
+        self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion())
     
     @QtCore.pyqtSlot(object, object, object, bool)
     def display_powder_data(self, scattering_length, powder_data_block, powder_error_block, bgr):

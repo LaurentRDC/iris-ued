@@ -33,7 +33,12 @@ class IrisController(QtCore.QObject):
     """
     raw_dataset_loaded_signal = QtCore.pyqtSignal(bool)
     processed_dataset_loaded_signal = QtCore.pyqtSignal(bool)
-    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool)  
+    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool)
+
+    raw_dataset_metadata = QtCore.pyqtSignal(dict)
+    dataset_metadata = QtCore.pyqtSignal(dict)
+    powder_dataset_metadata = QtCore.pyqtSignal(dict)
+
     error_message_signal = QtCore.pyqtSignal(str)
 
     raw_data_signal = QtCore.pyqtSignal(object)
@@ -168,8 +173,9 @@ class IrisController(QtCore.QObject):
         except:
             return
         self.raw_dataset_loaded_signal.emit(True)
-        self.update_raw_dataset_info()
-        self.display_raw_data(timedelay = min(self.raw_dataset.time_points), 
+        self.raw_dataset_metadata.emit({'time_points': self.raw_dataset.time_points,
+                                        'nscans': self.raw_dataset.nscans})
+        self.display_raw_data(timedelay_index = 0, 
                               scan = min(self.raw_dataset.nscans))
         
     @error_aware('Processed dataset could not be loaded. The path might not be valid')
@@ -183,10 +189,9 @@ class IrisController(QtCore.QObject):
                 cls = PowderDiffractionDataset
         
         self.dataset = cls(path, mode = 'r+')
-        self.datasset_metadata_model = DatasetMetadataModel(self.dataset)
-        self.update_dataset_info()
+        self.dataset_metadata.emit({'time_points': self.dataset.time_points})
         self.processed_dataset_loaded_signal.emit(True)
-        self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
+        self.display_averaged_data(timedelay_index = 0)
 
         if isinstance(self.dataset, PowderDiffractionDataset):
             self.powder_data_signal.emit(self.dataset.scattering_length, 
