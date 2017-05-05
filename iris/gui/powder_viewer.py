@@ -36,8 +36,8 @@ class PowderViewer(QtGui.QWidget):
         """ Update powder peak dynamics settings on demand. """
         self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion())
     
-    @QtCore.pyqtSlot(object, object, object, bool)
-    def display_powder_data(self, scattering_length, powder_data_block, powder_error_block, bgr):
+    @QtCore.pyqtSlot(object, object, object)
+    def display_powder_data(self, scattering_length, powder_data_block, powder_error_block):
         """ 
         Display the radial averages of a dataset.
 
@@ -49,8 +49,6 @@ class PowderViewer(QtGui.QWidget):
             Array for which each row is an azimuthal pattern for a specific time-delay.
         powder_error_block : ndarray, shape (M, N)
             Array for which each row is the error for the corresponding azimuthal pattern.
-        bgr : bool  
-            Describes whether the powder_data_block is baseline-corrected (True) or not (False).
         """
         colors = list(spectrum_colors(powder_data_block.shape[0]))  # number of time-points
         pens, brushes = map(pg.mkPen, colors), map(pg.mkBrush, colors)
@@ -64,8 +62,7 @@ class PowderViewer(QtGui.QWidget):
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
             error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error)
             self.powder_pattern_viewer.addItem(error_bars)
-
-        self.baseline_removed_btn.setChecked(bgr)
+        
         self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
         self.update_peak_dynamics() #Update peak dynamics plot if background has been changed, for example

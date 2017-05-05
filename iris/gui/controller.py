@@ -43,7 +43,7 @@ class IrisController(QtCore.QObject):
 
     raw_data_signal = QtCore.pyqtSignal(object)
     averaged_data_signal = QtCore.pyqtSignal(object)
-    powder_data_signal = QtCore.pyqtSignal(object, object, object, bool)
+    powder_data_signal = QtCore.pyqtSignal(object, object, object)
 
     time_series_signal = QtCore.pyqtSignal(object, object)
     powder_time_series_signal = QtCore.pyqtSignal(object, object)
@@ -197,8 +197,7 @@ class IrisController(QtCore.QObject):
             self.powder_data_signal.emit(self.dataset.scattering_length, 
                                          self.dataset.powder_data(timedelay = None, 
                                                                   bgr = self.dataset.baseline_removed),
-                                         self.dataset.powder_error(timedelay = None),
-                                         self.dataset.baseline_removed)
+                                         self.dataset.powder_error(timedelay = None))
             self.powder_dataset_loaded_signal.emit(True)
 
 def promote_to_powder(filename, center):
