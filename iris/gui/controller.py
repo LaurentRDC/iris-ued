@@ -1,15 +1,14 @@
 """
 Controller behind Iris
 """
-
 import functools
-from .pyqtgraph import QtCore
 import traceback
 
+from pyqtgraph import QtCore
+
 from ..dataset import DiffractionDataset, PowderDiffractionDataset
-from ..raw import RawDataset
 from ..processing import process
-from .utils import WorkThread
+from ..raw import RawDataset
 
 def error_aware(message):
     """
@@ -32,14 +31,9 @@ class IrisController(QtCore.QObject):
     """
     Controller behind Iris.
     """
-
     raw_dataset_loaded_signal = QtCore.pyqtSignal(bool)
     processed_dataset_loaded_signal = QtCore.pyqtSignal(bool)
-    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool)
-
-    status_message_signal = QtCore.pyqtSignal(str)
-    dataset_info_signal = QtCore.pyqtSignal(dict)
-    raw_dataset_info_signal = QtCore.pyqtSignal(dict)
+    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool)  
     error_message_signal = QtCore.pyqtSignal(str)
 
     raw_data_signal = QtCore.pyqtSignal(object)
@@ -67,22 +61,25 @@ class IrisController(QtCore.QObject):
         self._powder_time_series_container = False
 
     @error_aware('Raw data could not be displayed.')
-    @QtCore.pyqtSlot(float, int)
-    def display_raw_data(self, timedelay, scan):
+    @QtCore.pyqtSlot(int, int)
+    def display_raw_data(self, timedelay_index, scan):
+        timedelay = self.raw_dataset.time_points[timedelay_index]
         self.raw_data_signal.emit(self.raw_dataset.raw_data(timedelay, scan) - self.raw_dataset.pumpon_background)
     
     @error_aware('Processed data could not be displayed.')
-    @QtCore.pyqtSlot(float)
-    def display_averaged_data(self, timedelay):
+    @QtCore.pyqtSlot(int)
+    def display_averaged_data(self, timedelay_index):
         # Preallocation of full images is important because the whole block cannot be
         # loaded into memory, contrary to powder data
         # Source of 'cache miss' could be that _average_data_container is None,
         # new dataset loaded has different shape than before, etc.
+        timedelay = self.dataset.corrected_time_points[timedelay_index]
         try:
             self.dataset.averaged_data(timedelay, out = self._averaged_data_container)
         except:
             self._averaged_data_container = self.dataset.averaged_data(timedelay)
         self.averaged_data_signal.emit(self._averaged_data_container)
+        return self._averaged_data_container
     
     @error_aware('Powder data could not be displayed.')
     @QtCore.pyqtSlot(bool)
@@ -116,8 +113,6 @@ class IrisController(QtCore.QObject):
     @QtCore.pyqtSlot(tuple)
     def promote_to_powder(self, center):
         """ Promote a DiffractionDataset to a PowderDiffractionDataset """
-        if self.dataset is None:
-            raise RuntimeError('No dataset is loaded')
         self.worker = WorkThread(function = promote_to_powder, kwargs = {'center': center, 'filename':self.dataset.filename})
         self.dataset.close()
         self.dataset = None
@@ -188,6 +183,7 @@ class IrisController(QtCore.QObject):
                 cls = PowderDiffractionDataset
         
         self.dataset = cls(path, mode = 'r+')
+        self.datasset_metadata_model = DatasetMetadataModel(self.dataset)
         self.update_dataset_info()
         self.processed_dataset_loaded_signal.emit(True)
         self.display_averaged_data(timedelay = min(map(abs, self.dataset.time_points)))
@@ -199,26 +195,6 @@ class IrisController(QtCore.QObject):
                                          self.dataset.powder_error(timedelay = None),
                                          self.dataset.baseline_removed)
             self.powder_dataset_loaded_signal.emit(True)
-        
-    def update_raw_dataset_info(self):
-        info = dict()
-        for attr in ('time_points', 'nscans', 'resolution', 'acquisition_date'):
-            info[attr] = getattr(self.raw_dataset, attr)
-        self.raw_dataset_info_signal.emit(info)
-    
-    def update_dataset_info(self):
-        """ Update the dataset info and emits the dataset_info_signal to update all widgets. """
-        # Emit dataset information such as fluence, time-points, ...
-        info = dict()
-        for attr in ('fluence', 'time_points', 'nscans', 'resolution', 'acquisition_date', 'sample_type'):
-            info[attr] = getattr(self.dataset, attr)
-        
-        # PowderDiffractionDataset has some specific parameters
-        # like wavelet, decomp. level, etc.
-        if isinstance(self.dataset, PowderDiffractionDataset):
-            for attr in ('first_stage', 'wavelet', 'level', 'baseline_removed'):
-                info[attr] = getattr(self.dataset, attr)
-        self.dataset_info_signal.emit(info)
 
 def promote_to_powder(filename, center):
     """ Create a PowderDiffractionDataset from a DiffractionDataset """
@@ -226,3 +202,81 @@ def promote_to_powder(filename, center):
         dataset.sample_type = 'powder'
         dataset.compute_angular_averages(center = center)
     return filename
+
+
+# Easy representation of dataset metadata
+class DatasetMetadataModel(QtCore.QAbstractListModel):
+
+    def __init__(self, dataset, **kwargs):
+        super().__init__(**kwargs)
+        self.dataset = dataset
+    
+    def rowCount(self):
+        return len(self.dataset.attrs)
+    
+    def headerData(self, index, orientation, role):
+        if not index.isValid(): return
+        if index.row() > self.rowCount(): return
+        
+        if role == 0: #Qt.DisplayRole
+            return list(self.dataset.attrs)[index.row()][0]
+    
+    def data(self, index, role):
+        if not index.isValid(): return
+        if index.row() > self.rowCount(): return
+        
+        if role == 0: #Qt.DisplayRole
+            return list(self.dataset.attrs)[index.row()][1]
+
+class WorkThread(QtCore.QThread):
+    """
+    Object taking care of threading computations.
+    
+    Signals
+    -------
+    done_signal
+        Emitted when the function evaluation is over.
+    in_progress_signal
+        Emitted when the function evaluation starts.
+    results_signal
+        Emitted when the function evaluation is over. Carries the results
+        of the computation.
+        
+    Attributes
+    ----------
+    function : callable
+        Function to be called
+    args : tuple
+        Positional arguments of function
+    kwargs : dict
+        Keyword arguments of function
+    results : object
+        Results of the computation
+    
+    Examples
+    --------
+    >>> function = lambda x : x ** 10
+    >>> result_function = lambda x: print(x)
+    >>> worker = WorkThread(function, 2)  # 2 ** 10
+    >>> worker.results_signal.connect(result_function)
+    >>> worker.start()      # Computation starts only when this method is called
+    """
+    results_signal = QtCore.pyqtSignal(str)
+    done_signal = QtCore.pyqtSignal(bool)
+    in_progress_signal = QtCore.pyqtSignal(bool)
+
+    def __init__(self, function, args = tuple(), kwargs = dict()):
+        
+        QtCore.QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+    
+    def __del__(self):
+        self.wait()
+    
+    def run(self):
+        self.in_progress_signal.emit(True)
+        result = self.function(*self.args, **self.kwargs)   
+        self.done_signal.emit(True)  
+        self.results_signal.emit(result)
