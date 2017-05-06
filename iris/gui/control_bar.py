@@ -60,10 +60,7 @@ class ControlBar(QtGui.QWidget):
         self.notes_editor = NotesEditor(parent = self)
         self.notes_editor.notes_updated.connect(self.notes_updated)
 
-        self.metadata_widget = QtGui.QTableWidget(parent = self)
-        self.metadata_widget.setColumnCount(2)
-        self.metadata_widget.horizontalHeader().hide()
-        self.metadata_widget.verticalHeader().hide()
+        self.metadata_widget = MetadataWidget(parent = self)
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(self.raw_dataset_controls)
@@ -72,7 +69,12 @@ class ControlBar(QtGui.QWidget):
         layout.addWidget(self.metadata_widget)
         layout.addWidget(self.notes_editor)
         self.setLayout(layout)
-        self.resize(self.minimumSize())
+
+        for frame in (self.raw_dataset_controls, self.diffraction_dataset_controls, self.powder_diffraction_dataset_controls):
+            frame.setFrameShadow(QtGui.QFrame.Sunken)
+            frame.setFrameShape(QtGui.QFrame.Panel)
+
+        self.setMaximumWidth(self.notes_editor.maximumWidth())
     
     @QtCore.pyqtSlot(dict)
     def update_raw_dataset_metadata(self, metadata):
@@ -83,18 +85,7 @@ class ControlBar(QtGui.QWidget):
     def update_dataset_metadata(self, metadata):
         self.diffraction_dataset_controls.timedelay_widget.setRange(0, len(metadata['time_points']))
         self.notes_editor.editor.setPlainText(metadata.pop('notes', 'No notes available'))
-
-        self.metadata_widget.clear()
-        self.metadata_widget.setRowCount(len(metadata) - 1 if 'notes' in metadata else len(metadata))
-        for row, (key, value) in enumerate(metadata.items()):
-            if isinstance(value, Iterable) and key not in ('acquisition_date', 'sample_type'):
-                if len(value) > 4:
-                    key += ' (length)'
-                    value = len(tuple(value))
-            self.metadata_widget.setItem(row, 0, QtGui.QTableWidgetItem(key))
-            self.metadata_widget.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
-        
-        self.metadata_widget.resizeColumnsToContents()
+        self.metadata_widget.set_metadata(metadata)
 
     @QtCore.pyqtSlot(int)
     def update_processing_progress(self, value):
@@ -117,13 +108,15 @@ class ControlBar(QtGui.QWidget):
     def enable_diffraction_dataset_controls(self, enable):
         self.diffraction_dataset_controls.setEnabled(enable)
         self.notes_editor.setEnabled(enable)
+        self.metadata_widget.setEnabled(enable)
     
     @QtCore.pyqtSlot(bool)
     def enable_powder_diffraction_dataset_controls(self, enable):
         self.powder_diffraction_dataset_controls.setEnabled(enable)
         self.notes_editor.setEnabled(enable)
+        self.metadata_widget.setEnabled(enable)
 
-class RawDatasetControl(QtGui.QWidget):
+class RawDatasetControl(QtGui.QFrame):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -162,13 +155,17 @@ class RawDatasetControl(QtGui.QWidget):
         processing.addWidget(self.process_btn, 0, 0, 1, 1)
         processing.addWidget(self.processing_progress_bar, 0, 1, 1, 2)
 
+        title = QtGui.QLabel('<h2>Raw dataset controls<\h2>')
+        title.setTextFormat(QtCore.Qt.RichText)
+        title.setAlignment(QtCore.Qt.AlignCenter)
         layout = QtGui.QVBoxLayout()
+        layout.addWidget(title)
         layout.addLayout(sliders)
         layout.addLayout(processing)
         self.setLayout(layout)
         self.resize(self.minimumSize())
 
-class DiffractionDatasetControl(QtGui.QWidget):
+class DiffractionDatasetControl(QtGui.QFrame):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -202,13 +199,18 @@ class DiffractionDatasetControl(QtGui.QWidget):
         btns.addWidget(self.show_pd_btn)
         btns.addWidget(self.promote_to_powder_btn)
 
+        title = QtGui.QLabel('<h2>Diffraction dataset controls<\h2>')
+        title.setTextFormat(QtCore.Qt.RichText)
+        title.setAlignment(QtCore.Qt.AlignCenter)
+
         layout = QtGui.QVBoxLayout()
+        layout.addWidget(title)
         layout.addLayout(sliders)
         layout.addLayout(btns)
         self.setLayout(layout)
         self.resize(self.minimumSize())
 
-class PowderDiffractionDatasetControl(QtGui.QWidget):
+class PowderDiffractionDatasetControl(QtGui.QFrame):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -241,7 +243,12 @@ class PowderDiffractionDatasetControl(QtGui.QWidget):
         baseline.addWidget(self.wavelet_cb, 2, 1, 1, 1)
         baseline.addWidget(self.compute_baseline_btn, 3, 0, 1, 2)
 
+        title = QtGui.QLabel('<h2>Powder dataset controls<\h2>')
+        title.setTextFormat(QtCore.Qt.RichText)
+        title.setAlignment(QtCore.Qt.AlignCenter)
+
         layout = QtGui.QVBoxLayout()
+        layout.addWidget(title)
         layout.addLayout(baseline)
         self.setLayout(layout)
         self.resize(self.minimumSize())
@@ -252,30 +259,67 @@ class PowderDiffractionDatasetControl(QtGui.QWidget):
                 'wavelet': self.wavelet_cb.currentText(),
                 'level': 'max', 'max_iter': 100}
 
-class NotesEditor(QtGui.QWidget):
+class MetadataWidget(QtGui.QWidget):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        title = QtGui.QLabel('<h2>Dataset metadata<\h2>', parent = self)
+        title.setTextFormat(QtCore.Qt.RichText)
+        title.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.table = QtGui.QTableWidget(parent = self)
+        self.table.setColumnCount(2)
+        self.table.horizontalHeader().hide()
+        self.table.verticalHeader().hide()
+
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(title)
+        layout.addWidget(self.table)
+        self.setLayout(layout)
+    
+    @QtCore.pyqtSlot(dict)
+    def set_metadata(self, metadata):
+        self.table.clear()
+        self.table.setRowCount(len(metadata) - 1 if 'notes' in metadata else len(metadata))
+        for row, (key, value) in enumerate(metadata.items()):
+            if isinstance(value, Iterable) and key not in ('acquisition_date', 'sample_type'):
+                if len(value) > 4:
+                    key += ' (length)'
+                    value = len(tuple(value))
+            self.table.setItem(row, 0, QtGui.QTableWidgetItem(key))
+            self.table.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
+        
+        self.table.resizeColumnsToContents()
+
+
+class NotesEditor(QtGui.QFrame):
 
     notes_updated = QtCore.pyqtSignal(str)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        title = QtGui.QLabel('Dataset notes and remarks', parent = self)
+        title = QtGui.QLabel('<h2>Dataset notes and remarks<\h2>', parent = self)
+        title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
         update_btn = QtGui.QPushButton('Update notes', self)
         update_btn.clicked.connect(self.update_notes)
 
         self.editor = QtGui.QTextEdit(parent = self)
-        self.editor.setLineWrapMode(3)  # Fixed column width
-        self.editor.setLineWrapColumnOrWidth(80)
+
+        # Set editor size such that 60 characters will fit
+        font_info = QtGui.QFontInfo(self.editor.currentFont())
+        self.editor.setMaximumWidth(60 * font_info.pixelSize())
+        self.editor.setLineWrapMode(QtGui.QTextEdit.WidgetWidth)  # widget width
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
         layout.addWidget(self.editor)
         layout.addWidget(update_btn)
-
         self.setLayout(layout)
-        self.resize(self.minimumSize())
+        self.setMaximumWidth(self.editor.maximumWidth())
     
     @QtCore.pyqtSlot()
     def update_notes(self):
