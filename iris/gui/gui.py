@@ -140,8 +140,9 @@ class Iris(QtGui.QMainWindow):
         self.center_window()
         self.showMaximized()
         
-    def __del__(self):
+    def closeEvent(self, event):
         self._controller_thread.quit()
+        super().closeEvent(event)
     
     @QtCore.pyqtSlot()
     def launch_processsing_dialog(self):
@@ -167,13 +168,6 @@ class Iris(QtGui.QMainWindow):
         self.dataset_path_signal.emit(path)
     
     @QtCore.pyqtSlot()
-    def center_window(self):
-        qr = self.frameGeometry()
-        cp = QtGui.QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-    
-    @QtCore.pyqtSlot()
     def launch_knife_edge_tool(self):
         window = KnifeEdgeToolDialog(parent = self)
         return window.exec_()
@@ -182,3 +176,10 @@ class Iris(QtGui.QMainWindow):
     def launch_fluence_calculator_tool(self):
         window = FluenceCalculatorDialog(parent = self)
         return window.exec_()
+    
+    @QtCore.pyqtSlot()
+    def center_window(self):
+        qr = self.frameGeometry()
+        cp = QtGui.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
