@@ -6,7 +6,7 @@ from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 class PowderViewer(QtGui.QWidget):
 
     baseline_parameters_signal = QtCore.pyqtSignal(dict)
-    peak_dynamics_roi_signal = QtCore.pyqtSignal(float, float, bool)  #left pos, right pos, background_removed
+    peak_dynamics_roi_signal = QtCore.pyqtSignal(float, float)  #left pos, right pos, background_removed
 
     def __init__(self, *args, **kwargs):
         
@@ -50,7 +50,7 @@ class PowderViewer(QtGui.QWidget):
         powder_error_block : ndarray, shape (M, N)
             Array for which each row is the error for the corresponding azimuthal pattern.
         """
-        colors = list(spectrum_colors(powder_data_block.shape[0]))  # number of time-points
+        colors = list(spectrum_colors(powder_data_block.shape[0]))
         pens, brushes = map(pg.mkPen, colors), map(pg.mkBrush, colors)
 
         self.powder_pattern_viewer.enableAutoRange()

@@ -2,7 +2,8 @@
 Control bar for all Iris's controls
 
 """
-
+from collections import Iterable
+from contextlib import suppress
 from . import QtGui, QtCore
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
@@ -22,6 +23,8 @@ class ControlBar(QtGui.QWidget):
 
     baseline_computation_parameters[dict]
 
+    notes_updated[str]
+
     Slots
     -----
     enable_raw_dataset_controls [bool]
@@ -36,6 +39,7 @@ class ControlBar(QtGui.QWidget):
     promote_to_powder = QtCore.pyqtSignal()
     enable_peak_dynamics = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
+    notes_updated = QtCore.pyqtSignal(str)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -53,10 +57,20 @@ class ControlBar(QtGui.QWidget):
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
 
+        self.notes_editor = NotesEditor(parent = self)
+        self.notes_editor.notes_updated.connect(self.notes_updated)
+
+        self.metadata_widget = QtGui.QTableWidget(parent = self)
+        self.metadata_widget.setColumnCount(2)
+        self.metadata_widget.horizontalHeader().hide()
+        self.metadata_widget.verticalHeader().hide()
+
         layout = QtGui.QVBoxLayout()
         layout.addWidget(self.raw_dataset_controls)
         layout.addWidget(self.diffraction_dataset_controls)
         layout.addWidget(self.powder_diffraction_dataset_controls)
+        layout.addWidget(self.metadata_widget)
+        layout.addWidget(self.notes_editor)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
@@ -68,8 +82,20 @@ class ControlBar(QtGui.QWidget):
     @QtCore.pyqtSlot(dict)
     def update_dataset_metadata(self, metadata):
         self.diffraction_dataset_controls.timedelay_widget.setRange(0, len(metadata['time_points']))
+        self.notes_editor.editor.setPlainText(metadata.pop('notes', 'No notes available'))
 
-    
+        self.metadata_widget.clear()
+        self.metadata_widget.setRowCount(len(metadata) - 1 if 'notes' in metadata else len(metadata))
+        for row, (key, value) in enumerate(metadata.items()):
+            if isinstance(value, Iterable) and key not in ('acquisition_date', 'sample_type'):
+                if len(value) > 4:
+                    key += ' (length)'
+                    value = len(tuple(value))
+            self.metadata_widget.setItem(row, 0, QtGui.QTableWidgetItem(key))
+            self.metadata_widget.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
+        
+        self.metadata_widget.resizeColumnsToContents()
+
     @QtCore.pyqtSlot(int)
     def update_processing_progress(self, value):
         self.raw_dataset_controls.processing_progress_bar.setValue(value)
@@ -90,10 +116,12 @@ class ControlBar(QtGui.QWidget):
     @QtCore.pyqtSlot(bool)
     def enable_diffraction_dataset_controls(self, enable):
         self.diffraction_dataset_controls.setEnabled(enable)
+        self.notes_editor.setEnabled(enable)
     
     @QtCore.pyqtSlot(bool)
     def enable_powder_diffraction_dataset_controls(self, enable):
         self.powder_diffraction_dataset_controls.setEnabled(enable)
+        self.notes_editor.setEnabled(enable)
 
 class RawDatasetControl(QtGui.QWidget):
 
@@ -138,6 +166,7 @@ class RawDatasetControl(QtGui.QWidget):
         layout.addLayout(sliders)
         layout.addLayout(processing)
         self.setLayout(layout)
+        self.resize(self.minimumSize())
 
 class DiffractionDatasetControl(QtGui.QWidget):
 
@@ -177,6 +206,7 @@ class DiffractionDatasetControl(QtGui.QWidget):
         layout.addLayout(sliders)
         layout.addLayout(btns)
         self.setLayout(layout)
+        self.resize(self.minimumSize())
 
 class PowderDiffractionDatasetControl(QtGui.QWidget):
 
@@ -214,9 +244,39 @@ class PowderDiffractionDatasetControl(QtGui.QWidget):
         layout = QtGui.QVBoxLayout()
         layout.addLayout(baseline)
         self.setLayout(layout)
+        self.resize(self.minimumSize())
     
     def baseline_parameters(self):
         """ Returns a dictionary of baseline-computation parameters """
         return {'first_stage': self.first_stage_cb.currentText(),
                 'wavelet': self.wavelet_cb.currentText(),
                 'level': 'max', 'max_iter': 100}
+
+class NotesEditor(QtGui.QWidget):
+
+    notes_updated = QtCore.pyqtSignal(str)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        title = QtGui.QLabel('Dataset notes and remarks', parent = self)
+        title.setAlignment(QtCore.Qt.AlignCenter)
+
+        update_btn = QtGui.QPushButton('Update notes', self)
+        update_btn.clicked.connect(self.update_notes)
+
+        self.editor = QtGui.QTextEdit(parent = self)
+        self.editor.setLineWrapMode(3)  # Fixed column width
+        self.editor.setLineWrapColumnOrWidth(80)
+
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(title)
+        layout.addWidget(self.editor)
+        layout.addWidget(update_btn)
+
+        self.setLayout(layout)
+        self.resize(self.minimumSize())
+    
+    @QtCore.pyqtSlot()
+    def update_notes(self):
+        self.notes_updated.emit(self.editor.toPlainText())
