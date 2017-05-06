@@ -56,6 +56,7 @@ class Iris(QtGui.QMainWindow):
         self.controls.process_dataset.connect(self.launch_processsing_dialog)
         self.controls.promote_to_powder.connect(self.launch_promote_to_powder_dialog)
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
+        self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controller.raw_dataset_loaded_signal.connect(self.controls.enable_raw_dataset_controls)
         self.controller.processed_dataset_loaded_signal.connect(self.controls.enable_diffraction_dataset_controls)
         self.controller.powder_dataset_loaded_signal.connect(self.controls.enable_powder_diffraction_dataset_controls)
@@ -70,11 +71,13 @@ class Iris(QtGui.QMainWindow):
         self.controller.raw_data_signal.connect(self.raw_data_viewer.setImage)
 
         self.processed_viewer = ProcessedDataViewer(parent = self)
+        self.processed_viewer.peak_dynamics_roi_signal.connect(self.controller.time_series)
         self.controls.enable_peak_dynamics.connect(self.processed_viewer.toggle_peak_dynamics)
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
         self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
 
         self.powder_viewer = PowderViewer(parent = self)
+        self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
         self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
         self.controller.powder_time_series_signal.connect(self.powder_viewer.display_peak_dynamics)
 

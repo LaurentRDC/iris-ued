@@ -52,6 +52,8 @@ class DiffractionDataset(h5py.File):
     _pumpoff_pictures_group_name = '/pumpoff'
     
     # Experimental parameters as descriptors
+    # TODO: use self.attrs.modify to ensure type?
+    #       http://docs.h5py.org/en/latest/high/attr.html
     nscans = ExperimentalParameter('nscans', tuple)
     time_points = ExperimentalParameter('time_points', tuple)
     acquisition_date = ExperimentalParameter('acquisition_date', str)
@@ -63,6 +65,7 @@ class DiffractionDataset(h5py.File):
     beamblock_rect = ExperimentalParameter('beamblock_rect', tuple)
     sample_type = ExperimentalParameter('sample_type', str)
     time_zero_shift = ExperimentalParameter('time_zero_shift', float, default = 0.0)
+    notes = ExperimentalParameter('notes', str, default = '')
 
     def __init__(self, name, mode = 'r', **kwargs):
         """
@@ -80,6 +83,11 @@ class DiffractionDataset(h5py.File):
                   Sample type: {}, \n \
                   Acquisition date : {}, \n \
                   fluence {} mj/cm**2 >'.format(self.sample_type,self.acquisition_date, self.fluence)
+    
+    @property
+    def metadata(self):
+        """ Dictionary of the dataset's metadata """
+        return dict(self.attrs.items())
     
     @property
     def corrected_time_points(self):

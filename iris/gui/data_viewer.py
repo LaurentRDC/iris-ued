@@ -13,25 +13,26 @@ class ProcessedDataViewer(QtGui.QWidget):
     """
     Widget displaying the result of processing from RawDataset.process()
     """
+    peak_dynamics_roi_signal = QtCore.pyqtSignal(object)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.image_viewer = pg.ImageView(parent = self)
-        self.dataset_info = dict()
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
         self.peak_dynamics_viewer.hide()
 
-        # Single-crystal peak dynamics
         self.peak_dynamics_region = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.peak_dynamics_region.addScaleHandle([1, 1], [0, 0])
         self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
+        self.peak_dynamics_region.sigRegionChanged.connect(
+            lambda roi: self.peak_dynamics_roi_signal.emit(self.peak_dynamics_region.parentBounds().toRect()))
+
         self.image_viewer.getView().addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.hide()
 
-        # Final assembly
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.image_viewer)
         self.layout.addWidget(self.peak_dynamics_viewer)
@@ -48,8 +49,8 @@ class ProcessedDataViewer(QtGui.QWidget):
     
     @QtCore.pyqtSlot(object, object)
     def update_peak_dynamics(self, time_points, integrated_intensity):
-        pens = list(map(pg.mkPen, spectrum_colors(len(time_points))))
-        brushes = list(map(pg.mkBrush, spectrum_colors(len(time_points))))
+        pens = list(map(pg.mkPen, spectrum_colors(time_points)))
+        brushes = list(map(pg.mkBrush, spectrum_colors(time_points)))
         self.peak_dynamics_viewer.plot(time_points, integrated_intensity, pen = None, symbol = 'o', 
                                        symbolPen = pens, symbolBrush = brushes, symbolSize = 4, clear = True)
     
@@ -66,4 +67,4 @@ class ProcessedDataViewer(QtGui.QWidget):
         # when 'sliding' through data. This makes it easier to compare
         # data at different time points.
         # Similarly for autoRange = False
-        self.image_viewer.setImage(image)
+        self.image_viewer.setImage(image, autoLevels = False, autoRange = False)

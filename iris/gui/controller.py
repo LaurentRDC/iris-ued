@@ -125,8 +125,10 @@ class IrisController(QtCore.QObject):
         self.worker.start()
 
     @error_aware('Powder time-series could not be calculated.')
-    @QtCore.pyqtSlot(float, float, bool)
-    def powder_time_series(self, smin, smax, bgr):
+    @QtCore.pyqtSlot(float, float)
+    def powder_time_series(self, smin, smax):
+        # TODO: internal state for bgr
+        bgr = False
         try:
             self.dataset.powder_time_series(smin = smin, smax = smax, bgr = bgr, 
                                             out = self._powder_time_series_container)
@@ -137,17 +139,10 @@ class IrisController(QtCore.QObject):
     
     @error_aware('Single-crystal time-series could not be computed.')
     @QtCore.pyqtSlot(object)
-    def time_series_from_ROI(self, ROI):
+    def time_series(self, rect):
         """" 
         Single-crystal time-series as the integrated diffracted intensity inside a rectangular ROI
-
-        Parameters
-        ----------
-        ROI: PyQtGraph.ROI object
         """
-        # TODO: preallocation
-        rect = ROI.parentBounds().toRect()
-
         #If coordinate is negative, return 0
         x1 = round(max(0, rect.topLeft().x() ))
         x2 = round(max(0, rect.x() + rect.width() ))
@@ -164,6 +159,11 @@ class IrisController(QtCore.QObject):
         self.worker.done_signal.connect(lambda boolean: self.update_dataset_info())
         self.worker.done_signal.connect(lambda boolean: self.status_message_signal.emit('Baseline computed.'))
         self.worker.start()
+    
+    @error_aware('Dataset notes could not be updated')
+    @QtCore.pyqtSlot(str)
+    def set_dataset_notes(self, notes):
+        self.dataset.notes = notes
     
     @error_aware('Raw dataset could not be loaded.')
     @QtCore.pyqtSlot(str)
@@ -189,7 +189,7 @@ class IrisController(QtCore.QObject):
                 cls = PowderDiffractionDataset
         
         self.dataset = cls(path, mode = 'r+')
-        self.dataset_metadata.emit({'time_points': self.dataset.time_points})
+        self.dataset_metadata.emit(self.dataset.metadata)
         self.processed_dataset_loaded_signal.emit(True)
         self.display_averaged_data(timedelay_index = 0)
 
@@ -206,31 +206,6 @@ def promote_to_powder(filename, center):
         dataset.sample_type = 'powder'
         dataset.compute_angular_averages(center = center)
     return filename
-
-
-# Easy representation of dataset metadata
-class DatasetMetadataModel(QtCore.QAbstractListModel):
-
-    def __init__(self, dataset, **kwargs):
-        super().__init__(**kwargs)
-        self.dataset = dataset
-    
-    def rowCount(self):
-        return len(self.dataset.attrs)
-    
-    def headerData(self, index, orientation, role):
-        if not index.isValid(): return
-        if index.row() > self.rowCount(): return
-        
-        if role == 0: #Qt.DisplayRole
-            return list(self.dataset.attrs)[index.row()][0]
-    
-    def data(self, index, role):
-        if not index.isValid(): return
-        if index.row() > self.rowCount(): return
-        
-        if role == 0: #Qt.DisplayRole
-            return list(self.dataset.attrs)[index.row()][1]
 
 class WorkThread(QtCore.QThread):
     """
