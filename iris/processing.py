@@ -80,6 +80,7 @@ def diff_avg(images, valid_mask = None, weights = None):
 
         # streaming variance
         # TODO: don't repeat image - old_M
+        # TODO: weighted variance
         new_M[:] = old_M + (image - old_M)/k
         new_S[:] = old_S + (image - old_M)*(image - new_M)
         old_M[:] = new_M
@@ -172,8 +173,10 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
     mapkwargs = {'background': pumpon_background, 'ref_im': ref_im, 'valid_mask': valid_mask}
 
     # an iterator is used so that writing to the HDF5 file can be done in
-    # the current process; otherwise, writing to disk can fail
-    # BUG: if chunksize != 1, results are not yielded but are accumulated... wtf
+    # the current process; otherwise, writing to disk can fail.
+    # TODO: imap chunksize has been kept at 1 because for 2048x2048 images,
+    #       memory usage is abount ~600MB per core. Would it be beneficial to
+    #       increase chunksize to two or three?
     time_points_processed = 0
     with Pool(processes) as pool:
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
