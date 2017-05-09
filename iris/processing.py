@@ -87,7 +87,7 @@ def uint_subtract_safe(arr1, arr2):
     result[np.greater(arr2, arr1)] = 0
     return result
 
-def process(raw, destination, beamblock_rect, processes = None, callback = None, **kwargs):
+def process(raw, destination, beamblock_rect, processes = None, callback = None):
     """ 
     Parallel processing of RawDataset into a DiffractionDataset.
 
@@ -117,9 +117,6 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
     start_time = dt.now()
     with DiffractionDataset(name = destination, mode = 'w') as processed:
 
-        # Copy experimental parameters
-        # Center and beamblock_rect will be modified
-        # because of reduced resolution later
         processed.sample_type = 'single_crystal'       # By default
         processed.nscans = raw.nscans
         processed.time_points = raw.time_points
@@ -132,7 +129,7 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
         processed.beamblock_rect = beamblock_rect
         processed.time_zero_shift = 0.0
 
-        # Preallocate HDF5 datasets
+        # Preallocation
         shape = raw.resolution + (len(raw.time_points),)
         gp = processed.processed_measurements_group
         gp.create_dataset(name = 'intensity', shape = shape, dtype = np.float32, **ckwargs)
@@ -140,11 +137,13 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
 
     # Average background images
     # If background images are not found, save empty backgrounds
+    # NOTE: sum of images must be done as float arrays, otherwise the values
+    #       can loop back if over 2**16 - 1
     pumpon_filenames = glob.glob(join(raw.raw_directory, 'background.*.pumpon.tif'))
-    pumpon_background = sum(map(imread, pumpon_filenames))/len(pumpon_filenames)
+    pumpon_background = sum(map(lambda f: np.asfarray(imread(f)), pumpon_filenames))/len(pumpon_filenames)
 
     pumpoff_filenames = glob.glob(join(raw.raw_directory, 'background.*.pumpoff.tif'))
-    pumpoff_background = sum(map(imread, pumpoff_filenames))/len(pumpoff_filenames)
+    pumpoff_background = sum(map(lambda f: np.asfarray(imread(f)), pumpoff_filenames))/len(pumpoff_filenames)
 
     with DiffractionDataset(name = destination, mode = 'r+') as processed:
         gp = processed.processed_measurements_group
@@ -153,7 +152,7 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
 
     # Create a mask of valid pixels (e.g. not on the beam block, not a hot pixel)
     x1,x2,y1,y2 = beamblock_rect
-    valid_mask = np.ones_like(ref_im, dtype = np.bool)
+    valid_mask = np.ones(raw.resolution, dtype = np.bool)
     valid_mask[y1:y2, x1:x2] = False
 
     ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background) # Reference for alignment
