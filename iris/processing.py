@@ -18,7 +18,7 @@ from skued.image_analysis import align, powder_center, shift_image
 
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 
-def streaming_diff_avg(images, valid_mask = None, weights = None):
+def diff_avg(images, valid_mask = None, weights = None):
     """ 
     Streaming average of diffraction images.
 
@@ -32,6 +32,15 @@ def streaming_diff_avg(images, valid_mask = None, weights = None):
     weights : ndarray or None, optional
         Array of weights. see `numpy.average` for further information. If None (default), 
         total picture intensity of valid pixels is used to weight each picture.
+    
+    Returns
+    -------
+    avg, err: ndarrays, ndim 2
+        Weighted average and standard error in the mean of the 
+    
+    References
+    ----------
+    .. D. Knuth, Art of Computer Programming 3rd Edition, Vol. 2, p. 232
     """
     images = iter(images)
 
@@ -41,8 +50,8 @@ def streaming_diff_avg(images, valid_mask = None, weights = None):
     if weights is None:
         AUTO_WEIGHTS = True
     else:
-        AUTO_WEIGHTS = False
         weights = iter(weights)
+        AUTO_WEIGHTS = False
 
     # Streaming variance: https://www.johndcook.com/blog/standard_deviation/
     first = next(images)
@@ -57,11 +66,13 @@ def streaming_diff_avg(images, valid_mask = None, weights = None):
         sum_of_weights = next(weights)
     weighted_sum = np.asfarray(first * sum_of_weights)
 
+    # Running calculation
+    # `k` represents the number of images consumed so far
     for k, image in enumerate(images, start = 2):
 
         # streaming weighted average
         if AUTO_WEIGHTS:
-            weight = np.sum(image[valid_mask])
+            weight = np.sum(image[valid_mask], dtype = np.float)
         else:
             weight = next(weights)
         sum_of_weights += weight
@@ -76,52 +87,6 @@ def streaming_diff_avg(images, valid_mask = None, weights = None):
     
     avg = weighted_sum/sum_of_weights
     err = np.sqrt(new_S)/(k-1)  # variance = S / k-1, sem = std / sqrt(k)
-    return avg, err
-
-
-def diff_avg(images, nscans, valid_mask = None, weights = None):
-    """ Averages diffraction images. 
-    
-    Parameters
-    ----------
-    images : iterator of ndarrays, ndim 2
-
-    nscans : int
-        Number of scans.
-    valid_mask : ndarray or None, optional
-        Mask that evaluates to True on pixels that are valid, e.g. not on the beamblock.
-        If None, all pixels are valid.
-    weights : ndarray or None, optional
-        Array representing how much an image should be 'worth'. E.g.: a weight below 1 means that
-        a picture is not bright enough, and therefore it should count more in the averaging.
-        If None (default), total picture intensity of valid pixels is used to weight each picture.
-
-    Returns
-    -------
-    avg,err : ndarray
-        Averaged diffraction pattern and related error. 
-    """
-    # TODO: streaming version of this function. See source of np.average for an idea
-    #       STD: https://www.johndcook.com/blog/standard_deviation/
-    # TODO: automatically determine resolution using next(images)?
-    cube = np.empty((2048, 2048, nscans), dtype = np.uint16)
-
-    # If all pixels are valid, it would be a waste to create an array of True
-    # Indexing trick is much faster and can be used the same way: image[np.s_[:]] = image
-    if valid_mask is None:
-        valid_mask = np.s_[:]
-
-    if weights is None:
-        AUTO_WEIGHTS = True
-        weights = np.empty((nscans,), dtype = np.float)
-
-    for index, image in enumerate(images):
-        cube[:, :, index] = image
-        if AUTO_WEIGHTS and valid_mask is not None:
-            weights[index] = np.sum(image[valid_mask])
-    
-    avg = np.average(cube, axis = 2, weights = weights) # weights are normalized inside np.average
-    err = sem(cube, axis = 2, ddof = 1, nan_policy = 'omit')
     return avg, err
 
 def uint_subtract_safe(arr1, arr2):
@@ -197,26 +162,22 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
     # It is important the fnames_iterators are sorted by time
     # therefore, enumerate() gives the right index that goes in the pipeline function
     fnames_iterators = map(raw.timedelay_filenames, sorted(raw.time_points))
-    ref_im = uint_subtract_sage(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background)
+    ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background)
 
     # Create a mask of valid pixels (i.e. not on the beam block)
     x1,x2,y1,y2 = beamblock_rect
     valid_mask = np.ones_like(ref_im, dtype = np.bool)
     valid_mask[y1:y2, x1:x2] = False
 
-    mapkwargs = {'background': pumpon_background, 'ref_im': ref_im,
-                 'valid_mask': valid_mask, 'beamblock_rect': beamblock_rect, 
-                 'nscans': len(raw.nscans)}
+    mapkwargs = {'background': pumpon_background, 'ref_im': ref_im, 'valid_mask': valid_mask}
 
     # an iterator is used so that writing to the HDF5 file can be done in
     # the current process; otherwise, writing to disk can fail
-    # TODO: is chunksize important? As far as I can tell, it makes
-    #       no difference on small (~6GB) datasets
+    # BUG: if chunksize != 1, results are not yielded but are accumulated... wtf
     time_points_processed = 0
     with Pool(processes) as pool:
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
-                                      iterable = enumerate(fnames_iterators),
-                                      chunksize = round(len(raw.time_points)/pool._processes))
+                                      iterable = enumerate(fnames_iterators))
         
         # Wait and iterate over results, writing to disk
         # This process can also update the progress callback
@@ -233,15 +194,14 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
     print('Processing has taken {}'.format(str(dt.now() - start_time)))
     return destination
 
-def pipeline(values, background, ref_im, beamblock_rect, nscans, valid_mask):
+def pipeline(values, background, ref_im, valid_mask):
     # Generator chains helps keep memory usage lower
     # This in turns allows for more cores to be active at the same time
     index, fnames = values
     images = map(imread, fnames)
 
-    # TODO: can images be subtracted out in-place?
     images_bs = map(partial(uint_subtract_safe, **{'arr2': background}), images)
     aligned = align(images_bs, reference = ref_im)
     
-    avg, err = diff_avg(aligned, nscans = nscans, valid_mask = valid_mask)
+    avg, err = diff_avg(aligned, valid_mask = valid_mask, weights = None)
     return index, avg, err

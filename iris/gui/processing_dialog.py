@@ -72,6 +72,8 @@ class ProcessingDialog(QtGui.QDialog):
 
         beamblock_rect = (y1, y2, x1, x2)       #Flip output since image viewer plots transpose
         filename = self.file_dialog.getSaveFileName(filter = '*.hdf5')[0]
+        if filename == '':
+            return
         
         # The arguments to the iris.processing.process function
         # more arguments will be added by controller
