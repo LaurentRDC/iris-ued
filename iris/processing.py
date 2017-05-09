@@ -40,7 +40,7 @@ def diff_avg(images, valid_mask = None, weights = None):
     
     References
     ----------
-    .. D. Knuth, Art of Computer Programming 3rd Edition, Vol. 2, p. 232
+    .. D. Knuth, The Art of Computer Programming 3rd Edition, Vol. 2, p. 232
     """
     images = iter(images)
 
@@ -55,10 +55,8 @@ def diff_avg(images, valid_mask = None, weights = None):
 
     # Streaming variance: https://www.johndcook.com/blog/standard_deviation/
     first = next(images)
-    old_M = np.array(first, copy = True)
-    new_M = np.array(first, copy = True)
-    old_S = np.zeros_like(first, dtype = np.float)
-    new_S = np.zeros_like(first, dtype = np.float)
+    old_M = new_M = np.array(first, copy = True)
+    old_S = new_S = np.zeros_like(first, dtype = np.float)
 
     sum_of_weights = np.sum(first[valid_mask], dtype = np.float) if AUTO_WEIGHTS else next(weights)
     weighted_sum = np.asfarray(first * sum_of_weights)
@@ -73,12 +71,11 @@ def diff_avg(images, valid_mask = None, weights = None):
         weighted_sum += weight * image
 
         # streaming variance
-        # TODO: don't repeat image - old_M
         # TODO: weighted variance
-        new_M[:] = old_M + (image - old_M)/k
-        new_S[:] = old_S + (image - old_M)*(image - new_M)
-        old_M[:] = new_M
-        old_S[:] = new_S
+        _sub = image - old_M
+        new_M[:] = old_M + _sub/k
+        new_S[:] = old_S + _sub*(image - new_M)
+        old_M, old_S = new_M, new_S
     
     avg = weighted_sum/sum_of_weights
     err = np.sqrt(new_S)/(k-1)  # variance = S / k-1, sem = std / sqrt(k)
@@ -111,11 +108,11 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
     if callback is None:
         callback = lambda i: None
 
-    if processes is None:
-        processes = min(cpu_count(), 4) # typical datasets will blow up memory for more than 4 cores
-
     # Prepare compression kwargs
-    ckwargs = {'compression' : 'lzf', 'chunks' : True, 'shuffle' : True, 'fletcher32' : True}
+    ckwargs = {'compression' : 'lzf', 
+               'chunks' : True, 
+               'shuffle' : True, 
+               'fletcher32' : True}
 
     start_time = dt.now()
     with DiffractionDataset(name = destination, mode = 'w') as processed:
@@ -153,17 +150,13 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
         gp = processed.processed_measurements_group
         gp.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = np.float32, **ckwargs)
         gp.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = np.float32, **ckwargs)
-    
-    # It is important the fnames_iterators are sorted by time
-    # therefore, enumerate() gives the right index that goes in the pipeline function
-    fnames_iterators = map(raw.timedelay_filenames, sorted(raw.time_points))
-    ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background)
 
-    # Create a mask of valid pixels (i.e. not on the beam block)
+    # Create a mask of valid pixels (e.g. not on the beam block, not a hot pixel)
     x1,x2,y1,y2 = beamblock_rect
     valid_mask = np.ones_like(ref_im, dtype = np.bool)
     valid_mask[y1:y2, x1:x2] = False
 
+    ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background) # Reference for alignment
     mapkwargs = {'background': pumpon_background, 'ref_im': ref_im, 'valid_mask': valid_mask}
 
     # an iterator is used so that writing to the HDF5 file can be done in
@@ -171,13 +164,14 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
     # TODO: imap chunksize has been kept at 1 because for 2048x2048 images,
     #       memory usage is abount ~600MB per core. Would it be beneficial to
     #       increase chunksize to two or three?
+    # NOTE: It is important the fnames_iterators are sorted by time
+    #       therefore, enumerate() gives the right index that goes in the pipeline function
     time_points_processed = 0
+    fnames_iterators = map(raw.timedelay_filenames, sorted(raw.time_points))
     with Pool(processes) as pool:
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
                                       iterable = enumerate(fnames_iterators))
         
-        # Wait and iterate over results, writing to disk
-        # This process can also update the progress callback
         for index, avg, err in results:
 
             time_points_processed += 1
@@ -192,6 +186,27 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None,
     return destination
 
 def pipeline(values, background, ref_im, valid_mask):
+    """
+    Processing pipeline for a single time-point.
+
+    Parameters
+    ----------
+    values : 2-tuple
+        Index and filenames of diffraction pictures
+    background : ndarray, dtype uint16
+        Pump-on diffraction background
+    ref_im : ndarray
+        Background-subtracted diffraction pattern used as reference for alignment.
+    valid_mask : ndarray, dtype bool
+        Image mask that evaluates to True on valid pixels.
+    
+    Returns
+    -------
+    index : int
+        Time-point index.
+    avg, err : ndarrays, ndim 2
+        Weighted average and standard error on processing.
+    """
     # Generator chains helps keep memory usage lower
     # This in turns allows for more cores to be active at the same time
     index, fnames = values
