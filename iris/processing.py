@@ -60,10 +60,7 @@ def diff_avg(images, valid_mask = None, weights = None):
     old_S = np.zeros_like(first, dtype = np.float)
     new_S = np.zeros_like(first, dtype = np.float)
 
-    if AUTO_WEIGHTS:
-        sum_of_weights = np.sum(first[valid_mask])
-    else:
-        sum_of_weights = next(weights)
+    sum_of_weights = np.sum(first[valid_mask], dtype = np.float) if AUTO_WEIGHTS else next(weights)
     weighted_sum = np.asfarray(first * sum_of_weights)
 
     # Running calculation
@@ -71,10 +68,7 @@ def diff_avg(images, valid_mask = None, weights = None):
     for k, image in enumerate(images, start = 2):
 
         # streaming weighted average
-        if AUTO_WEIGHTS:
-            weight = np.sum(image[valid_mask], dtype = np.float)
-        else:
-            weight = next(weights)
+        weight = np.sum(image[valid_mask], dtype = np.float) if AUTO_WEIGHTS else next(weights)
         sum_of_weights += weight
         weighted_sum += weight * image
 
