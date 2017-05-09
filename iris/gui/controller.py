@@ -105,12 +105,6 @@ class IrisController(QtCore.QObject):
         self.worker = WorkThread(function = process, kwargs = info_dict)
         self.worker.results_signal.connect(self.load_dataset)
         self.worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
-
-        def in_progress(boolean):
-            if boolean: self.status_message_signal.emit('Dataset processing in progress.')
-            else: self.status_message_signal.emit('Dataset processing done.')
-        
-        self.worker.in_progress_signal.connect(in_progress)
         self.processing_progress_signal.emit(0)
         self.worker.start()
     
@@ -156,8 +150,6 @@ class IrisController(QtCore.QObject):
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
-        self.worker.done_signal.connect(lambda boolean: self.update_dataset_info())
-        self.worker.done_signal.connect(lambda boolean: self.status_message_signal.emit('Baseline computed.'))
         self.worker.start()
     
     @error_aware('Dataset notes could not be updated')
