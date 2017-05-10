@@ -6,13 +6,10 @@ Parallel processing of RawDataset
 import glob
 from datetime import datetime as dt
 from functools import partial
-from itertools import repeat
 from multiprocessing import Pool
-from os import cpu_count
 from os.path import join
 
 import numpy as np
-from scipy.stats import sem
 from skimage.io import imread
 from skued.image_analysis import align, powder_center, shift_image
 
@@ -171,15 +168,14 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
                                       iterable = enumerate(fnames_iterators))
         
-        for index, avg, err in results:
+        for order, (index, avg, err) in enumerate(results):
 
-            time_points_processed += 1
             with DiffractionDataset(name = destination, mode = 'r+') as processed:
                 gp = processed.processed_measurements_group
                 gp['intensity'].write_direct(avg, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
                 gp['error'].write_direct(err, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
             
-            callback(round(100*time_points_processed / len(raw.time_points)))
+            callback(round(100*order / len(raw.time_points)))
 
     print('Processing has taken {}'.format(str(dt.now() - start_time)))
     return destination
