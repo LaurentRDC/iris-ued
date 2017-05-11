@@ -1,5 +1,5 @@
-import pyqtgraph as pg
-from pyqtgraph import QtCore, QtGui
+from . import pyqtgraph as pg
+from .pyqtgraph import QtCore, QtGui
 from skued import spectrum_colors
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 

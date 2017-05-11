@@ -4,8 +4,8 @@ This module implements a modal dialog to analyze knife-edge measurements from cs
 @author : Laurent P. Rene de Cotret
 """
 import numpy as n
-import pyqtgraph as pg
-from pyqtgraph import QtCore, QtGui
+from . import pyqtgraph as pg
+from .pyqtgraph import QtCore, QtGui
 
 from ..knife_edge import cdf, knife_edge
 
