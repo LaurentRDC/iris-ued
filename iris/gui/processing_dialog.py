@@ -1,6 +1,7 @@
 
-import pyqtgraph as pg
-from pyqtgraph import QtCore, QtGui
+from os import cpu_count
+from . import pyqtgraph as pg
+from .pyqtgraph import QtCore, QtGui
 
 from ..processing import process
 from ..raw import RawDataset
@@ -32,8 +33,8 @@ class ProcessingDialog(QtGui.QDialog):
         self.viewer.getView().addItem(self.mask)
 
         self.processes_widget = QtGui.QSpinBox(parent = self)
-        self.processes_widget.setRange(1, 4)
-        self.processes_widget.setValue(4)
+        self.processes_widget.setRange(1, cpu_count() - 1)
+        self.processes_widget.setValue(min([cpu_count(), 7]))
 
         self.save_btn = QtGui.QPushButton('Launch processing', self)
         self.save_btn.clicked.connect(self.accept)

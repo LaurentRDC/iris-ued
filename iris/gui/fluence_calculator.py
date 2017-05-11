@@ -1,4 +1,4 @@
-from pyqtgraph import QtGui, QtCore
+from .pyqtgraph import QtGui, QtCore
 from ..utils import fluence
 
 class FluenceCalculatorDialog(QtGui.QDialog):

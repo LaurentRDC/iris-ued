@@ -1,8 +1,8 @@
 from collections.abc import Iterable
 from os.path import dirname, join
 
-import pyqtgraph as pg
-from pyqtgraph import QtCore, QtGui
+from . import pyqtgraph as pg
+from .pyqtgraph import QtCore, QtGui
 
 from ..utils import fluence
 from skued import spectrum_colors
@@ -49,10 +49,11 @@ class ProcessedDataViewer(QtGui.QWidget):
     
     @QtCore.pyqtSlot(object, object)
     def update_peak_dynamics(self, time_points, integrated_intensity):
+        colors = list()
         pens = list(map(pg.mkPen, spectrum_colors(time_points)))
         brushes = list(map(pg.mkBrush, spectrum_colors(time_points)))
         self.peak_dynamics_viewer.plot(time_points, integrated_intensity, pen = None, symbol = 'o', 
-                                       symbolPen = pens, symbolBrush = brushes, symbolSize = 4, clear = True)
+                                       symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 4, clear = True)
     
     @QtCore.pyqtSlot(object)
     def display(self, image):

@@ -1,7 +1,7 @@
 from os.path import dirname, join
 
-import pyqtgraph as pg
-from . import QtCore, QtGui
+from . import pyqtgraph as pg
+from .pyqtgraph import QtCore, QtGui
 
 image_folder = join(dirname(__file__), 'images')
 

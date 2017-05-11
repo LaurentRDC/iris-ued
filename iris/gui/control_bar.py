@@ -4,7 +4,7 @@ Control bar for all Iris's controls
 """
 from collections import Iterable
 from contextlib import suppress
-from . import QtGui, QtCore
+from .pyqtgraph import QtGui, QtCore
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
 class ControlBar(QtGui.QWidget):
