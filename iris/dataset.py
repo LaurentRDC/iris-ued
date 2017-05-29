@@ -83,6 +83,11 @@ class DiffractionDataset(h5py.File):
         return dict(self.attrs.items())
     
     @property
+    def valid_mask(self):
+        """ Array that evaluates to True on valid pixels (i.e. not on beam-block, not hot pixels) """
+        return np.array(self.experimental_parameters_group['valid_mask'])
+    
+    @property
     def corrected_time_points(self):
         """ Time points corrected for time-zero shift. """
         return tuple(np.array(self.time_points) - self.time_zero_shift)
