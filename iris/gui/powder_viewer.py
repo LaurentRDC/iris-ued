@@ -1,7 +1,15 @@
 from . import pyqtgraph as pg
 from .pyqtgraph import QtCore, QtGui
+from functools import lru_cache
 from skued import spectrum_colors
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
+
+@lru_cache(maxsize = 1)
+def pens_and_brushes(num):
+    qcolors = tuple(map(lambda c: QtGui.QColor.fromRgbF(*c), spectrum_colors(num)))
+    pens = list(map(pg.mkPen, qcolors))
+    brushes = list(map(pg.mkBrush, qcolors))
+    return pens, brushes
 
 class PowderViewer(QtGui.QWidget):
 
@@ -50,8 +58,7 @@ class PowderViewer(QtGui.QWidget):
         powder_error_block : ndarray, shape (M, N)
             Array for which each row is the error for the corresponding azimuthal pattern.
         """
-        colors = list(spectrum_colors(powder_data_block.shape[0]))
-        pens, brushes = map(pg.mkPen, colors), map(pg.mkBrush, colors)
+        pens, brushes = pens_and_brushes(num = powder_data_block.shape[0])
 
         self.powder_pattern_viewer.enableAutoRange()
         self.powder_pattern_viewer.clear()
@@ -74,13 +81,13 @@ class PowderViewer(QtGui.QWidget):
         Display the time series associated with the integral between the bounds 
         of the ROI
         """
+        pens, brushes = pens_and_brushes(num = len(times))
+
         intensities /= intensities.max()
 
-        colors = list(spectrum_colors(len(times)))
-        pens, brushes = map(pg.mkPen, colors), map(pg.mkBrush, colors)
         self.peak_dynamics_viewer.plot(times, intensities, 
                                        pen = None, symbol = 'o', 
-                                       symbolPen = list(pens), symbolBrush = list(brushes), 
+                                       symbolPen = pens, symbolBrush = brushes, 
                                        symbolSize = 4, clear = True)
         
         if errors is not None:

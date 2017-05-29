@@ -4,7 +4,7 @@ import numpy
 from setuptools import setup, find_packages
 import glob
 
-__version__ = '3.3'
+__version__ = '4.0'
 __author__ = 'Laurent P. René de Cotret'
 
 
@@ -25,8 +25,7 @@ setup(
     author = __author__,
     author_email = 'laurent.renedecotret@mail.mcgill.ca',
     url = 'www.physics.mcgill.ca/siwicklab',
-    install_requires = ['pyqtgraph',
-                        'numpy >= 1.11.2', 
+    install_requires = ['numpy >= 1.11.2', 
                         'scipy', 
                         'h5py >= 2.6.0',
                         'scikit-image',

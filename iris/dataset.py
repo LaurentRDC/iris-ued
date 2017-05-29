@@ -1,18 +1,11 @@
 """
 @author: Laurent P. Rene de Cotret
 """
-from collections import OrderedDict
-import glob
 import h5py
-import numpy as n
-import os
-from os.path import join
-import re
+import numpy as np
 from skued.image_analysis import angular_average
 from skued.baseline import baseline_dt, dt_max_level
-from warnings import warn
 
-from .optimizations import cached_property
 from .utils import scattering_length
 
 class ExperimentalParameter(object):
@@ -92,7 +85,7 @@ class DiffractionDataset(h5py.File):
     @property
     def corrected_time_points(self):
         """ Time points corrected for time-zero shift. """
-        return tuple(n.array(self.time_points) - self.time_zero_shift)
+        return tuple(np.array(self.time_points) - self.time_zero_shift)
     
     def shift_time_zero(self, shift):
         """
@@ -131,20 +124,22 @@ class DiffractionDataset(h5py.File):
 
         if timedelay is None:
             if out is None:
-                out = n.empty_like(dataset)
+                out = np.empty_like(dataset)
             dataset.read_direct(out)
 
         else:
-            # time_index cannot be cast to int() if n.argwhere returns an empty array
+            # time_index cannot be cast to int() if np.argwhere returns an empty array
             # catch the corresponding TypeError
             try:
-                time_index = int(n.argwhere(n.array(self.corrected_time_points) == float(timedelay)))
+                time_index = int(np.argwhere(np.array(self.corrected_time_points) == float(timedelay)))
             except TypeError:
-                raise ValueError('Time-delay {} does not exist.'.format(timedelay))
+                potential_timedelay_index = np.argmin(np.abs(np.array(self.corrected_time_points) - float(timedelay)))
+                potential_timedelay = self.corrected_time_points[potential_timedelay_index]
+                raise ValueError('Time-delay {} ps does not exist. Did you mean {} ps?'.format(timedelay, potential_timedelay))
 
             if out is None:
-                out = n.empty(self.resolution)
-            dataset.read_direct(out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
+                out = np.empty(self.resolution)
+            dataset.read_direct(out, source_sel = np.s_[:,:, time_index], dest_sel = np.s_[:,:])
 
         return out
 
@@ -174,20 +169,22 @@ class DiffractionDataset(h5py.File):
 
         if timedelay is None:
             if out is None:
-                out = n.empty_like(dataset)
+                out = np.empty_like(dataset)
             dataset.read_direct(out)
 
         else:
-            # time_index cannot be cast to int() if n.argwhere returns an empty array
+            # time_index cannot be cast to int() if np.argwhere returns an empty array
             # catch the corresponding TypeError
             try:
-                time_index = int(n.argwhere(n.array(self.corrected_time_points) == float(timedelay)))
+                time_index = int(np.argwhere(np.array(self.corrected_time_points) == float(timedelay)))
             except TypeError:
+                potential_timedelay_index = np.argmin(np.abs(np.array(self.corrected_time_points) - float(timedelay)))
+                potential_timedelay = self.corrected_time_points[potential_timedelay_index]
                 raise ValueError('Time-delay {} does not exist.'.format(timedelay))
 
             if out is None:
-                out = n.empty(self.resolution)
-            dataset.read_direct(out, source_sel = n.s_[:,:, time_index], dest_sel = n.s_[:,:])
+                out = np.empty(self.resolution)
+            dataset.read_direct(out, source_sel = np.s_[:,:, time_index], dest_sel = np.s_[:,:])
         
         return out
     
@@ -209,7 +206,7 @@ class DiffractionDataset(h5py.File):
         """
         x1, x2, y1, y2 = rect
         data = self.processed_measurements_group['intensity'][y1:y2, x1:x2, :]  # Numpy axes are transposed
-        return n.sum(data, axis = (0,1), out = out)
+        return np.sum(data, axis = (0,1), out = out)
 
     def pumpoff_data(self, scan, out = None):
         """
@@ -232,22 +229,22 @@ class DiffractionDataset(h5py.File):
         dataset = self.pumpoff_pictures_group['pumpoff_pictures']
         if scan:
             if out is None:
-                out = n.empty(self.resolution)
-            dataset.read_direct(out, source_sel = n.s_[:,:,scan - 1], dest_sel = n.s_[:,:])
+                out = np.empty(self.resolution)
+            dataset.read_direct(out, source_sel = np.s_[:,:,scan - 1], dest_sel = np.s_[:,:])
         else:
             if out is None:
-                out = n.empty_like(dataset)
+                out = np.empty_like(dataset)
             dataset.read_direct(out)
         
         return out
        
     @property
     def background_pumpon(self):
-        return n.array(self.processed_measurements_group['background_pumpon'])
+        return np.array(self.processed_measurements_group['background_pumpon'])
     
     @property
     def background_pumpoff(self):
-        return n.array(self.processed_measurements_group['background_pumpoff'])
+        return np.array(self.processed_measurements_group['background_pumpoff'])
     
     @property
     def experimental_parameters_group(self):
@@ -261,7 +258,7 @@ class DiffractionDataset(h5py.File):
     def pumpoff_pictures_group(self):
         return self.require_group(name = self._pumpoff_pictures_group_name)
     
-    @cached_property
+    @property
     def compression_params(self):
         """ Compression options in the form of a dictionary """
         dataset = self.processed_measurements_group['intensity']
@@ -292,7 +289,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     
     @property
     def scattering_length(self):
-        return n.array(self.powder_group['scattering_length'])
+        return np.array(self.powder_group['scattering_length'])
 
     def powder_data(self, timedelay, bgr = False, out = None):
         """
@@ -317,14 +314,19 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         if timedelay is None:
             if out is None:
-                out = n.empty_like(dataset)
+                out = np.empty_like(dataset)
             dataset.read_direct(out)
 
         else:
-            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
+            try:
+                time_index = np.argwhere(np.array(self.corrected_time_points) == float(timedelay))
+            except TypeError:
+                potential_timedelay_index = np.argmin(np.abs(np.array(self.corrected_time_points) - float(timedelay)))
+                potential_timedelay = self.corrected_time_points[potential_timedelay_index]
+                raise ValueError('Time-delay {} ps does not exist. Did you mean {} ps?'.format(timedelay, potential_timedelay))
             if out is None:
-                out = n.empty_like(self.scattering_length)
-            dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])
+                out = np.empty_like(self.scattering_length)
+            dataset.read_direct(out, source_sel = np.s_[time_index,:], dest_sel = np.s_[:])
 
         if bgr:
             out -= self.baseline(timedelay)
@@ -351,14 +353,19 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         if timedelay is None:
             if out is None:
-                out = n.empty_like(dataset)
+                out = np.empty_like(dataset)
             dataset.read_direct(out)
         
         else:
-            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
+            try:
+                time_index = np.argwhere(np.array(self.corrected_time_points) == float(timedelay))
+            except TypeError:
+                potential_timedelay_index = np.argmin(np.abs(np.array(self.corrected_time_points) - float(timedelay)))
+                potential_timedelay = self.corrected_time_points[potential_timedelay_index]
+                raise ValueError('Time-delay {} ps does not exist. Did you mean {} ps?'.format(timedelay, potential_timedelay))
             if out is None:
-                out = n.empty_like(self.scattering_length)
-            dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:])  
+                out = np.empty_like(self.scattering_length)
+            dataset.read_direct(out, source_sel = np.s_[time_index,:], dest_sel = np.s_[:])  
         return out
 
     def baseline(self, timedelay, out = None):
@@ -380,20 +387,25 @@ class PowderDiffractionDataset(DiffractionDataset):
             array is an array of zeros.
         """
         if not self.baseline_removed:
-            return n.zeros_like(self.scattering_length)
+            return np.zeros_like(self.scattering_length)
 
         dataset = self.powder_group['baseline']
 
         if timedelay is None:
             if out is None:
-                out = n.empty_like(dataset)
+                out = np.empty_like(dataset)
             dataset.read_direct(out)
         
         else:
-            time_index = n.argwhere(n.array(self.corrected_time_points) == float(timedelay))
+            try:
+                time_index = np.argwhere(np.array(self.corrected_time_points) == float(timedelay))
+            except TypeError:
+                potential_timedelay_index = np.argmin(np.abs(np.array(self.corrected_time_points) - float(timedelay)))
+                potential_timedelay = self.corrected_time_points[potential_timedelay_index]
+                raise ValueError('Time-delay {} ps does not exist. Did you mean {} ps?'.format(timedelay, potential_timedelay))
             if out is None:
-                out = n.empty_like(self.scattering_length)
-            dataset.read_direct(out, source_sel = n.s_[time_index,:], dest_sel = n.s_[:]) 
+                out = np.empty_like(self.scattering_length)
+            dataset.read_direct(out, source_sel = np.s_[time_index,:], dest_sel = np.s_[:]) 
         
         return out
     
@@ -422,16 +434,16 @@ class PowderDiffractionDataset(DiffractionDataset):
         # TODO: handle out parameter more efficiently?
         # Python slices are semi-open by design, therefore i_max + 1 is used
         # so that the integration interval is closed.
-        i_min, i_max = n.argmin(n.abs(smin - self.scattering_length)), n.argmin(n.abs(smax - self.scattering_length))
-        trace = n.array(self.powder_group['intensity'][:, i_min:i_max + 1])
+        i_min, i_max = np.argmin(np.abs(smin - self.scattering_length)), np.argmin(np.abs(smax - self.scattering_length))
+        trace = np.array(self.powder_group['intensity'][:, i_min:i_max + 1])
         if bgr :
-            trace -= n.array(self.powder_group['baseline'][:, i_min:i_max + 1])
+            trace -= np.array(self.powder_group['baseline'][:, i_min:i_max + 1])
         
         if out is not None:
-            return n.sum(axis = 1, out = out)
-        return n.squeeze(n.sum(trace, axis = 1))
+            return np.sum(axis = 1, out = out)
+        return np.squeeze(np.sum(trace, axis = 1))
     
-    def compute_baseline(self, first_stage, wavelet, max_iter = 50, level = 'max'):
+    def compute_baseline(self, first_stage, wavelet, max_iter = 50, level = None):
         """
         Compute and save the baseline computed from the dualtree package.
 
@@ -444,7 +456,8 @@ class PowderDiffractionDataset(DiffractionDataset):
             See dualtree.ALL_COMPLEX_WAV for possible
         max_iter : int, optional
 
-        level : int or 'max', optional
+        level : int or None, optional
+            If None (default), maximum level is used.
         """
         baseline_args = {'array': self.powder_data(timedelay = None, bgr = False), 
                          'max_iter': max_iter, 'level': level, 
@@ -458,7 +471,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             self.powder_group['baseline'][:, :] = baseline_dt(**baseline_args)
         
         # Record parameters
-        if level == 'max':
+        if level == None:
             level = dt_max_level(data = self.scattering_length, first_stage = first_stage, wavelet = wavelet)
             
         self.level = level
@@ -484,7 +497,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         self.sample_type = 'powder'
 
-        beamblock_mask = n.zeros(self.resolution, dtype = n.bool)
+        beamblock_mask = np.zeros(self.resolution, dtype = np.bool)
         x1,x2,y1,y2 = self.beamblock_rect
         beamblock_mask[y1:y2, x1:x2] = True
 
@@ -498,8 +511,8 @@ class PowderDiffractionDataset(DiffractionDataset):
             results.append((radius, avg, extras['error']))
         
         # Concatenate arrays for intensity and error
-        rintensity = n.stack([I for _, I, _ in results], axis = 0)
-        rerror =  n.stack([e for _, _, e in results], axis = 0)
+        rintensity = np.stack([I for _, I, _ in results], axis = 0)
+        rerror =  np.stack([e for _, _, e in results], axis = 0)
         
         dataset = self.powder_group.require_dataset(name = 'intensity', shape = rintensity.shape, dtype = rintensity.dtype)
         dataset.write_direct(rintensity)
@@ -510,5 +523,5 @@ class PowderDiffractionDataset(DiffractionDataset):
         # TODO: variable pixel_width and camera distance in the future
         px_radius = results[0][0]
         s_length = scattering_length(px_radius, energy = self.energy)
-        self.powder_group.create_dataset(name = 'scattering_length', data = s_length, dtype = n.float)
+        self.powder_group.create_dataset(name = 'scattering_length', data = s_length, dtype = np.float)
         self.baseline_removed = False

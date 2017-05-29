@@ -38,6 +38,7 @@ class ControlBar(QtGui.QWidget):
     process_dataset = QtCore.pyqtSignal()
     promote_to_powder = QtCore.pyqtSignal()
     enable_peak_dynamics = QtCore.pyqtSignal(bool)
+    baseline_removed = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
     notes_updated = QtCore.pyqtSignal(str)
 
@@ -56,6 +57,7 @@ class ControlBar(QtGui.QWidget):
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
+        self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
 
         self.notes_editor = NotesEditor(parent = self)
         self.notes_editor.notes_updated.connect(self.notes_updated)
@@ -257,7 +259,7 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         """ Returns a dictionary of baseline-computation parameters """
         return {'first_stage': self.first_stage_cb.currentText(),
                 'wavelet': self.wavelet_cb.currentText(),
-                'level': 'max', 'max_iter': 100}
+                'level': None, 'max_iter': 100}
 
 class MetadataWidget(QtGui.QWidget):
 

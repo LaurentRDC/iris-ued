@@ -8,7 +8,7 @@ from ..utils import fluence
 from skued import spectrum_colors
 
 image_folder = join(dirname(__file__), 'images')
-    
+
 class ProcessedDataViewer(QtGui.QWidget):
     """
     Widget displaying the result of processing from RawDataset.process()
@@ -30,6 +30,9 @@ class ProcessedDataViewer(QtGui.QWidget):
         self.peak_dynamics_region.sigRegionChanged.connect(
             lambda roi: self.peak_dynamics_roi_signal.emit(self.peak_dynamics_region.parentBounds().toRect()))
 
+        self._pens = None
+        self._brushes = None
+
         self.image_viewer.getView().addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.hide()
 
@@ -49,11 +52,18 @@ class ProcessedDataViewer(QtGui.QWidget):
     
     @QtCore.pyqtSlot(object, object)
     def update_peak_dynamics(self, time_points, integrated_intensity):
-        colors = list()
-        pens = list(map(pg.mkPen, spectrum_colors(time_points)))
-        brushes = list(map(pg.mkBrush, spectrum_colors(time_points)))
+        # Only compute the colors if number of time-points changes or first time
+        if self._pens is None:
+            qcolors = tuple(map(lambda c: QtGui.QColor.fromRgbF(*c), spectrum_colors(len(time_points))))
+            self._pens = list(map(pg.mkPen, qcolors))
+            self._brushes = list(map(pg.mkBrush, qcolors))
+        elif len(time_points) != len(self._pens):
+            qcolors = tuple(map(lambda c: QtGui.QColor.fromRgbF(*c), spectrum_colors(len(time_points))))
+            self._pens = list(map(pg.mkPen, qcolors))
+            self._brushes = list(map(pg.mkBrush, qcolors))
+        
         self.peak_dynamics_viewer.plot(time_points, integrated_intensity, pen = None, symbol = 'o', 
-                                       symbolPen = pg.mkPen('r'), symbolBrush = pg.mkBrush('r'), symbolSize = 4, clear = True)
+                                       symbolPen = self._pens, symbolBrush = self._brushes, symbolSize = 4, clear = True)
     
     @QtCore.pyqtSlot(object)
     def display(self, image):
