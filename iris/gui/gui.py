@@ -56,6 +56,7 @@ class Iris(QtGui.QMainWindow):
         self.controls.process_dataset.connect(self.launch_processsing_dialog)
         self.controls.promote_to_powder.connect(self.launch_promote_to_powder_dialog)
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
+        self.controls.baseline_removed.connect(self.controller.powder_background_subtracted)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controller.raw_dataset_loaded_signal.connect(self.controls.enable_raw_dataset_controls)
         self.controller.processed_dataset_loaded_signal.connect(self.controls.enable_diffraction_dataset_controls)

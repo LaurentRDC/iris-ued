@@ -136,11 +136,15 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
     # If background images are not found, save empty backgrounds
     # NOTE: sum of images must be done as float arrays, otherwise the values
     #       can loop back if over 2**16 - 1
+    # NOTE: for the rare options 'pumpon only', there is no pumpoff_background
     pumpon_filenames = glob.glob(join(raw.raw_directory, 'background.*.pumpon.tif'))
     pumpon_background = sum(map(lambda f: np.asfarray(imread(f)), pumpon_filenames))/len(pumpon_filenames)
 
     pumpoff_filenames = glob.glob(join(raw.raw_directory, 'background.*.pumpoff.tif'))
-    pumpoff_background = sum(map(lambda f: np.asfarray(imread(f)), pumpoff_filenames))/len(pumpoff_filenames)
+    if len(pumpoff_filenames):
+        pumpoff_background = sum(map(lambda f: np.asfarray(imread(f)), pumpoff_filenames))/len(pumpoff_filenames)
+    else:
+        pumpoff_background = np.zeros_like(pumpon_background)
 
     with DiffractionDataset(name = destination, mode = 'r+') as processed:
         gp = processed.processed_measurements_group

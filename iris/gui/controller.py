@@ -56,6 +56,10 @@ class IrisController(QtCore.QObject):
         self.raw_dataset = None
         self.dataset = None
 
+        # Internal state for powder background removal. If True, display_powder_data
+        # will send background-subtracted data
+        self._bgr = False
+
         # array containers
         # Preallocation is important for arrays that change often. Then,
         # we can take advantage of the out parameter
@@ -87,15 +91,19 @@ class IrisController(QtCore.QObject):
         return self._averaged_data_container
     
     @error_aware('Powder data could not be displayed.')
-    @QtCore.pyqtSlot(bool)
-    def display_powder_data(self, bgr):
+    @QtCore.pyqtSlot()
+    def display_powder_data(self):
         """ Emit a powder data signal with/out background """
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
         self.powder_data_signal.emit(self.dataset.scattering_length, 
-                                     self.dataset.powder_data(timedelay = None, bgr = bgr), 
-                                     self.dataset.powder_error(timedelay = None),
-                                     bgr)
+                                     self.dataset.powder_data(timedelay = None, bgr = self._bgr), 
+                                     self.dataset.powder_error(timedelay = None))
+    
+    @QtCore.pyqtSlot(bool)
+    def powder_background_subtracted(self, enable):
+        self._bgr = enable
+        self.display_powder_data()
     
     @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
