@@ -510,12 +510,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         self.sample_type = 'powder'
 
-        # First determine the distance from the center for which all pixels fall on the beamblock
-        # from experience, all pixels within 2x this distance from the center are invalid.
-        _, av = angular_average(self.valid_mask, center = self.center)
-        av[av < 1.0] = 0
-        valid_length = int(2*np.sum(av))
-
         # Because it is difficult to know the angular averaged data's shape in advance, 
         # we calculate it first and store it next
         results = list()
@@ -523,7 +517,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             extras = dict()
             radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, 
                                           mask = np.logical_not(self.valid_mask), extras = extras) 
-            results.append((radius[valid_length:], avg[valid_length:], extras['error'][valid_length:]))
+            results.append((radius, avg, extras['error']))
         
         # Concatenate arrays for intensity and error
         rintensity = np.stack([I for _, I, _ in results], axis = 0)
