@@ -1,7 +1,7 @@
 
 from ..dataset import DiffractionDataset, PowderDiffractionDataset
 import numpy as np
-from numpy.random import random
+from numpy.random import random, randint
 import os.path
 import tempfile
 import unittest
@@ -34,6 +34,10 @@ def dummy_dataset(**kwargs):
         # Fill dataset with random data
         dataset.pumpoff_pictures_group.create_dataset('pumpoff_pictures',
                                                       data = random(size = dataset.resolution + (len(dataset.nscans),)))
+        
+        dataset.experimental_parameters_group.create_dataset(name = 'valid_mask', 
+                                                             data = randint(low = 0, high = 2, size = dataset.resolution), 
+                                                             dtype = np.bool)
         
         block_shape = dataset.resolution + (len(dataset.time_points),)
         dataset.processed_measurements_group.create_dataset('intensity', data = random(size = block_shape))
