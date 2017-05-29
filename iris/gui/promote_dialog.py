@@ -54,3 +54,4 @@ class PromoteToPowderDialog(QtGui.QDialog):
         center = (round(corner_y + radius), round(corner_x + radius)) #Flip output since image viewer plots transpose...
         
         self.center_signal.emit(center)
+        super().accept()
