@@ -1,6 +1,7 @@
 """
 @author: Laurent P. Rene de Cotret
 """
+from functools import lru_cache
 import h5py
 import numpy as np
 from skued.image_analysis import angular_average
@@ -83,9 +84,16 @@ class DiffractionDataset(h5py.File):
         return dict(self.attrs.items())
     
     @property
+    @lru_cache(maxsize = 1)
     def valid_mask(self):
         """ Array that evaluates to True on valid pixels (i.e. not on beam-block, not hot pixels) """
-        return np.array(self.experimental_parameters_group['valid_mask'])
+        try: 
+            return np.array(self.experimental_parameters_group['valid_mask'])
+        except: #Legacy
+            x1,x2,y1,y2 = self.beamblock_rect
+            valid_mask = np.ones(self.resolution, dtype = np.bool)
+            valid_mask[y1:y2, x1:x2] = False
+            return valid_mask
     
     @property
     def corrected_time_points(self):
@@ -502,9 +510,11 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         self.sample_type = 'powder'
 
-        beamblock_mask = np.zeros(self.resolution, dtype = np.bool)
-        x1,x2,y1,y2 = self.beamblock_rect
-        beamblock_mask[y1:y2, x1:x2] = True
+        # First determine the distance from the center for which all pixels fall on the beamblock
+        # from experience, all pixels within 2x this distance from the center are invalid.
+        _, av = angular_average(self.valid_mask, center = self.center)
+        av[av < 1.0] = 0
+        valid_length = int(2*np.sum(av))
 
         # Because it is difficult to know the angular averaged data's shape in advance, 
         # we calculate it first and store it next
@@ -512,8 +522,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         for timedelay in self.time_points:
             extras = dict()
             radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, 
-                                          mask = beamblock_mask, extras = extras) 
-            results.append((radius, avg, extras['error']))
+                                          mask = np.logical_not(self.valid_mask), extras = extras) 
+            results.append((radius[valid_length:], avg[valid_length:], extras['error'][valid_length:]))
         
         # Concatenate arrays for intensity and error
         rintensity = np.stack([I for _, I, _ in results], axis = 0)
