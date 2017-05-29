@@ -7,6 +7,8 @@ from contextlib import suppress
 from .pyqtgraph import QtGui, QtCore
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
+from pywt import Modes
+
 class ControlBar(QtGui.QWidget):
     """
     Signals
@@ -221,15 +223,27 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         # baseline computation
         self.first_stage_cb = QtGui.QComboBox()
         self.first_stage_cb.addItems(ALL_FIRST_STAGE)
+        if 'sym6' in ALL_FIRST_STAGE:
+            self.first_stage_cb.setCurrentText('sym6')
 
         self.wavelet_cb = QtGui.QComboBox()
         self.wavelet_cb.addItems(ALL_COMPLEX_WAV)
+        if 'qshift3' in ALL_COMPLEX_WAV:
+            self.wavelet_cb.setCurrentText('qshift3')
+
+        self.mode_cb = QtGui.QComboBox()
+        self.mode_cb.addItems(Modes.modes)
+        if 'smooth' in Modes.modes:
+            self.mode_cb.setCurrentText('smooth')
 
         first_stage_label = QtGui.QLabel('First stage wav.:', parent = self)
         first_stage_label.setAlignment(QtCore.Qt.AlignCenter)
 
         wavelet_label = QtGui.QLabel('Dual-tree wavelet:', parent = self)
         wavelet_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        mode_label = QtGui.QLabel('Extension mode:', parent = self)
+        mode_label.setAlignment(QtCore.Qt.AlignCenter)
 
         self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
 
@@ -243,7 +257,9 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         baseline.addWidget(self.first_stage_cb, 1, 1, 1, 1)
         baseline.addWidget(wavelet_label, 2, 0, 1, 1)
         baseline.addWidget(self.wavelet_cb, 2, 1, 1, 1)
-        baseline.addWidget(self.compute_baseline_btn, 3, 0, 1, 2)
+        baseline.addWidget(mode_label, 3, 0, 1, 1)
+        baseline.addWidget(self.mode_cb, 3, 1 ,1, 1)
+        baseline.addWidget(self.compute_baseline_btn, 4, 0, 1, 2)
 
         title = QtGui.QLabel('<h2>Powder dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
@@ -259,6 +275,7 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         """ Returns a dictionary of baseline-computation parameters """
         return {'first_stage': self.first_stage_cb.currentText(),
                 'wavelet': self.wavelet_cb.currentText(),
+                'mode': self.mode_cb.currentText(),
                 'level': None, 'max_iter': 100}
 
 class MetadataWidget(QtGui.QWidget):
