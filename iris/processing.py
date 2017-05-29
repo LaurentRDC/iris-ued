@@ -155,6 +155,8 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
     x1,x2,y1,y2 = beamblock_rect
     valid_mask = np.ones(raw.resolution, dtype = np.bool)
     valid_mask[y1:y2, x1:x2] = False
+    with DiffractionDataset(name = destination, mode = 'r+') as processed:
+        processed.experimental_parameters_group.create_dataset(name = 'valid_mask', data = valid_mask)
 
     ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background) # Reference for alignment
     mapkwargs = {'background': pumpon_background, 'ref_im': ref_im, 'valid_mask': valid_mask}
