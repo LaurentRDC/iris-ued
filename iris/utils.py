@@ -45,8 +45,6 @@ def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2
     diffraction_half_angle = n.arctan(radius/camera_distance)/2
     return n.sin(diffraction_half_angle)/e_wavelength_angs
 
-    
-
 def gaussian2D(x, y, xc, yc, sigma_x, sigma_y):
     """ 
     Returns a Gaussian with integrated area of 1.

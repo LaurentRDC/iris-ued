@@ -141,10 +141,10 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             self.assertIs(dataset.level, None)
             self.assertFalse(dataset.baseline_removed)
 
-            dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', level = 0)
+            dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', level = 1, mode = 'periodic')
             self.assertEqual(dataset.first_stage, 'sym6')
             self.assertEqual(dataset.wavelet, 'qshift3')
-            self.assertEqual(dataset.level, 0)
+            self.assertEqual(dataset.level, 1)
             self.assertTrue(dataset.baseline_removed)
 
     def test_powder_data_retrieval(self):
@@ -166,7 +166,7 @@ class TestPowderDiffractionDataset(unittest.TestCase):
     def test_baseline(self):
         """ Test the computation of wavelet baselines """
         with PowderDiffractionDataset(name = dummy_powder_dataset(), mode = 'r+') as dataset:
-            dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3')
+            dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', mode = 'smooth')
             
             self.assertSequenceEqual(dataset.baseline(timedelay = 0).shape, 
                                      dataset.scattering_length.shape)
