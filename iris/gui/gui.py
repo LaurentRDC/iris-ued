@@ -14,6 +14,7 @@ import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 
 from .. import DiffractionDataset, PowderDiffractionDataset, RawDataset
+from .beam_properties_dialog import ElectronBeamPropertiesDialog
 from .controller import IrisController, error_aware
 from .control_bar import ControlBar
 from .fluence_calculator import FluenceCalculatorDialog
@@ -115,9 +116,13 @@ class Iris(QtGui.QMainWindow):
         self.knife_edge_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Knife-edge analysis', self)
         self.knife_edge_action.triggered.connect(self.launch_knife_edge_tool)
 
+        self.beam_properties_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Electron beam properties', self)
+        self.beam_properties_action.triggered.connect(self.launch_beam_properties_dialog)
+
         self.tools_menu = self.menu_bar.addMenu('&Tools')
         self.tools_menu.addAction(self.fluence_calculator_action)
         self.tools_menu.addAction(self.knife_edge_action)
+        self.tools_menu.addAction(self.beam_properties_action)
         
         self.layout = QtGui.QHBoxLayout()
         self.layout.addWidget(self.viewer_stack)
@@ -170,6 +175,11 @@ class Iris(QtGui.QMainWindow):
     @QtCore.pyqtSlot()
     def launch_knife_edge_tool(self):
         window = KnifeEdgeToolDialog(parent = self)
+        return window.exec_()
+    
+    @QtCore.pyqtSlot()
+    def launch_beam_properties_dialog(self):
+        window = ElectronBeamPropertiesDialog(parent = self)
         return window.exec_()
     
     @QtCore.pyqtSlot()
