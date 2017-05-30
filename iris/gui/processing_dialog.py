@@ -1,7 +1,7 @@
 
 from os import cpu_count
-from . import pyqtgraph as pg
-from .pyqtgraph import QtCore, QtGui
+import pyqtgraph as pg
+from pyqtgraph import QtCore, QtGui
 
 from ..processing import process
 from ..raw import RawDataset

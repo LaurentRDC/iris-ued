@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from os.path import dirname, join
 
 from . import pyqtgraph as pg
-from .pyqtgraph import QtCore, QtGui
+from pyqtgraph import QtCore, QtGui
 
 from ..utils import fluence
 from skued import spectrum_colors

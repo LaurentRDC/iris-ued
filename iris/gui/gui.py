@@ -10,8 +10,8 @@ import sys
 from os.path import dirname, join
 
 import numpy as n
-from . import pyqtgraph as pg
-from .pyqtgraph import QtCore, QtGui
+import pyqtgraph as pg
+from pyqtgraph import QtCore, QtGui
 
 from .. import DiffractionDataset, PowderDiffractionDataset, RawDataset
 from .controller import IrisController, error_aware
