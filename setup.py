@@ -29,7 +29,8 @@ setup(
                         'scipy', 
                         'h5py >= 2.6.0',
                         'scikit-image',
-                        'scikit-ued'],
+                        'scikit-ued',
+                        'pyqtgraph >= 0.10'],
     data_files = [('iris\\gui\\images', image_list),
                   ('iris\\dualtree\\data', wavelets),
                   ('iris\\gui\\qdarkstyle', rc)]
