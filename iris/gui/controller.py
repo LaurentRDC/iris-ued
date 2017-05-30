@@ -4,7 +4,7 @@ Controller behind Iris
 import functools
 import traceback
 
-from .pyqtgraph import QtCore
+from pyqtgraph import QtCore
 
 from ..dataset import DiffractionDataset, PowderDiffractionDataset
 from ..processing import process

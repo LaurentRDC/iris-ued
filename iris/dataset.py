@@ -456,9 +456,10 @@ class PowderDiffractionDataset(DiffractionDataset):
             return np.sum(axis = 1, out = out)
         return np.squeeze(np.sum(trace, axis = 1))
     
-    def compute_baseline(self, first_stage, wavelet, max_iter = 50, level = None):
+    def compute_baseline(self, first_stage, wavelet, max_iter = 50, level = None, **kwargs):
         """
-        Compute and save the baseline computed from the dualtree package.
+        Compute and save the baseline computed from the dualtree package. All keyword arguments are
+        passed to scikit-ued's `baseline_dt` function.
 
         Parameters
         ----------
@@ -472,13 +473,14 @@ class PowderDiffractionDataset(DiffractionDataset):
         level : int or None, optional
             If None (default), maximum level is used.
         """
-        baseline_args = {'array': self.powder_data(timedelay = None, bgr = False), 
+        baseline_kwargs = {'array': self.powder_data(timedelay = None, bgr = False), 
                          'max_iter': max_iter, 'level': level, 
                          'first_stage': first_stage, 'wavelet': wavelet,
                          'mask': None, 'axis': 1}
+        baseline_kwargs.update(**kwargs)
         
         if not self.baseline_removed:
-            self.powder_group.create_dataset(name = 'baseline', data = baseline_dt(**baseline_args), 
+            self.powder_group.create_dataset(name = 'baseline', data = baseline_dt(**baseline_kwargs), 
                                              **self.compression_params)
         else:
             self.powder_group['baseline'][:, :] = baseline_dt(**baseline_args)
@@ -513,8 +515,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         # Because it is difficult to know the angular averaged data's shape in advance, 
         # we calculate it first and store it next
         results = list()
+        extras = dict()
         for timedelay in self.time_points:
-            extras = dict()
+            extras.clear()
             radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, 
                                           mask = np.logical_not(self.valid_mask), extras = extras) 
             results.append((radius, avg, extras['error']))
