@@ -70,6 +70,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.powder_dataset_loaded_signal.connect(self.controls.enable_powder_diffraction_dataset_controls)
         self.controller.powder_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.powder_viewer))
         self.controller.processing_progress_signal.connect(self.controls.update_processing_progress)
+        self.controller.powder_promotion_progress.connect(self.controls.update_powder_promotion_progress)
         self.controller.raw_dataset_metadata.connect(self.controls.update_raw_dataset_metadata)
         self.controller.dataset_metadata.connect(self.controls.update_dataset_metadata)
 

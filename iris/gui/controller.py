@@ -49,6 +49,7 @@ class IrisController(QtCore.QObject):
     powder_time_series_signal = QtCore.pyqtSignal(object, object)
 
     processing_progress_signal = QtCore.pyqtSignal(int)
+    powder_promotion_progress = QtCore.pyqtSignal(int)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -120,7 +121,8 @@ class IrisController(QtCore.QObject):
     @QtCore.pyqtSlot(tuple)
     def promote_to_powder(self, center):
         """ Promote a DiffractionDataset to a PowderDiffractionDataset """
-        self.worker = WorkThread(function = promote_to_powder, kwargs = {'center': center, 'filename':self.dataset.filename})
+        self.worker = WorkThread(function = promote_to_powder, kwargs = {'center': center, 'filename':self.dataset.filename, 
+                                                                         'callback':self.powder_promotion_progress.emit})
         self.dataset.close()
         self.dataset = None
         self.worker.results_signal.connect(self.load_dataset)
@@ -202,11 +204,11 @@ class IrisController(QtCore.QObject):
                                          self.dataset.powder_error(timedelay = None))
             self.powder_dataset_loaded_signal.emit(True)
 
-def promote_to_powder(filename, center):
+def promote_to_powder(filename, center, callback):
     """ Create a PowderDiffractionDataset from a DiffractionDataset """
     with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
         dataset.sample_type = 'powder'
-        dataset.compute_angular_averages(center = center)
+        dataset.compute_angular_averages(center = center, callback = callback)
     return filename
 
 class WorkThread(QtCore.QThread):
