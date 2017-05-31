@@ -131,7 +131,6 @@ class IrisController(QtCore.QObject):
     @error_aware('Powder time-series could not be calculated.')
     @QtCore.pyqtSlot(float, float)
     def powder_time_series(self, smin, smax):
-        # TODO: internal state for bgr
         try:
             self.dataset.powder_time_series(smin = smin, smax = smax, bgr = self._bgr_powder, 
                                             out = self._powder_time_series_container)
@@ -158,7 +157,12 @@ class IrisController(QtCore.QObject):
     @error_aware('Powder baseline could not be computed.')
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
+        """ Compute the powder baseline. The dictionary `params` is passed to 
+        PowderDiffractionDataset.compute_baseline(), except its key 'callback'. The callable 'callback' 
+        is called (no argument) when computation is done. """
+        callback = params.pop('callback')
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
+        self.worker.done_signal.connect(lambda b: callback())
         self.worker.start()
     
     @error_aware('Dataset notes could not be updated')

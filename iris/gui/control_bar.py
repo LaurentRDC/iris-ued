@@ -242,7 +242,7 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.mode_cb = QtGui.QComboBox()
         self.mode_cb.addItems(Modes.modes)
         if 'smooth' in Modes.modes:
-            self.mode_cb.setCurrentText('smooth')
+            self.mode_cb.setCurrentText('constant')
 
         first_stage_label = QtGui.QLabel('First stage wav.:', parent = self)
         first_stage_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -284,7 +284,8 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         return {'first_stage': self.first_stage_cb.currentText(),
                 'wavelet': self.wavelet_cb.currentText(),
                 'mode': self.mode_cb.currentText(),
-                'level': None, 'max_iter': 100}
+                'level': None, 'max_iter': 100,
+                'callback': lambda : self.baseline_removed_btn.setChecked(True)}
 
 class MetadataWidget(QtGui.QWidget):
 
