@@ -202,10 +202,7 @@ class IrisController(QtCore.QObject):
         self.display_averaged_data(timedelay_index = 0)
 
         if isinstance(self.dataset, PowderDiffractionDataset):
-            self.powder_data_signal.emit(self.dataset.scattering_length, 
-                                         self.dataset.powder_data(timedelay = None, 
-                                                                  bgr = self.dataset.baseline_removed),
-                                         self.dataset.powder_error(timedelay = None))
+            self.display_powder_data()
             self.powder_dataset_loaded_signal.emit(True)
 
 def promote_to_powder(filename, center, callback):
