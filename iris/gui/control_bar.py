@@ -94,6 +94,11 @@ class ControlBar(QtGui.QWidget):
     @QtCore.pyqtSlot(int)
     def update_processing_progress(self, value):
         self.raw_dataset_controls.processing_progress_bar.setValue(value)
+    
+    @QtCore.pyqtSlot(int)
+    def update_powder_promotion_progress(self, value):
+        self.diffraction_dataset_controls.promote_to_powder_progress.show() # Not shown by default
+        self.diffraction_dataset_controls.promote_to_powder_progress.setValue(value)
 
     @QtCore.pyqtSlot(int)
     def request_raw_data(self, wtv):
@@ -198,6 +203,8 @@ class DiffractionDatasetControl(QtGui.QFrame):
         ################################
         # Promote DiffractionDataset to PowderDiffractionDataset
         self.promote_to_powder_btn = QtGui.QPushButton('Promote dataset to powder', parent = self)
+        self.promote_to_powder_progress = QtGui.QProgressBar(parent = self)
+        self.promote_to_powder_progress.hide()
 
         btns = QtGui.QHBoxLayout()
         btns.addWidget(self.show_pd_btn)
@@ -211,6 +218,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         layout.addWidget(title)
         layout.addLayout(sliders)
         layout.addLayout(btns)
+        layout.addWidget(self.promote_to_powder_progress)
         self.setLayout(layout)
         self.resize(self.minimumSize())
 

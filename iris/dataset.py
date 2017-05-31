@@ -494,7 +494,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.wavelet = wavelet
         self.baseline_removed = True
     
-    def compute_angular_averages(self, center = None):
+    def compute_angular_averages(self, center = None, callback = None):
         """ Compute the angular averages.
         
         Parameters
@@ -502,10 +502,16 @@ class PowderDiffractionDataset(DiffractionDataset):
         center : 2-tuple or None, optional
             Center of the diffraction patterns. If None (default), the dataset
             attribute will be used instead.
+        callback : callable or None, optional
+            Callable of a single argument, to which the calculation progress will be passed as
+            an integer between 0 and 100.
         """
         if self.center is None and center is None:
             raise RuntimeError('Center attribute must be either saved in the dataset \
                                 as an attribute or be provided.')
+        
+        if callback is None:
+            callback = lambda i: None
         
         if center is not None:
             self.center = center
@@ -514,21 +520,24 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         # Because it is difficult to know the angular averaged data's shape in advance, 
         # we calculate it first and store it next
+        callback(0)
         results = list()
         extras = dict()
-        for timedelay in self.time_points:
+        for index, timedelay in enumerate(self.time_points):
             extras.clear()
             radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, 
                                           mask = np.logical_not(self.valid_mask), extras = extras) 
             results.append((radius, avg, extras['error']))
+            callback(int(100*index / len(self.time_points)))
         
         # Concatenate arrays for intensity and error
         rintensity = np.stack([I for _, I, _ in results], axis = 0)
         rerror =  np.stack([e for _, _, e in results], axis = 0)
         
+        # TODO: if dataset already exists, reshape
         dataset = self.powder_group.require_dataset(name = 'intensity', shape = rintensity.shape, dtype = rintensity.dtype)
         dataset.write_direct(rintensity)
-
+        
         dataset = self.powder_group.require_dataset(name = 'error', shape = rerror.shape, dtype = rerror.dtype)
         dataset.write_direct(rerror)
         
@@ -537,3 +546,5 @@ class PowderDiffractionDataset(DiffractionDataset):
         s_length = scattering_length(px_radius, energy = self.energy)
         self.powder_group.create_dataset(name = 'scattering_length', data = s_length, dtype = np.float)
         self.baseline_removed = False
+
+        callback(100)
