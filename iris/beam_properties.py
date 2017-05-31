@@ -5,6 +5,8 @@ from os.path import join
 from glob import glob
 from warnings import warn
 
+from .raw import parse_tagfile
+
 def beam_properties(directory, reprate = 1000, exposure = None, energy = None, callback = None):
     """ 
     Calculates electron beam properties from a ponderomotive-style
@@ -36,22 +38,10 @@ def beam_properties(directory, reprate = 1000, exposure = None, energy = None, c
     """
     if callback is None:
         callback = lambda _: None
-
-    # TODO: more elegant parsing?
-    if not exposure:
-        with open(join(directory, 'tagfile.txt')) as metadata:
-            exposure_line = next(filter(lambda line: line.startswith('Exposure'), metadata)).strip('\n')
-    exposure_str = exposure_line.split('=')[-1]
-    exposure = float(exposure_str.strip('s'))
-
-    if not energy:
-        with open(join(directory, 'tagfile.txt')) as metadata:
-            try:
-                energy_line = next(filter(lambda line: line.startswith('Energy'), metadata)).strip('\n')
-                energy = float(energy_line.split('=')[-1])
-            except StopIteration:
-                warn('Electron energy not stored in {}. Using 90kV as default.'.format(directory))
-                energy = 90
+    
+    metadata = parse_tagfile(join(directory, 'tagfile.txt'))
+    exposure = metadata['exposure']
+    energy = metadata['energy'] or 90
 
     # Conversion between pixel intensity and number of electrons
     # depends on electron energy
@@ -76,6 +66,6 @@ def beam_properties(directory, reprate = 1000, exposure = None, energy = None, c
     count = np.sum(average)/conv/n_pulses
     stability = np.std(e_count)/np.mean(e_count) * 100
 
-    # TODO: beam pointing stability using scikit-image's register translation?
+    # TODO: beam pointing stability using scikit-image's register_translation?
 
     return {'count': count, 'stability': stability}
