@@ -4,6 +4,7 @@
 from functools import lru_cache
 import h5py
 import numpy as np
+from scipy.signal import detrend
 from skued.image_analysis import angular_average
 from skued.baseline import baseline_dt, dt_max_level
 
@@ -490,13 +491,16 @@ class PowderDiffractionDataset(DiffractionDataset):
         level : int or None, optional
             If None (default), maximum level is used.
         """
-        baseline_kwargs = {'array': self.powder_data(timedelay = None, bgr = False), 
+        block = self.powder_data(timedelay = None, bgr = False)
+        trend = block - detrend(block, axis = 1)
+
+        baseline_kwargs = {'array': block - trend, 
                          'max_iter': max_iter, 'level': level, 
                          'first_stage': first_stage, 'wavelet': wavelet,
-                         'mask': None, 'axis': 1}
+                         'axis': 1}
         baseline_kwargs.update(**kwargs)
         
-        baseline = np.ascontiguousarray(baseline_dt(**baseline_kwargs)) # In rare cases this wasn't C-contiguous
+        baseline = np.ascontiguousarray(trend + baseline_dt(**baseline_kwargs)) # In rare cases this wasn't C-contiguous
         if 'baseline' not in self.powder_group:
             self.powder_group.create_dataset(name = 'baseline', data = baseline, 
                                              maxshape = (len(self.time_points), max(self.resolution)),
@@ -505,7 +509,6 @@ class PowderDiffractionDataset(DiffractionDataset):
             self.powder_group['baseline'].resize(baseline.shape)
             self.powder_group['baseline'].write_direct(baseline)
         
-        # Record parameters
         if level == None:
             level = dt_max_level(data = self.scattering_length, first_stage = first_stage, wavelet = wavelet)
             
