@@ -17,18 +17,19 @@ class ElectronBeamPropertiesDialog(QtGui.QDialog):
         self.setWindowTitle('Electron Beam Properties')
 
         self.progress_bar = QtGui.QProgressBar(parent = self)
+        self.progress_bar.hide()
         self._calculation_progress.connect(self.progress_bar.setValue)
 
         self.directory_finder = QtGui.QPushButton('Select directory', self)
         self.directory_finder.clicked.connect(self.evaluate_beam_properties)
 
-        count_label = QtGui.QLabel('<h3>Electrons per shot:<\h3>')
+        count_label = QtGui.QLabel('Electrons per shot:')
         count_label.setAlignment(QtCore.Qt.AlignCenter)
 
         self.count_widget = QtGui.QLabel('< --- >')
         self.count_widget.setAlignment(QtCore.Qt.AlignCenter)
 
-        stability_label = QtGui.QLabel('<h3>Electron number stability (%):<\h3>')
+        stability_label = QtGui.QLabel('Electron number stability (%):')
         stability_label.setAlignment(QtCore.Qt.AlignCenter)
 
         self.stability_widget = QtGui.QLabel('< --- >')
@@ -54,10 +55,11 @@ class ElectronBeamPropertiesDialog(QtGui.QDialog):
         directory = QtGui.QFileDialog.getExistingDirectory(caption = 'Select directory')
         if not directory:   # e.g. ''
             return
-
+        
+        self.progress_bar.show()
         self._calculation_progress.emit(0)
         properties = beam_properties(directory, callback = self._calculation_progress.emit)
         self._calculation_progress.emit(100)
 
-        self.count_widget.setText('<h3>{:10.0f}<\h3>'.format(properties['count']))
-        self.stability_widget.setText('<h3>{:10.3f}<\h3>'.format(properties['stability']))
+        self.count_widget.setText('{:.3e}'.format(properties['count']))
+        self.stability_widget.setText('{:.2f}'.format(properties['stability']))
