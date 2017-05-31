@@ -110,7 +110,23 @@ class DiffractionDataset(h5py.File):
             Shift [ps].
         """
         self.time_zero_shift = shift
-            
+    
+    def approx_time_point(self, timedelay):
+        """ Returns the closest available time-point 
+        
+        Parameters
+        ----------
+        timdelay : float
+            Time-delay [ps]
+        
+        Returns
+        -------
+        tp : float
+            Time-point closest to `timedealay` [ps]
+        """
+        index = np.argmin(np.abs(np.array(self.time_points) - timedelay))
+        return self.time_points[index]
+
     def averaged_data(self, timedelay, out = None):
         """
         Returns data at a specific time-delay.
