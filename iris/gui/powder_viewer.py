@@ -14,7 +14,7 @@ def pens_and_brushes(num):
 class PowderViewer(QtGui.QWidget):
 
     baseline_parameters_signal = QtCore.pyqtSignal(dict)
-    peak_dynamics_roi_signal = QtCore.pyqtSignal(float, float)  #left pos, right pos, background_removed
+    peak_dynamics_roi_signal = QtCore.pyqtSignal(float, float)  #left pos, right pos
 
     def __init__(self, *args, **kwargs):
         

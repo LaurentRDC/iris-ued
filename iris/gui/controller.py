@@ -58,7 +58,7 @@ class IrisController(QtCore.QObject):
 
         # Internal state for powder background removal. If True, display_powder_data
         # will send background-subtracted data
-        self._bgr = False
+        self._bgr_powder = False
 
         # array containers
         # Preallocation is important for arrays that change often. Then,
@@ -97,12 +97,12 @@ class IrisController(QtCore.QObject):
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
         self.powder_data_signal.emit(self.dataset.scattering_length, 
-                                     self.dataset.powder_data(timedelay = None, bgr = self._bgr), 
+                                     self.dataset.powder_data(timedelay = None, bgr = self._bgr_powder), 
                                      self.dataset.powder_error(timedelay = None))
     
     @QtCore.pyqtSlot(bool)
     def powder_background_subtracted(self, enable):
-        self._bgr = enable
+        self._bgr_powder = enable
         self.display_powder_data()
     
     @error_aware('Raw dataset could not be processed.')
@@ -130,12 +130,11 @@ class IrisController(QtCore.QObject):
     @QtCore.pyqtSlot(float, float)
     def powder_time_series(self, smin, smax):
         # TODO: internal state for bgr
-        bgr = False
         try:
-            self.dataset.powder_time_series(smin = smin, smax = smax, bgr = bgr, 
+            self.dataset.powder_time_series(smin = smin, smax = smax, bgr = self._bgr_powder, 
                                             out = self._powder_time_series_container)
         except:
-            self._powder_time_series_container = self.dataset.powder_time_series(smin = smin, smax = smax, bgr = bgr)
+            self._powder_time_series_container = self.dataset.powder_time_series(smin = smin, smax = smax, bgr = self._bgr_powder)
         finally:
             self.powder_time_series_signal.emit(self.dataset.time_points, self._powder_time_series_container)
     
