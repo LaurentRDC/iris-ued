@@ -7,6 +7,8 @@ from warnings import warn
 
 from .raw import parse_tagfile
 
+# TODO: beam pointing stability using scikit-image's register_translation?
+
 def beam_properties(directory, reprate = 1000, exposure = None, energy = None, callback = None):
     """ 
     Calculates electron beam properties from a ponderomotive-style
@@ -54,18 +56,10 @@ def beam_properties(directory, reprate = 1000, exposure = None, energy = None, c
 
     images = glob(join(directory, 'data.timedelay.*.pumpon.tif'))
     e_count = list()
-    accumulator = np.zeros_like(background, dtype = np.float)
     for i, fn in enumerate(images):
-        im = imread(fn).astype(np.float) - background
-        im[im < 0] = 0
-        accumulator += im
-        e_count.append(np.sum(im))
+        im = (imread(fn).astype(np.float) - background).clip(min = 0)
+        e_count.append(np.sum(im)/conv/n_pulses)
         callback(int(100*i/len(images)))
-    average = accumulator/len(images)
 
-    count = np.sum(average)/conv/n_pulses
-    stability = np.std(e_count)/np.mean(e_count) * 100
-
-    # TODO: beam pointing stability using scikit-image's register_translation?
-
-    return {'count': count, 'stability': stability}
+    return {'count': np.mean(e_count), 
+            'stability': np.std(e_count)/np.mean(e_count) * 100}

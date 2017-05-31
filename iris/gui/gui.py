@@ -35,6 +35,8 @@ def run():
     gui = Iris()
     sys.exit(app.exec_())
 
+# TODO: error_aware equivalent for GUI
+
 class Iris(QtGui.QMainWindow):
     
     dataset_path_signal = QtCore.pyqtSignal(str, name = 'dataset_path_signal')
