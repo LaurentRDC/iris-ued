@@ -305,6 +305,7 @@ class MetadataWidget(QtGui.QWidget):
         layout.addWidget(self.table)
         self.setLayout(layout)
     
+    # TODO: stretch last column. See QHeaderView
     @QtCore.pyqtSlot(dict)
     def set_metadata(self, metadata):
         self.table.clear()

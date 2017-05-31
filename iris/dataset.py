@@ -479,11 +479,14 @@ class PowderDiffractionDataset(DiffractionDataset):
                          'mask': None, 'axis': 1}
         baseline_kwargs.update(**kwargs)
         
-        if not self.baseline_removed:
-            self.powder_group.create_dataset(name = 'baseline', data = baseline_dt(**baseline_kwargs), 
+        baseline = np.ascontiguousarray(baseline_dt(**baseline_kwargs)) # In rare cases this wasn't C-contiguous
+        if 'baseline' not in self.powder_group:
+            self.powder_group.create_dataset(name = 'baseline', data = baseline, 
+                                             maxshape = (len(self.time_points), max(self.resolution)),
                                              **self.compression_params)
         else:
-            self.powder_group['baseline'][:, :] = baseline_dt(**baseline_kwargs)
+            self.powder_group['baseline'].resize(baseline.shape)
+            self.powder_group['baseline'].write_direct(baseline)
         
         # Record parameters
         if level == None:
@@ -534,17 +537,28 @@ class PowderDiffractionDataset(DiffractionDataset):
         rintensity = np.stack([I for _, I, _ in results], axis = 0)
         rerror =  np.stack([e for _, _, e in results], axis = 0)
         
-        # TODO: if dataset already exists, reshape
-        dataset = self.powder_group.require_dataset(name = 'intensity', shape = rintensity.shape, dtype = rintensity.dtype)
-        dataset.write_direct(rintensity)
-        
-        dataset = self.powder_group.require_dataset(name = 'error', shape = rerror.shape, dtype = rerror.dtype)
-        dataset.write_direct(rerror)
+        # We allow resizing. In theory, an angular averave could never be longer than the resolution
+        maxshape = (len(self.time_points), max(self.resolution))
+        if 'intensity' not in self.powder_group:
+            # We allow resizing. In theory, an angualr averave could never be longer than the resolution
+            self.powder_group.create_dataset(name = 'intensity', data = rintensity, maxshape = maxshape)
+            self.powder_group.create_dataset(name = 'error', data = rerror,  maxshape = maxshape)
+        else:
+            self.powder_group['intensity'].resize(rintensity.shape)
+            self.powder_group['intensity'].write_direct(rintensity)
+            self.powder_group['error'].resize(rerror.shape)
+            self.powder_group['error'].write_direct(rerror)
         
         # TODO: variable pixel_width and camera distance in the future
         px_radius = results[0][0]
         s_length = scattering_length(px_radius, energy = self.energy)
-        self.powder_group.create_dataset(name = 'scattering_length', data = s_length, dtype = np.float)
-        self.baseline_removed = False
+        if 'scattering_length' not in self.powder_group:
+            self.powder_group.create_dataset(name = 'scattering_length', data = s_length, 
+                                             maxshape = (max(self.resolution),))
+        else:
+            self.powder_group['scattering_length'].resize(s_length.shape)
+            self.powder_group['scattering_length'].write_direct(s_length)
+
+        self.baseline_removed = False   # baseline is not invalid
 
         callback(100)
