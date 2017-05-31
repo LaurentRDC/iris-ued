@@ -1,7 +1,6 @@
 """
 @author: Laurent P. Rene de Cotret
 """
-from functools import lru_cache
 import h5py
 import numpy as np
 from scipy.signal import detrend
@@ -9,6 +8,7 @@ from skued.image_analysis import angular_average
 from skued.baseline import baseline_dt, dt_max_level
 
 from .utils import scattering_length
+from .optimizations import cached_property
 
 class ExperimentalParameter(object):
     """ Descriptor to experimental parameters. """
@@ -84,8 +84,7 @@ class DiffractionDataset(h5py.File):
         """ Dictionary of the dataset's metadata """
         return dict(self.attrs.items())
     
-    @property
-    @lru_cache(maxsize = 1)
+    @cached_property
     def valid_mask(self):
         """ Array that evaluates to True on valid pixels (i.e. not on beam-block, not hot pixels) """
         try: 
@@ -288,8 +287,7 @@ class DiffractionDataset(h5py.File):
     def pumpoff_pictures_group(self):
         return self.require_group(name = self._pumpoff_pictures_group_name)
     
-    @property
-    @lru_cache(maxsize = 1)
+    @cached_property
     def compression_params(self):
         """ Compression options in the form of a dictionary """
         dataset = self.processed_measurements_group['intensity']
@@ -462,7 +460,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         out : ndarray, shape (N,)
             Integrated diffracted intensity over time.
         """
-        # TODO: handle out parameter more efficiently?
         # Python slices are semi-open by design, therefore i_max + 1 is used
         # so that the integration interval is closed.
         i_min, i_max = np.argmin(np.abs(smin - self.scattering_length)), np.argmin(np.abs(smax - self.scattering_length))
@@ -518,7 +515,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.baseline_removed = True
     
     def compute_angular_averages(self, center = None, callback = None):
-        """ Compute the angular averages.
+        """ 
+        Compute the angular averages.
         
         Parameters
         ----------
@@ -579,6 +577,6 @@ class PowderDiffractionDataset(DiffractionDataset):
             self.powder_group['scattering_length'].resize(s_length.shape)
             self.powder_group['scattering_length'].write_direct(s_length)
 
-        self.baseline_removed = False   # baseline is not invalid
+        self.baseline_removed = False   # baseline is not valid anymore
 
         callback(100)
