@@ -288,6 +288,7 @@ class DiffractionDataset(h5py.File):
         return self.require_group(name = self._pumpoff_pictures_group_name)
     
     @property
+    @lru_cache(maxsize = 1)
     def compression_params(self):
         """ Compression options in the form of a dictionary """
         dataset = self.processed_measurements_group['intensity']
