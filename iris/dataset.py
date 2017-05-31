@@ -483,7 +483,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             self.powder_group.create_dataset(name = 'baseline', data = baseline_dt(**baseline_kwargs), 
                                              **self.compression_params)
         else:
-            self.powder_group['baseline'][:, :] = baseline_dt(**baseline_args)
+            self.powder_group['baseline'][:, :] = baseline_dt(**baseline_kwargs)
         
         # Record parameters
         if level == None:
