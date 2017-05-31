@@ -12,8 +12,6 @@ __author__ = 'Laurent P. René de Cotret'
 # >>> python setup.py bdist_wininst
 
 image_list = glob.glob('iris\\gui\\images\\*.png')
-wavelets = chain.from_iterable([glob.glob('iris\\dualtree\\data\\*.npy'), 
-                                glob.glob('iris\\dualtree\\data\\*.npz')])
 rc = chain.from_iterable([glob.glob('iris\\gui\\qdarkstyle\\*.qrc'),
                           glob.glob('iris\\gui\\qdarkstyle\\*.qss')])
 
