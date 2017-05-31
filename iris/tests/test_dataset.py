@@ -163,6 +163,15 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             self.assertSequenceEqual(time_slice.shape, dataset.scattering_length.shape)
             self.assertSequenceEqual(error_slice.shape, dataset.scattering_length.shape)
     
+    def test_recomputing_angular_average(self):
+        """ Test that recomputing the angular average multiple times will work. This also
+        tests resizing all powder data multiple times. """
+        with PowderDiffractionDataset(name = dummy_powder_dataset(), mode = 'r+') as dataset:
+            dataset.compute_angular_averages(center = (34, 56))
+            dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift1')
+            dataset.compute_angular_averages(center = (45, 45))
+            dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift1')
+    
     def test_baseline(self):
         """ Test the computation of wavelet baselines """
         with PowderDiffractionDataset(name = dummy_powder_dataset(), mode = 'r+') as dataset:
