@@ -168,10 +168,10 @@ class IrisController(QtCore.QObject):
     @error_aware('Raw dataset could not be loaded.')
     @QtCore.pyqtSlot(str)
     def load_raw_dataset(self, path):
-        try: # Path might be invalid
-            self.raw_dataset = RawDataset(path)
-        except:
+        if not path:
             return
+
+        self.raw_dataset = RawDataset(path)
         self.raw_dataset_loaded_signal.emit(True)
         self.raw_dataset_metadata.emit({'time_points': self.raw_dataset.time_points,
                                         'nscans': self.raw_dataset.nscans})
@@ -182,6 +182,9 @@ class IrisController(QtCore.QObject):
     @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
     @QtCore.pyqtSlot(str)
     def load_dataset(self, path):
+        if not path: #e.g. path = ''
+            return 
+
         # Dispatch between DiffractionDataset and PowderDiffractionDataset
         cls = DiffractionDataset        # Most general case
         with DiffractionDataset(path, mode = 'r') as d:

@@ -39,8 +39,9 @@ def run():
 
 class Iris(QtGui.QMainWindow):
     
-    dataset_path_signal = QtCore.pyqtSignal(str, name = 'dataset_path_signal')
-    raw_dataset_path_signal = QtCore.pyqtSignal(str, name = 'raw_dataset_path_signal')
+    dataset_path_signal = QtCore.pyqtSignal(str)
+    raw_dataset_path_signal = QtCore.pyqtSignal(str)
+    error_message_signal = QtCore.pyqtSignal(str)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -88,6 +89,7 @@ class Iris(QtGui.QMainWindow):
         # UI components
         self.error_dialog = QtGui.QErrorMessage(parent = self)
         self.controller.error_message_signal.connect(self.error_dialog.showMessage)
+        self.error_message_signal.connect(self.error_dialog.showMessage)
 
         self.file_dialog = QtGui.QFileDialog(parent = self)      
         self.menu_bar = self.menuBar()
@@ -150,41 +152,50 @@ class Iris(QtGui.QMainWindow):
         
     def closeEvent(self, event):
         self._controller_thread.quit()
+        del self.error_dialog # TODO: is this necessary?
         super().closeEvent(event)
     
     @QtCore.pyqtSlot()
+    @error_aware('Processing dialog has failed.')
     def launch_processsing_dialog(self):
         processing_dialog = ProcessingDialog(parent = self, raw = self.controller.raw_dataset)
         processing_dialog.processing_parameters_signal.connect(self.controller.process_raw_dataset)
         return processing_dialog.exec_()
     
+
     @QtCore.pyqtSlot()
+    @error_aware('Promotion to powder dataset has failed.')
     def launch_promote_to_powder_dialog(self):
         promote_dialog = PromoteToPowderDialog(dataset_filename = self.controller.dataset.filename, parent = self)
         promote_dialog.center_signal.connect(self.controller.promote_to_powder)
         return promote_dialog.exec_()
     
     @QtCore.pyqtSlot()
+    @error_aware('Raw dataset could not be loaded.')
     def load_raw_dataset(self):
         path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
         self.raw_dataset_path_signal.emit(path)
 
     @QtCore.pyqtSlot()
+    @error_aware('Dataset could not be loaded.')
     def load_dataset(self):
         path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset', filter = '*.hdf5')[0]
         self.dataset_path_signal.emit(path)
     
     @QtCore.pyqtSlot()
+    @error_aware('Knife-edge tool has failed.')
     def launch_knife_edge_tool(self):
         window = KnifeEdgeToolDialog(parent = self)
         return window.exec_()
     
     @QtCore.pyqtSlot()
+    @error_aware('Beam properties dialog has failed')
     def launch_beam_properties_dialog(self):
         window = ElectronBeamPropertiesDialog(parent = self)
         return window.exec_()
     
     @QtCore.pyqtSlot()
+    @error_aware('Fluence calculator dialog has failed')
     def launch_fluence_calculator_tool(self):
         window = FluenceCalculatorDialog(parent = self)
         return window.exec_()
