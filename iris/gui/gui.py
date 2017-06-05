@@ -40,6 +40,7 @@ def run():
 class Iris(QtGui.QMainWindow):
     
     dataset_path_signal = QtCore.pyqtSignal(str)
+    single_picture_path_signal = QtCore.pyqtSignal(str)
     raw_dataset_path_signal = QtCore.pyqtSignal(str)
     error_message_signal = QtCore.pyqtSignal(str)
 
@@ -53,6 +54,7 @@ class Iris(QtGui.QMainWindow):
 
         self.dataset_path_signal.connect(self.controller.load_dataset)
         self.raw_dataset_path_signal.connect(self.controller.load_raw_dataset)
+        self.single_picture_path_signal.connect(self.controller.load_single_picture)
 
         self.controls = ControlBar(parent = self)
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
@@ -112,9 +114,13 @@ class Iris(QtGui.QMainWindow):
         self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
         self.load_dataset_action.triggered.connect(self.load_dataset)
 
+        self.load_single_picture_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load diffraction picture', self)
+        self.load_single_picture_action.triggered.connect(self.load_single_picture)
+
         self.file_menu = self.menu_bar.addMenu('&File')
         self.file_menu.addAction(self.load_raw_dataset_action)
         self.file_menu.addAction(self.load_dataset_action)
+        self.file_menu.addAction(self.load_single_picture_action)
 
         #################
         # Tools
@@ -186,6 +192,12 @@ class Iris(QtGui.QMainWindow):
     def load_dataset(self):
         path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset', filter = '*.hdf5')[0]
         self.dataset_path_signal.emit(path)
+    
+    @QtCore.pyqtSlot()
+    def load_single_picture(self):
+        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load diffraction picture', filter = '*.tif')[0]
+        if path:
+            self.single_picture_path_signal.emit(path)
     
     @QtCore.pyqtSlot()
     @error_aware('Knife-edge tool has failed.')

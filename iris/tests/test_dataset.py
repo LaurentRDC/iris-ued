@@ -58,6 +58,10 @@ def dummy_powder_dataset(**kwargs):
         
     return filename
 
+def dummy_single_picture_dataset(**kwargs):
+    """ Create a dummy SinglePictureDataset """
+    pass
+
 class TestDiffractionDataset(unittest.TestCase):
 
     def test_corrected_time_points(self):

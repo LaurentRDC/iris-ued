@@ -3,9 +3,12 @@
 """
 import h5py
 import numpy as np
+from os.path import join
 from scipy.signal import detrend
+from skimage.io import imread
 from skued.image_analysis import angular_average
 from skued.baseline import baseline_dt, dt_max_level
+from tempfile import gettempdir
 
 from .utils import scattering_length
 from .optimizations import cached_property
@@ -51,13 +54,12 @@ class DiffractionDataset(h5py.File):
     #       http://docs.h5py.org/en/latest/high/attr.html
     nscans = ExperimentalParameter('nscans', tuple)
     time_points = ExperimentalParameter('time_points', tuple)
-    acquisition_date = ExperimentalParameter('acquisition_date', str)
+    acquisition_date = ExperimentalParameter('acquisition_date', str, default = '')
     fluence = ExperimentalParameter('fluence', float)
     current = ExperimentalParameter('current', float)
     exposure = ExperimentalParameter('exposure', float)
-    energy = ExperimentalParameter('energy', float)
+    energy = ExperimentalParameter('energy', float, default = 90)
     resolution = ExperimentalParameter('resolution', tuple, default = (2048, 2048))
-    beamblock_rect = ExperimentalParameter('beamblock_rect', tuple)
     sample_type = ExperimentalParameter('sample_type', str)
     time_zero_shift = ExperimentalParameter('time_zero_shift', float, default = 0.0)
     notes = ExperimentalParameter('notes', str, default = '')
@@ -300,6 +302,40 @@ class DiffractionDataset(h5py.File):
             ckwargs.update(dataset.compression_opts)
         return ckwargs
 
+class SinglePictureDataset(DiffractionDataset):
+
+    def __init__(self, path):
+        """ 
+        Create a single-picture dataset from an image path
+        
+        Parameters
+        ----------
+        path : str or path-like object
+            Absolute path to the image.
+        """
+        image = imread(path).astype(np.float)
+
+        super().__init__(name = join(gettempdir(), 'test_dataset.hdf5'), mode = 'w')
+
+        self.processed_measurements_group.create_dataset('intensity', data = image)
+        self.processed_measurements_group.create_dataset('error', data = np.zeros_like(image))
+        self.experimental_parameters_group.create_dataset('valid_mask', data = np.ones_like(image))
+
+        self.nscans = (1,)
+        self.time_points = (0,)
+        self.sample_type = 'single_crystal'
+    
+    def __repr__(self):
+        return "< Single picture DiffractionDataset instance  >"
+    
+    @property
+    def resolution(self):
+        return self.averaged_data(0).shape
+    
+    @property
+    def metadata(self):
+        return {'time_points': (0,)}
+
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
     Abstraction of HDF5 files for powder diffraction datasets.
@@ -527,7 +563,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
         """
-        if self.center is None and center is None:
+        if not any([self.center, center]):
             raise RuntimeError('Center attribute must be either saved in the dataset \
                                 as an attribute or be provided.')
         
