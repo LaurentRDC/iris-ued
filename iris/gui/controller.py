@@ -6,7 +6,7 @@ import traceback
 
 from pyqtgraph import QtCore
 
-from ..dataset import DiffractionDataset, PowderDiffractionDataset
+from ..dataset import DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
 from ..processing import process
 from ..raw import RawDataset
 
@@ -182,6 +182,14 @@ class IrisController(QtCore.QObject):
                                         'nscans': self.raw_dataset.nscans})
         self.display_raw_data(timedelay_index = 0, 
                               scan = min(self.raw_dataset.nscans))
+    
+    @error_aware('Single picture could not be loaded.')
+    @QtCore.pyqtSlot(str)
+    def load_single_picture(self, path):
+        self.dataset = SinglePictureDataset(path)
+        self.dataset_metadata.emit(self.dataset.metadata)
+        self.processed_dataset_loaded_signal.emit(True)
+        self.display_averaged_data(timedelay_index = 0)
         
     @error_aware('Processed dataset could not be loaded. The path might not be valid')
     @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
