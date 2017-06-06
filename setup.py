@@ -30,6 +30,5 @@ setup(
                         'scikit-ued',
                         'pyqtgraph >= 0.10'],
     data_files = [('iris\\gui\\images', image_list),
-                  ('iris\\dualtree\\data', wavelets),
                   ('iris\\gui\\qdarkstyle', rc)]
     )
