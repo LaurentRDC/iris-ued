@@ -284,7 +284,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
     
     def update_dataset_metadata(self, metadata):
         self.time_points = metadata.get('time_points')
-        self.timedelay_widget.setRange(0, len(self.time_points))
+        self.timedelay_widget.setRange(0, len(self.time_points) - 1)
         self.timedelay_widget.triggerAction(5) # SliderToMinimum
         self.timedelay_widget.sliderMoved.emit(0)
     
