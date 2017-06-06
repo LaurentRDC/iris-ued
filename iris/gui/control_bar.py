@@ -102,7 +102,7 @@ class ControlBar(QtGui.QWidget):
     @QtCore.pyqtSlot(int)
     def request_raw_data(self, wtv):
         self.raw_data_request.emit(self.raw_dataset_controls.timedelay_widget.value(), 
-                                   self.raw_dataset_controls.scan_widget.value())
+                                   self.raw_dataset_controls.scan_widget.value() + 1) #scans are numbered starting at 1
     
     @QtCore.pyqtSlot()
     def request_baseline_computation(self):
@@ -151,14 +151,28 @@ class RawDatasetControl(QtGui.QFrame):
         self.scan_widget.sliderMoved.connect(
             lambda pos: self.s_label.setText('Scan: {:d}'.format(self.nscans[pos])))
 
+        prev_timedelay_btn = QtGui.QPushButton('<', self)
+        prev_timedelay_btn.clicked.connect(self.goto_prev_timedelay)
+
+        next_timedelay_btn = QtGui.QPushButton('>', self)
+        next_timedelay_btn.clicked.connect(self.goto_next_timedelay)
+
+        prev_scan_btn = QtGui.QPushButton('<', self)
+        prev_scan_btn.clicked.connect(self.goto_prev_scan)
+
+        next_scan_btn = QtGui.QPushButton('>', self)
+        next_scan_btn.clicked.connect(self.goto_next_scan)
+
         sliders = QtGui.QGridLayout()
         sliders.addWidget(self.td_label, 0, 0, 1, 1)
         sliders.addWidget(self.s_label, 1, 0, 1, 1)
-        sliders.addWidget(self.timedelay_widget, 0, 1, 1, 2)
-        sliders.addWidget(self.scan_widget, 1, 1, 1, 2)
+        sliders.addWidget(self.timedelay_widget, 0, 1, 1, 5)
+        sliders.addWidget(prev_timedelay_btn, 0, 6, 1, 1)
+        sliders.addWidget(next_timedelay_btn, 0, 7, 1, 1)
+        sliders.addWidget(self.scan_widget, 1, 1, 1, 5)
+        sliders.addWidget(prev_scan_btn, 1, 6, 1, 1)
+        sliders.addWidget(next_scan_btn, 1, 7, 1, 1)
 
-        #####################
-        # Processing raw data
         self.process_btn = QtGui.QPushButton('Processing')
         self.processing_progress_bar = QtGui.QProgressBar(parent = self)
 
@@ -181,7 +195,35 @@ class RawDatasetControl(QtGui.QFrame):
         self.nscans = metadata.get('nscans')
 
         self.timedelay_widget.setRange(0, len(self.time_points) - 1)
-        self.scan_widget.setRange(1, len(self.nscans))
+        self.scan_widget.setRange(0, len(self.nscans) - 1)
+        self.timedelay_widget.triggerAction(5)
+        self.timedelay_widget.sliderMoved.emit(0)
+        self.scan_widget.triggerAction(5)
+        self.scan_widget.sliderMoved.emit(0)
+
+    @QtCore.pyqtSlot()
+    def goto_prev_timedelay(self):
+        self.timedelay_widget.setSliderDown(True)
+        self.timedelay_widget.triggerAction(2)
+        self.timedelay_widget.setSliderDown(False)
+    
+    @QtCore.pyqtSlot()
+    def goto_next_timedelay(self):
+        self.timedelay_widget.setSliderDown(True)
+        self.timedelay_widget.triggerAction(1)
+        self.timedelay_widget.setSliderDown(False)
+
+    @QtCore.pyqtSlot()
+    def goto_prev_scan(self):
+        self.scan_widget.setSliderDown(True)
+        self.scan_widget.triggerAction(2)
+        self.scan_widget.setSliderDown(False)
+    
+    @QtCore.pyqtSlot()
+    def goto_next_scan(self):
+        self.scan_widget.setSliderDown(True)
+        self.scan_widget.triggerAction(1)
+        self.scan_widget.setSliderDown(False)
 
 class DiffractionDatasetControl(QtGui.QFrame):
 
@@ -244,6 +286,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.time_points = metadata.get('time_points')
         self.timedelay_widget.setRange(0, len(self.time_points))
         self.timedelay_widget.triggerAction(5) # SliderToMinimum
+        self.timedelay_widget.sliderMoved.emit(0)
     
     @QtCore.pyqtSlot()
     def goto_prev(self):
