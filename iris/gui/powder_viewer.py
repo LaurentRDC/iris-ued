@@ -61,7 +61,7 @@ class PowderViewer(QtGui.QWidget):
             Array for which each row is the error for the corresponding azimuthal pattern. If None, all
             viewers are cleared.
         """
-        if not (scattering_length or powder_data_block or powder_error_block):
+        if (scattering_length is None) or (powder_data_block is None) or (powder_error_block is None):
             self.powder_pattern_viewer.clear()
             self.peak_dynamics_viewer.clear()
             return
