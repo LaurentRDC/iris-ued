@@ -30,7 +30,7 @@ def run():
     app.setStyleSheet(load_stylesheet_pyqt5())
     app.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
     gui = Iris()
-    sys.exit(app.exec_())
+    return app.exec_()
 
 # TODO: error_aware equivalent for GUI
 

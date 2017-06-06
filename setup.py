@@ -30,5 +30,6 @@ setup(
                         'scikit-ued',
                         'pyqtgraph >= 0.10'],
     data_files = [('iris\\gui\\images', image_list),
-                  ('iris\\gui\\qdarkstyle', rc)]
+                  ('iris\\gui\\qdarkstyle', rc)],
+    entry_points = {'gui_scripts': ['iris = iris.gui:run']}
     )
