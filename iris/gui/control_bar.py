@@ -378,6 +378,7 @@ class MetadataWidget(QtGui.QWidget):
         self.table.setColumnCount(2)
         self.table.horizontalHeader().hide()
         self.table.verticalHeader().hide()
+        self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)   #no edit triggers, see QAbstractItemViews
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
@@ -394,10 +395,12 @@ class MetadataWidget(QtGui.QWidget):
                 if len(value) > 4:
                     key += ' (length)'
                     value = len(tuple(value))
+
             self.table.setItem(row, 0, QtGui.QTableWidgetItem(key))
             self.table.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
         
         self.table.resizeColumnsToContents()
+        self.table.horizontalHeader().setStretchLastSection(True)
 
 
 class NotesEditor(QtGui.QFrame):

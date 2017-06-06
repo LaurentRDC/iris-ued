@@ -9,22 +9,19 @@ import os
 import sys
 from os.path import dirname, join
 
-import numpy as n
 import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 
-from .. import DiffractionDataset, PowderDiffractionDataset, RawDataset
 from .beam_properties_dialog import ElectronBeamPropertiesDialog
-from .controller import IrisController, error_aware
 from .control_bar import ControlBar
+from .controller import IrisController, error_aware
+from .data_viewer import ProcessedDataViewer
 from .fluence_calculator import FluenceCalculatorDialog
 from .knife_edge_tool import KnifeEdgeToolDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .promote_dialog import PromoteToPowderDialog
 from .qdarkstyle import load_stylesheet_pyqt5
-from .raw_viewer import RawDataViewer
-from .data_viewer import ProcessedDataViewer
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -100,11 +97,15 @@ class Iris(QtGui.QMainWindow):
 
         self.file_dialog = QtGui.QFileDialog(parent = self)      
         self.menu_bar = self.menuBar()
+
         self.viewer_stack = QtGui.QTabWidget()
-        
         self.viewer_stack.addTab(self.raw_data_viewer, 'View raw dataset')
         self.viewer_stack.addTab(self.processed_viewer, 'View processed dataset')
         self.viewer_stack.addTab(self.powder_viewer, 'View radial averages')
+
+        self.controller.raw_dataset_loaded_signal.connect(lambda toggle: self.viewer_stack.setTabEnabled(0, toggle))
+        self.controller.processed_dataset_loaded_signal.connect(lambda toggle: self.viewer_stack.setTabEnabled(1, toggle))
+        self.controller.powder_dataset_loaded_signal.connect(lambda toggle: self.viewer_stack.setTabEnabled(2, toggle))
 
         ###################
         # Actions
