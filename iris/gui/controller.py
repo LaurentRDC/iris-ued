@@ -1,8 +1,10 @@
 """
 Controller behind Iris
 """
+from contextlib import suppress
 import functools
 import traceback
+import numpy as np
 
 from pyqtgraph import QtCore
 
@@ -85,7 +87,7 @@ class IrisController(QtCore.QObject):
         # new dataset loaded has different shape than before, etc.
         timedelay = self.dataset.corrected_time_points[timedelay_index]
         try:
-            self.dataset.averaged_data(timedelay, out = self._averaged_data_container)
+            self._averaged_data_container[:] = self.dataset.averaged_data(timedelay)
         except:
             self._averaged_data_container = self.dataset.averaged_data(timedelay)
         self.averaged_data_signal.emit(self._averaged_data_container)
@@ -176,12 +178,19 @@ class IrisController(QtCore.QObject):
         if not path:
             return
 
+        self.close_raw_dataset()
         self.raw_dataset = RawDataset(path)
         self.raw_dataset_loaded_signal.emit(True)
         self.raw_dataset_metadata.emit({'time_points': self.raw_dataset.time_points,
                                         'nscans': self.raw_dataset.nscans})
         self.display_raw_data(timedelay_index = 0, 
                               scan = min(self.raw_dataset.nscans))
+    
+    @QtCore.pyqtSlot()
+    def close_raw_dataset(self):
+        self.raw_dataset = None
+        self.raw_dataset_loaded_signal.emit(False)
+        self.raw_data_signal.emit(None)
     
     @error_aware('Single picture could not be loaded.')
     @QtCore.pyqtSlot(str)
@@ -197,9 +206,10 @@ class IrisController(QtCore.QObject):
     def load_dataset(self, path):
         if not path: #e.g. path = ''
             return 
+        
+        self.close_dataset()
 
-        # Dispatch between DiffractionDataset and PowderDiffractionDataset
-        cls = DiffractionDataset        # Most general case
+        cls = DiffractionDataset
         with DiffractionDataset(path, mode = 'r') as d:
             if d.sample_type == 'powder':
                 cls = PowderDiffractionDataset
@@ -212,6 +222,17 @@ class IrisController(QtCore.QObject):
         if isinstance(self.dataset, PowderDiffractionDataset):
             self.display_powder_data()
             self.powder_dataset_loaded_signal.emit(True)
+    
+    @QtCore.pyqtSlot()
+    def close_dataset(self):
+        with suppress(AttributeError):
+            self.dataset.close()
+        self.dataset = None
+        self.processed_dataset_loaded_signal.emit(False)
+        self.powder_dataset_loaded_signal.emit(False)
+
+        self.averaged_data_signal.emit(None)
+        self.powder_data_signal.emit(None, None, None)
 
 def promote_to_powder(filename, center, callback):
     """ Create a PowderDiffractionDataset from a DiffractionDataset """

@@ -1,7 +1,8 @@
 
-from ..dataset import DiffractionDataset, PowderDiffractionDataset
+from ..dataset import DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
 import numpy as np
 from numpy.random import random, randint
+from skimage.io import imsave
 import os.path
 import tempfile
 import unittest
@@ -58,9 +59,12 @@ def dummy_powder_dataset(**kwargs):
         
     return filename
 
-def dummy_single_picture_dataset(**kwargs):
+def dummy_single_picture_dataset(image):
     """ Create a dummy SinglePictureDataset """
-    pass
+    path = os.path.join(tempfile.gettempdir(), 'test.tif')
+    imsave(path, image)
+
+    return SinglePictureDataset(path)
 
 class TestDiffractionDataset(unittest.TestCase):
 
@@ -183,4 +187,21 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             
             self.assertSequenceEqual(dataset.baseline(timedelay = 0).shape, 
                                      dataset.scattering_length.shape)
+
+class TestSinglePictureDataset(unittest.TestCase):
+    
+    def setUp(self):
+        self.image = np.random.random(size = (128, 128))
+        self.dataset = dummy_single_picture_dataset(self.image)
+    
+    def test_averaged_data(self):
+        self.assertTrue(np.allclose(self.image, self.dataset.averaged_data(0)))
+    
+    def test_averaged_error(self):
+        # check that average_error() is an array of zeros
+        self.assertFalse(np.any(self.dataset.averaged_error(0)))
+    
+    def test_valid_mask(self):
+        self.assertTrue(np.all(self.dataset.valid_mask))
+    
 

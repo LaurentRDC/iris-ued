@@ -117,10 +117,24 @@ class Iris(QtGui.QMainWindow):
         self.load_single_picture_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load diffraction picture', self)
         self.load_single_picture_action.triggered.connect(self.load_single_picture)
 
+        self.close_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Close raw dataset', self)
+        self.close_raw_dataset_action.triggered.connect(self.controller.close_raw_dataset)
+        self.close_raw_dataset_action.setEnabled(False)
+        self.controller.raw_dataset_loaded_signal.connect(self.close_raw_dataset_action.setEnabled)
+
+        self.close_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Close dataset', self)
+        self.close_dataset_action.triggered.connect(self.controller.close_dataset)
+        self.close_dataset_action.setEnabled(False)
+        self.controller.powder_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
+        self.controller.processed_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
+
         self.file_menu = self.menu_bar.addMenu('&File')
         self.file_menu.addAction(self.load_raw_dataset_action)
         self.file_menu.addAction(self.load_dataset_action)
         self.file_menu.addAction(self.load_single_picture_action)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.close_raw_dataset_action)
+        self.file_menu.addAction(self.close_dataset_action)
 
         #################
         # Tools

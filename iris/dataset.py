@@ -304,6 +304,17 @@ class DiffractionDataset(h5py.File):
 
 class SinglePictureDataset(DiffractionDataset):
 
+    nscans = (1,)
+    time_points = (0,)
+    acquisition_date = ''
+    fluence = 0.0
+    current = 0.0
+    exposure = 0.0
+    energy = 90
+    sample_type = 'single_crystal'
+    time_zero_shift = 0.0
+    notes = ''
+
     def __init__(self, path):
         """ 
         Create a single-picture dataset from an image path
@@ -313,28 +324,29 @@ class SinglePictureDataset(DiffractionDataset):
         path : str or path-like object
             Absolute path to the image.
         """
-        image = imread(path).astype(np.float)
+        self.path = path
+        self.image = imread(path).astype(np.float)
 
-        super().__init__(name = join(gettempdir(), 'test_dataset.hdf5'), mode = 'w')
-
-        self.processed_measurements_group.create_dataset('intensity', data = image)
-        self.processed_measurements_group.create_dataset('error', data = np.zeros_like(image))
-        self.experimental_parameters_group.create_dataset('valid_mask', data = np.ones_like(image))
-
-        self.nscans = (1,)
-        self.time_points = (0,)
-        self.sample_type = 'single_crystal'
-    
     def __repr__(self):
-        return "< Single picture DiffractionDataset instance  >"
-    
-    @property
-    def resolution(self):
-        return self.averaged_data(0).shape
+        return "< Single picture DiffractionDataset instance \n from file {}>".format(self.path)
     
     @property
     def metadata(self):
-        return {'time_points': (0,)}
+        return dict({'time_points': (0,), 'nscans': (1,)})
+
+    @property
+    def valid_mask(self):
+        return np.ones_like(self.image, dtype = np.bool)
+
+    @property
+    def resolution(self):
+        return self.image.shape
+    
+    def averaged_data(self, **kwargs):
+        return self.image
+    
+    def averaged_error(self, *args, **kwargs):
+        return np.zeros_like(self.image)
 
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
