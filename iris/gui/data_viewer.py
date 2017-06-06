@@ -64,7 +64,7 @@ class ProcessedDataViewer(QtGui.QWidget):
         
         self.peak_dynamics_viewer.plot(time_points, integrated_intensity, pen = None, symbol = 'o', 
                                        symbolPen = self._pens, symbolBrush = self._brushes, symbolSize = 4, clear = True)
-    
+
     @QtCore.pyqtSlot(object)
     def display(self, image):
         """
@@ -72,8 +72,12 @@ class ProcessedDataViewer(QtGui.QWidget):
 
         Parameters
         ----------
-        image : ndarray
+        image : ndarray or None
+            If None, the display is cleared.
         """
+        if image is None:
+            self.image_viewer.clear()
+            self.peak_dynamics_viewer.clear()
         # autoLevels = False ensures that the colormap stays the same
         # when 'sliding' through data. This makes it easier to compare
         # data at different time points.

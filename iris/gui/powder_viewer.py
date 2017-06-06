@@ -51,13 +51,20 @@ class PowderViewer(QtGui.QWidget):
 
         Parameters
         ----------
-        scattering_length : ndarray, shape (N,)
-            Scattering length of the radial patterns
-        powder_data_block : ndarray, shape (M, N)
-            Array for which each row is an azimuthal pattern for a specific time-delay.
-        powder_error_block : ndarray, shape (M, N)
-            Array for which each row is the error for the corresponding azimuthal pattern.
+        scattering_length : ndarray, shape (N,) or None
+            Scattering length of the radial patterns. If None, all
+            viewers are cleared.
+        powder_data_block : ndarray, shape (M, N) or None
+            Array for which each row is an azimuthal pattern for a specific time-delay. If None, all
+            viewers are cleared.
+        powder_error_block : ndarray, shape (M, N) or None
+            Array for which each row is the error for the corresponding azimuthal pattern. If None, all
+            viewers are cleared.
         """
+        if not (scattering_length or powder_data_block or powder_error_block):
+            self.powder_pattern_viewer.clear()
+            self.peak_dynamics_viewer.clear()
+        
         pens, brushes = pens_and_brushes(num = powder_data_block.shape[0])
 
         self.powder_pattern_viewer.enableAutoRange()
