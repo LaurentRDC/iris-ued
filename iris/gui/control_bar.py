@@ -48,12 +48,12 @@ class ControlBar(QtGui.QWidget):
         super().__init__(**kwargs)
 
         self.raw_dataset_controls = RawDatasetControl(parent = self)
-        self.raw_dataset_controls.timedelay_widget.sliderMoved.connect(self.request_raw_data)
-        self.raw_dataset_controls.scan_widget.sliderMoved.connect(self.request_raw_data)
+        self.raw_dataset_controls.timedelay_widget.valueChanged.connect(self.request_raw_data)
+        self.raw_dataset_controls.scan_widget.valueChanged.connect(self.request_raw_data)
         self.raw_dataset_controls.process_btn.clicked.connect(lambda x: self.process_dataset.emit())
 
         self.diffraction_dataset_controls = DiffractionDatasetControl(parent = self)
-        self.diffraction_dataset_controls.timedelay_widget.sliderMoved.connect(self.averaged_data_request)
+        self.diffraction_dataset_controls.timedelay_widget.valueChanged.connect(self.averaged_data_request)
         self.diffraction_dataset_controls.show_pd_btn.toggled.connect(self.enable_peak_dynamics)
         self.diffraction_dataset_controls.promote_to_powder_btn.clicked.connect(lambda x: self.promote_to_powder.emit())
 
@@ -82,12 +82,11 @@ class ControlBar(QtGui.QWidget):
     
     @QtCore.pyqtSlot(dict)
     def update_raw_dataset_metadata(self, metadata):
-        self.raw_dataset_controls.timedelay_widget.setRange(0, len(metadata['time_points']) - 1)
-        self.raw_dataset_controls.scan_widget.setRange(1, len(metadata['nscans']))
+        self.raw_dataset_controls.update_dataset_metadata(metadata)
     
     @QtCore.pyqtSlot(dict)
     def update_dataset_metadata(self, metadata):
-        self.diffraction_dataset_controls.timedelay_widget.setRange(0, len(metadata['time_points']))
+        self.diffraction_dataset_controls.update_dataset_metadata(metadata)
         self.notes_editor.editor.setPlainText(metadata.pop('notes', 'No notes available'))
         self.metadata_widget.set_metadata(metadata)
 
@@ -132,26 +131,29 @@ class RawDatasetControl(QtGui.QFrame):
         
         #############################
         # Navigating through raw data
-        # TODO: show time point next to sliders
+        self.td_label = QtGui.QLabel('Time-delay: ')
+        self.td_label.setAlignment(QtCore.Qt.AlignCenter)
         self.timedelay_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.timedelay_widget.setMinimum(0)
         self.timedelay_widget.setTracking(False)
         self.timedelay_widget.setTickPosition(QtGui.QSlider.TicksBelow)
         self.timedelay_widget.setTickInterval(1)
-        td_label = QtGui.QLabel('Time-delay: ')
-        td_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.timedelay_widget.sliderMoved.connect(
+            lambda pos: self.td_label.setText('Time-delay: {:.3f}ps'.format(self.time_points[pos])))
 
+        self.s_label = QtGui.QLabel('Scan: ')
+        self.s_label.setAlignment(QtCore.Qt.AlignCenter)
         self.scan_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.scan_widget.setMinimum(0)
         self.scan_widget.setTracking(False)
         self.scan_widget.setTickPosition(QtGui.QSlider.TicksBelow)
         self.scan_widget.setTickInterval(1)
-        s_label = QtGui.QLabel('Scan: ')
-        s_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.scan_widget.sliderMoved.connect(
+            lambda pos: self.s_label.setText('Scan: {:d}'.format(self.nscans[pos])))
 
         sliders = QtGui.QGridLayout()
-        sliders.addWidget(td_label, 0, 0, 1, 1)
-        sliders.addWidget(s_label, 1, 0, 1, 1)
+        sliders.addWidget(self.td_label, 0, 0, 1, 1)
+        sliders.addWidget(self.s_label, 1, 0, 1, 1)
         sliders.addWidget(self.timedelay_widget, 0, 1, 1, 2)
         sliders.addWidget(self.scan_widget, 1, 1, 1, 2)
 
@@ -173,6 +175,13 @@ class RawDatasetControl(QtGui.QFrame):
         layout.addLayout(processing)
         self.setLayout(layout)
         self.resize(self.minimumSize())
+    
+    def update_dataset_metadata(self, metadata):
+        self.time_points = metadata.get('time_points')
+        self.nscans = metadata.get('nscans')
+
+        self.timedelay_widget.setRange(0, len(self.time_points) - 1)
+        self.scan_widget.setRange(1, len(self.nscans))
 
 class DiffractionDatasetControl(QtGui.QFrame):
 
@@ -181,18 +190,27 @@ class DiffractionDatasetControl(QtGui.QFrame):
 
         ################################
         # Diffraction dataset navigation
-        # TODO: show time point next to sliders
+        self.td_label = QtGui.QLabel('Time-delay: ')
+        self.td_label.setAlignment(QtCore.Qt.AlignCenter)
         self.timedelay_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.timedelay_widget.setMinimum(0)
         self.timedelay_widget.setTracking(False)
         self.timedelay_widget.setTickPosition(QtGui.QSlider.TicksBelow)
         self.timedelay_widget.setTickInterval(1)
-        td_label = QtGui.QLabel('Time-delay: ')
-        td_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.timedelay_widget.sliderMoved.connect(
+            lambda pos: self.td_label.setText('Time-delay: {:.3f}ps'.format(self.time_points[pos])))
+
+        prev_btn = QtGui.QPushButton('<', self)
+        prev_btn.clicked.connect(self.goto_prev)
+
+        next_btn = QtGui.QPushButton('>', self)
+        next_btn.clicked.connect(self.goto_next)
 
         sliders = QtGui.QGridLayout()
-        sliders.addWidget(td_label, 0, 0, 1, 1)
-        sliders.addWidget(self.timedelay_widget, 0, 1, 1, 2)
+        sliders.addWidget(self.td_label, 0, 0, 1, 1)
+        sliders.addWidget(self.timedelay_widget, 0, 1, 1, 5)
+        sliders.addWidget(prev_btn, 0, 6, 1, 1)
+        sliders.addWidget(next_btn, 0, 7, 1, 1)
 
         ################################
         # Enable/disable time-series ROI
@@ -221,6 +239,23 @@ class DiffractionDatasetControl(QtGui.QFrame):
         layout.addWidget(self.promote_to_powder_progress)
         self.setLayout(layout)
         self.resize(self.minimumSize())
+    
+    def update_dataset_metadata(self, metadata):
+        self.time_points = metadata.get('time_points')
+        self.timedelay_widget.setRange(0, len(self.time_points))
+        self.timedelay_widget.triggerAction(5) # SliderToMinimum
+    
+    @QtCore.pyqtSlot()
+    def goto_prev(self):
+        self.timedelay_widget.setSliderDown(True)
+        self.timedelay_widget.triggerAction(2)
+        self.timedelay_widget.setSliderDown(False)
+    
+    @QtCore.pyqtSlot()
+    def goto_next(self):
+        self.timedelay_widget.setSliderDown(True)
+        self.timedelay_widget.triggerAction(1)
+        self.timedelay_widget.setSliderDown(False)
 
 class PowderDiffractionDatasetControl(QtGui.QFrame):
 

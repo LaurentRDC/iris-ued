@@ -80,7 +80,7 @@ class Iris(QtGui.QMainWindow):
         # Viewers
         self.raw_data_viewer = pg.ImageView(parent = self, name = 'Raw data')
         self.raw_data_viewer.resize(self.raw_data_viewer.maximumSize())
-        self.controller.raw_data_signal.connect(self.raw_data_viewer.setImage)
+        self.controller.raw_data_signal.connect(lambda obj: self.raw_data_viewer.clear() if obj is None else self.raw_data_viewer.setImage(obj))
 
         self.processed_viewer = ProcessedDataViewer(parent = self)
         self.processed_viewer.peak_dynamics_roi_signal.connect(self.controller.time_series)
