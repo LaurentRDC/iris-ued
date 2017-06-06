@@ -64,6 +64,7 @@ class PowderViewer(QtGui.QWidget):
         if not (scattering_length or powder_data_block or powder_error_block):
             self.powder_pattern_viewer.clear()
             self.peak_dynamics_viewer.clear()
+            return
         
         pens, brushes = pens_and_brushes(num = powder_data_block.shape[0])
 

@@ -78,6 +78,7 @@ class ProcessedDataViewer(QtGui.QWidget):
         if image is None:
             self.image_viewer.clear()
             self.peak_dynamics_viewer.clear()
+            return
         # autoLevels = False ensures that the colormap stays the same
         # when 'sliding' through data. This makes it easier to compare
         # data at different time points.

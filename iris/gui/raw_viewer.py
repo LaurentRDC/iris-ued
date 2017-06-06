@@ -54,28 +54,13 @@ class RawDataViewer(QtGui.QWidget):
         self.layout.addWidget(self.raw_viewer)
         self.layout.addLayout(command_bar)
         self.setLayout(self.layout)
-    
-    @QtCore.pyqtSlot(dict)
-    def update_dataset_info(self, info_dict):
-        """ Update the range of possible values of times and scans """
-        self.dataset_info.update(info_dict)
-
-        # Update range of timedelay and scan
-        self.timedelay_widget.setMaximum(len(self.dataset_info['time_points']) - 1)
-        self.scan_widget.setMaximum(len(self.dataset_info['nscans']) - 1)
-    
-    @QtCore.pyqtSlot()
-    def update_display(self):
-        """ Request an update on the raw data display """
-        timedelay = self.dataset_info['time_points'][self.timedelay_widget.value()]
-        scan = self.dataset_info['nscans'][self.scan_widget.value()]
-        self.display_raw_data_signal.emit(float(timedelay), int(scan))
         
     @QtCore.pyqtSlot(object)
     def display(self, data):
         """ Display a single diffraction pattern. """
-        if not data:
+        if data is None:
             self.raw_viewer.clear()
+            return
             
         data[data < 0] = 0
         self.raw_viewer.setImage(data, autoLevels = False, autoRange = True)
