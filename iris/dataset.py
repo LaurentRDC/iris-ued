@@ -607,8 +607,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         maxshape = (len(self.time_points), max(self.resolution))
         if 'intensity' not in self.powder_group:
             # We allow resizing. In theory, an angualr averave could never be longer than the resolution
-            self.powder_group.create_dataset(name = 'intensity', data = rintensity, maxshape = maxshape)
-            self.powder_group.create_dataset(name = 'error', data = rerror,  maxshape = maxshape)
+            # Only chunked datasets are resizeable
+            self.powder_group.create_dataset(name = 'intensity', data = rintensity, maxshape = maxshape, chunks = True)
+            self.powder_group.create_dataset(name = 'error', data = rerror,  maxshape = maxshape, chunks = True)
         else:
             self.powder_group['intensity'].resize(rintensity.shape)
             self.powder_group['intensity'].write_direct(rintensity)
@@ -620,7 +621,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         s_length = scattering_length(px_radius, energy = self.energy)
         if 'scattering_length' not in self.powder_group:
             self.powder_group.create_dataset(name = 'scattering_length', data = s_length, 
-                                             maxshape = (max(self.resolution),))
+                                             maxshape = (max(self.resolution),), chunks = True)
         else:
             self.powder_group['scattering_length'].resize(s_length.shape)
             self.powder_group['scattering_length'].write_direct(s_length)
