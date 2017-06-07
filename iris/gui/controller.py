@@ -165,6 +165,7 @@ class IrisController(QtCore.QObject):
         callback = params.pop('callback')
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
         self.worker.done_signal.connect(lambda b: callback())
+        self.worker.done_signal.connect(lambda b: self.display_powder_data())
         self.worker.start()
     
     @error_aware('Dataset notes could not be updated')
