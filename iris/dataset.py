@@ -302,52 +302,6 @@ class DiffractionDataset(h5py.File):
             ckwargs.update(dataset.compression_opts)
         return ckwargs
 
-class SinglePictureDataset(DiffractionDataset):
-
-    nscans = (1,)
-    time_points = (0,)
-    acquisition_date = ''
-    fluence = 0.0
-    current = 0.0
-    exposure = 0.0
-    energy = 90
-    sample_type = 'single_crystal'
-    time_zero_shift = 0.0
-    notes = ''
-
-    def __init__(self, path):
-        """ 
-        Create a single-picture dataset from an image path
-        
-        Parameters
-        ----------
-        path : str or path-like object
-            Absolute path to the image.
-        """
-        self.path = path
-        self.image = imread(path).astype(np.float)
-
-    def __repr__(self):
-        return "< Single picture DiffractionDataset instance \n from file {}>".format(self.path)
-    
-    @property
-    def metadata(self):
-        return dict({'time_points': (0,), 'nscans': (1,)})
-
-    @property
-    def valid_mask(self):
-        return np.ones_like(self.image, dtype = np.bool)
-
-    @property
-    def resolution(self):
-        return self.image.shape
-    
-    def averaged_data(self, **kwargs):
-        return self.image
-    
-    def averaged_error(self, *args, **kwargs):
-        return np.zeros_like(self.image)
-
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
     Abstraction of HDF5 files for powder diffraction datasets.
@@ -629,3 +583,49 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.baseline_removed = False   # baseline is not valid anymore
 
         callback(100)
+
+class SinglePictureDataset(DiffractionDataset):
+
+    nscans = (1,)
+    time_points = (0,)
+    acquisition_date = ''
+    fluence = 0.0
+    current = 0.0
+    exposure = 0.0
+    energy = 90
+    sample_type = 'single_crystal'
+    time_zero_shift = 0.0
+    notes = ''
+
+    def __init__(self, path):
+        """ 
+        Create a single-picture dataset from an image path
+        
+        Parameters
+        ----------
+        path : str or path-like object
+            Absolute path to the image.
+        """
+        self.path = path
+        self.image = imread(path).astype(np.float)
+
+    def __repr__(self):
+        return "< Single picture DiffractionDataset instance \n from file {}>".format(self.path)
+    
+    @property
+    def metadata(self):
+        return dict({'time_points': (0,), 'nscans': (1,)})
+
+    @property
+    def valid_mask(self):
+        return np.ones_like(self.image, dtype = np.bool)
+
+    @property
+    def resolution(self):
+        return self.image.shape
+    
+    def averaged_data(self, *args, **kwargs):
+        return self.image
+    
+    def averaged_error(self, *args, **kwargs):
+        return np.zeros_like(self.image)
