@@ -39,6 +39,7 @@ class ControlBar(QtGui.QWidget):
     averaged_data_request = QtCore.pyqtSignal(int)  # timedelay index
     process_dataset = QtCore.pyqtSignal()
     promote_to_powder = QtCore.pyqtSignal()
+    recompute_angular_average = QtCore.pyqtSignal()
     enable_peak_dynamics = QtCore.pyqtSignal(bool)
     baseline_removed = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
@@ -60,6 +61,7 @@ class ControlBar(QtGui.QWidget):
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
         self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
+        self.powder_diffraction_dataset_controls.recompute_angular_average_btn.clicked.connect(self.recompute_angular_average.emit)
 
         self.notes_editor = NotesEditor(parent = self)
         self.notes_editor.notes_updated.connect(self.notes_updated)
@@ -98,6 +100,10 @@ class ControlBar(QtGui.QWidget):
     def update_powder_promotion_progress(self, value):
         self.diffraction_dataset_controls.promote_to_powder_progress.show() # Not shown by default
         self.diffraction_dataset_controls.promote_to_powder_progress.setValue(value)
+
+    @QtCore.pyqtSlot(int)
+    def update_angular_average_progress(self, value):
+        self.powder_diffraction_dataset_controls.angular_average_progress.setValue(value)
 
     @QtCore.pyqtSlot(int)
     def request_raw_data(self, wtv):
@@ -305,6 +311,13 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.recompute_angular_average_btn = QtGui.QPushButton('Recompute angular average', parent = self)
+        self.angular_average_progress = QtGui.QProgressBar(parent = self)
+
+        angular_average_layout = QtGui.QHBoxLayout()
+        angular_average_layout.addWidget(self.recompute_angular_average_btn)
+        angular_average_layout.addWidget(self.angular_average_progress)
+
         ######################
         # baseline computation
         self.first_stage_cb = QtGui.QComboBox()
@@ -354,6 +367,7 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
         layout.addLayout(baseline)
+        layout.addLayout(angular_average_layout)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
