@@ -1,33 +1,44 @@
 """
 Controller behind Iris
 """
-from contextlib import suppress
-import functools
+from functools import wraps
 import traceback
-import numpy as np
+from contextlib import suppress
+from types import FunctionType
 
+import numpy as np
 from pyqtgraph import QtCore
 
-from ..dataset import DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
+from ..dataset import (DiffractionDataset, PowderDiffractionDataset,
+                       SinglePictureDataset)
 from ..processing import process
 from ..raw import RawDataset
 
-def error_aware(message):
+def error_aware(func):
     """
     Wrap an instance method with a try/except and emit a message.
     Instance must have a signal called 'error_message_signal' which
     will be emitted with the message upon error. 
     """
-    def wrap(func):
-        @functools.wraps(func)
-        def aware_func(self, *args, **kwargs):
-            try:
-                return func(self, *args, **kwargs)
-            except:
-                exc = traceback.format_exc()
-                self.error_message_signal.emit(message + '\n\n\n' + exc)
-        return aware_func
-    return wrap
+    @wraps(func)
+    def aware_func(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except:
+            exc = traceback.format_exc()
+            self.error_message_signal.emit(exc)
+    return aware_func
+
+class ErrorAware(QtCore.pyqtWrapperType):
+    
+    def __new__(meta, classname, bases, class_dict):
+        new_class_dict = dict()
+        for attr_name, attr in class_dict.items():
+            if isinstance(attr, FunctionType):
+                attr = error_aware(attr)
+            new_class_dict[attr_name] = attr
+        
+        return super().__new__(meta, classname, bases, new_class_dict)
 
 def promote_to_powder(filename, center, callback):
     """ Create a PowderDiffractionDataset from a DiffractionDataset """
@@ -43,7 +54,7 @@ def recompute_angular_average(filename, center):
         dataset.compute_angular_averages(center = center, callback = None)
     return filename
 
-class IrisController(QtCore.QObject):
+class IrisController(QtCore.QObject, metaclass = ErrorAware):
     """
     Controller behind Iris.
     """
@@ -87,13 +98,11 @@ class IrisController(QtCore.QObject):
         self._averaged_data_container = False
         self._powder_time_series_container = False
 
-    @error_aware('Raw data could not be displayed.')
     @QtCore.pyqtSlot(int, int)
     def display_raw_data(self, timedelay_index, scan):
         timedelay = self.raw_dataset.time_points[timedelay_index]
         self.raw_data_signal.emit(self.raw_dataset.raw_data(timedelay, scan) - self.raw_dataset.pumpon_background)
     
-    @error_aware('Processed data could not be displayed.')
     @QtCore.pyqtSlot(int)
     def display_averaged_data(self, timedelay_index):
         # Preallocation of full images is important because the whole block cannot be
@@ -108,7 +117,6 @@ class IrisController(QtCore.QObject):
         self.averaged_data_signal.emit(self._averaged_data_container)
         return self._averaged_data_container
     
-    @error_aware('Powder data could not be displayed.')
     @QtCore.pyqtSlot()
     def display_powder_data(self):
         """ Emit a powder data signal with/out background """
@@ -123,7 +131,6 @@ class IrisController(QtCore.QObject):
         self._bgr_powder = enable
         self.display_powder_data()
     
-    @error_aware('Raw dataset could not be processed.')
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
         info_dict.update({'callback': self.processing_progress_signal.emit, 'raw': self.raw_dataset})
@@ -134,7 +141,6 @@ class IrisController(QtCore.QObject):
         self.processing_progress_signal.emit(0)
         self.worker.start()
     
-    @error_aware('')
     @QtCore.pyqtSlot(tuple)
     def promote_to_powder(self, center):
         """ Promote a DiffractionDataset to a PowderDiffractionDataset """
@@ -155,7 +161,6 @@ class IrisController(QtCore.QObject):
         self.worker.results_signal.connect(self.load_dataset)
         self.worker.start()
 
-    @error_aware('Powder time-series could not be calculated.')
     @QtCore.pyqtSlot(float, float)
     def powder_time_series(self, smin, smax):
         try:
@@ -166,7 +171,6 @@ class IrisController(QtCore.QObject):
         finally:
             self.powder_time_series_signal.emit(self.dataset.time_points, self._powder_time_series_container)
     
-    @error_aware('Single-crystal time-series could not be computed.')
     @QtCore.pyqtSlot(object)
     def time_series(self, rect):
         """" 
@@ -181,7 +185,6 @@ class IrisController(QtCore.QObject):
         integrated = self.dataset.time_series( (y1, y2, x1, x2) )
         self.time_series_signal.emit(self.dataset.time_points, integrated)
     
-    @error_aware('Powder baseline could not be computed.')
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
         """ Compute the powder baseline. The dictionary `params` is passed to 
@@ -193,12 +196,10 @@ class IrisController(QtCore.QObject):
         self.worker.done_signal.connect(lambda b: self.display_powder_data())
         self.worker.start()
     
-    @error_aware('Dataset notes could not be updated')
     @QtCore.pyqtSlot(str)
     def set_dataset_notes(self, notes):
         self.dataset.notes = notes
     
-    @error_aware('Raw dataset could not be loaded.')
     @QtCore.pyqtSlot(str)
     def load_raw_dataset(self, path):
         if not path:
@@ -218,15 +219,18 @@ class IrisController(QtCore.QObject):
         self.raw_dataset_loaded_signal.emit(False)
         self.raw_data_signal.emit(None)
     
-    @error_aware('Single picture could not be loaded.')
     @QtCore.pyqtSlot(str)
     def load_single_picture(self, path):
+        if not path:
+            return
+
+        self.close_dataset()
+        
         self.dataset = SinglePictureDataset(path)
         self.dataset_metadata.emit(self.dataset.metadata)
         self.processed_dataset_loaded_signal.emit(True)
         self.display_averaged_data(timedelay_index = 0)
         
-    @error_aware('Processed dataset could not be loaded. The path might not be valid')
     @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
     @QtCore.pyqtSlot(str)
     def load_dataset(self, path):
