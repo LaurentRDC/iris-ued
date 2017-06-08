@@ -58,6 +58,7 @@ class Iris(QtGui.QMainWindow):
         self.controls.averaged_data_request.connect(self.controller.display_averaged_data)
         self.controls.process_dataset.connect(self.launch_processsing_dialog)
         self.controls.promote_to_powder.connect(self.launch_promote_to_powder_dialog)
+        self.controls.recompute_angular_average.connect(self.launch_recompute_angular_average_dialog)
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
         self.controls.baseline_removed.connect(self.controller.powder_background_subtracted)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
@@ -70,6 +71,7 @@ class Iris(QtGui.QMainWindow):
         self.controller.powder_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.powder_viewer))
         self.controller.processing_progress_signal.connect(self.controls.update_processing_progress)
         self.controller.powder_promotion_progress.connect(self.controls.update_powder_promotion_progress)
+        self.controller.angular_average_progress.connect(self.controls.update_angular_average_progress)
         self.controller.raw_dataset_metadata.connect(self.controls.update_raw_dataset_metadata)
         self.controller.dataset_metadata.connect(self.controls.update_dataset_metadata)
 
@@ -195,6 +197,13 @@ class Iris(QtGui.QMainWindow):
         promote_dialog = PromoteToPowderDialog(dataset_filename = self.controller.dataset.filename, parent = self)
         promote_dialog.center_signal.connect(self.controller.promote_to_powder)
         return promote_dialog.exec_()
+    
+    @QtCore.pyqtSlot()
+    @error_aware('Recomputation of angular average could not be done.')
+    def launch_recompute_angular_average_dialog(self):
+        dialog = PromoteToPowderDialog(dataset_filename = self.controller.dataset.filename, parent = self)
+        dialog.center_signal.connect(self.controller.recompute_angular_average)
+        return dialog.exec_()
     
     @QtCore.pyqtSlot()
     @error_aware('Raw dataset could not be loaded.')

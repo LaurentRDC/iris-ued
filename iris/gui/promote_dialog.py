@@ -4,6 +4,7 @@ import pyqtgraph as pg
 from ..dataset import DiffractionDataset, PowderDiffractionDataset
 #from ..utils import center_finder
 
+# TODO: rework in to a general 'find powder center' dialog
 class PromoteToPowderDialog(QtGui.QDialog):
     """
     Modal dialog to promote a DiffractionDataset to a
@@ -22,6 +23,7 @@ class PromoteToPowderDialog(QtGui.QDialog):
         self.setModal(True)
         self.setWindowTitle('Promote to powder dataset')
 
+        # TODO: connect to controller to request an image instead of opening
         with DiffractionDataset(name = dataset_filename, mode = 'r') as dataset:
             image = dataset.averaged_data(timedelay = dataset.time_points[0])
         
