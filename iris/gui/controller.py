@@ -48,10 +48,10 @@ def promote_to_powder(filename, center, callback):
     return filename
 
 # TODO: callback
-def recompute_angular_average(filename, center):
+def recompute_angular_average(filename, center, callback):
     """ Re-compute the angular average of a PowderDiffractionDataset """
     with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
-        dataset.compute_angular_averages(center = center, callback = None)
+        dataset.compute_angular_averages(center = center, callback = callback)
     return filename
 
 class IrisController(QtCore.QObject, metaclass = ErrorAware):
