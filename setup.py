@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-from itertools import chain
+# -*- coding: utf-8 -*
 import numpy
 from setuptools import setup, find_packages
 import glob
@@ -12,8 +11,6 @@ __author__ = 'Laurent P. René de Cotret'
 # >>> python setup.py bdist_wininst
 
 image_list = glob.glob('iris\\gui\\images\\*.png')
-rc = chain.from_iterable([glob.glob('iris\\gui\\qdarkstyle\\*.qrc'),
-                          glob.glob('iris\\gui\\qdarkstyle\\*.qss')])
 
 setup(
     name = 'iris', 
@@ -28,8 +25,8 @@ setup(
                         'h5py >= 2.6.0',
                         'scikit-image',
                         'scikit-ued',
-                        'pyqtgraph >= 0.10'],
-    data_files = [('iris\\gui\\images', image_list),
-                  ('iris\\gui\\qdarkstyle', rc)],
+                        'pyqtgraph >= 0.10',
+                        'qdarkstyle >= 2.3'],
+    data_files = [('iris\\gui\\images', image_list)],
     entry_points = {'gui_scripts': ['iris = iris.gui:run']}
     )
