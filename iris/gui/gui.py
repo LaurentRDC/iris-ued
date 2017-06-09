@@ -11,6 +11,7 @@ from os.path import dirname, join
 
 import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
+from qdarkstyle import load_stylesheet_pyqt5
 
 from .beam_properties_dialog import ElectronBeamPropertiesDialog
 from .control_bar import ControlBar
@@ -21,7 +22,6 @@ from .knife_edge_tool import KnifeEdgeToolDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .promote_dialog import PromoteToPowderDialog
-from .qdarkstyle import load_stylesheet_pyqt5
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -31,8 +31,6 @@ def run():
     app.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
     gui = Iris()
     return app.exec_()
-
-# TODO: error_aware equivalent for GUI
 
 class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
