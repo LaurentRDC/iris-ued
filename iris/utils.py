@@ -8,39 +8,6 @@ from os.path import join
 from functools import partial
 from skimage.io import imread
 
-def average_tiff(directory, wildcard, background = None):
-    """
-    Averages images matching a filename template within the dataset directory.
-    
-    Parameters
-    ----------
-    directory : str
-        Absolute path to the directory
-    wildcard : string
-        Filename wildcard, e.g. 'background.*.pumpon.tif', '*.tif', etc.
-    background : array-like, optional
-        Background to subtract from the average.
-        
-    Returns
-    -------
-    out : ndarray
-    
-    Raises
-    ------
-    ImageNotFoundError
-        If wildcard does not match any file in the directory
-    """
-    image_list = glob.glob(join(directory, wildcard))
-    if not image_list:      #List is empty
-        raise ValueError('wildcard {} does not match any file in\
-                                  the dataset directory'.format(wildcard))
-    
-    avg = sum(map(imread, image_list))/len(image_list)
-
-    if background is not None:
-        return avg - background
-    return avg
-
 def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2235):
     """
     Returns the scattering length s = G/4pi for an array of radius data in pixels.
