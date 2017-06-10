@@ -3,7 +3,7 @@ import numpy
 from setuptools import setup, find_packages
 import glob
 
-__version__ = '4.0'
+__version__ = '4.0.1'
 __author__ = 'Laurent P. René de Cotret'
 
 
@@ -24,7 +24,7 @@ setup(
                         'scipy', 
                         'h5py >= 2.6.0',
                         'scikit-image',
-                        'scikit-ued',
+                        'scikit-ued >= 0.4.2',
                         'pyqtgraph >= 0.10',
                         'qdarkstyle >= 2.3',
                         'psutil'],
