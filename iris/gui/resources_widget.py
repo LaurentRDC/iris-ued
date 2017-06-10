@@ -23,9 +23,9 @@ class ComputationalResourceWidget(QtGui.QWidget):
         """
         super().__init__(**kwargs)
 
-        self.times = deque([], maxlen = 100)
-        self.cpu_percent_stack = deque([], maxlen = 100)
-        self.virtual_memory_stack = deque([], maxlen = 100)
+        self.times = deque([], maxlen = 200)
+        self.cpu_percent_stack = deque([], maxlen = 200)
+        self.virtual_memory_stack = deque([], maxlen = 200)
 
         self.update_timer = QtCore.QTimer(parent = self)
         self.update_timer.setInterval(interval)
