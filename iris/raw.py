@@ -14,53 +14,21 @@ from datetime import datetime as dt
 from warnings import warn, catch_warnings
 from skued import pmap
 
-from . import cached_property
+from .optimizations import cached_property
 
-class ExperimentalParameter(object):
-    """ Descriptor to experimental parameters for raw diffraction datasets. """
-    def __init__(self, name, output, default):
-        """ 
-        Parameters
-        ----------
-        name : str
-        output : callable
-            Callable to format output.
-            e.g. numpy.array, tuple, float, ...
-        """
-        self.name = name
-        self.output = output
-        self.default = default
+def parse_tagfile(path):
+    """ Parse a tagfile.txt from a raw dataset into a dictionary of values """
+    metadata = dict()
+    with open(path) as f:
+        for line in f:
+            key, value = re.sub('\s+', '', line).split('=')
+            try:
+                value = float(value.strip('s'))    # exposure values have units
+            except:
+                value = None    # value might be 'BLANK'
+            metadata[key.lower()] = value
     
-    def __get__(self, instance, cls):
-        """
-        Reads an experimental parameter from the DiffractionDataset's
-        experimental parameter file.
-        
-        Parameters
-        ----------
-        key : str
-            Name of the parameter
-        """
-        with open(instance._exp_params_filename, 'r') as exp_params:
-            for line in exp_params:
-                if line.startswith(self.name): 
-                    value = line.split('=')[-1]
-                    break
-            return self.default
-        
-        value = value.replace(' ','')
-        value = value.replace('s','')                   # For exposure values with units
-        value = value.strip('\n')
-        try:
-            return self.output(value)
-        except: # Might be 'BLANK', can't cast
-            return self.output(self.default)
-    
-    def __set__(self, instance, value):
-        raise AttributeError('Attribute {} is read-only.'.format(self.name))
-    
-    def __delete__(self, instance):
-        pass
+    return metadata
 
 class RawDataset(object):
     """
@@ -92,16 +60,30 @@ class RawDataset(object):
     """
 
     resolution = (2048, 2048)
-    fluence = ExperimentalParameter('Fluence', float, 0)
-    current = ExperimentalParameter('Current', float, 0)
-    exposure = ExperimentalParameter('Exposure', float, 0)
-    energy = ExperimentalParameter('Energy', float, 90)
 
     def __init__(self, directory):
         if isdir(directory):
             self.raw_directory = directory
         else:
             raise ValueError('The path {} is not a directory'.format(directory))
+        
+        self.metadata = parse_tagfile(join(directory, 'tagfile.txt'))
+    
+    @property
+    def fluence(self):
+        return self.metadata['fluence'] or 0
+    
+    @property
+    def current(self):
+        return self.metadata['current'] or 0
+    
+    @property
+    def exposure(self):
+        return self.metadata['exposure'] or 0
+    
+    @property
+    def energy(self):
+        return self.metadata['energy'] or 90
     
     @cached_property
     def _exp_params_filename(self):
@@ -123,7 +105,7 @@ class RawDataset(object):
     
     @cached_property
     def time_points(self):
-        return tuple(float(t) for t in self.time_points_str)
+        return tuple(map(float, self.time_points_str))
     
     @cached_property
     def time_points_str(self):

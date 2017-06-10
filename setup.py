@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
-from itertools import chain
+# -*- coding: utf-8 -*
 import numpy
 from setuptools import setup, find_packages
 import glob
 
-__version__ = '3.3'
+__version__ = '4.0'
 __author__ = 'Laurent P. René de Cotret'
 
 
@@ -12,10 +11,6 @@ __author__ = 'Laurent P. René de Cotret'
 # >>> python setup.py bdist_wininst
 
 image_list = glob.glob('iris\\gui\\images\\*.png')
-wavelets = chain.from_iterable([glob.glob('iris\\dualtree\\data\\*.npy'), 
-                                glob.glob('iris\\dualtree\\data\\*.npz')])
-rc = chain.from_iterable([glob.glob('iris\\gui\\qdarkstyle\\*.qrc'),
-                          glob.glob('iris\\gui\\qdarkstyle\\*.qss')])
 
 setup(
     name = 'iris', 
@@ -29,8 +24,10 @@ setup(
                         'scipy', 
                         'h5py >= 2.6.0',
                         'scikit-image',
-                        'scikit-ued'],
-    data_files = [('iris\\gui\\images', image_list),
-                  ('iris\\dualtree\\data', wavelets),
-                  ('iris\\gui\\qdarkstyle', rc)]
+                        'scikit-ued',
+                        'pyqtgraph >= 0.10',
+                        'qdarkstyle >= 2.3',
+                        'psutil'],
+    data_files = [('iris\\gui\\images', image_list)],
+    entry_points = {'gui_scripts': ['iris = iris.gui:run']}
     )

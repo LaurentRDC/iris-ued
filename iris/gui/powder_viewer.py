@@ -1,17 +1,20 @@
-import numpy as n
+import pyqtgraph as pg
+from pyqtgraph import QtCore, QtGui
+from functools import lru_cache
+from skued import spectrum_colors
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
-from . import pyqtgraph as pg
-from ..utils import fluence
-from .pyqtgraph import opengl as gl
-from .pyqtgraph import QtCore, QtGui
-from .utils import spectrum_colors
-
+@lru_cache(maxsize = 1)
+def pens_and_brushes(num):
+    qcolors = tuple(map(lambda c: QtGui.QColor.fromRgbF(*c), spectrum_colors(num)))
+    pens = list(map(pg.mkPen, qcolors))
+    brushes = list(map(pg.mkBrush, qcolors))
+    return pens, brushes
 
 class PowderViewer(QtGui.QWidget):
 
     baseline_parameters_signal = QtCore.pyqtSignal(dict)
-    peak_dynamics_roi_signal = QtCore.pyqtSignal(float, float, bool)  #left pos, right pos, background_removed
+    peak_dynamics_roi_signal = QtCore.pyqtSignal(float, float)  #left pos, right pos
 
     def __init__(self, *args, **kwargs):
         
@@ -30,73 +33,40 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
-        # Buttons
-        self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
-        self.compute_baseline_btn.clicked.connect(self.baseline_parameters)
-
-        self.baseline_removed_btn = QtGui.QPushButton('Show baseline-removed', parent = self)
-        self.baseline_removed_btn.setCheckable(True)
-        self.baseline_removed_btn.setChecked(False)
-
-        # Scroll lists for wavelet parameters
-        self.first_stage_cb = QtGui.QComboBox()
-        self.first_stage_cb.addItems(ALL_FIRST_STAGE)
-
-        self.wavelet_cb = QtGui.QComboBox()
-        self.wavelet_cb.addItems(ALL_COMPLEX_WAV)
-
-        first_stage_label = QtGui.QLabel('First stage wav.:', parent = self)
-        first_stage_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        wavelet_label = QtGui.QLabel('Dual-tree wavelet:', parent = self)
-        wavelet_label.setAlignment(QtCore.Qt.AlignCenter)
-        
-        command_layout = QtGui.QGridLayout()
-        command_layout.addWidget(self.baseline_removed_btn,  0,  0,  1,  1)
-        command_layout.addWidget(self.compute_baseline_btn,  1,  0,  1,  1)
-        command_layout.addWidget(first_stage_label,  0,  1,  1,  1)
-        command_layout.addWidget(self.first_stage_cb,  1,  1,  1,  1)
-        command_layout.addWidget(wavelet_label,  0,  2,  1,  1)
-        command_layout.addWidget(self.wavelet_cb,  1,  2,  1,  1)
-
         layout = QtGui.QVBoxLayout()
-        layout.addLayout(command_layout)
         layout.addWidget(self.powder_pattern_viewer)
         layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(layout)
         self.resize(self.maximumSize())
     
     @QtCore.pyqtSlot()
-    def baseline_parameters(self):
-        params = {'first_stage': self.first_stage_cb.currentText(),
-                  'wavelet': self.wavelet_cb.currentText(),
-                  'level': 'max',
-                  'max_iter': 100}
-        self.baseline_parameters_signal.emit(params)
-    
-    @QtCore.pyqtSlot()
     def update_peak_dynamics(self):
         """ Update powder peak dynamics settings on demand. """
-        self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion(), self.baseline_removed_btn.isChecked())
+        self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion())
     
-    @QtCore.pyqtSlot(object, object, object, bool)
-    def display_powder_data(self, scattering_length, powder_data_block, powder_error_block, bgr):
+    @QtCore.pyqtSlot(object, object, object)
+    def display_powder_data(self, scattering_length, powder_data_block, powder_error_block):
         """ 
         Display the radial averages of a dataset.
 
         Parameters
         ----------
-        scattering_length : ndarray, shape (N,)
-            Scattering length of the radial patterns
-        powder_data_block : ndarray, shape (M, N)
-            Array for which each row is an azimuthal pattern for a specific time-delay.
-        powder_error_block : ndarray, shape (M, N)
-            Array for which each row is the error for the corresponding azimuthal pattern.
-        bgr : bool  
-            Describes whether the powder_data_block is baseline-corrected (True) or not (False).
+        scattering_length : ndarray, shape (N,) or None
+            Scattering length of the radial patterns. If None, all
+            viewers are cleared.
+        powder_data_block : ndarray, shape (M, N) or None
+            Array for which each row is an azimuthal pattern for a specific time-delay. If None, all
+            viewers are cleared.
+        powder_error_block : ndarray, shape (M, N) or None
+            Array for which each row is the error for the corresponding azimuthal pattern. If None, all
+            viewers are cleared.
         """
-        colors = list(spectrum_colors(powder_data_block.shape[0]))  # number of time-points
-        pens, brushes = map(pg.mkPen, colors), map(pg.mkBrush, colors)
+        if (scattering_length is None) or (powder_data_block is None) or (powder_error_block is None):
+            self.powder_pattern_viewer.clear()
+            self.peak_dynamics_viewer.clear()
+            return
+        
+        pens, brushes = pens_and_brushes(num = powder_data_block.shape[0])
 
         self.powder_pattern_viewer.enableAutoRange()
         self.powder_pattern_viewer.clear()
@@ -107,8 +77,7 @@ class PowderViewer(QtGui.QWidget):
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
             error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error)
             self.powder_pattern_viewer.addItem(error_bars)
-
-        self.baseline_removed_btn.setChecked(bgr)
+        
         self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
         self.update_peak_dynamics() #Update peak dynamics plot if background has been changed, for example
@@ -120,13 +89,13 @@ class PowderViewer(QtGui.QWidget):
         Display the time series associated with the integral between the bounds 
         of the ROI
         """
+        pens, brushes = pens_and_brushes(num = len(times))
+
         intensities /= intensities.max()
 
-        colors = list(spectrum_colors(len(times)))
-        pens, brushes = map(pg.mkPen, colors), map(pg.mkBrush, colors)
         self.peak_dynamics_viewer.plot(times, intensities, 
                                        pen = None, symbol = 'o', 
-                                       symbolPen = list(pens), symbolBrush = list(brushes), 
+                                       symbolPen = pens, symbolBrush = brushes, 
                                        symbolSize = 4, clear = True)
         
         if errors is not None:
