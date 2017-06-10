@@ -22,6 +22,7 @@ from .knife_edge_tool import KnifeEdgeToolDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .promote_dialog import PromoteToPowderDialog
+from .resources_widget import ComputationalResourceWidget
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -139,7 +140,6 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         #################
         # Tools
-
         self.fluence_calculator_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Fluence calculator', self)
         self.fluence_calculator_action.triggered.connect(self.launch_fluence_calculator_tool)
 
@@ -153,10 +153,20 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.tools_menu.addAction(self.fluence_calculator_action)
         self.tools_menu.addAction(self.knife_edge_action)
         self.tools_menu.addAction(self.beam_properties_action)
+
+        ###################
+        # Resources widget
+        self.resource_widget = ComputationalResourceWidget(interval = 2000, parent = self)
         
+        ###################
+        # Layout
+        control_layout = QtGui.QVBoxLayout()
+        control_layout.addWidget(self.controls)
+        control_layout.addWidget(self.resource_widget)
+
         self.layout = QtGui.QHBoxLayout()
         self.layout.addWidget(self.viewer_stack)
-        self.layout.addWidget(self.controls)
+        self.layout.addLayout(control_layout)
 
         self.central_widget = QtGui.QWidget()
         self.central_widget.setLayout(self.layout)

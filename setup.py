@@ -26,7 +26,8 @@ setup(
                         'scikit-image',
                         'scikit-ued',
                         'pyqtgraph >= 0.10',
-                        'qdarkstyle >= 2.3'],
+                        'qdarkstyle >= 2.3',
+                        'psutil'],
     data_files = [('iris\\gui\\images', image_list)],
     entry_points = {'gui_scripts': ['iris = iris.gui:run']}
     )
