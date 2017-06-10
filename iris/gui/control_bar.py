@@ -335,14 +335,10 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         if 'smooth' in Modes.modes:
             self.mode_cb.setCurrentText('constant')
 
-        first_stage_label = QtGui.QLabel('First stage wav.:', parent = self)
-        first_stage_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        wavelet_label = QtGui.QLabel('Dual-tree wavelet:', parent = self)
-        wavelet_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        mode_label = QtGui.QLabel('Extension mode:', parent = self)
-        mode_label.setAlignment(QtCore.Qt.AlignCenter)
+        baseline_controls = QtGui.QFormLayout()
+        baseline_controls.addRow('First stage wavelet: ', self.first_stage_cb)
+        baseline_controls.addRow('Dual-tree wavelet: ', self.wavelet_cb)
+        baseline_controls.addRow('Extensions mode: ', self.mode_cb)
 
         self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
 
@@ -350,15 +346,10 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.baseline_removed_btn.setCheckable(True)
         self.baseline_removed_btn.setChecked(False)
 
-        baseline = QtGui.QGridLayout()
-        baseline.addWidget(self.baseline_removed_btn, 0, 0, 1, 2)
-        baseline.addWidget(first_stage_label, 1, 0, 1, 1)
-        baseline.addWidget(self.first_stage_cb, 1, 1, 1, 1)
-        baseline.addWidget(wavelet_label, 2, 0, 1, 1)
-        baseline.addWidget(self.wavelet_cb, 2, 1, 1, 1)
-        baseline.addWidget(mode_label, 3, 0, 1, 1)
-        baseline.addWidget(self.mode_cb, 3, 1 ,1, 1)
-        baseline.addWidget(self.compute_baseline_btn, 4, 0, 1, 2)
+        # TODO: add callback and progressbar
+        baseline_btns = QtGui.QHBoxLayout()
+        baseline_btns.addWidget(self.compute_baseline_btn)
+        baseline_btns.addWidget(self.baseline_removed_btn)
 
         title = QtGui.QLabel('<h2>Powder dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
@@ -366,7 +357,8 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
-        layout.addLayout(baseline)
+        layout.addLayout(baseline_controls)
+        layout.addLayout(baseline_btns)
         layout.addLayout(angular_average_layout)
         self.setLayout(layout)
         self.resize(self.minimumSize())
@@ -398,8 +390,8 @@ class MetadataWidget(QtGui.QWidget):
         layout.addWidget(title)
         layout.addWidget(self.table)
         self.setLayout(layout)
+        self.resize(self.minimumSize())
     
-    # TODO: stretch last column. See QHeaderView
     @QtCore.pyqtSlot(dict)
     def set_metadata(self, metadata):
         self.table.clear()
@@ -444,6 +436,7 @@ class NotesEditor(QtGui.QFrame):
         layout.addWidget(update_btn)
         self.setLayout(layout)
         self.setMaximumWidth(self.editor.maximumWidth())
+        self.resize(self.minimumSize())
     
     @QtCore.pyqtSlot()
     def update_notes(self):
