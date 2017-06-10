@@ -36,7 +36,7 @@ class ComputationalResourceWidget(QtGui.QWidget):
         interval_label.setAlignment(QtCore.Qt.AlignCenter)
 
         interval_widget = QtGui.QSpinBox(parent = self)
-        interval_widget.setRange(100, 1000)
+        interval_widget.setRange(100, 10000)
         interval_widget.setSuffix(' ms')
         interval_widget.setValue(int(interval))
         interval_widget.valueChanged.connect(self.update_timer.setInterval)
