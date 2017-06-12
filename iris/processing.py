@@ -13,6 +13,7 @@ import numpy as np
 from skimage.io import imread
 from skued.image_analysis import align, powder_center, shift_image
 
+# TODO: for a single scan, this function fails
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 
 def diff_avg(images, valid_mask = None, weights = None):

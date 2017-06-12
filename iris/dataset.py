@@ -471,7 +471,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         if out is not None:
             return np.sum(axis = 1, out = out)
-        return np.squeeze(np.sum(trace, axis = 1))
+        return np.sum(trace, axis = 1).reshape(-1)
     
     def compute_baseline(self, first_stage, wavelet, max_iter = 50, level = None, **kwargs):
         """
