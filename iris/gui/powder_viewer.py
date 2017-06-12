@@ -96,11 +96,11 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_viewer.plot(times, intensities, 
                                        pen = None, symbol = 'o', 
                                        symbolPen = pens, symbolBrush = brushes, 
-                                       symbolSize = 4, clear = True)
+                                       symbolSize = 5, clear = True)
         
-        if errors is not None:
-            error_bars = pg.ErrorBarItem(x = times, y = intensities, height = errors)
-            self.peak_dynamics_viewer.addItem(error_bars)
+        #if errors is not None:
+        #    error_bars = pg.ErrorBarItem(x = times, y = intensities, height = errors)
+        #    self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()

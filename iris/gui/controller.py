@@ -89,6 +89,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # will send background-subtracted data
         self._bgr_powder = False
 
+        # TODO: add internal state to display diffraction patterns
+        #       as relative change from t0
+
         # array containers
         # Preallocation is important for arrays that change often. Then,
         # we can take advantage of the out parameter
@@ -193,12 +196,20 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         callback = params.pop('callback')
         self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
         self.worker.done_signal.connect(lambda b: callback())
+        self.worker.done_signal.connect(lambda b: self.dataset_metadata.emit(self.dataset.metadata))
         self.worker.done_signal.connect(lambda b: self.display_powder_data())
         self.worker.start()
     
     @QtCore.pyqtSlot(str)
     def set_dataset_notes(self, notes):
         self.dataset.notes = notes
+    
+    @QtCore.pyqtSlot(float)
+    def set_time_zero_shift(self, shift):
+        """ Set the time-zero shift in picoseconds """
+        if shift != self.dataset.time_zero_shift:
+            self.dataset.time_zero_shift = shift
+            self.dataset_metadata.emit(self.dataset.metadata)
     
     @QtCore.pyqtSlot(str)
     def load_raw_dataset(self, path):

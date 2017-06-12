@@ -10,39 +10,18 @@ from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 from pywt import Modes
 
 class ControlBar(QtGui.QWidget):
-    """
-    Signals
-    -------
-    raw_data_request[int, int]
-
-    averaged_data_request[int]
-
-    process_dataset[]
-
-    promote_to_powder[]
-
-    enable_peak_dynamics[bool]
-
-    baseline_computation_parameters[dict]
-
-    notes_updated[str]
-
-    Slots
-    -----
-    enable_raw_dataset_controls [bool]
-
-    enable_diffraction_dataset_controls [bool]
-
-    enable_powder_diffraction_dataset_controls [bool]
-    """
+    
     raw_data_request = QtCore.pyqtSignal(int, int)  # timedelay index, scan
     averaged_data_request = QtCore.pyqtSignal(int)  # timedelay index
+
     process_dataset = QtCore.pyqtSignal()
     promote_to_powder = QtCore.pyqtSignal()
     recompute_angular_average = QtCore.pyqtSignal()
+
     enable_peak_dynamics = QtCore.pyqtSignal(bool)
     baseline_removed = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
+    time_zero_shift = QtCore.pyqtSignal(float)
     notes_updated = QtCore.pyqtSignal(str)
 
     def __init__(self, **kwargs):
@@ -57,23 +36,27 @@ class ControlBar(QtGui.QWidget):
         self.diffraction_dataset_controls.timedelay_widget.valueChanged.connect(self.averaged_data_request)
         self.diffraction_dataset_controls.show_pd_btn.toggled.connect(self.enable_peak_dynamics)
         self.diffraction_dataset_controls.promote_to_powder_btn.clicked.connect(lambda x: self.promote_to_powder.emit())
+        self.diffraction_dataset_controls.time_zero_shift_widget.valueChanged.connect(self.time_zero_shift)
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
         self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
         self.powder_diffraction_dataset_controls.recompute_angular_average_btn.clicked.connect(self.recompute_angular_average.emit)
 
+        self.metadata_widget = MetadataWidget(parent = self)
+
         self.notes_editor = NotesEditor(parent = self)
         self.notes_editor.notes_updated.connect(self.notes_updated)
 
-        self.metadata_widget = MetadataWidget(parent = self)
+        self.stack = QtGui.QTabWidget(parent = self)
+        self.stack.addTab(self.metadata_widget, 'Dataset metadata')
+        self.stack.addTab(self.notes_editor, 'Dataset notes')
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(self.raw_dataset_controls)
         layout.addWidget(self.diffraction_dataset_controls)
         layout.addWidget(self.powder_diffraction_dataset_controls)
-        layout.addWidget(self.metadata_widget)
-        layout.addWidget(self.notes_editor)
+        layout.addWidget(self.stack)
         self.setLayout(layout)
 
         for frame in (self.raw_dataset_controls, self.diffraction_dataset_controls, self.powder_diffraction_dataset_controls):
@@ -98,7 +81,6 @@ class ControlBar(QtGui.QWidget):
     
     @QtCore.pyqtSlot(int)
     def update_powder_promotion_progress(self, value):
-        self.diffraction_dataset_controls.promote_to_powder_progress.show() # Not shown by default
         self.diffraction_dataset_controls.promote_to_powder_progress.setValue(value)
 
     @QtCore.pyqtSlot(int)
@@ -121,8 +103,7 @@ class ControlBar(QtGui.QWidget):
     @QtCore.pyqtSlot(bool)
     def enable_diffraction_dataset_controls(self, enable):
         self.diffraction_dataset_controls.setEnabled(enable)
-        self.notes_editor.setEnabled(enable)
-        self.metadata_widget.setEnabled(enable)
+        self.stack.setEnabled(enable)
     
     @QtCore.pyqtSlot(bool)
     def enable_powder_diffraction_dataset_controls(self, enable):
@@ -169,26 +150,33 @@ class RawDatasetControl(QtGui.QFrame):
         next_scan_btn = QtGui.QPushButton('>', self)
         next_scan_btn.clicked.connect(self.goto_next_scan)
 
-        sliders = QtGui.QGridLayout()
-        sliders.addWidget(self.td_label, 0, 0, 1, 1)
-        sliders.addWidget(self.s_label, 1, 0, 1, 1)
-        sliders.addWidget(self.timedelay_widget, 0, 1, 1, 5)
-        sliders.addWidget(prev_timedelay_btn, 0, 6, 1, 1)
-        sliders.addWidget(next_timedelay_btn, 0, 7, 1, 1)
-        sliders.addWidget(self.scan_widget, 1, 1, 1, 5)
-        sliders.addWidget(prev_scan_btn, 1, 6, 1, 1)
-        sliders.addWidget(next_scan_btn, 1, 7, 1, 1)
+        time_layout = QtGui.QHBoxLayout()
+        time_layout.addWidget(self.td_label)
+        time_layout.addWidget(self.timedelay_widget)
+        time_layout.addWidget(prev_timedelay_btn)
+        time_layout.addWidget(next_timedelay_btn)
+
+        scan_layout = QtGui.QHBoxLayout()
+        scan_layout.addWidget(self.s_label)
+        scan_layout.addWidget(self.scan_widget)
+        scan_layout.addWidget(prev_scan_btn)
+        scan_layout.addWidget(next_scan_btn)
+
+        sliders = QtGui.QHBoxLayout()
+        sliders.addLayout(time_layout)
+        sliders.addLayout(scan_layout)
 
         self.process_btn = QtGui.QPushButton('Processing')
         self.processing_progress_bar = QtGui.QProgressBar(parent = self)
 
-        processing = QtGui.QGridLayout()
-        processing.addWidget(self.process_btn, 0, 0, 1, 1)
-        processing.addWidget(self.processing_progress_bar, 0, 1, 1, 2)
+        processing = QtGui.QHBoxLayout()
+        processing.addWidget(self.process_btn)
+        processing.addWidget(self.processing_progress_bar)
 
         title = QtGui.QLabel('<h2>Raw dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
+
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
         layout.addLayout(sliders)
@@ -199,6 +187,7 @@ class RawDatasetControl(QtGui.QFrame):
     def update_dataset_metadata(self, metadata):
         self.time_points = metadata.get('time_points')
         self.nscans = metadata.get('nscans')
+        t0_shift = metadata.get('time_zero_shift')
 
         self.timedelay_widget.setRange(0, len(self.time_points) - 1)
         self.scan_widget.setRange(0, len(self.nscans) - 1)
@@ -206,6 +195,8 @@ class RawDatasetControl(QtGui.QFrame):
         self.timedelay_widget.sliderMoved.emit(0)
         self.scan_widget.triggerAction(5)
         self.scan_widget.sliderMoved.emit(0)
+
+        self.time_zero_shift_widget.setValue(t0_shift)
 
     @QtCore.pyqtSlot()
     def goto_prev_timedelay(self):
@@ -248,6 +239,14 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.timedelay_widget.sliderMoved.connect(
             lambda pos: self.td_label.setText('Time-delay: {:.3f}ps'.format(self.time_points[pos])))
 
+        # Time-zero shift control
+        self.time_zero_shift_widget = QtGui.QDoubleSpinBox(parent = self)
+        self.time_zero_shift_widget.setRange(-100, 100)
+        self.time_zero_shift_widget.setDecimals(3)
+        self.time_zero_shift_widget.setSingleStep(0.5)
+        self.time_zero_shift_widget.setSuffix(' ps')
+        self.time_zero_shift_widget.setValue(0.0)
+
         prev_btn = QtGui.QPushButton('<', self)
         prev_btn.clicked.connect(self.goto_prev)
 
@@ -268,13 +267,15 @@ class DiffractionDatasetControl(QtGui.QFrame):
 
         ################################
         # Promote DiffractionDataset to PowderDiffractionDataset
-        self.promote_to_powder_btn = QtGui.QPushButton('Promote dataset to powder', parent = self)
+        self.promote_to_powder_btn = QtGui.QPushButton('To powder', parent = self)
         self.promote_to_powder_progress = QtGui.QProgressBar(parent = self)
-        self.promote_to_powder_progress.hide()
 
-        btns = QtGui.QHBoxLayout()
-        btns.addWidget(self.show_pd_btn)
-        btns.addWidget(self.promote_to_powder_btn)
+        promote_layout = QtGui.QHBoxLayout()
+        promote_layout.addWidget(self.promote_to_powder_btn)
+        promote_layout.addWidget(self.promote_to_powder_progress)
+
+        time_zero_shift_layout = QtGui.QFormLayout()
+        time_zero_shift_layout.addRow('Time-zero shift: ', self.time_zero_shift_widget)
 
         title = QtGui.QLabel('<h2>Diffraction dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
@@ -283,8 +284,9 @@ class DiffractionDatasetControl(QtGui.QFrame):
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
         layout.addLayout(sliders)
-        layout.addLayout(btns)
-        layout.addWidget(self.promote_to_powder_progress)
+        layout.addLayout(time_zero_shift_layout)
+        layout.addWidget(self.show_pd_btn)
+        layout.addLayout(promote_layout)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
@@ -334,11 +336,10 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.mode_cb.addItems(Modes.modes)
         if 'smooth' in Modes.modes:
             self.mode_cb.setCurrentText('constant')
-
-        baseline_controls = QtGui.QFormLayout()
-        baseline_controls.addRow('First stage wavelet: ', self.first_stage_cb)
-        baseline_controls.addRow('Dual-tree wavelet: ', self.wavelet_cb)
-        baseline_controls.addRow('Extensions mode: ', self.mode_cb)
+        
+        self.max_iter_widget = QtGui.QSpinBox()
+        self.max_iter_widget.setRange(0, 1000)
+        self.max_iter_widget.setValue(100)
 
         self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
 
@@ -346,10 +347,21 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.baseline_removed_btn.setCheckable(True)
         self.baseline_removed_btn.setChecked(False)
 
-        # TODO: add callback and progressbar
-        baseline_btns = QtGui.QHBoxLayout()
-        baseline_btns.addWidget(self.compute_baseline_btn)
-        baseline_btns.addWidget(self.baseline_removed_btn)
+        baseline_controls_col1 = QtGui.QFormLayout()
+        baseline_controls_col1.addRow('First stage wavelet: ', self.first_stage_cb)
+        baseline_controls_col1.addRow('Dual-tree wavelet: ', self.wavelet_cb)
+        baseline_controls_col1.addRow(self.compute_baseline_btn)
+
+        baseline_controls_col2 = QtGui.QFormLayout()
+        baseline_controls_col2.addRow('Extensions mode: ', self.mode_cb)
+        baseline_controls_col2.addRow('Iterations: ', self.max_iter_widget)
+        baseline_controls_col2.addRow(self.baseline_removed_btn)
+
+        baseline_controls = QtGui.QHBoxLayout()
+        baseline_controls.addLayout(baseline_controls_col1)
+        baseline_controls.addLayout(baseline_controls_col2)
+
+        # TODO: add callback and progressbar for computing the baseline?
 
         title = QtGui.QLabel('<h2>Powder dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
@@ -358,7 +370,6 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
         layout.addLayout(baseline_controls)
-        layout.addLayout(baseline_btns)
         layout.addLayout(angular_average_layout)
         self.setLayout(layout)
         self.resize(self.minimumSize())
@@ -368,7 +379,8 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         return {'first_stage': self.first_stage_cb.currentText(),
                 'wavelet': self.wavelet_cb.currentText(),
                 'mode': self.mode_cb.currentText(),
-                'level': None, 'max_iter': 100,
+                'max_iter': self.max_iter_widget.value(),
+                'level': None,
                 'callback': lambda : self.baseline_removed_btn.setChecked(True)}
 
 class MetadataWidget(QtGui.QWidget):

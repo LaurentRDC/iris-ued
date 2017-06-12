@@ -26,7 +26,7 @@ from .resources_widget import ComputationalResourceWidget
 
 image_folder = join(dirname(__file__), 'images')
 
-def run():
+def run(**kwargs):
     app = QtGui.QApplication(sys.argv)
     app.setStyleSheet(load_stylesheet_pyqt5())
     app.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
@@ -61,6 +61,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
         self.controls.baseline_removed.connect(self.controller.powder_background_subtracted)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
+        self.controls.time_zero_shift.connect(self.controller.set_time_zero_shift)
 
         self.controller.raw_dataset_loaded_signal.connect(self.controls.enable_raw_dataset_controls)
         self.controller.raw_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.raw_data_viewer))
@@ -92,9 +93,8 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controller.powder_time_series_signal.connect(self.powder_viewer.display_peak_dynamics)
 
         # UI components
-        self.error_dialog = QtGui.QErrorMessage(parent = self)
-        self.controller.error_message_signal.connect(self.error_dialog.showMessage)
-        self.error_message_signal.connect(self.error_dialog.showMessage)
+        self.controller.error_message_signal.connect(self.show_error_message)
+        self.error_message_signal.connect(self.show_error_message)
 
         self.file_dialog = QtGui.QFileDialog(parent = self)      
         self.menu_bar = self.menuBar()
@@ -157,6 +157,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         ###################
         # Resources widget
         self.resource_widget = ComputationalResourceWidget(interval = 2000, parent = self)
+        self.resource_widget.hide()
         
         ###################
         # Layout
@@ -177,19 +178,27 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controller.powder_dataset_loaded_signal.emit(False)
         self.controller.processed_dataset_loaded_signal.emit(False)
         self.controller.processing_progress_signal.emit(0)
+        self.controller.powder_promotion_progress.emit(0)
+        self.controller.angular_average_progress.emit(0)
+        
         self.viewer_stack.setCurrentWidget(self.raw_data_viewer)
+        self.viewer_stack.resize(self.viewer_stack.maximumSize())
 
         #Window settings ------------------------------------------------------
-        self.setGeometry(500, 500, 800, 800)
+        self.setGeometry(0, 0, 1920, 1080)
         self.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
         self.setWindowTitle('Iris - UED data exploration')
         self.center_window()
-        self.showMaximized()
+        self.show()
         
     def closeEvent(self, event):
         self._controller_thread.quit()
-        del self.error_dialog # TODO: is this necessary?
         super().closeEvent(event)
+    
+    @QtCore.pyqtSlot(str)
+    def show_error_message(self, msg):
+        self.error_dialog = QtGui.QErrorMessage(parent = self)
+        self.error_dialog.showMessage(msg)
     
     @QtCore.pyqtSlot()
     def launch_processsing_dialog(self):
