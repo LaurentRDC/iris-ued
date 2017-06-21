@@ -187,7 +187,6 @@ class RawDatasetControl(QtGui.QFrame):
     def update_dataset_metadata(self, metadata):
         self.time_points = metadata.get('time_points')
         self.nscans = metadata.get('nscans')
-        t0_shift = metadata.get('time_zero_shift')
 
         self.timedelay_widget.setRange(0, len(self.time_points) - 1)
         self.scan_widget.setRange(0, len(self.nscans) - 1)
@@ -195,8 +194,6 @@ class RawDatasetControl(QtGui.QFrame):
         self.timedelay_widget.sliderMoved.emit(0)
         self.scan_widget.triggerAction(5)
         self.scan_widget.sliderMoved.emit(0)
-
-        self.time_zero_shift_widget.setValue(t0_shift)
 
     @QtCore.pyqtSlot()
     def goto_prev_timedelay(self):
@@ -292,9 +289,13 @@ class DiffractionDatasetControl(QtGui.QFrame):
     
     def update_dataset_metadata(self, metadata):
         self.time_points = metadata.get('time_points')
+        t0_shift = metadata.get('time_zero_shift')
+
         self.timedelay_widget.setRange(0, len(self.time_points) - 1)
         self.timedelay_widget.triggerAction(5) # SliderToMinimum
         self.timedelay_widget.sliderMoved.emit(0)
+
+        self.time_zero_shift_widget.setValue(t0_shift)
     
     @QtCore.pyqtSlot()
     def goto_prev(self):
