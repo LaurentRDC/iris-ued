@@ -20,6 +20,7 @@ class ControlBar(QtGui.QWidget):
 
     enable_peak_dynamics = QtCore.pyqtSignal(bool)
     baseline_removed = QtCore.pyqtSignal(bool)
+    relative_powder = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
     time_zero_shift = QtCore.pyqtSignal(float)
     notes_updated = QtCore.pyqtSignal(str)
@@ -41,6 +42,7 @@ class ControlBar(QtGui.QWidget):
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
         self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
+        self.powder_diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_powder)
         self.powder_diffraction_dataset_controls.recompute_angular_average_btn.clicked.connect(self.recompute_angular_average.emit)
 
         self.metadata_widget = MetadataWidget(parent = self)
@@ -348,6 +350,10 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.baseline_removed_btn.setCheckable(True)
         self.baseline_removed_btn.setChecked(False)
 
+        self.relative_btn = QtGui.QPushButton('Show relative', parent = self)
+        self.relative_btn.setCheckable(True)
+        self.relative_btn.setChecked(False)
+
         baseline_controls_col1 = QtGui.QFormLayout()
         baseline_controls_col1.addRow('First stage wavelet: ', self.first_stage_cb)
         baseline_controls_col1.addRow('Dual-tree wavelet: ', self.wavelet_cb)
@@ -370,6 +376,7 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
+        layout.addWidget(self.relative_btn)
         layout.addLayout(baseline_controls)
         layout.addLayout(angular_average_layout)
         self.setLayout(layout)
