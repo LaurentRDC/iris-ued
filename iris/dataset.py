@@ -45,7 +45,6 @@ class DiffractionDataset(h5py.File):
     """
     Abstraction of an HDF5 file to represent diffraction datasets.
     """
-
     _processed_group_name = '/processed'
     _exp_params_group_name = '/'
     _pumpoff_pictures_group_name = '/pumpoff'
@@ -131,7 +130,33 @@ class DiffractionDataset(h5py.File):
         index = np.argmin(np.abs(np.array(self.time_points) - timedelay))
         return self.time_points[index]
 
-    def averaged_data(self, timedelay, out = None):
+    def averaged_equilibrium(self, out = None):
+        """ 
+        Returns the average diffraction pattern for all times before photoexcitation. 
+        In case no data is available before photoexcitation, an array of zeros is returned.
+
+        Parameters
+        ----------
+        out : ndarray or None, optional
+            If an out ndarray is provided, h5py can avoid
+            making intermediate copies.
+
+        Returns
+        -------
+        I : ndarray, shape (N,)
+            Diffracted intensity [counts]
+        """
+        t0_index = np.argmin(np.abs(self.corrected_time_points))
+        b4t0_slice = self.processed_measurements_group['intensity'][:, :, :t0_index]
+
+        # If there are no available data before time-zero, np.mean()
+        # will return an array of NaNs; instead, return zeros.
+        if t0_index == 0:
+            return np.zeros(shape = self.resolution, dtype = np.float)
+        
+        return np.mean(b4t0_slice, axis = 2, out = out)
+
+    def averaged_data(self, timedelay, relative = False, out = None):
         """
         Returns data at a specific time-delay.
 
@@ -139,6 +164,9 @@ class DiffractionDataset(h5py.File):
         ----------
         timdelay : float or None
             Timedelay [ps]. If None, the entire block is returned.
+        relative : bool, optional
+            If True, data is returned relative to the average of all diffraction patterns
+            before photoexcitation.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
@@ -173,6 +201,9 @@ class DiffractionDataset(h5py.File):
             if out is None:
                 out = np.empty(self.resolution)
             dataset.read_direct(out, source_sel = np.s_[:,:, time_index], dest_sel = np.s_[:,:])
+        
+        if relative:
+            out -= self.equilibrium()
 
         return out
 

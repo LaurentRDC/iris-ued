@@ -98,6 +98,18 @@ class TestDiffractionDataset(unittest.TestCase):
             error_slice = dataset.averaged_error(timedelay = dataset.time_points[0])
             self.assertSequenceEqual(time_slice.shape, dataset.resolution)
             self.assertSequenceEqual(error_slice.shape, dataset.resolution)
+
+    def test_averaged_equilibrium(self):
+        """ Test DiffractionDataset.averaged_equilibrium() """
+        with PowderDiffractionDataset(name = dummy_dataset(), mode = 'r+') as dataset:
+            eq = dataset.averaged_equilibrium()
+            self.assertSequenceEqual(eq.shape, dataset.resolution)
+            
+            with self.subTest('No data before time-zero'):
+                dataset.shift_time_zero(1 + abs(min(dataset.time_points)))
+                eq = dataset.averaged_equilibrium()
+                self.assertSequenceEqual(eq.shape, dataset.resolution)
+                self.assertTrue(np.allclose(eq, np.zeros_like(eq)))
     
     def test_averaged_data_retrieval_out_parameter(self):
         """ Tests that the out parameter is working properly for  DiffractionDataset.averaged_data 
