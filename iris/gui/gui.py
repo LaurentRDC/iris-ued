@@ -61,6 +61,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
         self.controls.baseline_removed.connect(self.controller.powder_background_subtracted)
         self.controls.relative_powder.connect(self.controller.enable_powder_relative)
+        self.controls.relative_averaged.connect(self.controller.enable_averaged_relative)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controls.time_zero_shift.connect(self.controller.set_time_zero_shift)
 

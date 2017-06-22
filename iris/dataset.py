@@ -203,7 +203,7 @@ class DiffractionDataset(h5py.File):
             dataset.read_direct(out, source_sel = np.s_[:,:, time_index], dest_sel = np.s_[:,:])
         
         if relative:
-            out -= self.equilibrium()
+            out -= self.averaged_equilibrium()
 
         return out
 

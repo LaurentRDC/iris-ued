@@ -21,6 +21,7 @@ class ControlBar(QtGui.QWidget):
     enable_peak_dynamics = QtCore.pyqtSignal(bool)
     baseline_removed = QtCore.pyqtSignal(bool)
     relative_powder = QtCore.pyqtSignal(bool)
+    relative_averaged = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
     time_zero_shift = QtCore.pyqtSignal(float)
     notes_updated = QtCore.pyqtSignal(str)
@@ -36,8 +37,10 @@ class ControlBar(QtGui.QWidget):
         self.diffraction_dataset_controls = DiffractionDatasetControl(parent = self)
         self.diffraction_dataset_controls.timedelay_widget.valueChanged.connect(self.averaged_data_request)
         self.diffraction_dataset_controls.show_pd_btn.toggled.connect(self.enable_peak_dynamics)
+        self.diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_averaged)
         self.diffraction_dataset_controls.promote_to_powder_btn.clicked.connect(lambda x: self.promote_to_powder.emit())
-        self.diffraction_dataset_controls.time_zero_shift_widget.valueChanged.connect(self.time_zero_shift)
+        self.diffraction_dataset_controls.time_zero_shift_widget.editingFinished.connect(
+            lambda v: self.time_zero_shift.emit(self.diffraction_dataset_controls.time_zero_shift_widget.value()))
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
@@ -223,6 +226,8 @@ class RawDatasetControl(QtGui.QFrame):
 
 class DiffractionDatasetControl(QtGui.QFrame):
 
+    time_zero_shift = QtCore.pyqtSignal(float)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -239,6 +244,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
             lambda pos: self.td_label.setText('Time-delay: {:.3f}ps'.format(self.time_points[pos])))
 
         # Time-zero shift control
+        # QDoubleSpinbox does not have a slot that sets the value without notifying everybody
         self.time_zero_shift_widget = QtGui.QDoubleSpinBox(parent = self)
         self.time_zero_shift_widget.setRange(-100, 100)
         self.time_zero_shift_widget.setDecimals(3)
@@ -258,20 +264,26 @@ class DiffractionDatasetControl(QtGui.QFrame):
         sliders.addWidget(prev_btn, 0, 6, 1, 1)
         sliders.addWidget(next_btn, 0, 7, 1, 1)
 
-        ################################
-        # Enable/disable time-series ROI
         self.show_pd_btn = QtGui.QPushButton('Show/hide peak dynamics', parent = self)
         self.show_pd_btn.setCheckable(True)
         self.show_pd_btn.setChecked(False)
 
-        ################################
-        # Promote DiffractionDataset to PowderDiffractionDataset
         self.promote_to_powder_btn = QtGui.QPushButton('To powder', parent = self)
         self.promote_to_powder_progress = QtGui.QProgressBar(parent = self)
+
+        self.relative_btn = QtGui.QPushButton('show relative data', parent = self)
+        self.relative_btn.setCheckable(True)
+        self.relative_btn.setChecked(False)
 
         promote_layout = QtGui.QHBoxLayout()
         promote_layout.addWidget(self.promote_to_powder_btn)
         promote_layout.addWidget(self.promote_to_powder_progress)
+
+        btns = QtGui.QHBoxLayout()
+        btns.addWidget(self.show_pd_btn)
+        btns.addWidget(self.relative_btn)
+        btns.addWidget(self.promote_to_powder_btn)
+        btns.addWidget(self.promote_to_powder_progress)
 
         time_zero_shift_layout = QtGui.QFormLayout()
         time_zero_shift_layout.addRow('Time-zero shift: ', self.time_zero_shift_widget)
@@ -284,8 +296,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         layout.addWidget(title)
         layout.addLayout(sliders)
         layout.addLayout(time_zero_shift_layout)
-        layout.addWidget(self.show_pd_btn)
-        layout.addLayout(promote_layout)
+        layout.addLayout(btns)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
@@ -297,7 +308,8 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.timedelay_widget.triggerAction(5) # SliderToMinimum
         self.timedelay_widget.sliderMoved.emit(0)
 
-        self.time_zero_shift_widget.setValue(t0_shift)
+        if t0_shift != self.time_zero_shift_widget.value():
+            self.time_zero_shift_widget.setValue(t0_shift)
     
     @QtCore.pyqtSlot()
     def goto_prev(self):

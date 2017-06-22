@@ -89,8 +89,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # will send background-subtracted data
         self._bgr_powder = False
 
-        # Internal state for display format of powder data.
+        # Internal state for display format of averaged and powder data
         self._relative_powder = False
+        self._relative_averaged = False
 
         # Internal state for the display of errorbars in powder data
         # TODO: add GUI widget to control this
@@ -102,7 +103,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # These attributes are not initialized to None since None is a valid
         # out parameter
         # TODO: is it worth it?
-        self._averaged_data_container = False
+        self._averaged_data_container = None
         self._powder_time_series_container = False
 
     @QtCore.pyqtSlot(int, int)
@@ -118,9 +119,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # new dataset loaded has different shape than before, etc.
         timedelay = self.dataset.corrected_time_points[timedelay_index]
         try:
-            self._averaged_data_container[:] = self.dataset.averaged_data(timedelay)
+            self._averaged_data_container[:] = self.dataset.averaged_data(timedelay, relative = self._relative_averaged)
         except:
-            self._averaged_data_container = self.dataset.averaged_data(timedelay)
+            self._averaged_data_container = self.dataset.averaged_data(timedelay, relative = self._relative_averaged)
         self.averaged_data_signal.emit(self._averaged_data_container)
         return self._averaged_data_container
     
@@ -146,6 +147,14 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     def enable_powder_relative(self, enable):
         self._relative_powder = enable
         self.display_powder_data()
+    
+    @QtCore.pyqtSlot(bool)
+    def enable_averaged_relative(self, enable):
+        self._relative_averaged = enable
+
+        # update averaged data display if possible
+        if self._averaged_data_container is not None:
+            self.averaged_data_signal.emit(self._averaged_data_container)
     
     @QtCore.pyqtSlot(bool)
     def enable_powder_error(self, enable):
