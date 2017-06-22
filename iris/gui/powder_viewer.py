@@ -27,7 +27,7 @@ class PowderViewer(QtGui.QWidget):
                                                   labels = {'left': 'Intensity (a. u.)', 
                                                             'bottom': ('time', 'ps')})
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
-       
+
         # Peak dynamics region-of-interest
         self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
         self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
@@ -43,7 +43,7 @@ class PowderViewer(QtGui.QWidget):
     def update_peak_dynamics(self):
         """ Update powder peak dynamics settings on demand. """
         self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion())
-    
+        
     @QtCore.pyqtSlot(object, object, object)
     def display_powder_data(self, scattering_length, powder_data_block, powder_error_block):
         """ 
@@ -58,10 +58,10 @@ class PowderViewer(QtGui.QWidget):
             Array for which each row is an azimuthal pattern for a specific time-delay. If None, all
             viewers are cleared.
         powder_error_block : ndarray, shape (M, N) or None
-            Array for which each row is the error for the corresponding azimuthal pattern. If None, all
-            viewers are cleared.
+            Array for which each row is the error for the corresponding azimuthal pattern. If None, error bars
+            are not displayed.
         """
-        if (scattering_length is None) or (powder_data_block is None) or (powder_error_block is None):
+        if (scattering_length is None) or (powder_data_block is None):
             self.powder_pattern_viewer.clear()
             self.peak_dynamics_viewer.clear()
             return
@@ -71,12 +71,14 @@ class PowderViewer(QtGui.QWidget):
         self.powder_pattern_viewer.enableAutoRange()
         self.powder_pattern_viewer.clear()
 
-        # Line plot
-        for pen, brush, curve, error in zip(pens, brushes, powder_data_block, powder_error_block):
+        for pen, brush, curve in zip(pens, brushes, powder_data_block):
             self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
-            error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error)
-            self.powder_pattern_viewer.addItem(error_bars)
+        
+        if powder_error_block is not None:
+            for pen, curve, error in zip(pens, powder_data_block, powder_error_block):
+                error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error, pen = pen)
+                self.powder_pattern_viewer.addItem(error_bars)
         
         self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
