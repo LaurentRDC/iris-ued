@@ -13,7 +13,7 @@ def dummy_dataset(**kwargs):
     """ Create a dummy DiffractionDataset, fills it with random data, and returns the filename. 
     All keyword arguments are passed to the DiffractionDataset's experimental parameters. """
     dataset_attributes = {'nscans': tuple(range(0, 5)),
-                          'time_points': tuple(range(0, 10)),
+                          'time_points': tuple(range(-5, 10)),
                           'acquisition_date': '0.0.0.0',
                           'fluence': 10.0,
                           'current': 0.0,
@@ -171,6 +171,24 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             self.assertSequenceEqual(time_slice.shape, dataset.scattering_length.shape)
             self.assertSequenceEqual(error_slice.shape, dataset.scattering_length.shape)
     
+    def test_powder_equilibrium(self):
+        """ Test PowderDiffractionDataset.powder_equilibrium() """
+        with PowderDiffractionDataset(name = dummy_powder_dataset(), mode = 'r+') as dataset:
+            with self.subTest('bgr = False'):
+                eq = dataset.powder_equilibrium()
+                self.assertSequenceEqual(eq.shape, dataset.scattering_length.shape)
+
+            with self.subTest('bgr = True'):
+                dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', mode = 'constant')
+                eq = dataset.powder_equilibrium(bgr = True)
+                self.assertSequenceEqual(eq.shape, dataset.scattering_length.shape)
+            
+            with self.subTest('No data before time-zero'):
+                dataset.shift_time_zero(1 + abs(min(dataset.time_points)))
+                eq = dataset.powder_equilibrium()
+                self.assertSequenceEqual(eq.shape, dataset.scattering_length.shape)
+                self.assertTrue(np.allclose(eq, np.zeros_like(eq)))
+    
     def test_recomputing_angular_average(self):
         """ Test that recomputing the angular average multiple times will work. This also
         tests resizing all powder data multiple times. """
@@ -178,7 +196,7 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             dataset.compute_angular_averages(center = (34, 56))
             dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift1')
             dataset.compute_angular_averages(center = (45, 45))
-            dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift1')
+            dataset.compute_baseline(first_stage = 'sym5', wavelet = 'qshift2')
     
     def test_baseline(self):
         """ Test the computation of wavelet baselines """

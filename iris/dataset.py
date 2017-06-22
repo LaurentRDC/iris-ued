@@ -1,6 +1,7 @@
 """
 @author: Laurent P. Rene de Cotret
 """
+from functools import lru_cache
 import h5py
 import numpy as np
 from os.path import join
@@ -100,7 +101,7 @@ class DiffractionDataset(h5py.File):
     @property
     def corrected_time_points(self):
         """ Time points corrected for time-zero shift. """
-        return tuple(np.array(self.time_points) - self.time_zero_shift)
+        return tuple(np.array(self.time_points) + self.time_zero_shift)
     
     def shift_time_zero(self, shift):
         """
@@ -109,7 +110,8 @@ class DiffractionDataset(h5py.File):
         Parameters
         ----------
         shift : float
-            Shift [ps].
+            Shift [ps]. A positive value of `shift` will move all time-points forward in time,
+            whereas a negative value of `shift` will move all time-points backwards in time.
         """
         self.time_zero_shift = shift
     
@@ -322,7 +324,39 @@ class PowderDiffractionDataset(DiffractionDataset):
     def scattering_length(self):
         return np.array(self.powder_group['scattering_length'])
 
-    def powder_data(self, timedelay, bgr = False, out = None):
+    def powder_equilibrium(self, bgr = False, out = None):
+        """ 
+        Returns the average powder diffraction pattern for all times before photoexcitation. 
+        In case no data is available before photoexcitation, an array of zeros is returned.
+
+        Parameters
+        ----------
+        bgr : bool
+            If True, background is removed.
+        out : ndarray or None, optional
+            If an out ndarray is provided, h5py can avoid
+            making intermediate copies.
+
+        Returns
+        -------
+        I : ndarray, shape (N,)
+            Diffracted intensity [counts]
+        """
+        t0_index = np.argmin(np.abs(self.corrected_time_points))
+        b4t0_slice = self.powder_group['intensity'][:t0_index, :]
+
+        # If there are no available data before time-zero, np.mean()
+        # will return an array of NaNs; instead, return zeros.
+        if t0_index == 0:
+            return np.zeros_like(self.scattering_length)
+
+        if not bgr:
+            return np.mean(b4t0_slice, axis = 0, out = out)
+        
+        bg = self.powder_group['baseline'][:t0_index, :]
+        return np.mean(b4t0_slice - bg, axis = 0, out = out)
+
+    def powder_data(self, timedelay, bgr = False, relative = False, out = None):
         """
         Returns the angular average data from scan-averaged diffraction patterns.
 
@@ -330,15 +364,18 @@ class PowderDiffractionDataset(DiffractionDataset):
         ----------
         timdelay : float or None
             Time-delay [ps]. If None, the entire block is returned.
-        bgr : bool
+        bgr : bool, optional
             If True, background is removed.
+        relative : bool, optional
+            If True, data is returned relative to the average of all diffraction patterns
+            before photoexcitation.
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
         
         Returns
         -------
-        I : ndarray, shape (N,)
+        I : ndarray, shape (N,) or (N,M)
             Diffracted intensity [counts]
         """
         dataset = self.powder_group['intensity']
@@ -361,6 +398,10 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         if bgr:
             out -= self.baseline(timedelay)
+        
+        if relative:
+            out -= self.powder_equilibrium(bgr = bgr)
+
         return out     
     
     def powder_error(self, timedelay, out = None):
