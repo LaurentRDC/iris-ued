@@ -40,7 +40,7 @@ class ControlBar(QtGui.QWidget):
         self.diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_averaged)
         self.diffraction_dataset_controls.promote_to_powder_btn.clicked.connect(lambda x: self.promote_to_powder.emit())
         self.diffraction_dataset_controls.time_zero_shift_widget.editingFinished.connect(
-            lambda v: self.time_zero_shift.emit(self.diffraction_dataset_controls.time_zero_shift_widget.value()))
+            lambda: self.time_zero_shift.emit(self.diffraction_dataset_controls.time_zero_shift_widget.value()))
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
