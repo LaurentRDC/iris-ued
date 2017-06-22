@@ -89,6 +89,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # will send background-subtracted data
         self._bgr_powder = False
 
+        # Internal state for display format of powder data.
+        self._relative_powder = False
+
         # TODO: add internal state to display diffraction patterns
         #       as relative change from t0
 
@@ -126,12 +129,19 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
         self.powder_data_signal.emit(self.dataset.scattering_length, 
-                                     self.dataset.powder_data(timedelay = None, bgr = self._bgr_powder), 
+                                     self.dataset.powder_data(timedelay = None, 
+                                                              relative = self._relative_powder, 
+                                                              bgr = self._bgr_powder), 
                                      self.dataset.powder_error(timedelay = None))
     
     @QtCore.pyqtSlot(bool)
     def powder_background_subtracted(self, enable):
         self._bgr_powder = enable
+        self.display_powder_data()
+    
+    @QtCore.pyqtSlot(bool)
+    def powder_relative(self, enable):
+        self._relative_powder = enable
         self.display_powder_data()
     
     @QtCore.pyqtSlot(dict)

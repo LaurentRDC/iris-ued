@@ -60,6 +60,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controls.recompute_angular_average.connect(self.launch_recompute_angular_average_dialog)
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
         self.controls.baseline_removed.connect(self.controller.powder_background_subtracted)
+        self.controls.relative_powder.connect(self.controller.powder_relative)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controls.time_zero_shift.connect(self.controller.set_time_zero_shift)
 
