@@ -189,7 +189,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
         self.setWindowTitle('Iris - UED data exploration')
         self.center_window()
-        self.show()
+        self.showMaximized()
         
     def closeEvent(self, event):
         self._controller_thread.quit()

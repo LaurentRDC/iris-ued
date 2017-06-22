@@ -1,8 +1,3 @@
-from collections.abc import Sized
-from functools import partial
-from itertools import starmap
-import multiprocessing as mp
-import numpy as n
 
 class cached_property(object):
     """

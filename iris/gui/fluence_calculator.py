@@ -16,8 +16,8 @@ class FluenceCalculatorDialog(QtGui.QDialog):
         self.setModal(True)
         self.setWindowTitle('Fluence calculator')
 
-        self.beam_size_x_edit = QtGui.QLineEdit('FWHM x [um]', parent = self)
-        self.beam_size_y_edit = QtGui.QLineEdit('FHMM y [um]', parent = self)
+        self.beam_size_x_edit = QtGui.QLineEdit('', parent = self)
+        self.beam_size_y_edit = QtGui.QLineEdit('', parent = self)
         self.beam_size_x_edit.textChanged.connect(self.update)
         self.beam_size_y_edit.textChanged.connect(self.update)
         beam_size = QtGui.QHBoxLayout()
@@ -29,22 +29,23 @@ class FluenceCalculatorDialog(QtGui.QDialog):
         self.laser_rep_rate_cb.setCurrentText('1000')
         self.laser_rep_rate_cb.currentIndexChanged.connect(self.update)
 
-        self.incident_laser_power_edit = QtGui.QLineEdit('Laser power [mW]', parent = self)
+        self.incident_laser_power_edit = QtGui.QLineEdit('', parent = self)
         self.incident_laser_power_edit.textChanged.connect(self.update)
 
-        self.fluence = QtGui.QLineEdit('Fluence (mJ/cm2)', parent = self)
+        self.fluence = QtGui.QLineEdit('', parent = self)
         self.fluence.setReadOnly(True)
 
         self.done_btn = QtGui.QPushButton('Done', self)
         self.done_btn.clicked.connect(self.accept)
         self.done_btn.setDefault(True)
 
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addLayout(beam_size)
-        self.layout.addWidget(self.laser_rep_rate_cb)
-        self.layout.addWidget(self.incident_laser_power_edit)
-        self.layout.addWidget(self.fluence)
-        self.layout.addWidget(self.done_btn)
+        self.layout = QtGui.QFormLayout()
+        self.layout.addRow('FWHM x [um]', self.beam_size_x_edit)
+        self.layout.addRow('FWHM y [um]', self.beam_size_y_edit)
+        self.layout.addRow('Laser reprate [Hz]', self.laser_rep_rate_cb)
+        self.layout.addRow('Laser power [mW]', self.incident_laser_power_edit)
+        self.layout.addRow('Fluence [mJ/cm2]', self.fluence)
+        self.layout.addRow(self.done_btn)
         self.setLayout(self.layout)
     
     @QtCore.pyqtSlot(str)
