@@ -180,19 +180,20 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
         
         for order, (index, avg, err) in enumerate(results):
 
+            # TODO: is it necessary to shift the `err` array?
+            #       for now I don't care
             if ref_im is None:
                 ref_im = avg
             else:
                 avg[:] = next(align(avg, reference = ref_im))
-                
+
             with DiffractionDataset(name = destination, mode = 'r+') as processed:
                 gp = processed.processed_measurements_group
                 gp['intensity'].write_direct(avg, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
                 gp['error'].write_direct(err, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
             
             callback(round(100*order / len(raw.time_points)))
-
-    print('Processing has taken {}'.format(str(dt.now() - start_time)))
+    
     return destination
 
 def pipeline(values, background, ref_im, valid_mask):
