@@ -160,10 +160,26 @@ class RawDataset(object):
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
         return imread(join(self.raw_directory, filename))
     
-    def timedelay_filenames(self, timedelay):
-        """ Generator of filenames of raw data for a specific time-delay """
+    def timedelay_filenames(self, timedelay, exclude_scans = list()):
+        """ 
+        Returns filenames of raw data for a specific time-delay.
+
+        Parameters
+        ----------
+        timedelay : str or float
+
+        exclude_scans : iterable of ints, optional
+        
+        Returns
+        -------
+        filenames : iterable of str
+        """
         #Template filename looks like:
         #    'data.timedelay.+1.00.nscan.04.pumpon.tif'
-        sign = '' if float(timedelay) < 0 else '+'
-        str_time = sign + '{0:.2f}'.format(float(timedelay))
-        return glob.glob(join(self.raw_directory, 'data.timedelay.' + str_time + '.nscan.*.pumpon.tif'))
+        valid_scans = set(self.nscans) - set(exclude_scans)
+        filenames = list()
+        for scan in valid_scans:
+            sign = '' if float(timedelay) < 0 else '+'
+            str_time = sign + '{0:.2f}'.format(float(timedelay))
+            filenames.append(join(self.raw_directory, 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'))
+        return filenames

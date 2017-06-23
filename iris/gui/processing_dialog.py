@@ -36,6 +36,13 @@ class ProcessingDialog(QtGui.QDialog):
         self.processes_widget.setRange(1, cpu_count() - 1)
         self.processes_widget.setValue(min([cpu_count(), 7]))
 
+        # Set exclude scan widget with a validator
+        # integers separated by commas only
+        self.exclude_scans_widget = QtGui.QLineEdit('', parent = self)
+        self.exclude_scans_widget.setPlaceholderText('[comma-separated]')
+        self.exclude_scans_widget.setValidator(
+            QtGui.QRegExpValidator(QtCore.QRegExp('^\d{1,4}(?:[,]\d{1,4})*$')))
+
         self.save_btn = QtGui.QPushButton('Launch processing', self)
         self.save_btn.clicked.connect(self.accept)
 
@@ -46,9 +53,15 @@ class ProcessingDialog(QtGui.QDialog):
         # Determine settings
         self.file_dialog = QtGui.QFileDialog(parent = self)
 
-        processes_layout = QtGui.QHBoxLayout()
-        processes_layout.addWidget(QtGui.QLabel('Number of cores to use:'))
-        processes_layout.addWidget(self.processes_widget)
+        processes_layout = QtGui.QFormLayout()
+        processes_layout.addRow('Number of cores to use:',self.processes_widget)
+
+        exclude_layout = QtGui.QFormLayout()
+        exclude_layout.addRow('Scans to exclude: ', self.exclude_scans_widget)
+
+        params_layout = QtGui.QHBoxLayout()
+        params_layout.addLayout(exclude_layout)
+        params_layout.addLayout(processes_layout)
 
         buttons = QtGui.QHBoxLayout()
         buttons.addWidget(self.save_btn)
@@ -56,7 +69,7 @@ class ProcessingDialog(QtGui.QDialog):
 
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.viewer)
-        self.layout.addLayout(processes_layout)
+        self.layout.addLayout(params_layout)
         self.layout.addLayout(buttons)
         self.setLayout(self.layout)
     
@@ -76,11 +89,21 @@ class ProcessingDialog(QtGui.QDialog):
         if filename == '':
             return
         
+        exclude_scans_text = self.exclude_scans_widget.text()
+        try:
+            exclude_scans = [int(exclude_scans_text)]
+        except ValueError:
+            exclude_scans_text = exclude_scans_text.split(',')
+            exclude_scans = list(map(int, exclude_scans_text))
+        except:
+            exclude_scans = []
+        
         # The arguments to the iris.processing.process function
         # more arguments will be added by controller
         kwargs = {'destination':filename, 
                   'beamblock_rect': beamblock_rect,
-                  'processes': self.processes_widget.value()}
+                  'processes': self.processes_widget.value(),
+                  'exclude_scans': exclude_scans}
         
         self.processing_parameters_signal.emit(kwargs)
         super().accept()

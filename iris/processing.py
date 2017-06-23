@@ -85,7 +85,7 @@ def uint_subtract_safe(arr1, arr2):
     result[np.greater(arr2, arr1)] = 0
     return result
 
-def process(raw, destination, beamblock_rect, processes = None, callback = None):
+def process(raw, destination, beamblock_rect, exclude_scans = list(), processes = None, callback = None):
     """ 
     Parallel processing of RawDataset into a DiffractionDataset.
 
@@ -96,7 +96,9 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
     destination : str
         Path to the destination HDF5.
     beamblock_rect : 4-tuple
-    
+
+    exclude_scans : iterable of ints, optional
+        Scans to exclude from the processing.
     processes : int or None, optional
         Number of Processes to spawn for processing. Default is number of available
         CPU cores.
@@ -111,12 +113,10 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
                'chunks' : True, 
                'shuffle' : True, 
                'fletcher32' : True}
-
-    start_time = dt.now()
+               
     with DiffractionDataset(name = destination, mode = 'w') as processed:
 
         processed.sample_type = 'single_crystal'       # By default
-        processed.nscans = raw.nscans
         processed.time_points = raw.time_points
         processed.acquisition_date = raw.acquisition_date
         processed.fluence = raw.fluence
@@ -126,6 +126,7 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
         processed.resolution = raw.resolution
         processed.beamblock_rect = beamblock_rect
         processed.time_zero_shift = 0.0
+        processed.nscans = tuple(sorted(set(raw.nscans) - set(exclude_scans)))
 
         # Preallocation
         shape = raw.resolution + (len(raw.time_points),)
@@ -170,22 +171,12 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
     # NOTE: It is important the fnames_iterators are sorted by time
     #       therefore, enumerate() gives the right index that goes in the pipeline function
     time_points_processed = 0
-    fnames_iterators = map(raw.timedelay_filenames, sorted(raw.time_points))
-
-    # Reference image for alignment of subsequent averages
-    ref_im = None
+    fnames_iterators = map(partial(raw.timedelay_filenames, exclude_scans = exclude_scans), sorted(raw.time_points))
     with Pool(processes) as pool:
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
                                       iterable = enumerate(fnames_iterators))
         
         for order, (index, avg, err) in enumerate(results):
-
-            # TODO: is it necessary to shift the `err` array?
-            #       for now I don't care
-            if ref_im is None:
-                ref_im = avg
-            else:
-                avg[:] = next(align(avg, reference = ref_im))
 
             with DiffractionDataset(name = destination, mode = 'r+') as processed:
                 gp = processed.processed_measurements_group
