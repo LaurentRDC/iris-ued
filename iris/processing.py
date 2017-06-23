@@ -171,12 +171,20 @@ def process(raw, destination, beamblock_rect, processes = None, callback = None)
     #       therefore, enumerate() gives the right index that goes in the pipeline function
     time_points_processed = 0
     fnames_iterators = map(raw.timedelay_filenames, sorted(raw.time_points))
+
+    # Reference image for alignment of subsequent averages
+    ref_im = None
     with Pool(processes) as pool:
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
                                       iterable = enumerate(fnames_iterators))
         
         for order, (index, avg, err) in enumerate(results):
 
+            if ref_im is None:
+                ref_im = avg
+            else:
+                avg[:] = next(align(avg, reference = ref_im))
+                
             with DiffractionDataset(name = destination, mode = 'r+') as processed:
                 gp = processed.processed_measurements_group
                 gp['intensity'].write_direct(avg, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
