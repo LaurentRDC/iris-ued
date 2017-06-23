@@ -108,7 +108,8 @@ class ControlBar(QtGui.QWidget):
     @QtCore.pyqtSlot(bool)
     def enable_diffraction_dataset_controls(self, enable):
         self.diffraction_dataset_controls.setEnabled(enable)
-        self.stack.setEnabled(enable)
+        self.notes_editor.setEnabled(enable)
+        self.metadata_widget.setEnabled(enable)
     
     @QtCore.pyqtSlot(bool)
     def enable_powder_diffraction_dataset_controls(self, enable):
