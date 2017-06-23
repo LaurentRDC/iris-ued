@@ -168,7 +168,7 @@ class RawDatasetControl(QtGui.QFrame):
         scan_layout.addWidget(prev_scan_btn)
         scan_layout.addWidget(next_scan_btn)
 
-        sliders = QtGui.QHBoxLayout()
+        sliders = QtGui.QVBoxLayout()
         sliders.addLayout(time_layout)
         sliders.addLayout(scan_layout)
 
@@ -276,13 +276,17 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.relative_btn.setCheckable(True)
         self.relative_btn.setChecked(False)
 
+        display_controls = QtGui.QGroupBox(title = 'Display options', parent = self)
+        display_controls_layout = QtGui.QVBoxLayout()
+        display_controls_layout.addWidget(self.show_pd_btn)
+        display_controls_layout.addWidget(self.relative_btn)
+        display_controls.setLayout(display_controls_layout)
+
         promote_layout = QtGui.QHBoxLayout()
         promote_layout.addWidget(self.promote_to_powder_btn)
         promote_layout.addWidget(self.promote_to_powder_progress)
 
         btns = QtGui.QHBoxLayout()
-        btns.addWidget(self.show_pd_btn)
-        btns.addWidget(self.relative_btn)
         btns.addWidget(self.promote_to_powder_btn)
         btns.addWidget(self.promote_to_powder_progress)
 
@@ -297,7 +301,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         layout.addWidget(title)
         layout.addLayout(sliders)
         layout.addLayout(time_zero_shift_layout)
-        layout.addLayout(btns)
+        layout.addWidget(display_controls)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
@@ -367,19 +371,21 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.relative_btn.setCheckable(True)
         self.relative_btn.setChecked(False)
 
-        baseline_controls_col1 = QtGui.QFormLayout()
-        baseline_controls_col1.addRow('First stage wavelet: ', self.first_stage_cb)
-        baseline_controls_col1.addRow('Dual-tree wavelet: ', self.wavelet_cb)
-        baseline_controls_col1.addRow(self.compute_baseline_btn)
+        baseline_controls = QtGui.QFormLayout()
+        baseline_controls.addRow('First stage wavelet: ', self.first_stage_cb)
+        baseline_controls.addRow('Dual-tree wavelet: ', self.wavelet_cb)
+        baseline_controls.addRow('Extensions mode: ', self.mode_cb)
+        baseline_controls.addRow('Iterations: ', self.max_iter_widget)
+        baseline_controls.addRow(self.compute_baseline_btn)
 
-        baseline_controls_col2 = QtGui.QFormLayout()
-        baseline_controls_col2.addRow('Extensions mode: ', self.mode_cb)
-        baseline_controls_col2.addRow('Iterations: ', self.max_iter_widget)
-        baseline_controls_col2.addRow(self.baseline_removed_btn)
+        baseline_computation = QtGui.QGroupBox(title = 'Baseline parameters', parent = self)
+        baseline_computation.setLayout(baseline_controls)
 
-        baseline_controls = QtGui.QHBoxLayout()
-        baseline_controls.addLayout(baseline_controls_col1)
-        baseline_controls.addLayout(baseline_controls_col2)
+        display_controls = QtGui.QGroupBox(title = 'Display options', parent = self)
+        display_controls_layout = QtGui.QVBoxLayout()
+        display_controls_layout.addWidget(self.baseline_removed_btn)
+        display_controls_layout.addWidget(self.relative_btn)
+        display_controls.setLayout(display_controls_layout)
 
         # TODO: add callback and progressbar for computing the baseline?
 
@@ -389,8 +395,8 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
-        layout.addWidget(self.relative_btn)
-        layout.addLayout(baseline_controls)
+        layout.addWidget(baseline_computation)
+        layout.addWidget(display_controls)
         layout.addLayout(angular_average_layout)
         self.setLayout(layout)
         self.resize(self.minimumSize())
