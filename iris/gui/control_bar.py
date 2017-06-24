@@ -40,6 +40,7 @@ class ControlBar(QtGui.QWidget):
         self.diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_averaged)
         self.diffraction_dataset_controls.promote_to_powder_btn.clicked.connect(lambda x: self.promote_to_powder.emit())
         self.diffraction_dataset_controls.time_zero_shift_widget.valueChanged.connect(self.time_zero_shift)
+        self.diffraction_dataset_controls.clear_time_zero_shift_btn.clicked.connect(lambda _: self.time_zero_shift.emit(0))
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
@@ -252,17 +253,19 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.time_zero_shift_widget.setSuffix(' ps')
         self.time_zero_shift_widget.setValue(0.0)
 
+        self.clear_time_zero_shift_btn = QtGui.QPushButton('Clear time-zero shift', parent = self)
+
         prev_btn = QtGui.QPushButton('<', self)
         prev_btn.clicked.connect(self.goto_prev)
 
         next_btn = QtGui.QPushButton('>', self)
         next_btn.clicked.connect(self.goto_next)
 
-        sliders = QtGui.QGridLayout()
-        sliders.addWidget(self.td_label, 0, 0, 1, 1)
-        sliders.addWidget(self.timedelay_widget, 0, 1, 1, 5)
-        sliders.addWidget(prev_btn, 0, 6, 1, 1)
-        sliders.addWidget(next_btn, 0, 7, 1, 1)
+        sliders = QtGui.QHBoxLayout()
+        sliders.addWidget(self.td_label)
+        sliders.addWidget(self.timedelay_widget)
+        sliders.addWidget(prev_btn)
+        sliders.addWidget(next_btn)
 
         self.show_pd_btn = QtGui.QPushButton('Show/hide peak dynamics', parent = self)
         self.show_pd_btn.setCheckable(True)
@@ -276,7 +279,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.relative_btn.setChecked(False)
 
         display_controls = QtGui.QGroupBox(title = 'Display options', parent = self)
-        display_controls_layout = QtGui.QVBoxLayout()
+        display_controls_layout = QtGui.QHBoxLayout()
         display_controls_layout.addWidget(self.show_pd_btn)
         display_controls_layout.addWidget(self.relative_btn)
         display_controls.setLayout(display_controls_layout)
@@ -284,10 +287,11 @@ class DiffractionDatasetControl(QtGui.QFrame):
         promote_layout = QtGui.QHBoxLayout()
         promote_layout.addWidget(self.promote_to_powder_btn)
         promote_layout.addWidget(self.promote_to_powder_progress)
-        promote_layout.addWidget(self.promote_to_powder_progress)
 
-        time_zero_shift_layout = QtGui.QFormLayout()
-        time_zero_shift_layout.addRow('Time-zero shift: ', self.time_zero_shift_widget)
+        time_zero_shift_layout = QtGui.QHBoxLayout()
+        time_zero_shift_layout.addWidget(QtGui.QLabel('Time-zero shift: ', parent = self))
+        time_zero_shift_layout.addWidget(self.time_zero_shift_widget)
+        time_zero_shift_layout.addWidget(self.clear_time_zero_shift_btn)
 
         title = QtGui.QLabel('<h2>Diffraction dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
@@ -298,6 +302,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         layout.addLayout(sliders)
         layout.addLayout(time_zero_shift_layout)
         layout.addWidget(display_controls)
+        layout.addLayout(promote_layout)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
@@ -378,7 +383,7 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         baseline_computation.setLayout(baseline_controls)
 
         display_controls = QtGui.QGroupBox(title = 'Display options', parent = self)
-        display_controls_layout = QtGui.QVBoxLayout()
+        display_controls_layout = QtGui.QHBoxLayout()
         display_controls_layout.addWidget(self.baseline_removed_btn)
         display_controls_layout.addWidget(self.relative_btn)
         display_controls.setLayout(display_controls_layout)
@@ -391,9 +396,9 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(title)
+        layout.addLayout(angular_average_layout)
         layout.addWidget(baseline_computation)
         layout.addWidget(display_controls)
-        layout.addLayout(angular_average_layout)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
@@ -462,7 +467,7 @@ class NotesEditor(QtGui.QFrame):
 
         # Set editor size such that 60 characters will fit
         font_info = QtGui.QFontInfo(self.editor.currentFont())
-        self.editor.setMaximumWidth(60 * font_info.pixelSize())
+        self.editor.setMaximumWidth(40*font_info.pixelSize())
         self.editor.setLineWrapMode(QtGui.QTextEdit.WidgetWidth)  # widget width
 
         layout = QtGui.QVBoxLayout()

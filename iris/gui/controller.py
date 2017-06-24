@@ -5,6 +5,7 @@ from functools import wraps
 import traceback
 from contextlib import suppress
 from types import FunctionType
+import warnings
 
 import numpy as np
 from pyqtgraph import QtCore
@@ -27,6 +28,7 @@ def error_aware(func):
         except:
             exc = traceback.format_exc()
             self.error_message_signal.emit(exc)
+            warnings.warn(exc, UserWarning)
     return aware_func
 
 class ErrorAware(QtCore.pyqtWrapperType):
