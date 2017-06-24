@@ -93,7 +93,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
         self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
         self.controller.powder_time_series_signal.connect(self.powder_viewer.display_peak_dynamics)
-
+        self.controls.enable_connect_time_series.connect(self.powder_viewer.set_time_series_connect)
         # UI components
         self.controller.error_message_signal.connect(self.show_error_message)
         self.error_message_signal.connect(self.show_error_message)
