@@ -213,7 +213,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         y2 = round(max(0, rect.y() + rect.height() ))
 
         integrated = self.dataset.time_series( (y1, y2, x1, x2) )
-        self.time_series_signal.emit(self.dataset.time_points, integrated)
+        self.time_series_signal.emit(self.dataset.corrected_time_points, integrated)
     
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
@@ -243,7 +243,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
                 self.display_powder_data()
 
             # Update powder time series x-axis
-            if self._powder_time_series_container:
+            # if self._powder_time_series_container is None, then it
+            # means that powder series has not been plotted yet
+            if self._powder_time_series_container is not None:
                 self.powder_time_series_signal.emit(self.dataset.corrected_time_points, self._powder_time_series_container)
     
     @QtCore.pyqtSlot(str)

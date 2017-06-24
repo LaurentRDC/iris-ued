@@ -39,8 +39,7 @@ class ControlBar(QtGui.QWidget):
         self.diffraction_dataset_controls.show_pd_btn.toggled.connect(self.enable_peak_dynamics)
         self.diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_averaged)
         self.diffraction_dataset_controls.promote_to_powder_btn.clicked.connect(lambda x: self.promote_to_powder.emit())
-        self.diffraction_dataset_controls.time_zero_shift_widget.editingFinished.connect(
-            lambda: self.time_zero_shift.emit(self.diffraction_dataset_controls.time_zero_shift_widget.value()))
+        self.diffraction_dataset_controls.time_zero_shift_widget.valueChanged.connect(self.time_zero_shift)
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
@@ -285,10 +284,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         promote_layout = QtGui.QHBoxLayout()
         promote_layout.addWidget(self.promote_to_powder_btn)
         promote_layout.addWidget(self.promote_to_powder_progress)
-
-        btns = QtGui.QHBoxLayout()
-        btns.addWidget(self.promote_to_powder_btn)
-        btns.addWidget(self.promote_to_powder_progress)
+        promote_layout.addWidget(self.promote_to_powder_progress)
 
         time_zero_shift_layout = QtGui.QFormLayout()
         time_zero_shift_layout.addRow('Time-zero shift: ', self.time_zero_shift_widget)
@@ -306,7 +302,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.resize(self.minimumSize())
     
     def update_dataset_metadata(self, metadata):
-        self.time_points = metadata.get('time_points')
+        self.time_points = metadata.get('corrected_time_points')
         t0_shift = metadata.get('time_zero_shift')
 
         self.timedelay_widget.setRange(0, len(self.time_points) - 1)
