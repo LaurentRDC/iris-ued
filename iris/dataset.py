@@ -84,7 +84,7 @@ class DiffractionDataset(h5py.File):
     @property
     def metadata(self):
         """ Dictionary of the dataset's metadata """
-        return dict(self.attrs.items())
+        return dict(self.attrs.items(), **{'corrected_time_points': self.corrected_time_points})
     
     @cached_property
     def valid_mask(self):
