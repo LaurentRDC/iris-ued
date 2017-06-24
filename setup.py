@@ -3,9 +3,8 @@ import numpy
 from setuptools import setup, find_packages
 import glob
 
-__version__ = '4.0.4'
+__version__ = '4.0.5'
 __author__ = 'Laurent P. René de Cotret'
-
 
 #To create a Windows installer for this, run:
 # >>> python setup.py bdist_wininst

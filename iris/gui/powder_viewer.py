@@ -19,6 +19,10 @@ class PowderViewer(QtGui.QWidget):
     def __init__(self, *args, **kwargs):
         
         super().__init__(*args, **kwargs)
+
+        # Internal that stores whether time-series points should
+        # be connected or not
+        self._time_series_connect = False
                 
         self.powder_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
                                                    labels = {'left': 'Intensity (counts)', 
@@ -39,6 +43,11 @@ class PowderViewer(QtGui.QWidget):
         self.setLayout(layout)
         self.resize(self.maximumSize())
     
+    @QtCore.pyqtSlot(bool)
+    def set_time_series_connect(self, enable):
+        self._time_series_connect = enable
+        self.update_peak_dynamics()
+
     @QtCore.pyqtSlot()
     def update_peak_dynamics(self):
         """ Update powder peak dynamics settings on demand. """
@@ -95,10 +104,11 @@ class PowderViewer(QtGui.QWidget):
 
         intensities /= intensities.max()
 
-        self.peak_dynamics_viewer.plot(times, intensities, 
-                                       pen = None, symbol = 'o', 
+        connect_kwargs = {'pen': None} if not self._time_series_connect else {}
+
+        self.peak_dynamics_viewer.plot(times, intensities, symbol = 'o', 
                                        symbolPen = pens, symbolBrush = brushes, 
-                                       symbolSize = 5, clear = True)
+                                       symbolSize = 5, clear = True, **connect_kwargs)
         
         #if errors is not None:
         #    error_bars = pg.ErrorBarItem(x = times, y = intensities, height = errors)

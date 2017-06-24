@@ -25,6 +25,7 @@ class ControlBar(QtGui.QWidget):
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
     time_zero_shift = QtCore.pyqtSignal(float)
     notes_updated = QtCore.pyqtSignal(str)
+    enable_connect_time_series = QtCore.pyqtSignal(bool)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -47,6 +48,7 @@ class ControlBar(QtGui.QWidget):
         self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
         self.powder_diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_powder)
         self.powder_diffraction_dataset_controls.recompute_angular_average_btn.clicked.connect(self.recompute_angular_average.emit)
+        self.powder_diffraction_dataset_controls.connect_time_series_points_btn.toggled.connect(self.enable_connect_time_series)
 
         self.metadata_widget = MetadataWidget(parent = self)
 
@@ -368,6 +370,10 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.baseline_removed_btn.setCheckable(True)
         self.baseline_removed_btn.setChecked(False)
 
+        self.connect_time_series_points_btn = QtGui.QPushButton('Connect')
+        self.connect_time_series_points_btn.setCheckable(True)
+        self.connect_time_series_points_btn.setChecked(False)
+
         self.relative_btn = QtGui.QPushButton('Show relative', parent = self)
         self.relative_btn.setCheckable(True)
         self.relative_btn.setChecked(False)
@@ -386,6 +392,7 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         display_controls_layout = QtGui.QHBoxLayout()
         display_controls_layout.addWidget(self.baseline_removed_btn)
         display_controls_layout.addWidget(self.relative_btn)
+        display_controls_layout.addWidget(self.connect_time_series_points_btn)
         display_controls.setLayout(display_controls_layout)
 
         # TODO: add callback and progressbar for computing the baseline?
