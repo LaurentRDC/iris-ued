@@ -36,6 +36,9 @@ class ProcessingDialog(QtGui.QDialog):
         self.processes_widget.setRange(1, cpu_count() - 1)
         self.processes_widget.setValue(min([cpu_count(), 7]))
 
+        self.alignment_tf_widget = QtGui.QCheckBox('Perform alignment', parent = self)
+        self.alignment_tf_widget.setChecked(True)
+
         # Set exclude scan widget with a validator
         # integers separated by commas only
         self.exclude_scans_widget = QtGui.QLineEdit('', parent = self)
@@ -62,6 +65,7 @@ class ProcessingDialog(QtGui.QDialog):
         params_layout = QtGui.QHBoxLayout()
         params_layout.addLayout(exclude_layout)
         params_layout.addLayout(processes_layout)
+        params_layout.addWidget(self.alignment_tf_widget)
 
         buttons = QtGui.QHBoxLayout()
         buttons.addWidget(self.save_btn)
@@ -104,7 +108,8 @@ class ProcessingDialog(QtGui.QDialog):
         kwargs = {'destination':filename, 
                   'beamblock_rect': beamblock_rect,
                   'processes': self.processes_widget.value(),
-                  'exclude_scans': exclude_scans}
+                  'exclude_scans': exclude_scans,
+                  'align': self.alignment_tf_widget.isChecked()}
         
         self.processing_parameters_signal.emit(kwargs)
         super().accept()
