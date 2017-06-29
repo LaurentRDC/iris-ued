@@ -159,13 +159,11 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             self.assertIs(dataset.first_stage, None)
             self.assertIs(dataset.wavelet, None)
             self.assertIs(dataset.level, None)
-            self.assertFalse(dataset.baseline_removed)
 
             dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', level = 1, mode = 'periodic')
             self.assertEqual(dataset.first_stage, 'sym6')
             self.assertEqual(dataset.wavelet, 'qshift3')
             self.assertEqual(dataset.level, 1)
-            self.assertTrue(dataset.baseline_removed)
 
     def test_powder_data_retrieval(self):
         """ Test the size of the output from PowderDiffractionDataset.powder_data 
