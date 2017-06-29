@@ -11,11 +11,12 @@ from os.path import join
 
 import numpy as np
 from skimage.io import imread
-from skued.image_analysis import align, powder_center, shift_image
+from skued.image_analysis import align, powder_center, shift_image, angular_average
+
+from .dataset import DiffractionDataset, PowderDiffractionDataset
+from .utils import scattering_length
 
 # TODO: for a single scan, this function fails
-from .dataset import DiffractionDataset, PowderDiffractionDataset
-
 def diff_avg(images, valid_mask = None, weights = None):
     """ 
     Streaming average of diffraction images.
@@ -170,7 +171,6 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(), processes 
     #       increase chunksize to two or three?
     # NOTE: It is important the fnames_iterators are sorted by time
     #       therefore, enumerate() gives the right index that goes in the pipeline function
-    time_points_processed = 0
     fnames_iterators = map(partial(raw.timedelay_filenames, exclude_scans = exclude_scans), sorted(raw.time_points))
     with Pool(processes) as pool:
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
@@ -219,3 +219,71 @@ def pipeline(values, background, ref_im, valid_mask):
     
     avg, err = diff_avg(aligned, valid_mask = valid_mask, weights = None)
     return index, avg, err
+
+def perscan(raw, srange, center, mask = None, exclude_scans = list(), callback = None):
+    """ 
+    Build the scan-by-scan array, for which each row is a time-series of a diffraction
+    peak for a single scan. Only powder datasets are supported for now.
+
+    Parameters
+    ----------
+    raw : RawDataset
+        Raw dataset instance.
+    srange : 2-tuple of floats
+        Diffracted intensity will be integrated between those bounds.
+    center : 2-tuple of ints
+        Center of the diffraction pattern.
+    mask : ndarray or None, optional
+        Mask that evaluates to True on invalid pixels
+    exclude_scans : iterable of ints, optional
+        Scans to exclude from the processing.
+    callback : callable or None, optional
+        Callable that takes an int between 0 and 99. This can be used for progress update.
+    
+    Returns
+    -------
+    scans : iterable of ints
+        Scans appearing in the scan-by-scan array
+    time_points : iterable of floats
+        Time-points appearing in the scan-by-scan array [ps]
+    scan_by_scan : ndarray, shape (N, M)
+        Scan-by-scan analysis. Each row is a time-series of a scan.
+    """
+    if callback is None:
+        callback = lambda _: None
+
+    # NOTE: for the rare options 'pumpon only' in UEDbeta, there is no pumpoff_background
+    pumpon_filenames = glob.glob(join(raw.raw_directory, 'background.*.pumpon.tif'))
+    pumpon_background = sum(map(lambda f: np.asfarray(imread(f)), pumpon_filenames))/len(pumpon_filenames)
+
+    if mask is None:
+        mask = np.zeros_like(pumpon_background, dtype = np.bool)
+    
+    time_points = raw.time_points
+    scans = set(raw.nscans) - set(exclude_scans)
+    total = len(scans) * len(time_points)
+
+    # Determine range between which to integrate
+    r, _ = angular_average(pumpon_background, center = center, mask = mask)
+    s = scattering_length(r, energy = raw.energy)
+    i_min = np.argmin(np.abs(s - min(srange)))
+    i_max = np.argmin(np.abs(s - max(srange)))
+
+    scan_by_scan = np.empty(shape = (len(scans), len(time_points)), dtype = np.float)
+    im = np.empty_like(pumpon_background, np.uint16)
+
+    for time_index, time_point in enumerate(sorted(time_points)):
+        for scan_index, scan in enumerate(scans):
+            im[:] = raw.raw_data(time_point, scan = scan)
+            im[:] = uint_subtract_safe(im, pumpon_background)
+            _, I = angular_average(im, center = center, mask = mask)
+
+            scan_by_scan[scan_index, time_index] = np.sum(I[i_min : i_max + 1])
+
+        print('Time point {} ps done'.format(time_point))
+
+            # TODO: progress callback
+            # TODO: parallel
+            # TODO: alignment
+        
+    return scans, time_points, scan_by_scan

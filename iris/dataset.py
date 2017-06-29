@@ -10,6 +10,7 @@ from skimage.io import imread
 from skued.image_analysis import angular_average
 from skued.baseline import baseline_dt, dt_max_level
 from tempfile import gettempdir
+from warnings import warn
 
 from .utils import scattering_length
 from .optimizations import cached_property
@@ -428,7 +429,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             dataset.read_direct(out, source_sel = np.s_[time_index,:], dest_sel = np.s_[:])
 
         if bgr:
-            out -= self.baseline(timedelay)
+            out -= self.powder_baseline(timedelay)
         
         if relative:
             out -= self.powder_equilibrium(bgr = bgr)
@@ -471,7 +472,12 @@ class PowderDiffractionDataset(DiffractionDataset):
             dataset.read_direct(out, source_sel = np.s_[time_index,:], dest_sel = np.s_[:])  
         return out
 
-    def baseline(self, timedelay, out = None):
+    
+    def baseline(self, *args, **kwargs):
+        warn('PowderDiffractionDataset.baseline() is deprecated.  \
+              See PowderDiffractionDataset.powder_baseline', DeprecationWarning)
+    
+    def powder_baseline(self, timedelay, out = None):
         """ 
         Returns the baseline data. 
 
@@ -491,8 +497,11 @@ class PowderDiffractionDataset(DiffractionDataset):
         """
         if not self.baseline_removed:
             return np.zeros_like(self.scattering_length)
-
-        dataset = self.powder_group['baseline']
+        
+        try:
+            dataset = self.powder_group['baseline']
+        except KeyError:
+            return np.zeros_like(self.scattering_length)
 
         if timedelay is None:
             if out is None:

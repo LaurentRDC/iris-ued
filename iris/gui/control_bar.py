@@ -444,7 +444,7 @@ class MetadataWidget(QtGui.QWidget):
         self.table.clear()
         self.table.setRowCount(len(metadata) - 1 if 'notes' in metadata else len(metadata))
         for row, (key, value) in enumerate(metadata.items()):
-            if isinstance(value, Iterable) and key not in ('acquisition_date', 'sample_type'):
+            if isinstance(value, Iterable) and (not isinstance(value, str)):
                 if len(value) > 4:
                     key += ' (length)'
                     value = len(tuple(value))
@@ -454,7 +454,6 @@ class MetadataWidget(QtGui.QWidget):
         
         self.table.resizeColumnsToContents()
         self.table.horizontalHeader().setStretchLastSection(True)
-
 
 class NotesEditor(QtGui.QFrame):
 

@@ -84,10 +84,10 @@ class PowderViewer(QtGui.QWidget):
             self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
         
-        if powder_error_block is not None:
-            for pen, curve, error in zip(pens, powder_data_block, powder_error_block):
-                error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error, pen = pen)
-                self.powder_pattern_viewer.addItem(error_bars)
+        #if powder_error_block is not None:
+        #    for pen, curve, error in zip(pens, powder_data_block, powder_error_block):
+        #        error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error, pen = pen)
+        #        self.powder_pattern_viewer.addItem(error_bars)
         
         self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
