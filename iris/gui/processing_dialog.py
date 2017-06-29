@@ -94,9 +94,10 @@ class ProcessingDialog(QtGui.QDialog):
             exclude_scans = [int(exclude_scans_text)]
         except ValueError:
             exclude_scans_text = exclude_scans_text.split(',')
-            exclude_scans = list(map(int, exclude_scans_text))
-        except:
-            exclude_scans = []
+            try:
+                exclude_scans = list(map(int, exclude_scans_text))
+            except:
+                exclude_scans = []
         
         # The arguments to the iris.processing.process function
         # more arguments will be added by controller
