@@ -86,7 +86,8 @@ def uint_subtract_safe(arr1, arr2):
     result[np.greater(arr2, arr1)] = 0
     return result
 
-def process(raw, destination, beamblock_rect, exclude_scans = list(), processes = None, callback = None):
+def process(raw, destination, beamblock_rect, exclude_scans = list(), 
+            processes = None, callback = None, align = True):
     """ 
     Parallel processing of RawDataset into a DiffractionDataset.
 
@@ -105,6 +106,8 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(), processes 
         CPU cores.
     callback : callable or None, optional
         Callable that takes an int between 0 and 99. This can be used for progress update.
+    align : bool, optional
+        If True (default), raw images will be aligned on a per-scan basis.
     """
     if callback is None:
         callback = lambda i: None
@@ -161,7 +164,9 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(), processes 
     with DiffractionDataset(name = destination, mode = 'r+') as processed:
         processed.experimental_parameters_group.create_dataset(name = 'valid_mask', data = valid_mask)
 
-    ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background) # Reference for alignment
+    ref_im = None
+    if align:
+        ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background) # Reference for alignment
     mapkwargs = {'background': pumpon_background, 'ref_im': ref_im, 'valid_mask': valid_mask}
 
     # an iterator is used so that writing to the HDF5 file can be done in
@@ -197,8 +202,9 @@ def pipeline(values, background, ref_im, valid_mask):
         Index and filenames of diffraction pictures
     background : ndarray, dtype uint16
         Pump-on diffraction background
-    ref_im : ndarray
+    ref_im : ndarray or None
         Background-subtracted diffraction pattern used as reference for alignment.
+        If None, no alignment is performed.
     valid_mask : ndarray, dtype bool
         Image mask that evaluates to True on valid pixels.
     
@@ -215,7 +221,10 @@ def pipeline(values, background, ref_im, valid_mask):
     images = map(imread, fnames)
 
     images_bs = map(partial(uint_subtract_safe, **{'arr2': background}), images)
-    aligned = align(images_bs, reference = ref_im)
+    if ref_im is None:
+        aligned = map(lambda x: x, images_bs)
+    else:
+        aligned = align(images_bs, reference = ref_im)
     
     avg, err = diff_avg(aligned, valid_mask = valid_mask, weights = None)
     return index, avg, err
