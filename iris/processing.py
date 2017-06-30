@@ -132,16 +132,6 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
         processed.time_zero_shift = 0.0
         processed.nscans = tuple(sorted(set(raw.nscans) - set(exclude_scans)))
 
-        # Preallocation
-        # We do not chunk these datasets because
-        #   1. They will never be resized;
-        #   2. There are cases when we want chunking along axis 2, and other cases
-        #      in which we want chunking along axes (0, 1).
-        shape = raw.resolution + (len(raw.time_points),)
-        gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'intensity', shape = shape, dtype = np.float32, fillvalue = 0.0)
-        gp.create_dataset(name = 'error', shape = shape, dtype = np.float32, fillvalue = 0.0)
-
     # Average background images
     # If background images are not found, save empty backgrounds
     # NOTE: sum of images must be done as float arrays, otherwise the values
@@ -181,19 +171,30 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
     # NOTE: It is important the fnames_iterators are sorted by time
     #       therefore, enumerate() gives the right index that goes in the pipeline function
     fnames_iterators = map(partial(raw.timedelay_filenames, exclude_scans = exclude_scans), sorted(raw.time_points))
+    shape = raw.resolution + (len(raw.time_points),)
+    intensity = np.empty(shape = shape, dtype = np.float)
+    error = np.empty_like(intensity)
+    
     with Pool(processes) as pool:
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
-                                      iterable = enumerate(fnames_iterators))
+                                      iterable = enumerate(fnames_iterators),
+                                      chunksize = 1)
         
         for order, (index, avg, err) in enumerate(results):
-
-            with DiffractionDataset(name = destination, mode = 'r+') as processed:
-                gp = processed.processed_measurements_group
-                gp['intensity'].write_direct(avg, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
-                gp['error'].write_direct(err, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
-            
+            intensity[:,:,index] = avg
+            error[:,:,index] = err
             callback(round(100*order / len(raw.time_points)))
     
+    # Preallocation
+    # We do not chunk these datasets because
+    #   1. They will never be resized;
+    #   2. There are cases when we want chunking along axis 2, and other cases
+    #      in which we want chunking along axes (0, 1).
+    with DiffractionDataset(name = destination, mode = 'r+') as processed:
+        gp = processed.processed_measurements_group
+        gp.create_dataset(name = 'intensity', data = intensity, dtype = np.float32)
+        gp.create_dataset(name = 'error', data = error, dtype = np.float32)
+
     return destination
 
 def pipeline(values, background, ref_im, valid_mask):

@@ -1,5 +1,6 @@
 
 from .. import parse_tagfile
+from .dummies import dummy_raw_dataset
 from os.path import join, dirname
 import unittest
 
@@ -20,6 +21,9 @@ class TestParseTagfile(unittest.TestCase):
     def test_values(self):
         """ Test that the result of parse_tagfile is correct """
         self.assertDictEqual(self.metadata, PARSED_METADATA)
+
+class TestRawDataset(unittest.TestCase):
+    pass
 
 if __name__ == '__main__':
     unittest.main()
