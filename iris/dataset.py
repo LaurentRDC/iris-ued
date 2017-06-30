@@ -581,10 +581,13 @@ class PowderDiffractionDataset(DiffractionDataset):
         baseline_kwargs.update(**kwargs)
         
         baseline = np.ascontiguousarray(trend + baseline_dt(**baseline_kwargs)) # In rare cases this wasn't C-contiguous
-        
-        # The baseline dataset is guaranteed to exist when compuring angular average
-        self.powder_group['baseline'].resize(baseline.shape)
-        self.powder_group['baseline'].write_direct(baseline)
+        if 'baseline' not in self.powder_group:
+            self.powder_group.create_dataset(name = 'baseline', data = baseline, 
+                                             maxshape = (len(self.time_points), max(self.resolution)),
+                                             **self.compression_params)
+        else:
+            self.powder_group['baseline'].resize(baseline.shape)
+            self.powder_group['baseline'].write_direct(baseline)
         
         if level == None:
             level = dt_max_level(data = self.scattering_length, first_stage = first_stage, wavelet = wavelet)
@@ -592,6 +595,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.level = level
         self.first_stage = first_stage
         self.wavelet = wavelet
+        self.baseline_removed = True
     
     def compute_angular_averages(self, center = None, callback = None):
         """ 
@@ -637,10 +641,10 @@ class PowderDiffractionDataset(DiffractionDataset):
         # We allow resizing. In theory, an angular averave could never be longer than the resolution
         maxshape = (len(self.time_points), max(self.resolution))
         if 'intensity' not in self.powder_group:
-            # We allow resizing. In theory, an angular average could never be longer than the resolution
+            # We allow resizing. In theory, an angualr averave could never be longer than the resolution
             # Only chunked datasets are resizeable
-            self.powder_group.create_dataset(name = 'intensity', data = rintensity, maxshape = maxshape)
-            self.powder_group.create_dataset(name = 'error', data = rerror,  maxshape = maxshape)
+            self.powder_group.create_dataset(name = 'intensity', data = rintensity, maxshape = maxshape, chunks = True)
+            self.powder_group.create_dataset(name = 'error', data = rerror,  maxshape = maxshape, chunks = True)
         else:
             self.powder_group['intensity'].resize(rintensity.shape)
             self.powder_group['intensity'].write_direct(rintensity)
@@ -648,25 +652,16 @@ class PowderDiffractionDataset(DiffractionDataset):
             self.powder_group['error'].write_direct(rerror)
         
         # TODO: variable pixel_width and camera distance in the future
-        # TODO: attach 'scattering_length' as a dimension scale 
-        #       http://docs.h5py.org/en/latest/high/dims.html
         px_radius = results[0][0]
         s_length = scattering_length(px_radius, energy = self.energy)
         if 'scattering_length' not in self.powder_group:
             self.powder_group.create_dataset(name = 'scattering_length', data = s_length, 
-                                             maxshape = (max(self.resolution),))
+                                             maxshape = (max(self.resolution),), chunks = True)
         else:
             self.powder_group['scattering_length'].resize(s_length.shape)
             self.powder_group['scattering_length'].write_direct(s_length)
 
-        # Check that the baseline dataset exists / has correct shape
-        if 'baseline' not in self.powder_group:
-            self.powder_group.create_dataset(name = 'baseline', shape = rintensity.shape, 
-                                             maxshape = (len(self.time_points), max(self.resolution)),
-                                             fillvalue = 0.0)
-        else:
-            self.powder_group['baseline'].resize(rintensity.shape)
-            self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
+        self.baseline_removed = False   # baseline is not valid anymore
 
         callback(100)
 

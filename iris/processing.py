@@ -62,7 +62,6 @@ def diff_avg(images, valid_mask = None, weights = None):
 
     # Running calculation
     # `k` represents the number of images consumed so far
-    k = 2 # in case there is a single scan, k needs to be initialized
     for k, image in enumerate(images, start = 2):
 
         # streaming weighted average
@@ -109,14 +108,15 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
         Callable that takes an int between 0 and 99. This can be used for progress update.
     align : bool, optional
         If True (default), raw images will be aligned on a per-scan basis.
-    
-    Returns
-    -------
-    destination : str
-        Path to the newly-assembled DiffractionDataset
     """
     if callback is None:
         callback = lambda i: None
+
+    # Prepare compression kwargs
+    ckwargs = {'compression' : 'lzf', 
+               'chunks' : True, 
+               'shuffle' : True, 
+               'fletcher32' : True}
                
     with DiffractionDataset(name = destination, mode = 'w') as processed:
 
@@ -132,13 +132,11 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
         processed.time_zero_shift = 0.0
         processed.nscans = tuple(sorted(set(raw.nscans) - set(exclude_scans)))
 
-        # Chunks are deactivated for the averaged data because 
-        # 1. they will never be resized;
-        # 2. there is no natural chunking size
+        # Preallocation
         shape = raw.resolution + (len(raw.time_points),)
         gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'intensity', shape = shape, dtype = np.float32)
-        gp.create_dataset(name = 'error', shape = shape, dtype = np.float32)
+        gp.create_dataset(name = 'intensity', shape = shape, dtype = np.float32, **ckwargs)
+        gp.create_dataset(name = 'error', shape = shape, dtype = np.float32, **ckwargs)
 
     # Average background images
     # If background images are not found, save empty backgrounds
@@ -156,8 +154,8 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
 
     with DiffractionDataset(name = destination, mode = 'r+') as processed:
         gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = np.float32)
-        gp.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = np.float32)
+        gp.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = np.float32, **ckwargs)
+        gp.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = np.float32, **ckwargs)
 
     # Create a mask of valid pixels (e.g. not on the beam block, not a hot pixel)
     x1,x2,y1,y2 = beamblock_rect
@@ -171,21 +169,17 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
         ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background) # Reference for alignment
     mapkwargs = {'background': pumpon_background, 'ref_im': ref_im, 'valid_mask': valid_mask}
 
+    # an iterator is used so that writing to the HDF5 file can be done in
+    # the current process; otherwise, writing to disk can fail.
     # TODO: imap chunksize has been kept at 1 because for 2048x2048 images,
     #       memory usage is abount ~600MB per core. Would it be beneficial to
     #       increase chunksize to two or three?
-    chunksize = 1 if align else 3
-
     # NOTE: It is important the fnames_iterators are sorted by time
     #       therefore, enumerate() gives the right index that goes in the pipeline function
     fnames_iterators = map(partial(raw.timedelay_filenames, exclude_scans = exclude_scans), sorted(raw.time_points))
-    
-    # an iterator is used so that writing to the HDF5 file can be done in
-    # the current process; otherwise, writing to disk can fail.
     with Pool(processes) as pool:
         results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
-                                      iterable = enumerate(fnames_iterators), 
-                                      chunksize = chunksize)
+                                      iterable = enumerate(fnames_iterators))
         
         for order, (index, avg, err) in enumerate(results):
 
