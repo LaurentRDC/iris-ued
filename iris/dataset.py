@@ -585,7 +585,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.first_stage = first_stage
         self.wavelet = wavelet
     
-    def compute_angular_averages(self, center = None, callback = None):
+    def compute_angular_averages(self, center = None, normalized = True, callback = None):
         """ 
         Compute the angular averages.
         
@@ -594,6 +594,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         center : 2-tuple or None, optional
             Center of the diffraction patterns. If None (default), the dataset
             attribute will be used instead.
+        normalized : bool, optional
+            If True, each pattern is normalized to its integral. Default is False.
         callback : callable or None, optional
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
@@ -618,13 +620,16 @@ class PowderDiffractionDataset(DiffractionDataset):
         for index, timedelay in enumerate(self.time_points):
             extras.clear()
             radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, 
-                                          mask = np.logical_not(self.valid_mask), extras = extras) 
+                                          mask = np.logical_not(self.valid_mask), extras = extras)
             results.append((radius, avg, extras['error']))
             callback(int(100*index / len(self.time_points)))
         
         # Concatenate arrays for intensity and error
         rintensity = np.stack([I for _, I, _ in results], axis = 0)
         rerror =  np.stack([e for _, _, e in results], axis = 0)
+
+        if normalized:
+            rintensity /= np.sum(rintensity, axis = 1, keepdims = True)
         
         # We allow resizing. In theory, an angular averave could never be longer than the resolution
         maxshape = (len(self.time_points), max(self.resolution))
