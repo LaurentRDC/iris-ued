@@ -2,6 +2,7 @@
 import os
 import tempfile
 from ..dataset import DiffractionDataset, PowderDiffractionDataset, SinglePictureDataset
+from ..raw import RawDataset
 import numpy as np
 from numpy.random import random, randint
 from skimage.io import imsave
@@ -64,4 +65,4 @@ def dummy_single_picture_dataset(image):
     return SinglePictureDataset(path)
 
 def dummy_raw_dataset(**kwargs):
-    return
+    return RawDataset(os.path.join(os.path.dirname(__file__), 'raw_dataset_test'))
