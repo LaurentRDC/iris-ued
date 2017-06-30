@@ -1,10 +1,9 @@
 
-from iris.raw import RawDataset
-from iris.processing import process
+from skued.image_analysis import angular_average
+import numpy as np
 
-TEST_PATH = 'C:\\Diffraction data\\2017.03.03.10.13.WVO2_1p5pc_18mj'
+im = np.random.random(size = (4096, 4096))
 
 if __name__ == '__main__':
-    r = RawDataset(TEST_PATH)
-    process(r, destination = 'C:\\Diffraction data\\test.hdf5', 
-            beamblock_rect = (0,0,0,0), processes = 4, sample_type = 'single_crystal')
+    for _ in range(10):
+        angular_average(im, center = (2048, 2048))
