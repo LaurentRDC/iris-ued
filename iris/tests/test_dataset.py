@@ -148,8 +148,10 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         tests resizing all powder data multiple times. """
         self.dataset.compute_angular_averages(center = (34, 56))
         self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift1')
-        self.dataset.compute_angular_averages(center = (45, 45))
+        self.dataset.compute_angular_averages(center = (45, 45), normalized = False)
         self.dataset.compute_baseline(first_stage = 'sym5', wavelet = 'qshift2')
+        self.dataset.compute_angular_averages(center = (34, 56), angular_bounds = (15.3, 187))
+        self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift1')
     
     def test_baseline(self):
         """ Test the computation of wavelet baselines """

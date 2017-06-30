@@ -339,6 +339,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     wavelet = ExperimentalParameter(name = 'powder_baseline_wavelet', output = str)
     level = ExperimentalParameter(name = 'powder_baseline_transform_level', output = int)
     baseline_removed = ExperimentalParameter(name = 'powder_baseline_removed', output = bool, default = False)
+    angular_bounds = ExperimentalParameter('powder_average_angular_bounds', tuple, default = (0, 360))
 
     @property
     def powder_group(self):
@@ -585,7 +586,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.first_stage = first_stage
         self.wavelet = wavelet
     
-    def compute_angular_averages(self, center = None, normalized = True, callback = None):
+    def compute_angular_averages(self, center = None, normalized = True, angular_bounds = None, callback = None):
         """ 
         Compute the angular averages.
         
@@ -596,6 +597,9 @@ class PowderDiffractionDataset(DiffractionDataset):
             attribute will be used instead.
         normalized : bool, optional
             If True, each pattern is normalized to its integral. Default is False.
+        angular_bounds : 2-tuple of float or None, optional
+            Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis. 
+            Angle bounds outside [0, 360) are mapped back to [0, 360).
         callback : callable or None, optional
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
@@ -611,6 +615,10 @@ class PowderDiffractionDataset(DiffractionDataset):
             self.center = center
         
         self.sample_type = 'powder'
+        if angular_bounds is not None:
+            self.angular_bounds = angular_bounds
+        else:
+            self.angular_bounds = (0, 360)
 
         # Because it is difficult to know the angular averaged data's shape in advance, 
         # we calculate it first and store it next
@@ -619,8 +627,11 @@ class PowderDiffractionDataset(DiffractionDataset):
         extras = dict()
         for index, timedelay in enumerate(self.time_points):
             extras.clear()
-            radius, avg = angular_average(self.averaged_data(timedelay), center = self.center, 
-                                          mask = np.logical_not(self.valid_mask), extras = extras)
+            radius, avg = angular_average(self.averaged_data(timedelay), 
+                                          center = self.center, 
+                                          mask = np.logical_not(self.valid_mask), 
+                                          angular_bounds = angular_bounds,
+                                          extras = extras)
             results.append((radius, avg, extras['error']))
             callback(int(100*index / len(self.time_points)))
         
