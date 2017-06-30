@@ -3,12 +3,15 @@
 """
 from functools import lru_cache
 import h5py
+from math import ceil, sqrt
 import numpy as np
 from os.path import join
+from sys import getfilesystemencoding
 from scipy.signal import detrend
 from skimage.io import imread
 from skued.image_analysis import angular_average
 from skued.baseline import baseline_dt, dt_max_level
+from sympy import nextprime
 from tempfile import gettempdir
 from warnings import warn
 
@@ -65,17 +68,6 @@ class DiffractionDataset(h5py.File):
     time_zero_shift = ExperimentalParameter('time_zero_shift', float, default = 0.0)
     notes = ExperimentalParameter('notes', str, default = '')
 
-    def __init__(self, name, mode = 'r', **kwargs):
-        """
-        Keyword arguments are passed to the h5py.File constructor.
-
-        Parameters
-        ----------
-        name : str
-        mode : str, {'w', 'r' (default), 'r+', 'a', 'w-'}
-        """
-        super().__init__(name = name, mode = mode, **kwargs)
-    
     def __repr__(self):
         return '< DiffractionDataset object. \
                   Sample type: {}, \n \
@@ -303,11 +295,11 @@ class DiffractionDataset(h5py.File):
         
         return out
        
-    @property
+    @cached_property
     def background_pumpon(self):
         return np.array(self.processed_measurements_group['background_pumpon'])
     
-    @property
+    @cached_property
     def background_pumpoff(self):
         return np.array(self.processed_measurements_group['background_pumpoff'])
     
@@ -471,11 +463,11 @@ class PowderDiffractionDataset(DiffractionDataset):
                 out = np.empty_like(self.scattering_length)
             dataset.read_direct(out, source_sel = np.s_[time_index,:], dest_sel = np.s_[:])  
         return out
-
     
     def baseline(self, *args, **kwargs):
         warn('PowderDiffractionDataset.baseline() is deprecated.  \
               See PowderDiffractionDataset.powder_baseline', DeprecationWarning)
+        return self.powder_baseline(*args, **kwargs)
     
     def powder_baseline(self, timedelay, out = None):
         """ 
@@ -581,13 +573,10 @@ class PowderDiffractionDataset(DiffractionDataset):
         baseline_kwargs.update(**kwargs)
         
         baseline = np.ascontiguousarray(trend + baseline_dt(**baseline_kwargs)) # In rare cases this wasn't C-contiguous
-        if 'baseline' not in self.powder_group:
-            self.powder_group.create_dataset(name = 'baseline', data = baseline, 
-                                             maxshape = (len(self.time_points), max(self.resolution)),
-                                             **self.compression_params)
-        else:
-            self.powder_group['baseline'].resize(baseline.shape)
-            self.powder_group['baseline'].write_direct(baseline)
+        
+        # The baseline dataset is guaranteed to exist when compuring angular average 
+        self.powder_group['baseline'].resize(baseline.shape) 
+        self.powder_group['baseline'].write_direct(baseline) 
         
         if level == None:
             level = dt_max_level(data = self.scattering_length, first_stage = first_stage, wavelet = wavelet)
@@ -595,7 +584,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.level = level
         self.first_stage = first_stage
         self.wavelet = wavelet
-        self.baseline_removed = True
     
     def compute_angular_averages(self, center = None, callback = None):
         """ 
@@ -643,8 +631,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         if 'intensity' not in self.powder_group:
             # We allow resizing. In theory, an angualr averave could never be longer than the resolution
             # Only chunked datasets are resizeable
-            self.powder_group.create_dataset(name = 'intensity', data = rintensity, maxshape = maxshape, chunks = True)
-            self.powder_group.create_dataset(name = 'error', data = rerror,  maxshape = maxshape, chunks = True)
+            self.powder_group.create_dataset(name = 'intensity', data = rintensity, maxshape = maxshape)
+            self.powder_group.create_dataset(name = 'error', data = rerror,  maxshape = maxshape)
         else:
             self.powder_group['intensity'].resize(rintensity.shape)
             self.powder_group['intensity'].write_direct(rintensity)
@@ -656,12 +644,18 @@ class PowderDiffractionDataset(DiffractionDataset):
         s_length = scattering_length(px_radius, energy = self.energy)
         if 'scattering_length' not in self.powder_group:
             self.powder_group.create_dataset(name = 'scattering_length', data = s_length, 
-                                             maxshape = (max(self.resolution),), chunks = True)
+                                             maxshape = (max(self.resolution),))
         else:
             self.powder_group['scattering_length'].resize(s_length.shape)
             self.powder_group['scattering_length'].write_direct(s_length)
 
-        self.baseline_removed = False   # baseline is not valid anymore
+        if 'baseline' not in self.powder_group:
+            self.powder_group.create_dataset(name = 'baseline', shape = rintensity.shape, 
+                                             maxshape = (len(self.time_points), max(self.resolution)),
+                                             fillvalue = 0.0)
+        else:
+            self.powder_group['baseline'].resize(rintensity.shape)
+            self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
 
         callback(100)
 

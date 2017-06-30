@@ -4,9 +4,10 @@ from ..utils import find_center
 from skimage.filters import gaussian
 import numpy as np
 
+@unittest.skip('Not useful right now')
 class TestFindCenter(unittest.TestCase):
 
-    @unittest.skip('Not useful right now')
+
     def test_trivial_array(self):
         image = np.zeros(shape = (512, 512), dtype = np.float)
         xc, yc = find_center(image, guess_center = (256, 256), radius = 15, window_size = 10)

@@ -133,10 +133,14 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
         processed.nscans = tuple(sorted(set(raw.nscans) - set(exclude_scans)))
 
         # Preallocation
+        # We do not chunk these datasets because
+        #   1. They will never be resized;
+        #   2. There are cases when we want chunking along axis 2, and other cases
+        #      in which we want chunking along axes (0, 1).
         shape = raw.resolution + (len(raw.time_points),)
         gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'intensity', shape = shape, dtype = np.float32, **ckwargs)
-        gp.create_dataset(name = 'error', shape = shape, dtype = np.float32, **ckwargs)
+        gp.create_dataset(name = 'intensity', shape = shape, dtype = np.float32, fillvalue = 0.0)
+        gp.create_dataset(name = 'error', shape = shape, dtype = np.float32, fillvalue = 0.0)
 
     # Average background images
     # If background images are not found, save empty backgrounds
@@ -154,8 +158,8 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
 
     with DiffractionDataset(name = destination, mode = 'r+') as processed:
         gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = np.float32, **ckwargs)
-        gp.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = np.float32, **ckwargs)
+        gp.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = np.float32)
+        gp.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = np.float32)
 
     # Create a mask of valid pixels (e.g. not on the beam block, not a hot pixel)
     x1,x2,y1,y2 = beamblock_rect
