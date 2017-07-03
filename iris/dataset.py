@@ -9,7 +9,7 @@ from os.path import join
 from sys import getfilesystemencoding
 from scipy.signal import detrend
 from skimage.io import imread
-from skued.image_analysis import angular_average
+from skued.image import angular_average
 from skued.baseline import baseline_dt, dt_max_level
 from sympy import nextprime
 from tempfile import gettempdir

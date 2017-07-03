@@ -11,74 +11,11 @@ from os.path import join
 
 import numpy as np
 from skimage.io import imread
-from skued.image_analysis import align, powder_center, shift_image, angular_average
+from skued.image import ialign, iaverage, powder_center, shift_image, angular_average, last
+from skued import pmap
 
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .utils import scattering_length
-
-# TODO: for a single scan, this function fails
-def diff_avg(images, valid_mask = None, weights = None):
-    """ 
-    Streaming average of diffraction images.
-
-    Parameters
-    ----------
-    images : iterable of ndarrays, ndim 2
-
-    valid_mask : ndarray or None, optional
-        Mask that evaluates to True on pixels that are valid, e.g. not on the beamblock.
-        If None, all pixels are valid.
-    weights : ndarray or None, optional
-        Array of weights. see `numpy.average` for further information. If None (default), 
-        total picture intensity of valid pixels is used to weight each picture.
-    
-    Returns
-    -------
-    avg, err: ndarrays, ndim 2
-        Weighted average and standard error in the mean of the 
-    
-    References
-    ----------
-    .. D. Knuth, The Art of Computer Programming 3rd Edition, Vol. 2, p. 232
-    """
-    images = iter(images)
-
-    if valid_mask is None:
-        valid_mask = np.s_[:]
-    
-    if weights is None:
-        AUTO_WEIGHTS = True
-    else:
-        weights = iter(weights)
-        AUTO_WEIGHTS = False
-
-    # Streaming variance: https://www.johndcook.com/blog/standard_deviation/
-    first = next(images)
-    old_M = new_M = np.array(first, copy = True)
-    old_S = new_S = np.zeros_like(first, dtype = np.float)
-
-    sum_of_weights = np.sum(first[valid_mask], dtype = np.float) if AUTO_WEIGHTS else next(weights)
-    weighted_sum = np.asfarray(first * sum_of_weights)
-
-    # Running calculation
-    # `k` represents the number of images consumed so far
-    for k, image in enumerate(images, start = 2):
-
-        # streaming weighted average
-        weight = np.sum(image[valid_mask], dtype = np.float) if AUTO_WEIGHTS else next(weights)
-        sum_of_weights += weight
-        weighted_sum += weight * image
-
-        # streaming variance
-        # TODO: weighted variance
-        _sub = image - old_M
-        new_M[:] = old_M + _sub/k
-        new_S[:] = old_S + _sub*(image - new_M)
-        old_M, old_S = new_M, new_S
-    
-    avg = weighted_sum/sum_of_weights
-    err = np.sqrt(new_S)/(k-1)  # variance = S / k-1, sem = std / sqrt(k)
-    return avg, err
 
 def uint_subtract_safe(arr1, arr2):
     """ Subtract two unsigned arrays without rolling over """
@@ -175,17 +112,15 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
     intensity = np.empty(shape = shape, dtype = np.float)
     error = np.empty_like(intensity)
     
-    with Pool(processes) as pool:
-        results = pool.imap_unordered(func = partial(pipeline, **mapkwargs), 
-                                      iterable = enumerate(fnames_iterators),
-                                      chunksize = 1)
+    results = pmap(func = partial(pipeline, **mapkwargs), 
+                   iterable = enumerate(fnames_iterators),
+                   processes = processes)
         
-        for order, (index, avg, err) in enumerate(results):
-            intensity[:,:,index] = avg
-            error[:,:,index] = err
-            callback(round(100*order / len(raw.time_points)))
+    for order, (index, avg, err) in enumerate(results):
+        intensity[:,:,index] = avg
+        error[:,:,index] = err
+        callback(round(100*order / len(raw.time_points)))
     
-    # Preallocation
     # We do not chunk these datasets because
     #   1. They will never be resized;
     #   2. There are cases when we want chunking along axis 2, and other cases
@@ -229,9 +164,10 @@ def pipeline(values, background, ref_im, valid_mask):
     if ref_im is None:
         aligned = map(lambda x: x, images_bs)
     else:
-        aligned = align(images_bs, reference = ref_im)
+        aligned = ialign(images_bs, reference = ref_im)
     
-    avg, err = diff_avg(aligned, valid_mask = valid_mask, weights = None)
+    avg = last(iaverage(aligned))
+    err = np.zeros_like(avg)
     return index, avg, err
 
 def perscan(raw, srange, center, mask = None, exclude_scans = list(), callback = None):

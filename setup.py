@@ -3,7 +3,7 @@ import numpy
 from setuptools import setup, find_packages
 import glob
 
-__version__ = '4.0.5'
+__version__ = '4.1'
 __author__ = 'Laurent P. René de Cotret'
 
 #To create a Windows installer for this, run:
@@ -23,7 +23,7 @@ setup(
                         'scipy', 
                         'h5py >= 2.6.0',
                         'scikit-image>=0.13',
-                        'scikit-ued >= 0.4.4',
+                        'scikit-ued >= 0.4.5',
                         'pyqtgraph >= 0.10',
                         'qdarkstyle >= 2.3',
                         'psutil'],
