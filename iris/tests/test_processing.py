@@ -6,7 +6,7 @@ from itertools import repeat
 import numpy as np
 import os
 
-from ..processing import diff_avg, process, uint_subtract_safe
+from ..processing import process, uint_subtract_safe
 from .. import DiffractionDataset
 from .dummies import dummy_raw_dataset
 
@@ -37,32 +37,6 @@ class TestProcess(unittest.TestCase):
             self.assertSequenceEqual(self.dataset.nscans, processed.nscans)
 
         os.remove(filename)
-
-class TestDiffAvg(unittest.TestCase):
-    """ Test the diff_avg routine """
-
-    def test_trivial(self):
-        """ test streaming_diff_avg on a stream of zeros """
-        stream = repeat(np.zeros((128, 128), dtype = np.uint16), times = 10)
-        avg, err = diff_avg(images = stream, valid_mask = None, weights = repeat(1, times = 10))
-
-        self.assertTrue(np.allclose(avg, np.zeros_like(avg)))
-        self.assertEqual(avg.dtype, np.float)
-
-        self.assertTrue(np.allclose(err, np.zeros_like(err)))
-        self.assertEqual(err.dtype, np.float)
-    
-    def test_constant(self):
-        """ Test streaming_diff_avg on a stream of ones """
-        stream = repeat(np.ones((128, 128), dtype = np.uint16), times = 10)
-        avg, err = diff_avg(images = stream, valid_mask = None)
-
-        self.assertTrue(np.allclose(avg, np.ones_like(avg)))
-        self.assertTrue(np.allclose(err, np.zeros_like(err)))
-    
-    def test_running_error(self):
-        """ Test that the streaming calculation of the error is correct """
-        pass
 
 class TestUintSubtractSafe(unittest.TestCase):
     """ Test the uint_subtract_safe function """
