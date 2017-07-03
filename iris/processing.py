@@ -235,17 +235,20 @@ def perscan(raw, srange, center, mask = None, exclude_scans = list(), baseline_k
     scan_by_scan = np.empty(shape = (len(scans), len(time_points)), dtype = np.float)
     im = np.empty_like(pumpon_background, np.uint16)
 
+    progress = 0
     for time_index, time_point in enumerate(sorted(time_points)):
         for scan_index, scan in enumerate(scans):
             im[:] = raw.raw_data(time_point, scan = scan)
             im[:] = uint_subtract_safe(im, pumpon_background)
             _, I = angular_average(im, center = center, mask = mask)
             if baseline_kwargs:
-                I -= baseline_dt(I,**baseline_kwargs)
+                I -= baseline_dt(I, **baseline_kwargs)
 
             scan_by_scan[scan_index, time_index] = np.sum(I[i_min : i_max + 1])
 
-            # TODO: progress callback
+            progress += 1
+            callback(int(100*progress / (len(scans) * len(time_points))))
+
             # TODO: parallel
             # TODO: alignment
         
