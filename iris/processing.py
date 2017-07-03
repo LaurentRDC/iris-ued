@@ -6,16 +6,21 @@ Parallel processing of RawDataset
 import glob
 from datetime import datetime as dt
 from functools import partial
+from itertools import tee
 from multiprocessing import Pool
 from os.path import join
 
 import numpy as np
 from skimage.io import imread
-from skued.image import ialign, iaverage, powder_center, shift_image, angular_average, last
+
 from skued import pmap
+from skued.image import (angular_average, ialign, isem, iaverage, last,
+                         powder_center, shift_image)
+from skued.baseline import baseline_dt
 
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .utils import scattering_length
+
 
 def uint_subtract_safe(arr1, arr2):
     """ Subtract two unsigned arrays without rolling over """
@@ -166,11 +171,16 @@ def pipeline(values, background, ref_im, valid_mask):
     else:
         aligned = ialign(images_bs, reference = ref_im)
     
-    avg = last(iaverage(aligned))
-    err = np.zeros_like(avg)
+    # Compute error and average concurrently
+    # TODO: split to a third stream for weights as total intensity?
+    stream1, stream2 = tee(aligned, 2)
+    averages = iaverage(stream1)
+    errors = isem(stream2)
+    avg, err = last(zip(averages, errors))
+
     return index, avg, err
 
-def perscan(raw, srange, center, mask = None, exclude_scans = list(), callback = None):
+def perscan(raw, srange, center, mask = None, exclude_scans = list(), baseline_kwargs = dict(), callback = None):
     """ 
     Build the scan-by-scan array, for which each row is a time-series of a diffraction
     peak for a single scan. Only powder datasets are supported for now.
@@ -187,6 +197,9 @@ def perscan(raw, srange, center, mask = None, exclude_scans = list(), callback =
         Mask that evaluates to True on invalid pixels
     exclude_scans : iterable of ints, optional
         Scans to exclude from the processing.
+    baseline_kwargs : dict, optional
+        Dictionary passed to skued.baseline.baseline_dt. If empty dict (default),
+        no baseline is subtracted from each azimuthal average.
     callback : callable or None, optional
         Callable that takes an int between 0 and 99. This can be used for progress update.
     
@@ -227,10 +240,10 @@ def perscan(raw, srange, center, mask = None, exclude_scans = list(), callback =
             im[:] = raw.raw_data(time_point, scan = scan)
             im[:] = uint_subtract_safe(im, pumpon_background)
             _, I = angular_average(im, center = center, mask = mask)
+            if baseline_kwargs:
+                I -= baseline_dt(I,**baseline_kwargs)
 
             scan_by_scan[scan_index, time_index] = np.sum(I[i_min : i_max + 1])
-
-        print('Time point {} ps done'.format(time_point))
 
             # TODO: progress callback
             # TODO: parallel
