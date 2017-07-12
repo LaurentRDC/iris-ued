@@ -214,7 +214,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         y1 = round(max(0, rect.topLeft().y() ))
         y2 = round(max(0, rect.y() + rect.height() ))
 
-        integrated = self.dataset.time_series( (y1, y2, x1, x2) )
+        integrated = self.dataset.time_series( (x1, x2, y1, y2) )
         self.time_series_signal.emit(self.dataset.corrected_time_points, integrated)
     
     @QtCore.pyqtSlot(dict)

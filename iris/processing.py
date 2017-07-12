@@ -14,13 +14,17 @@ import numpy as np
 from skimage.io import imread
 
 from skued import pmap
-from skued.image import (angular_average, ialign, isem, iaverage, last,
-                         powder_center, shift_image)
 from skued.baseline import baseline_dt
+from skued.image import (angular_average, ialign, iaverage, isem,
+                         powder_center, shift_image)
 
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .utils import scattering_length
 
+try:
+    from skued import last  #skued 0.4.6+
+except ImportError:
+    from skued.image import last # skued 0.4.5
 
 def uint_subtract_safe(arr1, arr2):
     """ Subtract two unsigned arrays without rolling over """
@@ -113,27 +117,27 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
     # NOTE: It is important the fnames_iterators are sorted by time
     #       therefore, enumerate() gives the right index that goes in the pipeline function
     fnames_iterators = map(partial(raw.timedelay_filenames, exclude_scans = exclude_scans), sorted(raw.time_points))
-    shape = raw.resolution + (len(raw.time_points),)
-    intensity = np.empty(shape = shape, dtype = np.float)
-    error = np.empty_like(intensity)
-    
-    results = pmap(func = partial(pipeline, **mapkwargs), 
-                   iterable = enumerate(fnames_iterators),
-                   processes = processes)
-        
-    for order, (index, avg, err) in enumerate(results):
-        intensity[:,:,index] = avg
-        error[:,:,index] = err
-        callback(round(100*order / len(raw.time_points)))
-    
-    # We do not chunk these datasets because
-    #   1. They will never be resized;
-    #   2. There are cases when we want chunking along axis 2, and other cases
-    #      in which we want chunking along axes (0, 1).
+    full_shape = raw.resolution + (len(raw.time_points),)
+
     with DiffractionDataset(name = destination, mode = 'r+') as processed:
+
+        # We do not chunk these datasets because
+        #   1. They will never be resized;
+        #   2. There are cases when we want chunking along axis 2, and other cases
+        #      in which we want chunking along axes (0, 1).
         gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'intensity', data = intensity, dtype = np.float32)
-        gp.create_dataset(name = 'error', data = error, dtype = np.float32)
+        gp.create_dataset(name = 'intensity', shape = full_shape, dtype = np.float32)
+        gp.create_dataset(name = 'error', shape = full_shape, dtype = np.float32)
+    
+        results = pmap(func = partial(pipeline, **mapkwargs), 
+                       iterable = enumerate(fnames_iterators),
+                       processes = processes)
+        
+        for order, (index, avg, err) in enumerate(results):
+            gp['intensity'].write_direct(avg, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
+            gp['error'].write_direct(err, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
+            
+            callback(round(100*order / len(raw.time_points)))
 
     return destination
 
@@ -180,7 +184,7 @@ def pipeline(values, background, ref_im, valid_mask):
 
     return index, avg, err
 
-def perscan(raw, srange, center, mask = None, exclude_scans = list(), baseline_kwargs = dict(), callback = None):
+def perscan(raw, srange, center, mask = None, trange = None, exclude_scans = list(), baseline_kwargs = dict(), callback = None):
     """ 
     Build the scan-by-scan array, for which each row is a time-series of a diffraction
     peak for a single scan. Only powder datasets are supported for now.
@@ -195,6 +199,8 @@ def perscan(raw, srange, center, mask = None, exclude_scans = list(), baseline_k
         Center of the diffraction pattern.
     mask : ndarray or None, optional
         Mask that evaluates to True on invalid pixels
+    trange : iterable or None, optional
+        If not None, time-points between min(trange) and max(trange) (inclusive) are used.
     exclude_scans : iterable of ints, optional
         Scans to exclude from the processing.
     baseline_kwargs : dict, optional
@@ -214,6 +220,9 @@ def perscan(raw, srange, center, mask = None, exclude_scans = list(), baseline_k
     """
     if callback is None:
         callback = lambda _: None
+    
+    if trange is None:
+        trange = (min(raw.time_points), max(raw.time_points))
 
     # NOTE: for the rare options 'pumpon only' in UEDbeta, there is no pumpoff_background
     pumpon_filenames = glob.glob(join(raw.raw_directory, 'background.*.pumpon.tif'))
@@ -222,8 +231,10 @@ def perscan(raw, srange, center, mask = None, exclude_scans = list(), baseline_k
     if mask is None:
         mask = np.zeros_like(pumpon_background, dtype = np.bool)
     
-    time_points = raw.time_points
+    tmin, tmax = min(trange), max(trange)
+
     scans = set(raw.nscans) - set(exclude_scans)
+    time_points = [time for time in raw.time_points if tmin <= times <= tmax]
     total = len(scans) * len(time_points)
 
     # Determine range between which to integrate
@@ -237,17 +248,22 @@ def perscan(raw, srange, center, mask = None, exclude_scans = list(), baseline_k
 
     progress = 0
     for time_index, time_point in enumerate(sorted(time_points)):
+
+        # Each row is an azimuthally-averaged diffraction pattern for a scan
+        patterns = np.empty( shape = (len(scans), len(s)), dtype = np.float)
+
         for scan_index, scan in enumerate(scans):
             im[:] = raw.raw_data(time_point, scan = scan)
             im[:] = uint_subtract_safe(im, pumpon_background)
             _, I = angular_average(im, center = center, mask = mask)
-            if baseline_kwargs:
-                I -= baseline_dt(I, **baseline_kwargs)
+            patterns[scan_index, :] = I
+        
+        if baseline_kwargs:
+            patterns -= baseline_dt(patterns, axis = 1, **baseline_kwargs)
 
-            scan_by_scan[scan_index, time_index] = np.sum(I[i_min : i_max + 1])
+        scan_by_scan[:, time_index] = np.sum(patterns[:, i_min : i_max + 1], axis = 1)
 
-            progress += 1
-            callback(int(100*progress / (len(scans) * len(time_points))))
+        callback(int(100*time_index / len(time_points)))
 
             # TODO: parallel
             # TODO: alignment

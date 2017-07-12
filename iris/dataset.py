@@ -262,8 +262,8 @@ class DiffractionDataset(h5py.File):
         out : ndarray, ndim 1
         """
         x1, x2, y1, y2 = rect
-        data = self.processed_measurements_group['intensity'][y1:y2, x1:x2, :]  # Numpy axes are transposed
-        return np.sum(data, axis = (0,1), out = out)
+        data = self.processed_measurements_group['intensity'][x1:x2, y1:y2, :]
+        return np.mean(data, axis = (0,1), out = out)
 
     def pumpoff_data(self, scan, out = None):
         """
@@ -516,7 +516,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     
     def powder_time_series(self, smin, smax, bgr = False, out = None):
         """
-        Integrated intensity in a scattering angle range, over time.
+        Average intensity in a scattering angle range, over time.
         Diffracted intensity is integrated in the closed interval [smin, smax]
 
         Parameters
@@ -534,7 +534,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         Returns
         -------
         out : ndarray, shape (N,)
-            Integrated diffracted intensity over time.
+            Average diffracted intensity over time.
         """
         # Python slices are semi-open by design, therefore i_max + 1 is used
         # so that the integration interval is closed.
@@ -544,8 +544,8 @@ class PowderDiffractionDataset(DiffractionDataset):
             trace -= np.array(self.powder_group['baseline'][:, i_min:i_max + 1])
         
         if out is not None:
-            return np.sum(axis = 1, out = out)
-        return np.sum(trace, axis = 1).reshape(-1)
+            return np.mean(axis = 1, out = out)
+        return np.mean(trace, axis = 1).reshape(-1)
     
     def compute_baseline(self, first_stage, wavelet, max_iter = 50, level = None, **kwargs):
         """
