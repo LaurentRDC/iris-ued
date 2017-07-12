@@ -23,7 +23,7 @@ setup(
                         'scipy', 
                         'h5py >= 2.6.0',
                         'scikit-image>=0.13',
-                        'scikit-ued >= 0.4.5',
+                        'scikit-ued >= 0.4.6',
                         'pyqtgraph >= 0.10',
                         'qdarkstyle >= 2.3',
                         'psutil'],

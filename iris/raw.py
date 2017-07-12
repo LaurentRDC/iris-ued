@@ -123,12 +123,12 @@ class RawDataset(object):
         return (f for f in listdir(self.raw_directory) 
                   if isfile(join(self.raw_directory, f)) and f.endswith(('.tif', '.tiff')))
     
-    @property
+    @cached_property
     def pumpon_background(self):
         backgrounds = tuple(map(imread, glob.iglob(join(self.raw_directory, 'background.*.pumpon.tif'))))
         return sum(backgrounds)/len(backgrounds)
     
-    @property
+    @cached_property
     def pumpoff_background(self):
         backgrounds = tuple(map(imread, glob.iglob(join(self.raw_directory, 'background.*.pumpoff.tif'))))
         return sum(backgrounds)/len(backgrounds)
