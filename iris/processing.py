@@ -121,13 +121,11 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
 
     with DiffractionDataset(name = destination, mode = 'r+') as processed:
 
-        # We do not chunk these datasets because
-        #   1. They will never be resized;
-        #   2. There are cases when we want chunking along axis 2, and other cases
-        #      in which we want chunking along axes (0, 1).
+        # WARNING: chunks = False makes writes super slow... like 10x slower
+        # TODO: find best chunking...
         gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'intensity', shape = full_shape, dtype = np.float32)
-        gp.create_dataset(name = 'error', shape = full_shape, dtype = np.float32)
+        gp.create_dataset(name = 'intensity', shape = full_shape, dtype = np.float, chunks = True)
+        gp.create_dataset(name = 'error', shape = full_shape, dtype = np.float, chunks = True)
     
         results = pmap(func = partial(pipeline, **mapkwargs), 
                        iterable = enumerate(fnames_iterators),
