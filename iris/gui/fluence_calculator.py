@@ -29,6 +29,11 @@ class FluenceCalculatorDialog(QtGui.QDialog):
         self.laser_rep_rate_cb.setCurrentText('1000')
         self.laser_rep_rate_cb.currentIndexChanged.connect(self.update)
 
+        self.window_size_cb = QtGui.QComboBox(parent = self)
+        self.window_size_cb.addItems(['250', '500'])
+        self.window_size_cb.setCurrentText('250')
+        self.window_size_cb.currentIndexChanged.connect(self.update)
+
         self.incident_laser_power_edit = QtGui.QLineEdit('', parent = self)
         self.incident_laser_power_edit.textChanged.connect(self.update)
 
@@ -40,9 +45,10 @@ class FluenceCalculatorDialog(QtGui.QDialog):
         self.done_btn.setDefault(True)
 
         self.layout = QtGui.QFormLayout()
-        self.layout.addRow('FWHM x [um]', self.beam_size_x_edit)
-        self.layout.addRow('FWHM y [um]', self.beam_size_y_edit)
+        self.layout.addRow('FWHM x [μm]', self.beam_size_x_edit)
+        self.layout.addRow('FWHM y [μm]', self.beam_size_y_edit)
         self.layout.addRow('Laser reprate [Hz]', self.laser_rep_rate_cb)
+        self.layout.addRow('Window size [μm]', self.window_size_cb)
         self.layout.addRow('Laser power [mW]', self.incident_laser_power_edit)
         self.layout.addRow('Fluence [mJ/cm2]', self.fluence)
         self.layout.addRow(self.done_btn)
@@ -54,6 +60,7 @@ class FluenceCalculatorDialog(QtGui.QDialog):
         try:
             f = fluence(float(self.incident_laser_power_edit.text()),
                         int(self.laser_rep_rate_cb.currentText()),
+                        sample_size = float(self.window_size_cb.currentText()),
                         FWHM = [int(self.beam_size_x_edit.text()), int(self.beam_size_y_edit.text())])
             self.fluence.setText('{:.2f}'.format(f) + ' mJ / cm^2')
         except:  # Could not parse 
