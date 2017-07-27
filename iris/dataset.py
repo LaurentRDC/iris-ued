@@ -487,10 +487,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         out : ndarray
             If a baseline hasn't been computed yet, the returned
             array is an array of zeros.
-        """
-        if not self.baseline_removed:
-            return np.zeros_like(self.scattering_length)
-        
+        """        
         try:
             dataset = self.powder_group['baseline']
         except KeyError:
