@@ -33,6 +33,8 @@ def run(**kwargs):
     gui = Iris()
     return app.exec_()
 
+# TODO: show progress on windows taskbar
+#       http://doc.qt.io/qt-5/qtwinextras-overview.html
 class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
     dataset_path_signal = QtCore.pyqtSignal(str)
@@ -55,9 +57,6 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controls = ControlBar(parent = self)
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
         self.controls.averaged_data_request.connect(self.controller.display_averaged_data)
-        self.controls.process_dataset.connect(self.launch_processsing_dialog)
-        self.controls.promote_to_powder.connect(self.launch_promote_to_powder_dialog)
-        self.controls.recompute_angular_average.connect(self.launch_recompute_angular_average_dialog)
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
         self.controls.baseline_removed.connect(self.controller.powder_background_subtracted)
         self.controls.relative_powder.connect(self.controller.enable_powder_relative)
@@ -157,15 +156,31 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.tools_menu.addAction(self.beam_properties_action)
 
         ###################
-        # Resources widget
-        self.resource_widget = ComputationalResourceWidget(interval = 2000, parent = self)
-        self.resource_widget.hide()
-        
+        # Operations on Diffraction Datasets
+        # TODO: remove operations from control bar as they are added here
+        self.processing_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process raw data', self)
+        self.processing_action.triggered.connect(self.launch_processsing_dialog)
+        self.controller.raw_dataset_loaded_signal.connect(self.processing_action.setEnabled)
+
+        self.promote_to_powder_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Calculate angular average', self)
+        self.promote_to_powder_action.triggered.connect(self.launch_promote_to_powder_dialog)
+        self.controller.processed_dataset_loaded_signal.connect(self.promote_to_powder_action.setEnabled)
+
+        self.recompute_angular_averages = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Recompute angular average', self)
+        self.recompute_angular_averages.triggered.connect(self.launch_recompute_angular_average_dialog)
+        self.controller.powder_dataset_loaded_signal.connect(self.recompute_angular_averages.setEnabled)
+
+        self.diffraction_dataset_menu = self.menu_bar.addMenu('&Dataset')
+        self.diffraction_dataset_menu.addAction(self.processing_action)
+        self.diffraction_dataset_menu.addSeparator()
+        self.diffraction_dataset_menu.addAction(self.promote_to_powder_action)
+        self.diffraction_dataset_menu.addSeparator()
+        self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
+
         ###################
         # Layout
         control_layout = QtGui.QVBoxLayout()
         control_layout.addWidget(self.controls)
-        control_layout.addWidget(self.resource_widget)
 
         self.layout = QtGui.QHBoxLayout()
         self.layout.addWidget(self.viewer_stack)

@@ -20,7 +20,7 @@ class TestProcess(unittest.TestCase):
     def test_process_defaults(self):
         destination = os.path.join(tempfile.gettempdir(), 'test_process.hdf5')
         
-        filename = process(self.dataset, destination = destination, beamblock_rect = [0,0,0,0], processes = 2)
+        filename = process(self.dataset, destination = destination, beamblock_rect = [0,0,0,0], processes = 1)
 
         with DiffractionDataset(name = filename, mode = 'r') as processed:
             self.assertSequenceEqual(self.dataset.nscans, processed.nscans)
@@ -31,7 +31,7 @@ class TestProcess(unittest.TestCase):
         destination = os.path.join(tempfile.gettempdir(), 'test_process.hdf5')
         
         filename = process(self.dataset, destination = destination, 
-                           beamblock_rect = [0,0,0,0], processes = 2, align = False)
+                           beamblock_rect = [0,0,0,0], processes = 1, align = False)
 
         with DiffractionDataset(name = filename, mode = 'r') as processed:
             self.assertSequenceEqual(self.dataset.nscans, processed.nscans)

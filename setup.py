@@ -3,7 +3,7 @@ import numpy
 from setuptools import setup, find_packages
 import glob
 
-__version__ = '4.1'
+__version__ = '4.1.1'
 __author__ = 'Laurent P. René de Cotret'
 
 #To create a Windows installer for this, run:
@@ -23,10 +23,10 @@ setup(
                         'scipy', 
                         'h5py >= 2.6.0',
                         'scikit-image>=0.13',
-                        'scikit-ued >= 0.4.6',
+                        'scikit-ued >= 0.4.7',
                         'pyqtgraph >= 0.10',
                         'qdarkstyle >= 2.3',
-                        'psutil'],
+                        'npstreams >= 0.2'],
     data_files = [('iris\\gui\\images', image_list)],
     entry_points = {'gui_scripts': ['iris = iris.gui:run']}
     )
