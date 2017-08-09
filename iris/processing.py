@@ -15,16 +15,11 @@ from skimage.io import imread
 
 from skued import pmap
 from skued.baseline import baseline_dt
-from skued.image import (angular_average, ialign, iaverage, isem,
-                         powder_center, shift_image)
+from skued.image import (angular_average, ialign, powder_center, shift_image)
+from npstreams import iaverage, isem, last
 
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .utils import scattering_length
-
-try:
-    from skued import last  #skued 0.4.6+
-except ImportError:
-    from skued.image import last # skued 0.4.5
 
 def uint_subtract_safe(arr1, arr2):
     """ Subtract two unsigned arrays without rolling over """
@@ -33,7 +28,7 @@ def uint_subtract_safe(arr1, arr2):
     return result
 
 def process(raw, destination, beamblock_rect, exclude_scans = list(), 
-            processes = None, callback = None, align = True):
+            processes = 1, callback = None, align = True):
     """ 
     Parallel processing of RawDataset into a DiffractionDataset.
 

@@ -1,22 +1,50 @@
 """
 @author: Laurent P. Rene de Cotret
 """
-from functools import lru_cache
-import h5py
-from math import ceil, sqrt
-import numpy as np
-from os.path import join
-from sys import getfilesystemencoding
-from scipy.signal import detrend
-from skimage.io import imread
-from skued.image import angular_average
-from skued.baseline import baseline_dt, dt_max_level
-from sympy import nextprime
-from tempfile import gettempdir
+from contextlib import suppress
+from os import listdir
+from os.path import isdir, isfile, join
 from warnings import warn
 
-from .utils import scattering_length
+import h5py
+import numpy as np
+from scipy.signal import detrend
+from skimage.io import imread
+
+from skued.baseline import baseline_dt, dt_max_level
+from skued.image import angular_average
+
 from .optimizations import cached_property
+from .utils import scattering_length
+
+def explore_dir(path, recursive = False):
+    """
+    Returns a collection of dictionaries representing all DiffractionDataset metadata
+    present in a folder (and possibly subfolders).
+
+    Parameters
+    ----------
+    path : str or path-like
+
+    recursive : bool, optional
+        If True, subdirectories are also explored.
+
+    Returns
+    -------
+    metadatas: list
+        list of dictionaries. Dictionaries are guaranteed to have the default
+        DiffractionDataset attributes (nscans, time_points, etc.) plus the
+        ``filename`` str.
+    """
+    metadatas = list()
+    for item in listdir(path):
+        item = join(path, item)
+        if isdir(item) and recursive: 
+            metadatas.extend(explore_dir(item, recursive))
+        elif isfile(item) and item.endswith(('.h5', '.hdf5')):
+            with suppress(OSError):
+                metadatas.append(DiffractionDataset(item, mode = 'r').metadata)
+    return metadatas
 
 class ExperimentalParameter(object):
     """ Descriptor to experimental parameters. """
@@ -77,7 +105,11 @@ class DiffractionDataset(h5py.File):
     @property
     def metadata(self):
         """ Dictionary of the dataset's metadata """
-        return dict(self.attrs.items(), **{'corrected_time_points': self.corrected_time_points})
+        # We add corrected_time_points separately because they are computed
+        # from two other attributes (time_points and time_zero_shift)
+        extras = {'corrected_time_points': self.corrected_time_points,
+                  'filename': self.filename}
+        return dict(self.attrs.items(), **extras)
     
     @cached_property
     def valid_mask(self):
