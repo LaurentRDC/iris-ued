@@ -22,7 +22,7 @@ class TestParseTagfile(unittest.TestCase):
         """ Test that the result of parse_tagfile is correct """
         self.assertDictEqual(self.metadata, PARSED_METADATA)
 
-class TestRawDataset(unittest.TestCase):
+class TestMcGillRawDataset(unittest.TestCase):
     pass
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ image_folder = join(dirname(__file__), 'images')
 
 class ProcessedDataViewer(QtGui.QWidget):
     """
-    Widget displaying the result of processing from RawDataset.process()
+    Widget displaying the result of processing from McGillRawDataset
     """
     peak_dynamics_roi_signal = QtCore.pyqtSignal(object)
 
