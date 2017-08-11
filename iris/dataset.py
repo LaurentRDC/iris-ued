@@ -101,7 +101,7 @@ class DiffractionDataset(h5py.File):
                   Sample type: {}, \n \
                   Acquisition date : {}, \n \
                   fluence {} mj/cm**2 >'.format(self.sample_type,self.acquisition_date, self.fluence)
-    
+
     @property
     def metadata(self):
         """ Dictionary of the dataset's metadata """
