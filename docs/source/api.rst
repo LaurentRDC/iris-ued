@@ -14,7 +14,7 @@ Diffraction Dataset Classes
 .. autosummary::
     :toctree: classes/
 
-    RawDataset
+    RawDatasetBase
     DiffractionDataset
     PowderDiffractionDataset
 

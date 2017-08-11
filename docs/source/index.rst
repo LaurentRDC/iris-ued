@@ -30,6 +30,8 @@ General Documentation
     :maxdepth: 2
 
     installation
+    dataset
+    subclassing
     api
 
 Authors
