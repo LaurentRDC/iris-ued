@@ -26,40 +26,20 @@ from npstreams import imean, last
 from .optimizations import cached_property
 
 class RawDatasetBase(metaclass = ABCMeta):
-    """
+    """ 
     Base class for raw dataset objects in iris.
-
-    RawDataset subclasses must implement the following attributes:
-
-    * fluence (`float`) : photoexcitation fluence [$mJ/cm^2$]
-    * resolution (`tuple`): Dataset resolution [px]
-    * current (`float`): Eletron beam current [pA]
-    * exposure (`float`): Exposure time [s]
-    * energy (`float`): Electron energy [keV]
-    * nscans (`iterable`): Scan numbers starting from 1.
-    * time_points (`iterable`): Iterable of time-delay values [ps]
-
-    Optional properties that are supported:
-
-    * acquisition_date (`str`): Date of dataset acquisition. Format is unimportant.
-    * pumpon_background (`~numpy.ndarray`): background to be removed from all pictures in which
-      the laser pump is present. Default value is an array of zeros. 
-    * pumpoff_background (`~numpy.ndarray`): background to be removed from all pictures in which
-      the laser pump is NOT present. Default value is an array of zeros. 
-    
-    The following method is required:
-
-    * ``raw_data_filename(self, timedelay, scan = 1, **kwargs)`` : returns path to a raw picture at a specific time-delay and scan.
-      Default value for ``scan`` must be 1.
     """
-    acquisition_date = ''
+    # The following attributes are required
     fluence = None
     resolution = None
-    current = None
-    exposure = None
     energy = None
     nscans = None
     time_points = None
+
+    # The following attributes are optional
+    acquisition_date = ''
+    current = 0
+    exposure = 0
 
     @property
     def pumpon_background(self): 
@@ -74,7 +54,7 @@ class RawDatasetBase(metaclass = ABCMeta):
 
     def raw_data(self, timedelay, scan = 1, **kwargs): 
         """
-        Returns an array of the raw TIFF.
+        Returns an array of the image at a timedelay and scan.
         
         Parameters
         ----------
@@ -85,12 +65,12 @@ class RawDatasetBase(metaclass = ABCMeta):
         
         Returns
         -------
-        arr : ndarray, shape (N,M), dtype uint16
+        arr : ndarray, shape (N,M)
         
         Raises
         ------
         ImageNotFoundError
-            Filename is not associated with a TIFF/does not exist.
+            Filename is not associated with an image/does not exist.
         """ 
         return imread(self.raw_data_filename(timedelay, scan, **kwargs))
 
