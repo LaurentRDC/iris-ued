@@ -4,7 +4,7 @@ import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 
 from ..processing import process
-from ..raw import RawDataset
+from ..raw import McGillRawDataset
 
 class ProcessingDialog(QtGui.QDialog):
     """
@@ -16,7 +16,7 @@ class ProcessingDialog(QtGui.QDialog):
         """
         Parameters
         ----------
-        raw : RawDataset
+        raw : McGillRawDataset
         """
         super().__init__(**kwargs)
         self.setModal(True)

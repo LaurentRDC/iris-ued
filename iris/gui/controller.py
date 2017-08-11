@@ -13,7 +13,7 @@ from pyqtgraph import QtCore
 from ..dataset import (DiffractionDataset, PowderDiffractionDataset,
                        SinglePictureDataset)
 from ..processing import process
-from ..raw import RawDataset
+from ..raw import McGillRawDataset
 
 def error_aware(func):
     """
@@ -256,7 +256,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             return
 
         self.close_raw_dataset()
-        self.raw_dataset = RawDataset(path)
+        self.raw_dataset = McGillRawDataset(path)
         self.raw_dataset_loaded_signal.emit(True)
         self.raw_dataset_metadata.emit({'time_points': self.raw_dataset.time_points,
                                         'nscans': self.raw_dataset.nscans})
