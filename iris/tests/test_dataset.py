@@ -1,6 +1,9 @@
 
+from .. import DiffractionDataset, PowderDiffractionDataset, McGillRawDataset
 from .dummies import dummy_dataset, dummy_single_picture_dataset, dummy_powder_dataset
+from contextlib import suppress
 import numpy as np
+from itertools import repeat
 from numpy.random import random, randint
 from skimage.io import imsave
 import os.path
@@ -9,19 +12,63 @@ import unittest
 
 np.random.seed(23)
 
-class TestDiffractionDataset(unittest.TestCase):
-    
+class TestDiffractionDatasetCreation(unittest.TestCase):
+
     def setUp(self):
-        self.dataset = dummy_dataset()
+        self.fname = 'test.hdf5'
+    
+    def test_from_raw(self):
+        raw = McGillRawDataset(os.path.join(os.path.dirname(__file__), 'raw_dataset_test'))
+        with DiffractionDataset.from_raw(raw, filename = self.fname, align = True) as dataset:
+            self.assertSequenceEqual(dataset.processed_measurements_group['intensity'].shape, (2048, 2048, 2))
+    
+    def test_from_collection(self):
+        """ Test the creation of a DiffractionDataset from a collection of patterns """
+        patterns = repeat(random(size = (256, 256)), 10)
+        metadata = {'fluence': 10, 'energy': 90}
+
+        with DiffractionDataset.from_collection(patterns, filename = self.fname, 
+                                                time_points = list(range(10)), metadata = metadata, fkwargs = {'mode':'w'}) as dataset:
+            
+            self.assertSequenceEqual(dataset.processed_measurements_group['intensity'].shape, (256, 256, 10))
+            self.assertEqual(dataset.fluence, metadata['fluence'])
+            self.assertEqual(dataset.energy, metadata['energy'])
+            self.assertSequenceEqual(tuple(dataset.time_points), list(range(10)))
+
+    def test_from_collection_missing_metadata(self):
+        """ Test the creation of a DiffractionDataset from a collection of patterns with
+        incomplete metadata """
+        patterns = repeat(random(size = (256, 256)), 10)
+        metadata = {'fluence': 10}
+
+        with self.assertRaises(ValueError):
+            dset =  DiffractionDataset.from_collection(patterns, 
+                                                       filename = self.fname, 
+                                                       time_points = range(10), 
+                                                       metadata = metadata)
     
     def tearDown(self):
-        self.dataset.close()
+        with suppress(OSError):
+            os.remove(self.fname)
 
-    def test_corrected_time_points(self):
+class TestDiffractionDataset(unittest.TestCase):
 
-        self.dataset.time_zero_shift = 0
-        self.assertSequenceEqual(self.dataset.corrected_time_points, self.dataset.time_points)
+    def setUp(self):
+        self.patterns = list(repeat(random(size = (256, 256)), 5))
+        self.metadata = {'fluence': 10, 'energy': 90}
+        self.dataset = DiffractionDataset.from_collection(self.patterns, 
+                                                          filename = 'test.hdf5', 
+                                                          time_points = range(5), 
+                                                          metadata = self.metadata,
+                                                          fkwargs = {'mode':'w'})
     
+    def test_dataset_metadata(self):
+        """ Test that the property 'metadata' is working correctly"""
+        metadata = self.dataset.metadata
+        for required in DiffractionDataset.required_metadata:
+            self.assertIn(required, metadata)
+        self.assertIn('filename', metadata)
+
     def test_notes(self):
         """ Test that updating the notes works as intended """
         self.dataset.notes = 'test notes'
@@ -29,82 +76,60 @@ class TestDiffractionDataset(unittest.TestCase):
         self.dataset.notes = 'different notes'
         self.assertEqual(self.dataset.notes, 'different notes')
     
-    def test_averaged_data_retrieval(self):
-        """ Test the size of the output from DiffractionDataset.averaged_data 
-        and DiffractionDataset.averaged_error """
-
-        full_shape = self.dataset.resolution + (len(self.dataset.time_points),)
-
-        full_data = self.dataset.averaged_data(timedelay = None)
-        full_error = self.dataset.averaged_error(timedelay = None)
-        self.assertSequenceEqual(full_data.shape, full_shape)
-        self.assertSequenceEqual(full_error.shape, full_shape)
-
-        time_slice = self.dataset.averaged_data(timedelay = self.dataset.time_points[0])
-        error_slice = self.dataset.averaged_error(timedelay = self.dataset.time_points[0])
-        self.assertSequenceEqual(time_slice.shape, self.dataset.resolution)
-        self.assertSequenceEqual(error_slice.shape, self.dataset.resolution)
-
-    def test_averaged_data_retrieval_out_parameter(self):
-        """ Tests that the out parameter is working properly for  DiffractionDataset.averaged_data 
-        and DiffractionDataset.averaged_error """
-        full_shape = self.dataset.resolution + (len(self.dataset.time_points),)
-        container = np.empty(full_shape)
-
-        self.dataset.averaged_data(timedelay = None, out = container)
-        self.assertTrue(np.allclose(container, self.dataset.averaged_data(None)))
-
-        self.dataset.averaged_error(timedelay = None, out = container)
-        self.assertTrue(np.allclose(container, self.dataset.averaged_error(None)))
+    def test_resolution(self):
+        """ Test that dataset resolution is correct """
+        self.assertSequenceEqual(self.patterns[0].shape, self.dataset.resolution)
     
-    def test_averaged_data_retrieval_nonexisting_timepoint(self):
-        """ Tests that trying to access a non-existing time-point raises an appropriate error """
-
-        with self.assertRaises(ValueError):
-            time_slice = self.dataset.averaged_data(timedelay = np.sum(self.dataset.time_points))
-        
-        with self.assertRaises(ValueError):
-            error_slice = self.dataset.averaged_error(timedelay = np.sum(self.dataset.time_points))
-
-    def test_averaged_equilibrium(self):
-        """ Test DiffractionDataset.averaged_equilibrium() """
-        eq = self.dataset.averaged_equilibrium()
-        self.assertSequenceEqual(eq.shape, self.dataset.resolution)
-        
+    def test_data(self):
+        """ Test that data stored in DiffractionDataset is correct """
+        for time, pattern in zip(list(self.dataset.time_points), self.patterns):
+            self.assertTrue(np.allclose(self.dataset.data(time), pattern))
+    
+    def test_equilibrium(self):
+        """ test that DiffractionDataset.equilibrium() returns the correct array """
         with self.subTest('No data before time-zero'):
-            self.dataset.shift_time_zero(1 + abs(min(self.dataset.time_points)))
-            eq = self.dataset.averaged_equilibrium()
-            self.assertSequenceEqual(eq.shape, self.dataset.resolution)
-            self.assertTrue(np.allclose(eq, np.zeros_like(eq)))
+            self.dataset.shift_time_zero(10)
+            self.assertTrue(np.allclose(self.dataset.equilibrium(), np.zeros(self.dataset.resolution)))
+
+        with self.subTest('All data before time-zero'):
+            self.dataset.shift_time_zero(-20)
+            eq = np.mean(np.stack(self.patterns, axis = -1), axis = 2)
+            self.assertTrue(np.allclose(self.dataset.equilibrium(), eq))
     
     def test_time_series(self):
-        """ Test that the DiffractionDataset.time_series() method is working """
+        """ Test that the DiffractionDataset.time_series method is working """
+        
+        r1, r2, c1, c2 = 100, 120, 45, 57
+        stack = np.stack(self.patterns, axis = -1)
+        ts = np.mean(stack[r1:r2, c1:c2], axis = (0, 1))
 
-        with self.subTest('Test out parameter'):
-            container = np.zeros((len(self.dataset.time_points), ))
-            x1 = y1 = int(self.dataset.resolution[0] / 3)
-            x2 = y2 = int((2/3)*self.dataset.resolution[0])
-            self.dataset.time_series((x1, x2, y1, y2), out = container)
+        self.assertTrue(np.allclose(self.dataset.time_series([r1,r2,c1,c2]), ts))
+
+    def tearDown(self):
+        self.dataset.close()
+        del self.dataset
+        with suppress(OSError):
+            os.remove('test.hdf5')
 
 class TestPowderDiffractionDataset(unittest.TestCase):
 
     def setUp(self):
-        self.dataset = dummy_powder_dataset()
-    
-    def tearDown(self):
-        self.dataset.close()
+        self.patterns = list(repeat(random(size = (128, 128)), 5))
+        self.metadata = {'fluence': 10, 'energy': 90}
+        diff_dataset = DiffractionDataset.from_collection(self.patterns, 
+                                                          filename = 'test.hdf5', 
+                                                          time_points = range(5), 
+                                                          metadata = self.metadata,
+                                                          fkwargs = {'mode':'w'})
+        self.dataset = PowderDiffractionDataset.from_dataset(diff_dataset, center = (64, 64))
 
-    def test_scattering_length(self):
-        """ Test that scattering_length attribute exists """
-        self.assertSequenceEqual(self.dataset.scattering_length.shape, 
-                                    self.dataset.powder_data(self.dataset.time_points[0]).shape)
-    
     def test_baseline_attributes(self):
         """ Test that the attributes related to baseline have correct defaults and are
         set to the correct values after computation """
         self.assertIs(self.dataset.first_stage, None)
         self.assertIs(self.dataset.wavelet, None)
-        self.assertIs(self.dataset.level, None)
+        self.assertEqual(self.dataset.level, 0)
+        self.assertEqual(self.dataset.niter, 0)
 
         self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', level = 1, mode = 'periodic')
         self.assertEqual(self.dataset.first_stage, 'sym6')
@@ -112,37 +137,15 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         self.assertEqual(self.dataset.level, 1)
 
     def test_powder_data_retrieval(self):
-        """ Test the size of the output from PowderDiffractionDataset.powder_data 
-        and PowderDiffractionDataset.powder_error """
-        full_shape = (len(self.dataset.time_points), self.dataset.scattering_length.size)
+        """ Test the size of the output from PowderDiffractionDataset.powder_data """
+        full_shape = (len(self.dataset.time_points), self.dataset.px_radius.size)
 
         full_data = self.dataset.powder_data(timedelay = None)
-        full_error = self.dataset.powder_error(timedelay = None)
         self.assertSequenceEqual(full_data.shape, full_shape)
-        self.assertSequenceEqual(full_error.shape, full_shape)
 
         time_slice = self.dataset.powder_data(timedelay = self.dataset.time_points[0])
-        error_slice = self.dataset.powder_error(timedelay = self.dataset.time_points[0])
-        self.assertSequenceEqual(time_slice.shape, self.dataset.scattering_length.shape)
-        self.assertSequenceEqual(error_slice.shape, self.dataset.scattering_length.shape)
-    
-    def test_powder_equilibrium(self):
-        """ Test PowderDiffractionDataset.powder_equilibrium() """
-        with self.subTest('bgr = False'):
-            eq = self.dataset.powder_equilibrium()
-            self.assertSequenceEqual(eq.shape, self.dataset.scattering_length.shape)
+        self.assertSequenceEqual(time_slice.shape, self.dataset.px_radius.shape)
 
-        with self.subTest('bgr = True'):
-            self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', mode = 'constant')
-            eq = self.dataset.powder_equilibrium(bgr = True)
-            self.assertSequenceEqual(eq.shape, self.dataset.scattering_length.shape)
-        
-        with self.subTest('No data before time-zero'):
-            self.dataset.shift_time_zero(1 + abs(min(self.dataset.time_points)))
-            eq = self.dataset.powder_equilibrium()
-            self.assertSequenceEqual(eq.shape, self.dataset.scattering_length.shape)
-            self.assertTrue(np.allclose(eq, np.zeros_like(eq)))
-    
     def test_recomputing_angular_average(self):
         """ Test that recomputing the angular average multiple times will work. This also
         tests resizing all powder data multiple times. """
@@ -153,25 +156,25 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         self.dataset.compute_angular_averages(center = (34, 56), angular_bounds = (15.3, 187))
         self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift1')
     
-    def test_baseline(self):
-        """ Test the computation of wavelet baselines """
-        self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', mode = 'smooth')
-        
-        self.assertSequenceEqual(self.dataset.powder_baseline(timedelay = 0).shape, 
-                                 self.dataset.scattering_length.shape)
+    def test_powder_equilibrium(self):
+        """ Test PowderDiffractionDataset.powder_equilibrium() """
+        with self.subTest('bgr = False'):
+            eq = self.dataset.powder_equilibrium()
+            self.assertSequenceEqual(eq.shape, self.dataset.px_radius.shape)
 
-class TestSinglePictureDataset(unittest.TestCase):
-    
-    def setUp(self):
-        self.image = np.random.random(size = (128, 128))
-        self.dataset = dummy_single_picture_dataset(self.image)
-    
-    def test_averaged_data(self):
-        self.assertTrue(np.allclose(self.image, self.dataset.averaged_data(0)))
-    
-    def test_averaged_error(self):
-        # check that average_error() is an array of zeros
-        self.assertFalse(np.any(self.dataset.averaged_error(0)))
-    
-    def test_valid_mask(self):
-        self.assertTrue(np.all(self.dataset.valid_mask))
+        with self.subTest('bgr = True'):
+            self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', mode = 'constant')
+            eq = self.dataset.powder_equilibrium(bgr = True)
+            self.assertSequenceEqual(eq.shape, self.dataset.px_radius.shape)
+        
+        with self.subTest('No data before time-zero'):
+            self.dataset.shift_time_zero(1 + abs(min(self.dataset.time_points)))
+            eq = self.dataset.powder_equilibrium()
+            self.assertSequenceEqual(eq.shape, self.dataset.px_radius.shape)
+            self.assertTrue(np.allclose(eq, np.zeros_like(eq)))
+
+    def tearDown(self):
+        self.dataset.close()
+        del self.dataset
+        with suppress(OSError):
+            os.remove('test.hdf5')

@@ -21,12 +21,6 @@ from npstreams import iaverage, isem, last
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .utils import scattering_length
 
-def uint_subtract_safe(arr1, arr2):
-    """ Subtract two unsigned arrays without rolling over """
-    result = np.subtract(arr1, arr2)
-    result[np.greater(arr2, arr1)] = 0
-    return result
-
 def process(raw, destination, beamblock_rect, exclude_scans = list(), 
             processes = 1, callback = None, align = True):
     """ 
@@ -50,132 +44,15 @@ def process(raw, destination, beamblock_rect, exclude_scans = list(),
     align : bool, optional
         If True (default), raw images will be aligned on a per-scan basis.
     """
-    if callback is None:
-        callback = lambda i: None
-
-    # Prepare compression kwargs
-    ckwargs = {'compression' : 'lzf', 
-               'chunks' : True, 
-               'shuffle' : True, 
-               'fletcher32' : True}
-               
-    with DiffractionDataset(name = destination, mode = 'w') as processed:
-
-        processed.sample_type = 'single_crystal'       # By default
-        processed.time_points = raw.time_points
-        processed.acquisition_date = raw.acquisition_date
-        processed.fluence = raw.fluence
-        processed.current = raw.current
-        processed.exposure = raw.exposure
-        processed.energy = raw.energy
-        processed.resolution = raw.resolution
-        processed.beamblock_rect = beamblock_rect
-        processed.time_zero_shift = 0.0
-        processed.nscans = tuple(sorted(set(raw.nscans) - set(exclude_scans)))
-
-    # Average background images
-    # If background images are not found, save empty backgrounds
-    # NOTE: sum of images must be done as float arrays, otherwise the values
-    #       can loop back if over 2**16 - 1
-    # NOTE: for the rare options 'pumpon only', there is no pumpoff_background
-    pumpon_filenames = glob.glob(join(raw.raw_directory, 'background.*.pumpon.tif'))
-    pumpon_background = sum(map(lambda f: np.asfarray(imread(f)), pumpon_filenames))/len(pumpon_filenames)
-
-    pumpoff_filenames = glob.glob(join(raw.raw_directory, 'background.*.pumpoff.tif'))
-    if len(pumpoff_filenames):
-        pumpoff_background = sum(map(lambda f: np.asfarray(imread(f)), pumpoff_filenames))/len(pumpoff_filenames)
-    else:
-        pumpoff_background = np.zeros_like(pumpon_background)
-
-    with DiffractionDataset(name = destination, mode = 'r+') as processed:
-        gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'background_pumpon', data = pumpon_background, dtype = np.float32)
-        gp.create_dataset(name = 'background_pumpoff', data = pumpoff_background, dtype = np.float32)
-
     # Create a mask of valid pixels (e.g. not on the beam block, not a hot pixel)
     x1,x2,y1,y2 = beamblock_rect
     valid_mask = np.ones(raw.resolution, dtype = np.bool)
     valid_mask[y1:y2, x1:x2] = False
-    with DiffractionDataset(name = destination, mode = 'r+') as processed:
-        processed.experimental_parameters_group.create_dataset(name = 'valid_mask', data = valid_mask)
 
-    ref_im = None
-    if align:
-        ref_im = uint_subtract_safe(raw.raw_data(raw.time_points[0], raw.nscans[0]), pumpon_background) # Reference for alignment
-    mapkwargs = {'background': pumpon_background, 'ref_im': ref_im, 'valid_mask': valid_mask}
-
-    # an iterator is used so that writing to the HDF5 file can be done in
-    # the current process; otherwise, writing to disk can fail.
-    # TODO: imap chunksize has been kept at 1 because for 2048x2048 images,
-    #       memory usage is abount ~600MB per core. Would it be beneficial to
-    #       increase chunksize to two or three?
-    # NOTE: It is important the fnames_iterators are sorted by time
-    #       therefore, enumerate() gives the right index that goes in the pipeline function
-    fnames_iterators = map(partial(raw.timedelay_filenames, exclude_scans = exclude_scans), sorted(raw.time_points))
-    full_shape = raw.resolution + (len(raw.time_points),)
-
-    with DiffractionDataset(name = destination, mode = 'r+') as processed:
-
-        # WARNING: chunks = False makes writes super slow... like 10x slower
-        # TODO: find best chunking...
-        gp = processed.processed_measurements_group
-        gp.create_dataset(name = 'intensity', shape = full_shape, dtype = np.float, chunks = True)
-        gp.create_dataset(name = 'error', shape = full_shape, dtype = np.float, chunks = True)
-    
-        results = pmap(func = partial(pipeline, **mapkwargs), 
-                       iterable = enumerate(fnames_iterators),
-                       processes = processes)
-        
-        for order, (index, avg, err) in enumerate(results):
-            gp['intensity'].write_direct(avg, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
-            gp['error'].write_direct(err, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
-            
-            callback(round(100*order / len(raw.time_points)))
+    new_dataset = DiffractionDataset.from_raw(raw, destination, valid_mask = valid_mask, 
+                                              callback = callback, align = align, processes = processes)
 
     return destination
-
-def pipeline(values, background, ref_im, valid_mask):
-    """
-    Processing pipeline for a single time-point.
-
-    Parameters
-    ----------
-    values : 2-tuple
-        Index and filenames of diffraction pictures
-    background : ndarray, dtype uint16
-        Pump-on diffraction background
-    ref_im : ndarray or None
-        Background-subtracted diffraction pattern used as reference for alignment.
-        If None, no alignment is performed.
-    valid_mask : ndarray, dtype bool
-        Image mask that evaluates to True on valid pixels.
-    
-    Returns
-    -------
-    index : int
-        Time-point index.
-    avg, err : ndarrays, ndim 2
-        Weighted average and standard error on processing.
-    """
-    # Generator chains helps keep memory usage lower
-    # This in turns allows for more cores to be active at the same time
-    index, fnames = values
-    images = map(imread, fnames)
-
-    images_bs = map(partial(uint_subtract_safe, **{'arr2': background}), images)
-    if ref_im is None:
-        aligned = map(lambda x: x, images_bs)
-    else:
-        aligned = ialign(images_bs, reference = ref_im)
-    
-    # Compute error and average concurrently
-    # TODO: split to a third stream for weights as total intensity?
-    stream1, stream2 = tee(aligned, 2)
-    averages = iaverage(stream1)
-    errors = isem(stream2)
-    avg, err = last(zip(averages, errors))
-
-    return index, avg, err
 
 def perscan(raw, srange, center, mask = None, trange = None, exclude_scans = list(), baseline_kwargs = dict(), callback = None):
     """ 
