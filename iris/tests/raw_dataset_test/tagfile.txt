@@ -1,6 +1,6 @@
 Exposure =  5 s
-Fluence =  BLANK
-Energy =  BLANK
+Fluence =  10
+Energy =  90
 Current =  BLANK
 EsizeX =  BLANK
 EsizeY =  BLANK

@@ -24,22 +24,27 @@ from skimage.io import imread
 from npstreams import imean, last
 
 from .optimizations import cached_property
+from .dataset import DiffractionDataset
+
+def uint_subtract_safe(arr1, arr2):
+    """ Subtract two unsigned arrays without rolling over """
+    result = np.subtract(arr1, arr2)
+    result[np.greater(arr2, arr1)] = 0
+    return result
 
 class RawDatasetBase(metaclass = ABCMeta):
     """ 
     Base class for raw dataset objects in iris.
     """
-    # The following attributes are required
-    fluence = None
-    resolution = None
-    energy = None
-    nscans = None
-    time_points = None
+    required_metadata = DiffractionDataset.required_metadata
+    optional_metadata = DiffractionDataset.optional_metadata
 
-    # The following attributes are optional
-    acquisition_date = ''
-    current = 0
-    exposure = 0
+    @property
+    def metadata(self):
+        metadata = dict()
+        for attr in self.required_metadata | self.optional_metadata:
+            metadata[attr] = getattr(self, attr, None)
+        return metadata
 
     @property
     def pumpon_background(self): 
@@ -52,7 +57,7 @@ class RawDatasetBase(metaclass = ABCMeta):
     @abstractmethod
     def raw_data_filename(timedelay, scan = 1, **kwargs): pass
 
-    def raw_data(self, timedelay, scan = 1, **kwargs): 
+    def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs): 
         """
         Returns an array of the image at a timedelay and scan.
         
@@ -62,6 +67,9 @@ class RawDatasetBase(metaclass = ABCMeta):
             Time-delay in picoseconds.
         scan : int, optional
             Scan number. 
+        bgr : bool, optional
+            If True, pump-on background is removed from the pattern
+            before being returned.
         
         Returns
         -------
@@ -72,7 +80,10 @@ class RawDatasetBase(metaclass = ABCMeta):
         ImageNotFoundError
             Filename is not associated with an image/does not exist.
         """ 
-        return imread(self.raw_data_filename(timedelay, scan, **kwargs))
+        im = imread(self.raw_data_filename(timedelay, scan, **kwargs))
+        if bgr:
+            return uint_subtract_safe(im, self.pumpon_background)
+        return im
 
     def timedelay_filenames(self, timedelay, exclude_scans = list(), **kwargs): 
         """ 
@@ -115,12 +126,12 @@ class McGillRawDataset(RawDatasetBase):
         else:
             raise ValueError('The path {} is not a directory'.format(directory))
         
-        self.metadata = parse_tagfile(join(directory, 'tagfile.txt'))
-        self.fluence = self.metadata.get('fluence', 0)
+        self._from_tagfile = parse_tagfile(join(directory, 'tagfile.txt'))
+        self.fluence = self._from_tagfile.get('fluence', 0)
         self.resolution = (2048, 2048)
-        self.current = self.metadata.get('current', 0)
-        self.exposure = self.metadata.get('exposure', 0)
-        self.energy = self.metadata.get('energy', 90)
+        self.current = self._from_tagfile.get('current', 0)
+        self.exposure = self._from_tagfile.get('exposure', 0)
+        self.energy = self._from_tagfile.get('energy', 90)
         
         try:
             self.acquisition_date = re.search('(\d+[.])+', self.raw_directory).group()[:-1]      #Last [:-1] removes a '.' at the end

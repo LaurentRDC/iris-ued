@@ -28,11 +28,20 @@ You can also use other HDF5 bindings to inspect :class:`DiffractionDataset` inst
 Creating a :class:`DiffractionDataset`
 --------------------------------------
 
-The most common way of creating a :class:`DiffractionDataset` object is through the :func:`process` function:
+An easy way to create a DiffractionDataset is through the :meth:`DiffractionDataset.from_collection` method, which
+saves diffraction patterns and metadata:
 
-.. autofunction:: process
+.. automethod:: DiffractionDataset.from_collection
 
-In order to use the :func:`process` function, you'll need to first have to `subclass RawDatasetBase <subclass>`_.
+The required metadata that must be passed to :meth:`DiffractionDataset.from_collection` is also listed in
+:attr:`DiffractionDataset.required_metadata`. Valid optional metadata is listed in :attr:`DiffractionDataset.optional_metadata`.
+
+An other possibility is to create a :class:`DiffractionDataset` from a :class:`RawDatasetBase` subclass using the 
+:meth:`DiffractionDataset.from_raw` method :
+
+.. automethod:: DiffractionDataset.from_raw
+
+
 
 Important Methods for the :class:`DiffractionDataset`
 -----------------------------------------------------

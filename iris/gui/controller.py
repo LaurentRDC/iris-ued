@@ -44,9 +44,8 @@ class ErrorAware(QtCore.pyqtWrapperType):
 
 def promote_to_powder(filename, center, callback):
     """ Create a PowderDiffractionDataset from a DiffractionDataset """
-    with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
-        dataset.sample_type = 'powder'
-        dataset.compute_angular_averages(center = center, callback = callback)
+    with PowderDiffractionDataset.from_dataset(DiffractionDataset(filename), center = center, callback = callback):
+        pass
     return filename
 
 # TODO: callback
@@ -111,7 +110,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     @QtCore.pyqtSlot(int, int)
     def display_raw_data(self, timedelay_index, scan):
         timedelay = self.raw_dataset.time_points[timedelay_index]
-        self.raw_data_signal.emit(self.raw_dataset.raw_data(timedelay, scan) - self.raw_dataset.pumpon_background)
+        self.raw_data_signal.emit(self.raw_dataset.raw_data(timedelay, scan, bgr = True))
     
     @QtCore.pyqtSlot(int)
     def display_averaged_data(self, timedelay_index):
@@ -119,11 +118,11 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # loaded into memory, contrary to powder data
         # Source of 'cache miss' could be that _average_data_container is None,
         # new dataset loaded has different shape than before, etc.
-        timedelay = self.dataset.corrected_time_points[timedelay_index]
+        timedelay = self.dataset.time_points[timedelay_index]
         try:
-            self._averaged_data_container[:] = self.dataset.averaged_data(timedelay, relative = self._relative_averaged)
+            self._averaged_data_container[:] = self.dataset.data(timedelay, relative = self._relative_averaged)
         except:
-            self._averaged_data_container = self.dataset.averaged_data(timedelay, relative = self._relative_averaged)
+            self._averaged_data_container = self.dataset.data(timedelay, relative = self._relative_averaged)
         self.averaged_data_signal.emit(self._averaged_data_container)
         return self._averaged_data_container
     
@@ -132,13 +131,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         """ Emit a powder data signal with/out background """
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
-        if not self._powder_error:
-            error_block = None
-        else:
-            error_block = self.dataset.powder_error(timedelay = None)
         self.powder_data_signal.emit(self.dataset.scattering_length, 
                                      self.dataset.powder_data(timedelay = None, relative = self._relative_powder, bgr = self._bgr_powder), 
-                                     error_block)
+                                     None) #error block
     
     @QtCore.pyqtSlot(bool)
     def powder_background_subtracted(self, enable):
@@ -196,10 +191,10 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     @QtCore.pyqtSlot(float, float)
     def powder_time_series(self, smin, smax):
         try:
-            self.dataset.powder_time_series(smin = smin, smax = smax, bgr = self._bgr_powder, 
+            self.dataset.powder_time_series(qmin = smin, qmax = smax, bgr = self._bgr_powder, 
                                             out = self._powder_time_series_container)
         except:
-            self._powder_time_series_container = self.dataset.powder_time_series(smin = smin, smax = smax, bgr = self._bgr_powder)
+            self._powder_time_series_container = self.dataset.powder_time_series(qmin = smin, qmax = smax, bgr = self._bgr_powder)
         finally:
             self.powder_time_series_signal.emit(self.dataset.corrected_time_points, self._powder_time_series_container)
     
@@ -215,7 +210,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         y2 = round(max(0, rect.y() + rect.height() ))
 
         integrated = self.dataset.time_series( (x1, x2, y1, y2) )
-        self.time_series_signal.emit(self.dataset.corrected_time_points, integrated)
+        self.time_series_signal.emit(self.dataset.time_points, integrated)
     
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
@@ -248,7 +243,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             # if self._powder_time_series_container is None, then it
             # means that powder series has not been plotted yet
             if self._powder_time_series_container is not None:
-                self.powder_time_series_signal.emit(self.dataset.corrected_time_points, self._powder_time_series_container)
+                self.powder_time_series_signal.emit(self.dataset.time_points, self._powder_time_series_container)
     
     @QtCore.pyqtSlot(str)
     def load_raw_dataset(self, path):
@@ -291,7 +286,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
         cls = DiffractionDataset
         with DiffractionDataset(path, mode = 'r') as d:
-            if d.sample_type == 'powder':
+            if PowderDiffractionDataset._powder_group_name in d:
                 cls = PowderDiffractionDataset
         
         self.dataset = cls(path, mode = 'r+')
