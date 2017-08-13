@@ -89,8 +89,7 @@ class DiffractionDataset(h5py.File):
     
     @classmethod
     def from_collection(cls, patterns, filename, time_points, metadata, 
-                        valid_mask = None, ckwargs = {'chunks': True}, 
-                        callback = None, **kwargs):
+                        valid_mask = None, ckwargs = None, callback = None, **kwargs):
         """
         Create a DiffractionDataset from a collection of diffraction patterns and metadata.
 
@@ -128,6 +127,7 @@ class DiffractionDataset(h5py.File):
             cases where a beamblock is used.
         ckwargs : dict, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
+            Default is to use the `lzf` compression pipeline.
         callback : callable or None, optional
             Callable that takes an int between 0 and 99. This can be used for progress update when
             ``patterns`` is a generator and involves large computations.
@@ -143,8 +143,13 @@ class DiffractionDataset(h5py.File):
         ------
         ValueError: if required metadata is not complete.
         """
-        if callback is None: callback = lambda _: None
+        if callback is None: 
+            callback = lambda _: None
+
         time_points = np.array(time_points).reshape(-1)
+
+        if ckwargs is None:
+            ckwargs = {'compression': 'lzf', 'shuffle': True, 'fletcher32': True, 'chunks': True}
 
         # Required metadata must be present, and cannot be None (since HDF5 cannot deal with it.)
         required_keys = set(cls.required_metadata) - set(['time_points'])
