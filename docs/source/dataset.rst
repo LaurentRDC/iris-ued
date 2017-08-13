@@ -20,7 +20,7 @@ HDF5 files with a specific layout, and associated methods::
 
     assert issubclass(DiffractionDataset, h5py.File)    # yep
 
-You can take a look at :ref:`h5py's documentation <http://docs.h5py.org/en/latest/>` to familiarize yourself
+You can take a look at `h5py's documentation <http://docs.h5py.org/en/latest/>`_ to familiarize yourself
 with :class:`h5py.File`.
 
 You can also use other HDF5 bindings to inspect :class:`DiffractionDataset` instances.
@@ -32,6 +32,7 @@ An easy way to create a DiffractionDataset is through the :meth:`DiffractionData
 saves diffraction patterns and metadata:
 
 .. automethod:: DiffractionDataset.from_collection
+    :noindex:
 
 The required metadata that must be passed to :meth:`DiffractionDataset.from_collection` is also listed in
 :attr:`DiffractionDataset.required_metadata`. Valid optional metadata is listed in :attr:`DiffractionDataset.optional_metadata`.
@@ -48,9 +49,12 @@ Important Methods for the :class:`DiffractionDataset`
 
 The following three methods are the bread-and-butter of interacting with data:
 
-.. automethod:: DiffractionDataset.averaged_data
-.. automethod:: DiffractionDataset.averaged_error
+.. automethod:: DiffractionDataset.diff_data
+    :noindex:
+.. automethod:: DiffractionDataset.diff_eq
+    :noindex:
 .. automethod:: DiffractionDataset.time_series
+    :noindex:
 
 The :class:`PowderDiffractionDataset` object
 ============================================

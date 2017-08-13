@@ -20,6 +20,10 @@ from skued.image import angular_average, ialign
 
 from .optimizations import cached_property
 
+def _raw_combine(raw, valid_scans, align, timedelay):
+    images = map(partial(raw.raw_data, timedelay), valid_scans)
+    pipe = iaverage(ialign(images)) if align else iaverage(images)
+    return last(pipe)
 
 class ExperimentalParameter(object):
     """ Descriptor to experimental parameters. """
@@ -54,7 +58,7 @@ class DiffractionDataset(h5py.File):
     """
     Abstraction of an HDF5 file to represent diffraction datasets.
     """
-    _processed_group_name = '/processed'
+    _diffraction_group_name = '/processed'
     _exp_params_group_name = '/'
 
     required_metadata = frozenset({'fluence', 'energy', 'time_points'})
@@ -86,7 +90,7 @@ class DiffractionDataset(h5py.File):
     @classmethod
     def from_collection(cls, patterns, filename, time_points, metadata, 
                         valid_mask = None, ckwargs = {'chunks': True}, 
-                        fkwargs = {'mode': 'x'}, callback = None):
+                        callback = None, **kwargs):
         """
         Create a DiffractionDataset from a collection of diffraction patterns and metadata.
 
@@ -99,23 +103,23 @@ class DiffractionDataset(h5py.File):
             Path to the assembled DiffractionDataset.
         time_points : array_like, shape (N,)
             Time-points of the diffraction patterns, in picoseconds.
-        metadata : dictionary
+        metadata : dict
             The dictionary must contain the following keys:
 
-            * fluence : float
-            * energy : float
+            * ``'fluence'`` (`float`): photoexcitation fluence [mJ/cm^2]
+            * ``'energy'`` (`float`): electron energy [keV]
 
             The following keys are optional:
 
-            * notes : str
-            * acquisition_date : str
-            * nscans : iterable of ints
-            * current : float
-            * exposure : float
-            * temperature : float
-            * time_zero_shift : float
-            * pixel_width : float
-            * camera_distance : float
+            * ``'notes'`` (`str`): User notes. Can be any string
+            * ``'acquisition_date'`` (`str`): Dataset acquisition date. Can be any string
+            * ``'nscans'`` (`iterable`): Scans from which the dataset was assembled, e.g. ``(1,2,3,4,5,10)``.
+            * ``'current'`` (`float`): Electron beam current [pA].
+            * ``'exposure'`` (`float`): Diffraction pattern integration time, or photographic exposure [s].
+            * ``'temperature'`` (`float`): sample temperature [K].
+            * ``'time_zero_shift'`` (`float`): time-zero shift between the input `time_points` and the 'real' time-zero [ps].
+            * ``'pixel_width'`` (`float`): width of a single pixel [m].
+            * ``'camera_distance'`` (`float`): distance between the electron detector and sample [m].
 
             Any other key will not be recorded in the DiffractionDataset. 
         
@@ -124,12 +128,12 @@ class DiffractionDataset(h5py.File):
             cases where a beamblock is used.
         ckwargs : dict, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
-        fkwargs : dict, optional
-            File keyword-arguments. These keywords are passed to ``h5py.File`` constructor. 
-            Default is file-mode 'x', which raises error if file already exists.
         callback : callable or None, optional
             Callable that takes an int between 0 and 99. This can be used for progress update when
             ``patterns`` is a generator and involves large computations.
+        kwargs
+            Keywords are passed to ``h5py.File`` constructor. 
+            Default is file-mode 'x', which raises error if file already exists.
         
         Returns
         -------
@@ -156,7 +160,9 @@ class DiffractionDataset(h5py.File):
         if valid_mask is None:
             valid_mask = np.ones(first.shape, dtype = np.bool)
         
-        with cls(filename, **fkwargs) as file:
+        if 'mode' not in kwargs:
+            kwargs['mode'] = 'x'    #safest mode
+        with cls(filename, **kwargs) as file:
 
             # Note that keys not associated with an ExperimentalParameter
             # descriptor will not be recorded in the file.
@@ -170,9 +176,9 @@ class DiffractionDataset(h5py.File):
             times = gp.create_dataset('time_points', data = time_points, dtype = np.float)
             mask = gp.create_dataset('valid_mask', data = valid_mask, dtype = np.bool)
 
-            pgp = file.processed_measurements_group
+            pgp = file.diffraction_group
             dset = pgp.create_dataset(name = 'intensity', shape = resolution + (len(time_points), ), 
-                                     dtype = first.dtype, **ckwargs)
+                                      dtype = first.dtype, **ckwargs)
             
             # Making use of the H5DS dimension scales
             # http://docs.h5py.org/en/latest/high/dims.html
@@ -187,7 +193,8 @@ class DiffractionDataset(h5py.File):
 
     @classmethod
     def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
-                 processes = 1, callback = None, align = True, ckwargs = dict()):
+                 processes = 1, callback = None, align = True, ckwargs = dict(), 
+                 **kwargs):
         """
         Create a DiffractionDataset from a subclass of RawDatasetBase.
 
@@ -209,6 +216,9 @@ class DiffractionDataset(h5py.File):
             If True (default), raw images will be aligned on a per-scan basis.
         ckwargs : dict or None, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
+        kwargs
+            Keywords are passed to ``h5py.File`` constructor. 
+            Default is file-mode 'x', which raises error if file already exists.
         
         Returns
         -------
@@ -220,21 +230,15 @@ class DiffractionDataset(h5py.File):
         TypeError: if ``raw`` is not an instance of RawDatasetBase
         """
         valid_scans = tuple(set(raw.nscans) - set(exclude_scans))
+        metadata = raw.metadata.copy()
+        metadata['nscans'] = valid_scans
 
-        ipatterns = list()
-        for time_point in raw.time_points:
-            arrays = map(partial(raw.raw_data, time_point, bgr = True), valid_scans) 
-            pipeline = ipipe(iaverage, ialign, arrays) if align else iaverage(arrays)
-            ipatterns.append(pipeline)
+        kwargs.update({'callback': callback, 'ckwargs': ckwargs, 
+                       'valid_mask': valid_mask, 'metadata': metadata})
 
-        # TODO: align all patterns with each other?
-        patterns = pmap(last, ipatterns, processes = processes)
-        
-        return cls.from_collection(patterns = patterns, 
-                                   filename = filename,
-                                   time_points = raw.time_points,
-                                   metadata = raw.metadata, 
-                                   valid_mask = valid_mask)
+        patterns = pmap(_raw_combine, raw.time_points, args = (raw, valid_scans, align), ntotal = len(raw.time_points))
+
+        return cls.from_collection(patterns = patterns, filename = filename, time_points = raw.time_points, **kwargs)
         
     @property
     def metadata(self):
@@ -256,7 +260,7 @@ class DiffractionDataset(h5py.File):
     @property
     def resolution(self):
         """ Resolution of diffraction patterns (px, px) """
-        intensity_shape = self.processed_measurements_group['intensity'].shape
+        intensity_shape = self.diffraction_group['intensity'].shape
         return tuple(intensity_shape[0:2])
     
     def shift_time_zero(self, shift):
@@ -296,7 +300,7 @@ class DiffractionDataset(h5py.File):
                  closest-timedelay {}ps instead'.format(timedelay, self.time_points[time_index]))
         return time_index
 
-    def equilibrium(self, out = None):
+    def diff_eq(self, out = None):
         """ 
         Returns the averaged diffraction pattern for all times before photoexcitation. 
         In case no data is available before photoexcitation, an array of zeros is returned.
@@ -314,7 +318,7 @@ class DiffractionDataset(h5py.File):
         I : ndarray, shape (N,)
             Diffracted intensity [counts]
         """
-        dset = self.processed_measurements_group['intensity']
+        dset = self.diffraction_group['intensity']
         t0_index = np.argmin(np.abs(self.time_points))
         b4t0_slice = dset[:, :, :t0_index]
 
@@ -325,9 +329,9 @@ class DiffractionDataset(h5py.File):
         
         return np.mean(b4t0_slice, axis = 2, out = out)
 
-    def data(self, timedelay, relative = False, out = None):
+    def diff_data(self, timedelay, relative = False, out = None):
         """
-        Returns data at a specific time-delay.
+        Returns diffraction data at a specific time-delay.
 
         Parameters
         ----------
@@ -342,15 +346,16 @@ class DiffractionDataset(h5py.File):
         
         Returns
         -------
-        arr : ndarray or None
-            Time-delay data. If out is provided, None is returned.
+        arr : ndarray 
+            Time-delay data. If ``out`` is provided, ``arr`` is a view
+            into ``out``.
         
         Raises
         ------
         ValueError
             If timedelay does not exist.
         """
-        dataset = self.processed_measurements_group['intensity']
+        dataset = self.diffraction_group['intensity']
 
         if timedelay is None:
             if out is None:
@@ -364,7 +369,7 @@ class DiffractionDataset(h5py.File):
             dataset.read_direct(out, source_sel = np.s_[:,:, time_index], dest_sel = np.s_[:,:])
         
         if relative:
-            out -= self.equilibrium()
+            out -= self.diff_eq()
 
         return out
     
@@ -385,7 +390,7 @@ class DiffractionDataset(h5py.File):
         out : ndarray, ndim 1
         """
         x1, x2, y1, y2 = rect
-        data = self.processed_measurements_group['intensity'][x1:x2, y1:y2, :]
+        data = self.diffraction_group['intensity'][x1:x2, y1:y2, :]
         return np.mean(data, axis = (0,1), out = out)
     
     @property
@@ -393,17 +398,13 @@ class DiffractionDataset(h5py.File):
         return self.require_group(name = self._exp_params_group_name)
     
     @property
-    def processed_measurements_group(self):
-        return self.require_group(name = self._processed_group_name)
-    
-    @property
-    def pumpoff_pictures_group(self):
-        return self.require_group(name = self._pumpoff_pictures_group_name)
+    def diffraction_group(self):
+        return self.require_group(name = self._diffraction_group_name)
     
     @cached_property
     def compression_params(self):
         """ Compression options in the form of a dictionary """
-        dataset = self.processed_measurements_group['intensity']
+        dataset = self.diffraction_group['intensity']
         ckwargs = dict()
         ckwargs['compression'] = dataset.compression
         ckwargs['fletcher32'] = dataset.fletcher32
@@ -484,7 +485,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         # TODO: cache
         return 4*np.pi*np.sin(self.scattering_angle/2) / electron_wavelength(self.energy)
 
-    def powder_equilibrium(self, bgr = False, out = None):
+    def powder_eq(self, bgr = False, out = None):
         """ 
         Returns the average powder diffraction pattern for all times before photoexcitation. 
         In case no data is available before photoexcitation, an array of zeros is returned.
@@ -555,7 +556,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             out -= self.powder_baseline(timedelay)
         
         if relative:
-            out -= self.powder_equilibrium(bgr = bgr)
+            out -= self.powder_eq(bgr = bgr)
 
         return out     
     
@@ -706,7 +707,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         callback(0)
         results = list()
         for index, timedelay in enumerate(self.time_points):
-            radius, avg = angular_average(self.data(timedelay), 
+            radius, avg = angular_average(self.diff_data(timedelay), 
                                           center = self.center, 
                                           mask = np.logical_not(self.valid_mask), 
                                           angular_bounds = angular_bounds)

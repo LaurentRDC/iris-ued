@@ -1,13 +1,10 @@
 
 from .. import DiffractionDataset, PowderDiffractionDataset, McGillRawDataset
-from .dummies import dummy_dataset, dummy_single_picture_dataset, dummy_powder_dataset
 from contextlib import suppress
 import numpy as np
 from itertools import repeat
-from numpy.random import random, randint
-from skimage.io import imsave
+from numpy.random import random
 import os.path
-import tempfile
 import unittest
 
 np.random.seed(23)
@@ -19,8 +16,18 @@ class TestDiffractionDatasetCreation(unittest.TestCase):
     
     def test_from_raw(self):
         raw = McGillRawDataset(os.path.join(os.path.dirname(__file__), 'raw_dataset_test'))
-        with DiffractionDataset.from_raw(raw, filename = self.fname, align = True) as dataset:
-            self.assertSequenceEqual(dataset.processed_measurements_group['intensity'].shape, (2048, 2048, 2))
+
+        with self.subTest('align = False'):
+            with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, mode = 'w') as dataset:
+                self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
+
+        with self.subTest('align = True'):
+            with DiffractionDataset.from_raw(raw, filename = self.fname, align = True, mode = 'w') as dataset:
+                self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
+
+        with self.subTest('processes = 2'):
+            with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, processes = 2, mode = 'w') as dataset:
+                self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
     
     def test_from_collection(self):
         """ Test the creation of a DiffractionDataset from a collection of patterns """
@@ -28,9 +35,9 @@ class TestDiffractionDatasetCreation(unittest.TestCase):
         metadata = {'fluence': 10, 'energy': 90}
 
         with DiffractionDataset.from_collection(patterns, filename = self.fname, 
-                                                time_points = list(range(10)), metadata = metadata, fkwargs = {'mode':'w'}) as dataset:
+                                                time_points = list(range(10)), metadata = metadata, mode = 'w') as dataset:
             
-            self.assertSequenceEqual(dataset.processed_measurements_group['intensity'].shape, (256, 256, 10))
+            self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (256, 256, 10))
             self.assertEqual(dataset.fluence, metadata['fluence'])
             self.assertEqual(dataset.energy, metadata['energy'])
             self.assertSequenceEqual(tuple(dataset.time_points), list(range(10)))
@@ -60,7 +67,7 @@ class TestDiffractionDataset(unittest.TestCase):
                                                           filename = 'test.hdf5', 
                                                           time_points = range(5), 
                                                           metadata = self.metadata,
-                                                          fkwargs = {'mode':'w'})
+                                                          mode = 'w')
     
     def test_dataset_metadata(self):
         """ Test that the property 'metadata' is working correctly"""
@@ -83,18 +90,18 @@ class TestDiffractionDataset(unittest.TestCase):
     def test_data(self):
         """ Test that data stored in DiffractionDataset is correct """
         for time, pattern in zip(list(self.dataset.time_points), self.patterns):
-            self.assertTrue(np.allclose(self.dataset.data(time), pattern))
+            self.assertTrue(np.allclose(self.dataset.diff_data(time), pattern))
     
-    def test_equilibrium(self):
-        """ test that DiffractionDataset.equilibrium() returns the correct array """
+    def test_diff_eq(self):
+        """ test that DiffractionDataset.diff_eq() returns the correct array """
         with self.subTest('No data before time-zero'):
             self.dataset.shift_time_zero(10)
-            self.assertTrue(np.allclose(self.dataset.equilibrium(), np.zeros(self.dataset.resolution)))
+            self.assertTrue(np.allclose(self.dataset.diff_eq(), np.zeros(self.dataset.resolution)))
 
         with self.subTest('All data before time-zero'):
             self.dataset.shift_time_zero(-20)
             eq = np.mean(np.stack(self.patterns, axis = -1), axis = 2)
-            self.assertTrue(np.allclose(self.dataset.equilibrium(), eq))
+            self.assertTrue(np.allclose(self.dataset.diff_eq(), eq))
     
     def test_time_series(self):
         """ Test that the DiffractionDataset.time_series method is working """
@@ -120,7 +127,7 @@ class TestPowderDiffractionDataset(unittest.TestCase):
                                                           filename = 'test.hdf5', 
                                                           time_points = range(5), 
                                                           metadata = self.metadata,
-                                                          fkwargs = {'mode':'w'})
+                                                          mode = 'w')
         self.dataset = PowderDiffractionDataset.from_dataset(diff_dataset, center = (64, 64))
 
     def test_baseline_attributes(self):
@@ -156,20 +163,20 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         self.dataset.compute_angular_averages(center = (34, 56), angular_bounds = (15.3, 187))
         self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift1')
     
-    def test_powder_equilibrium(self):
-        """ Test PowderDiffractionDataset.powder_equilibrium() """
+    def test_powder_eq(self):
+        """ Test PowderDiffractionDataset.powder_eq() """
         with self.subTest('bgr = False'):
-            eq = self.dataset.powder_equilibrium()
+            eq = self.dataset.powder_eq()
             self.assertSequenceEqual(eq.shape, self.dataset.px_radius.shape)
 
         with self.subTest('bgr = True'):
             self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', mode = 'constant')
-            eq = self.dataset.powder_equilibrium(bgr = True)
+            eq = self.dataset.powder_eq(bgr = True)
             self.assertSequenceEqual(eq.shape, self.dataset.px_radius.shape)
         
         with self.subTest('No data before time-zero'):
             self.dataset.shift_time_zero(1 + abs(min(self.dataset.time_points)))
-            eq = self.dataset.powder_equilibrium()
+            eq = self.dataset.powder_eq()
             self.assertSequenceEqual(eq.shape, self.dataset.px_radius.shape)
             self.assertTrue(np.allclose(eq, np.zeros_like(eq)))
 

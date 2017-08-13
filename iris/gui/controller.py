@@ -120,9 +120,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # new dataset loaded has different shape than before, etc.
         timedelay = self.dataset.time_points[timedelay_index]
         try:
-            self._averaged_data_container[:] = self.dataset.data(timedelay, relative = self._relative_averaged)
+            self._averaged_data_container[:] = self.dataset.diff_data(timedelay, relative = self._relative_averaged)
         except:
-            self._averaged_data_container = self.dataset.data(timedelay, relative = self._relative_averaged)
+            self._averaged_data_container = self.dataset.diff_data(timedelay, relative = self._relative_averaged)
         self.averaged_data_signal.emit(self._averaged_data_container)
         return self._averaged_data_container
     
