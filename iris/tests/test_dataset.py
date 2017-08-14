@@ -20,14 +20,20 @@ class TestDiffractionDatasetCreation(unittest.TestCase):
         with self.subTest('align = False'):
             with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, mode = 'w') as dataset:
                 self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
+            with suppress(OSError):
+                os.remove(self.fname)
 
         with self.subTest('align = True'):
             with DiffractionDataset.from_raw(raw, filename = self.fname, align = True, mode = 'w') as dataset:
                 self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
+            with suppress(OSError):
+                os.remove(self.fname)
 
         with self.subTest('processes = 2'):
             with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, processes = 2, mode = 'w') as dataset:
                 self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
+            with suppress(OSError):
+                os.remove(self.fname)
     
     def test_from_collection(self):
         """ Test the creation of a DiffractionDataset from a collection of patterns """

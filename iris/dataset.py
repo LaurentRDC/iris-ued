@@ -2,7 +2,7 @@
 @author: Laurent P. Rene de Cotret
 """
 from contextlib import suppress
-from functools import partial
+from functools import partial, lru_cache
 from math import sqrt
 from os import listdir
 from os.path import isdir, isfile, join
@@ -146,6 +146,9 @@ class DiffractionDataset(h5py.File):
         if callback is None: 
             callback = lambda _: None
 
+        if 'mode' not in kwargs:
+            kwargs['mode'] = 'x'    #safest mode
+
         time_points = np.array(time_points).reshape(-1)
 
         if ckwargs is None:
@@ -164,9 +167,8 @@ class DiffractionDataset(h5py.File):
 
         if valid_mask is None:
             valid_mask = np.ones(first.shape, dtype = np.bool)
-        
-        if 'mode' not in kwargs:
-            kwargs['mode'] = 'x'    #safest mode
+
+        callback(0)
         with cls(filename, **kwargs) as file:
 
             # Note that keys not associated with an ExperimentalParameter
@@ -184,6 +186,7 @@ class DiffractionDataset(h5py.File):
             pgp = file.diffraction_group
             dset = pgp.create_dataset(name = 'intensity', shape = resolution + (len(time_points), ), 
                                       dtype = first.dtype, **ckwargs)
+            pgp.create_dataset(name = 'diff_eq', shape = resolution, dtype = first.dtype, fillvalue = 0.0, **ckwargs)
             
             # Making use of the H5DS dimension scales
             # http://docs.h5py.org/en/latest/high/dims.html
@@ -194,6 +197,7 @@ class DiffractionDataset(h5py.File):
                 dset.write_direct(pattern, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
                 callback(round(100 * index / np.size(time_points)))
 
+        callback(100)
         return cls(filename)
 
     @classmethod
@@ -241,7 +245,10 @@ class DiffractionDataset(h5py.File):
         kwargs.update({'callback': callback, 'ckwargs': ckwargs, 
                        'valid_mask': valid_mask, 'metadata': metadata})
 
-        patterns = pmap(_raw_combine, raw.time_points, args = (raw, valid_scans, align), ntotal = len(raw.time_points))
+        patterns = pmap(_raw_combine, raw.time_points, 
+                        args = (raw, valid_scans, align), 
+                        processes = processes,
+                        ntotal = len(raw.time_points))
 
         return cls.from_collection(patterns = patterns, filename = filename, time_points = raw.time_points, **kwargs)
         
@@ -280,6 +287,7 @@ class DiffractionDataset(h5py.File):
         """
         self.time_zero_shift = shift
         self.experimental_parameters_group['time_points'][:] = self.time_points + shift
+        self.diff_eq.cache_clear()
     
     def _get_time_index(self, timedelay):
         """ 
@@ -305,18 +313,14 @@ class DiffractionDataset(h5py.File):
                  closest-timedelay {}ps instead'.format(timedelay, self.time_points[time_index]))
         return time_index
 
-    def diff_eq(self, out = None):
+    @lru_cache(maxsize = 1)
+    def diff_eq(self):
         """ 
         Returns the averaged diffraction pattern for all times before photoexcitation. 
         In case no data is available before photoexcitation, an array of zeros is returned.
+        The result of this function is cached to minimize overhead.
 
         Time-zero can be adjusted using the ``shift_time_zero`` method.
-
-        Parameters
-        ----------
-        out : ndarray or None, optional
-            If an out ndarray is provided, h5py can avoid
-            making intermediate copies.
 
         Returns
         -------
@@ -332,7 +336,8 @@ class DiffractionDataset(h5py.File):
         if t0_index == 0:
             return np.zeros(shape = self.resolution, dtype = dset.dtype)
         
-        return np.mean(b4t0_slice, axis = 2, out = out)
+        # To be able to use lru_cache, we cannot have an `out` parameter
+        return np.mean(b4t0_slice, axis = 2)
 
     def diff_data(self, timedelay, relative = False, out = None):
         """
@@ -378,7 +383,7 @@ class DiffractionDataset(h5py.File):
 
         return out
     
-    def time_series(self, rect, out = None):
+    def time_series(self, rect, relative = False, out = None):
         """
         Integrated intensity over time inside bounds.
 
@@ -386,6 +391,9 @@ class DiffractionDataset(h5py.File):
         ----------
         rect : 4-tuple of ints
             Bounds of the region in px. Bounds are specified as [row1, row2, col1, col2]
+        relative : bool, optional
+            If True, data is returned relative to the average of all diffraction patterns
+            before photoexcitation.
         out : ndarray or None, optional
             1-D ndarray in which to store the results. The shape
             should be compatible with ``(len(time_points),)``
@@ -396,6 +404,8 @@ class DiffractionDataset(h5py.File):
         """
         x1, x2, y1, y2 = rect
         data = self.diffraction_group['intensity'][x1:x2, y1:y2, :]
+        if relative:
+            data -= self.diff_eq()[x1:x2, y1:y2]
         return np.mean(data, axis = (0,1), out = out)
     
     @property
@@ -434,6 +444,20 @@ class PowderDiffractionDataset(DiffractionDataset):
     level = ExperimentalParameter(name = 'powder_baseline_transform_level', output = int, default = 0)
     niter = ExperimentalParameter(name = 'powder_baseline_niter', output = int, default = 0)
     angular_bounds = ExperimentalParameter('powder_average_angular_bounds', tuple, default = (0, 360))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Ensure that all required powder groups exist
+        maxshape = (len(self.time_points), sqrt(2*max(self.resolution)**2))
+        for name in {'intensity', 'baseline',}:
+            if name not in self.powder_group:
+                self.powder_group.create_dataset(name = name, shape = maxshape, maxshape = maxshape, 
+                                                 dtype = np.float, fillvalue = 0.0, **self.compression_params)
+        
+        if 'px_radius' not in self.powder_group:
+            self.powder_group.create_dataset('px_radius', shape = (maxshape[-1],), maxshape = (maxshape[-1],),
+                                             dtype = np.float, fillvalue = 0.0)
 
     @classmethod
     def from_dataset(cls, dataset, center, normalized = True, angular_bounds = None, callback = None):
@@ -490,7 +514,21 @@ class PowderDiffractionDataset(DiffractionDataset):
         # TODO: cache
         return 4*np.pi*np.sin(self.scattering_angle/2) / electron_wavelength(self.energy)
 
-    def powder_eq(self, bgr = False, out = None):
+    def shift_time_zero(self, *args, **kwargs):
+        """
+        Shift time-zero uniformly across time-points.
+
+        Parameters
+        ----------
+        shift : float
+            Shift [ps]. A positive value of `shift` will move all time-points forward in time,
+            whereas a negative value of `shift` will move all time-points backwards in time.
+        """
+        super().shift_time_zero(*args, **kwargs)
+        self.powder_eq.cache_clear()
+    
+    @lru_cache(maxsize = 2) # with and without background
+    def powder_eq(self, bgr = False):
         """ 
         Returns the average powder diffraction pattern for all times before photoexcitation. 
         In case no data is available before photoexcitation, an array of zeros is returned.
@@ -499,9 +537,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         ----------
         bgr : bool
             If True, background is removed.
-        out : ndarray or None, optional
-            If an out ndarray is provided, h5py can avoid
-            making intermediate copies.
 
         Returns
         -------
@@ -520,7 +555,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             return np.mean(b4t0_slice, axis = 0, out = out)
         
         bg = self.powder_group['baseline'][:t0_index, :]
-        return np.mean(b4t0_slice - bg, axis = 0, out = out)
+        return np.mean(b4t0_slice - bg, axis = 0)
 
     def powder_data(self, timedelay, bgr = False, relative = False, out = None):
         """
@@ -601,7 +636,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         return out
     
-    def powder_time_series(self, qmin, qmax, bgr = False, out = None):
+    def powder_time_series(self, qmin, qmax, bgr = False, relative = False, out = None):
         """
         Average intensity in a scattering angle range, over time.
         Diffracted intensity is integrated in the closed interval [smin, smax]
@@ -614,6 +649,9 @@ class PowderDiffractionDataset(DiffractionDataset):
             Higher scattering vector bound [1/A]. 
         bgr : bool, optional
             If True, background is removed. Default is False.
+        relative : bool, optional
+            If True, data is returned relative to the average of all diffraction patterns
+            before photoexcitation.
         out : ndarray or None, optional
             1-D ndarray in which to store the results. The shape
             should be compatible with (len(time_points),)
@@ -626,9 +664,13 @@ class PowderDiffractionDataset(DiffractionDataset):
         # Python slices are semi-open by design, therefore i_max + 1 is used
         # so that the integration interval is closed.
         i_min, i_max = np.argmin(np.abs(smin - self.scattering_vector)), np.argmin(np.abs(smax - self.scattering_vector))
-        trace = np.array(self.powder_group['intensity'][:, i_min:i_max + 1])
+        i_max += 1
+        trace = np.array(self.powder_group['intensity'][:, i_min:i_max])
         if bgr :
-            trace -= np.array(self.powder_group['baseline'][:, i_min:i_max + 1])
+            trace -= np.array(self.powder_group['baseline'][:, i_min:i_max])
+        
+        if relative:
+            trace -= self.powder_eq(bgr = bgr)[i_min:i_max]
         
         if out is not None:
             return np.mean(axis = 1, out = out)
@@ -727,33 +769,20 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         # We allow resizing. In theory, an angular averave could never be 
         # longer than the diagonal of resolution
-        maxshape = (len(self.time_points), sqrt(2*max(self.resolution)**2))
-        if 'intensity' not in self.powder_group:
-            # We allow resizing. In theory, an angualr averave could never be longer than the resolution
-            # Only chunked datasets are resizeable
-            self.powder_group.create_dataset(name = 'intensity', data = rintensity, maxshape = maxshape)
-        else:
-            self.powder_group['intensity'].resize(rintensity.shape)
-            self.powder_group['intensity'].write_direct(rintensity)
+        self.powder_group['intensity'].resize(rintensity.shape)
+        self.powder_group['intensity'].write_direct(rintensity)
         
         # We store the raw px radius and infer other measurements (e.g. diffraction angle) from it
         px_radius = results[0][0]
-        if 'px_radius' not in self.powder_group:
-            self.powder_group.create_dataset(name = 'px_radius', data = px_radius, maxshape = (maxshape[-1],))
-        else:
-            self.powder_group['px_radius'].resize(px_radius.shape)
-            self.powder_group['px_radius'].write_direct(px_radius)
+        self.powder_group['px_radius'].resize(px_radius.shape)
+        self.powder_group['px_radius'].write_direct(px_radius)
         
         self.powder_group['intensity'].dims.create_scale(self.powder_group['px_radius'], 'radius [px]')
         self.powder_group['intensity'].dims[0].attach_scale(self.powder_group['px_radius'])
         self.powder_group['intensity'].dims[1].attach_scale(self.experimental_parameters_group['time_points'])
         
-        if 'baseline' not in self.powder_group:
-            self.powder_group.create_dataset(name = 'baseline', shape = rintensity.shape, 
-                                             maxshape = maxshape, fillvalue = 0.0)
-        else:
-            self.powder_group['baseline'].resize(rintensity.shape)
-            self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
+        self.powder_group['baseline'].resize(rintensity.shape)
+        self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
 
         callback(100)
 

@@ -12,20 +12,16 @@ class PromoteToPowderDialog(QtGui.QDialog):
     """
     center_signal = QtCore.pyqtSignal(tuple)
 
-    def __init__(self, dataset_filename, *args, **kwargs):
+    def __init__(self, image, *args, **kwargs):
         """
         Parameters
         ----------
-        dataset_filename : str
-            Path to the DiffractionDataset.
+        image : ndarray
+            Diffraction pattern to be displayed.
         """
         super().__init__(*args, **kwargs)
         self.setModal(True)
         self.setWindowTitle('Promote to powder dataset')
-
-        # TODO: connect to controller to request an image instead of opening
-        with DiffractionDataset(name = dataset_filename, mode = 'r') as dataset:
-            image = dataset.averaged_data(timedelay = dataset.time_points[0])
         
         self.viewer = pg.ImageView(parent = self)
         self.viewer.setImage(image)
