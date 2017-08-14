@@ -1,6 +1,5 @@
 """
 Control bar for all Iris's controls
-
 """
 from collections import Iterable
 from contextlib import suppress
@@ -272,7 +271,8 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.show_pd_btn.setCheckable(True)
         self.show_pd_btn.setChecked(False)
 
-        self.relative_btn = QtGui.QPushButton('show relative data', parent = self)
+        self.relative_btn = QtGui.QPushButton('show relative data (?)', parent = self)
+        self.relative_btn.setToolTip('Subtract pre-time-zero average from the data.')
         self.relative_btn.setCheckable(True)
         self.relative_btn.setChecked(False)
 
@@ -300,7 +300,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.resize(self.minimumSize())
     
     def update_dataset_metadata(self, metadata):
-        self.time_points = metadata.get('corrected_time_points')
+        self.time_points = metadata.get('time_points')
         t0_shift = metadata.get('time_zero_shift')
 
         self.timedelay_widget.setRange(0, len(self.time_points) - 1)
@@ -359,6 +359,7 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.connect_time_series_points_btn.setChecked(False)
 
         self.relative_btn = QtGui.QPushButton('Show relative', parent = self)
+        self.relative_btn.setToolTip('Subtract pre-time-zero average from the data.')
         self.relative_btn.setCheckable(True)
         self.relative_btn.setChecked(False)
 

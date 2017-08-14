@@ -224,6 +224,17 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.worker.done_signal.connect(lambda b: self.display_powder_data())
         self.worker.start()
     
+    @QtCore.pyqtSlot(dict)
+    def update_metadata(self, metadata):
+        """ Update metadata attributes in Dataset """
+        if self.dataset is None:
+            return
+
+        for key, val in metadata.items():
+            setattr(self.dataset, key, val)
+        
+        self.load_dataset(self.dataset.filename)
+
     @QtCore.pyqtSlot(str)
     def set_dataset_notes(self, notes):
         self.dataset.notes = notes

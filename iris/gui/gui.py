@@ -21,6 +21,7 @@ from .fluence_calculator import FluenceCalculatorDialog
 from .knife_edge_tool import KnifeEdgeToolDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
+from .metadata_edit_dialog import MetadataEditDialog
 from .promote_dialog import PromoteToPowderDialog
 from .resources_widget import ComputationalResourceWidget
 
@@ -166,6 +167,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.promote_to_powder_action.triggered.connect(self.launch_promote_to_powder_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.promote_to_powder_action.setEnabled)
 
+        self.update_metadata_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'save.png')), '&Update dataset metadata', self)
+        self.update_metadata_action.triggered.connect(self.launch_metadata_edit_dialog)
+        self.controller.processed_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
+        self.controller.powder_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
+
         self.recompute_angular_averages = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Recompute angular average', self)
         self.recompute_angular_averages.triggered.connect(self.launch_recompute_angular_average_dialog)
         self.controller.powder_dataset_loaded_signal.connect(self.recompute_angular_averages.setEnabled)
@@ -174,6 +180,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.diffraction_dataset_menu.addAction(self.processing_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.promote_to_powder_action)
+        self.diffraction_dataset_menu.addAction(self.update_metadata_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
 
@@ -223,10 +230,18 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         processing_dialog.processing_parameters_signal.connect(self.controller.process_raw_dataset)
         return processing_dialog.exec_()
     
+    @QtCore.pyqtSlot()
+    def launch_metadata_edit_dialog(self):
+        metadata_dialog = MetadataEditDialog(parent = self, config = self.controller.dataset.metadata)
+        metadata_dialog.updated_metadata_signal.connect(self.controller.update_metadata)
+        metadata_dialog.exec_()
+        metadata_dialog.updated_metadata_signal.disconnect(self.controller.update_metadata)
+        return
 
     @QtCore.pyqtSlot()
     def launch_promote_to_powder_dialog(self):
-        promote_dialog = PromoteToPowderDialog(dataset_filename = self.controller.dataset.filename, parent = self)
+        image = self.controller.dataset.diff_data(self.controller.dataset.time_points[0])
+        promote_dialog = PromoteToPowderDialog(image, parent = self)
         promote_dialog.center_signal.connect(self.controller.promote_to_powder)
         return promote_dialog.exec_()
     
