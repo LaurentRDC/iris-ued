@@ -2,8 +2,8 @@
 from os import cpu_count
 import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
+import numpy as np
 
-from ..processing import process
 from ..raw import McGillRawDataset
 
 fletcher32_help = """ Adds a checksum to each chunk to detect data corruption. 
@@ -47,7 +47,7 @@ class H5FileWidget(QtGui.QFrame):
 
     def file_params(self):
         """ Returns a dictionary with HDF5 file parameters """
-        compression = self.compression_filter_widget.value()
+        compression = self.compression_filter_widget.currentText()
         fletcher32 = self.fletcher32_widget.isChecked()
         shuffle = self.shuffle_filter_widget.isChecked()
 
@@ -72,8 +72,10 @@ class ProcessingDialog(QtGui.QDialog):
         self.setModal(True)
         self.setWindowTitle('Diffraction Dataset Processing')
         self.h5_file_widget = H5FileWidget(parent = self)
+        self.raw = raw
 
-        image = raw.raw_data(timedelay = raw.time_points[0], scan = raw.nscans[0]) - raw.pumpon_background
+        image = self.raw.raw_data(timedelay = raw.time_points[0], 
+                                  scan = raw.nscans[0], bgr = True)
 
         self.viewer = pg.ImageView(parent = self)
         self.viewer.setImage(image)
@@ -138,7 +140,9 @@ class ProcessingDialog(QtGui.QDialog):
         y1 = round(max(0, rect.topLeft().y() ))
         y2 = round(max(0, rect.y() + rect.height() ))
 
-        beamblock_rect = (y1, y2, x1, x2)       #Flip output since image viewer plots transpose
+        valid_mask = np.ones(self.raw.resolution, dtype = np.bool)
+        valid_mask[x1:x2, y1:y2] = False
+
         filename = self.file_dialog.getSaveFileName(filter = '*.hdf5')[0]
         if filename == '':
             return
@@ -158,8 +162,8 @@ class ProcessingDialog(QtGui.QDialog):
         
         # The arguments to the iris.processing.process function
         # more arguments will be added by controller
-        kwargs = {'destination':filename, 
-                  'beamblock_rect': beamblock_rect,
+        kwargs = {'filename':filename, 
+                  'valid_mask': valid_mask,
                   'processes': self.processes_widget.value(),
                   'exclude_scans': exclude_scans,
                   'align': self.alignment_tf_widget.isChecked(),

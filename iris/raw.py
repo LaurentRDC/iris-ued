@@ -19,11 +19,11 @@ from os import listdir
 from os.path import isdir, isfile, join
 
 import numpy as np
+from cached_property import cached_property
 from skimage.io import imread
 
 from npstreams import imean, last
 
-from .optimizations import cached_property
 from .dataset import DiffractionDataset
 
 def uint_subtract_safe(arr1, arr2):
@@ -43,7 +43,7 @@ class RawDatasetBase(metaclass = ABCMeta):
     def metadata(self):
         metadata = dict()
         for attr in self.required_metadata | self.optional_metadata:
-            metadata[attr] = getattr(self, attr, None)
+            metadata[attr] = getattr(self, attr, 0.0)
         return metadata
 
     @property

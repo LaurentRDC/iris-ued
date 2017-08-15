@@ -5,46 +5,6 @@ import glob
 from itertools import product
 import numpy as n
 from numpy.linalg import inv, eig
-from os.path import join
-from functools import partial
-from skimage.io import imread
-
-def scattering_length(radius, energy, pixel_width = 14e-6, camera_distance = 0.2235):
-    """
-    Returns the scattering length s = G/4pi for an array of radius data in pixels.
-    
-    Parameters
-    ----------
-    radius : array-like, shape (N,)
-        Radius from center of diffraction pattern [px]
-    energy : numerical
-        Electron energy [kV]
-    pixel_width : numerical
-        CCD pixel width [m]
-    camera_distance : float, optional
-        Sample-to-CCD distance [m]
-
-    Returns
-    -------
-    out : ndarray, shape (N,)
-        Scattering length
-        
-    Notes
-    -----
-    Default values for pixel width and camera distance correspond to experimental
-    values for the Siwick diffractometer as of April 2016.
-    """
-    m = 9.109*10**(-31)     #in kg
-    e = 1.602*10**(-19)     #in C
-    c = 299792458*(10**10)  #in m/s
-    h = 6.63*10**(-34)      #in J*s
-    V = energy * 1000       #in eV
-
-    e_wavelength_angs = 1e10*n.sqrt((h**2*c**2)/(e*V*(2*m*c**2+e*V)))
-
-    radius = n.array(radius) * pixel_width
-    diffraction_half_angle = n.arctan(radius/camera_distance)/2
-    return n.sin(diffraction_half_angle)/e_wavelength_angs
 
 def gaussian2D(x, y, xc, yc, sigma_x, sigma_y):
     """ 
@@ -234,44 +194,3 @@ def ellipse_center(x, y):
     """
     a, b, c, d, e, f = ellipse_fit(x, y)
     return -d/(2*a), -e/(2*c)
-
-MASK_CACHE = dict()
-def find_center(image, guess_center, radius, window_size = 10, ring_width = 10):
-    """
-    Fit a diffraction center from polycrystalline data.
-
-    Parameters
-    ----------
-    image : ndarray, ndim 2
-        Invalid pixels (such as pixels under the beamblock) should be represented by NaN
-
-    center : 2-tuple
-
-    radius : int
-
-    window_size : int, optional
-
-    ring_width : int, optional
-    """
-    xx, yy = n.meshgrid(n.arange(0, image.shape[0]), n.arange(0, image.shape[1]))
-    xc, yc = guess_center
-    centers = product(range(xc - window_size, window_size + xc + 1),
-                      range(yc - window_size, window_size + yc + 1))
-    
-    # Reduce image size down to the bounding bx that encompasses
-    # all possible circles
-    extra = window_size + ring_width + radius
-    reduced = image[yc - extra:yc + extra, xc - extra:xc + extra]
-    xx = xx[yc - extra:yc + extra, xc - extra:xc + extra]
-    yy = yy[yc - extra:yc + extra, xc - extra:xc + extra]
-
-    def integrated(c):
-        """ Integrate intensity over the ring """
-        if c not in MASK_CACHE:
-            rr = n.sqrt((xx - c[0])**2 + (yy - c[1])**2)
-            MASK_CACHE[c] = n.logical_and(rr >= radius - ring_width, rr <= radius + ring_width)
-        return reduced[MASK_CACHE[c]].sum()
-    
-    # TODO: average centers with the same max intensity
-    (best_x, best_y), _ =  max(zip(centers, map(integrated, centers)), key = lambda x: x[-1])
-    return best_x, best_y
