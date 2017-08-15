@@ -254,6 +254,7 @@ class DiffractionDataset(h5py.File):
         metadata = dict()
         for attr in (self.required_metadata | self.optional_metadata | {'filename'}):
             metadata[attr] = getattr(self, attr)
+        metadata.update(self.compression_params)
         return metadata
     
     @cached_property
