@@ -12,7 +12,6 @@ from pyqtgraph import QtCore
 
 from ..dataset import (DiffractionDataset, PowderDiffractionDataset,
                        SinglePictureDataset)
-from ..processing import process
 from ..raw import McGillRawDataset
 
 def error_aware(func):
@@ -54,6 +53,12 @@ def recompute_angular_average(filename, center, callback):
     with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
         dataset.compute_angular_averages(center = center, callback = callback)
     return filename
+
+def process(**kwargs):
+    """ Process a RawDataset into a DiffractionDataset """
+    with DiffractionDataset.from_raw(**kwargs) as dset:
+        fname = dset.filename
+    return fname
 
 class IrisController(QtCore.QObject, metaclass = ErrorAware):
     """

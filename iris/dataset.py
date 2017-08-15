@@ -2,7 +2,7 @@
 @author: Laurent P. Rene de Cotret
 """
 from contextlib import suppress
-from functools import partial, lru_cache
+from functools import lru_cache, partial
 from math import sqrt
 from os import listdir
 from os.path import isdir, isfile, join
@@ -10,6 +10,7 @@ from warnings import warn
 
 import h5py
 import numpy as np
+from cached_property import cached_property
 from scipy.signal import detrend
 from skimage.io import imread
 
@@ -17,8 +18,6 @@ from npstreams import iaverage, ipipe, last, peek, pmap
 from skued import electron_wavelength
 from skued.baseline import baseline_dt, dt_max_level
 from skued.image import angular_average, ialign
-
-from .optimizations import cached_property
 
 def _raw_combine(raw, valid_scans, align, timedelay):
     images = map(partial(raw.raw_data, timedelay), valid_scans)
@@ -66,9 +65,6 @@ class DiffractionDataset(h5py.File):
                                    'exposure', 'time_zero_shift', 'notes',
                                    'pixel_width', 'camera_distance'})
     
-    # Experimental parameters as descriptors
-    # TODO: use self.attrs.modify to ensure type?
-    #       http://docs.h5py.org/en/latest/high/attr.html
     nscans = ExperimentalParameter('nscans', tuple, default = (1,))
     acquisition_date = ExperimentalParameter('acquisition_date', str, default = '')
     fluence = ExperimentalParameter('fluence', float)
@@ -524,8 +520,8 @@ class PowderDiffractionDataset(DiffractionDataset):
             Shift [ps]. A positive value of `shift` will move all time-points forward in time,
             whereas a negative value of `shift` will move all time-points backwards in time.
         """
-        super().shift_time_zero(*args, **kwargs)
         self.powder_eq.cache_clear()
+        return super().shift_time_zero(*args, **kwargs)
     
     @lru_cache(maxsize = 2) # with and without background
     def powder_eq(self, bgr = False):

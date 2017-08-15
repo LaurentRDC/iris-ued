@@ -43,7 +43,6 @@ An other possibility is to create a :class:`DiffractionDataset` from a :class:`R
 .. automethod:: DiffractionDataset.from_raw
 
 
-
 Important Methods for the :class:`DiffractionDataset`
 -----------------------------------------------------
 
@@ -67,5 +66,7 @@ Specializing a :class:`DiffractionDataset` object into a :class:`PowderDiffracti
     from iris import PowderDiffractionDataset
     dataset_path = 'C:\\path_do_dataset.hdf5'   # DiffractionDataset already exists
 
-    with PowderDiffractionDataset(dataset_path) as dset:
-        dset.compute_angular_averages(center)
+    with PowderDiffractionDataset.from_dataset(dataset_path, center) as dset:
+        # Do computation
+
+Take at
