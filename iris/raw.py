@@ -24,7 +24,7 @@ from skimage.io import imread
 
 from npstreams import imean, last
 
-from .dataset import DiffractionDataset
+from .dataset import VALID_DATASET_METADATA
 
 def uint_subtract_safe(arr1, arr2):
     """ Subtract two unsigned arrays without rolling over """
@@ -36,14 +36,12 @@ class RawDatasetBase(metaclass = ABCMeta):
     """ 
     Base class for raw dataset objects in iris.
     """
-    required_metadata = DiffractionDataset.required_metadata
-    optional_metadata = DiffractionDataset.optional_metadata
 
     @property
     def metadata(self):
         metadata = dict()
-        for attr in self.required_metadata | self.optional_metadata:
-            metadata[attr] = getattr(self, attr, 0.0)
+        for attr, val in VALID_DATASET_METADATA.items():
+            metadata[attr] = getattr(self, attr, val.default)
         return metadata
 
     @property

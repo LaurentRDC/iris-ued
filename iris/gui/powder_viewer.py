@@ -26,7 +26,7 @@ class PowderViewer(QtGui.QWidget):
                 
         self.powder_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
                                                    labels = {'left': 'Intensity (counts)', 
-                                                             'bottom': 'Scattering length (1/A)'})
+                                                             'bottom': 'Scattering vector (1/A)'})
         self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
                                                   labels = {'left': 'Intensity (a. u.)', 
                                                             'bottom': ('time', 'ps')})
@@ -53,14 +53,14 @@ class PowderViewer(QtGui.QWidget):
         """ Update powder peak dynamics settings on demand. """
         self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion())
         
-    @QtCore.pyqtSlot(object, object, object)
-    def display_powder_data(self, scattering_length, powder_data_block, powder_error_block):
+    @QtCore.pyqtSlot(object, object)
+    def display_powder_data(self, scattering_vector, powder_data_block):
         """ 
         Display the radial averages of a dataset.
 
         Parameters
         ----------
-        scattering_length : ndarray, shape (N,) or None
+        scattering_vector : ndarray, shape (N,) or None
             Scattering length of the radial patterns. If None, all
             viewers are cleared.
         powder_data_block : ndarray, shape (M, N) or None
@@ -70,7 +70,7 @@ class PowderViewer(QtGui.QWidget):
             Array for which each row is the error for the corresponding azimuthal pattern. If None, error bars
             are not displayed.
         """
-        if (scattering_length is None) or (powder_data_block is None):
+        if (scattering_vector is None) or (powder_data_block is None):
             self.powder_pattern_viewer.clear()
             self.peak_dynamics_viewer.clear()
             return
@@ -81,21 +81,16 @@ class PowderViewer(QtGui.QWidget):
         self.powder_pattern_viewer.clear()
 
         for pen, brush, curve in zip(pens, brushes, powder_data_block):
-            self.powder_pattern_viewer.plot(scattering_length, curve, pen = None, symbol = 'o',
+            self.powder_pattern_viewer.plot(scattering_vector, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
         
-        #if powder_error_block is not None:
-        #    for pen, curve, error in zip(pens, powder_data_block, powder_error_block):
-        #        error_bars = pg.ErrorBarItem(x = scattering_length, y = curve, height = error, pen = pen)
-        #        self.powder_pattern_viewer.addItem(error_bars)
-        
-        self.peak_dynamics_region.setBounds([scattering_length.min(), scattering_length.max()])
+        self.peak_dynamics_region.setBounds([scattering_vector.min(), scattering_vector.max()])
         self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
         self.update_peak_dynamics() #Update peak dynamics plot if background has been changed, for example
     
     @QtCore.pyqtSlot(object, object)
-    @QtCore.pyqtSlot(object, object, object)    # Maybe there's an error to display, maybe not
-    def display_peak_dynamics(self, times, intensities, errors = None):
+    @QtCore.pyqtSlot(object, object)    # Maybe there's an error to display, maybe not
+    def display_peak_dynamics(self, times, intensities):
         """ 
         Display the time series associated with the integral between the bounds 
         of the ROI
@@ -109,10 +104,6 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_viewer.plot(times, intensities, symbol = 'o', 
                                        symbolPen = pens, symbolBrush = brushes, 
                                        symbolSize = 5, clear = True, **connect_kwargs)
-        
-        #if errors is not None:
-        #    error_bars = pg.ErrorBarItem(x = times, y = intensities, height = errors)
-        #    self.peak_dynamics_viewer.addItem(error_bars)
         
         # If the use has zoomed on the previous frame, auto range might be disabled.
         self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
