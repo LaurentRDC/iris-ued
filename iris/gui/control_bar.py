@@ -46,7 +46,6 @@ class ControlBar(QtGui.QWidget):
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
         self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
         self.powder_diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_powder)
-        self.powder_diffraction_dataset_controls.connect_time_series_points_btn.toggled.connect(self.enable_connect_time_series)
 
         self.progress_bar = QtGui.QProgressBar(self)
         if WITH_TASKBAR:
@@ -359,10 +358,6 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         self.baseline_removed_btn.setCheckable(True)
         self.baseline_removed_btn.setChecked(False)
 
-        self.connect_time_series_points_btn = QtGui.QPushButton('Connect')
-        self.connect_time_series_points_btn.setCheckable(True)
-        self.connect_time_series_points_btn.setChecked(False)
-
         self.relative_btn = QtGui.QPushButton('Show relative', parent = self)
         self.relative_btn.setToolTip('Subtract pre-time-zero average from the data.')
         self.relative_btn.setCheckable(True)
@@ -382,7 +377,6 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
         display_controls_layout = QtGui.QHBoxLayout()
         display_controls_layout.addWidget(self.baseline_removed_btn)
         display_controls_layout.addWidget(self.relative_btn)
-        display_controls_layout.addWidget(self.connect_time_series_points_btn)
         display_controls.setLayout(display_controls_layout)
 
         # TODO: add callback and progressbar for computing the baseline?
