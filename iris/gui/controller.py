@@ -10,8 +10,7 @@ import warnings
 import numpy as np
 from pyqtgraph import QtCore
 
-from ..dataset import (DiffractionDataset, PowderDiffractionDataset,
-                       SinglePictureDataset)
+from ..dataset import (DiffractionDataset, PowderDiffractionDataset)
 from ..raw import McGillRawDataset
 
 def error_aware(func):
@@ -257,18 +256,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.raw_dataset = None
         self.raw_dataset_loaded_signal.emit(False)
         self.raw_data_signal.emit(None)
-    
-    @QtCore.pyqtSlot(str)
-    def load_single_picture(self, path):
-        if not path:
-            return
-
-        self.close_dataset()
-        
-        self.dataset = SinglePictureDataset(path)
-        self.dataset_metadata.emit(self.dataset.metadata)
-        self.processed_dataset_loaded_signal.emit(True)
-        self.display_averaged_data(timedelay_index = 0)
         
     @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
     @QtCore.pyqtSlot(str)
