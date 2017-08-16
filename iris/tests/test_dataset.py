@@ -1,5 +1,5 @@
 
-from .. import DiffractionDataset, PowderDiffractionDataset, McGillRawDataset
+from .. import DiffractionDataset, PowderDiffractionDataset, McGillRawDataset, VALID_DATASET_METADATA
 from contextlib import suppress
 import numpy as np
 from itertools import repeat
@@ -47,18 +47,6 @@ class TestDiffractionDatasetCreation(unittest.TestCase):
             self.assertEqual(dataset.fluence, metadata['fluence'])
             self.assertEqual(dataset.energy, metadata['energy'])
             self.assertSequenceEqual(tuple(dataset.time_points), list(range(10)))
-
-    def test_from_collection_missing_metadata(self):
-        """ Test the creation of a DiffractionDataset from a collection of patterns with
-        incomplete metadata """
-        patterns = repeat(random(size = (256, 256)), 10)
-        metadata = {'fluence': 10}
-
-        with self.assertRaises(ValueError):
-            dset =  DiffractionDataset.from_collection(patterns, 
-                                                       filename = self.fname, 
-                                                       time_points = range(10), 
-                                                       metadata = metadata)
     
     def tearDown(self):
         with suppress(OSError):
@@ -78,7 +66,7 @@ class TestDiffractionDataset(unittest.TestCase):
     def test_dataset_metadata(self):
         """ Test that the property 'metadata' is working correctly"""
         metadata = self.dataset.metadata
-        for required in DiffractionDataset.required_metadata:
+        for required in VALID_DATASET_METADATA:
             self.assertIn(required, metadata)
         self.assertIn('filename', metadata)
 
@@ -139,8 +127,8 @@ class TestPowderDiffractionDataset(unittest.TestCase):
     def test_baseline_attributes(self):
         """ Test that the attributes related to baseline have correct defaults and are
         set to the correct values after computation """
-        self.assertIs(self.dataset.first_stage, None)
-        self.assertIs(self.dataset.wavelet, None)
+        self.assertIs(self.dataset.first_stage, '')
+        self.assertIs(self.dataset.wavelet, '')
         self.assertEqual(self.dataset.level, 0)
         self.assertEqual(self.dataset.niter, 0)
 

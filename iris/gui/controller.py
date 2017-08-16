@@ -99,10 +99,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self._relative_powder = False
         self._relative_averaged = False
 
-        # Internal state for the display of errorbars in powder data
-        # TODO: add GUI widget to control this
-        self._powder_error = True
-
         # array containers
         # Preallocation is important for arrays that change often. Then,
         # we can take advantage of the out parameter
@@ -110,7 +106,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # out parameter
         # TODO: is it worth it?
         self._averaged_data_container = None
-        self._powder_time_series_container = False
 
     @QtCore.pyqtSlot(int, int)
     def display_raw_data(self, timedelay_index, scan):
@@ -136,9 +131,8 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         """ Emit a powder data signal with/out background """
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
-        self.powder_data_signal.emit(self.dataset.scattering_length, 
-                                     self.dataset.powder_data(timedelay = None, relative = self._relative_powder, bgr = self._bgr_powder), 
-                                     None) #error block
+        self.powder_data_signal.emit(self.dataset.scattering_vector, 
+                                     self.dataset.powder_data(timedelay = None, relative = self._relative_powder, bgr = self._bgr_powder))
     
     @QtCore.pyqtSlot(bool)
     def powder_background_subtracted(self, enable):
@@ -157,11 +151,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # update averaged data display if possible
         if self._averaged_data_container is not None:
             self.averaged_data_signal.emit(self._averaged_data_container)
-    
-    @QtCore.pyqtSlot(bool)
-    def enable_powder_error(self, enable):
-        self._powder_error = enable
-        self.display_powder_data()
     
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
@@ -195,13 +184,8 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
     @QtCore.pyqtSlot(float, float)
     def powder_time_series(self, smin, smax):
-        try:
-            self.dataset.powder_time_series(qmin = smin, qmax = smax, bgr = self._bgr_powder, 
-                                            out = self._powder_time_series_container)
-        except:
-            self._powder_time_series_container = self.dataset.powder_time_series(qmin = smin, qmax = smax, bgr = self._bgr_powder)
-        finally:
-            self.powder_time_series_signal.emit(self.dataset.corrected_time_points, self._powder_time_series_container)
+        time_series = self.dataset.powder_time_series(qmin = smin, qmax = smax, bgr = self._bgr_powder)
+        self.powder_time_series_signal.emit(self.dataset.time_points, time_series)
     
     @QtCore.pyqtSlot(object)
     def time_series(self, rect):
@@ -254,12 +238,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             # If _powder_relative is True, the shift in time-zero will impact the display
             if self._relative_powder:
                 self.display_powder_data()
-
-            # Update powder time series x-axis
-            # if self._powder_time_series_container is None, then it
-            # means that powder series has not been plotted yet
-            if self._powder_time_series_container is not None:
-                self.powder_time_series_signal.emit(self.dataset.time_points, self._powder_time_series_container)
     
     @QtCore.pyqtSlot(str)
     def load_raw_dataset(self, path):
