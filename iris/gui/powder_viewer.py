@@ -4,6 +4,8 @@ from functools import lru_cache
 from skued import spectrum_colors
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
+from .time_series_widget import TimeSeriesWidget
+
 @lru_cache(maxsize = 1)
 def pens_and_brushes(num):
     qcolors = tuple(map(lambda c: QtGui.QColor.fromRgbF(*c), spectrum_colors(num)))
@@ -24,29 +26,20 @@ class PowderViewer(QtGui.QWidget):
         # be connected or not
         self._time_series_connect = False
                 
-        self.powder_pattern_viewer = pg.PlotWidget(title = 'Radially-averaged pattern(s)', 
+        self.powder_pattern_viewer = pg.PlotWidget(title = 'Azimuthally-averaged pattern(s)', 
                                                    labels = {'left': 'Intensity (counts)', 
                                                              'bottom': 'Scattering vector (1/A)'})
-        self.peak_dynamics_viewer = pg.PlotWidget(title = 'Peak dynamics measurement', 
-                                                  labels = {'left': 'Intensity (a. u.)', 
-                                                            'bottom': ('time', 'ps')})
-        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+        self.time_series_widget = TimeSeriesWidget(parent = self)
 
         # Peak dynamics region-of-interest
         self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
-        self.peak_dynamics_viewer.addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(self.powder_pattern_viewer)
-        layout.addWidget(self.peak_dynamics_viewer)
+        layout.addWidget(self.time_series_widget)
         self.setLayout(layout)
         self.resize(self.maximumSize())
-    
-    @QtCore.pyqtSlot(bool)
-    def set_time_series_connect(self, enable):
-        self._time_series_connect = enable
-        self.update_peak_dynamics()
 
     @QtCore.pyqtSlot()
     def update_peak_dynamics(self):
@@ -72,7 +65,7 @@ class PowderViewer(QtGui.QWidget):
         """
         if (scattering_vector is None) or (powder_data_block is None):
             self.powder_pattern_viewer.clear()
-            self.peak_dynamics_viewer.clear()
+            self.time_series_widget.clear()
             return
         
         pens, brushes = pens_and_brushes(num = powder_data_block.shape[0])
@@ -89,21 +82,9 @@ class PowderViewer(QtGui.QWidget):
         self.update_peak_dynamics() #Update peak dynamics plot if background has been changed, for example
     
     @QtCore.pyqtSlot(object, object)
-    @QtCore.pyqtSlot(object, object)    # Maybe there's an error to display, maybe not
     def display_peak_dynamics(self, times, intensities):
         """ 
         Display the time series associated with the integral between the bounds 
         of the ROI
         """
-        pens, brushes = pens_and_brushes(num = len(times))
-
-        intensities /= intensities.max()
-
-        connect_kwargs = {'pen': None} if not self._time_series_connect else {}
-
-        self.peak_dynamics_viewer.plot(times, intensities, symbol = 'o', 
-                                       symbolPen = pens, symbolBrush = brushes, 
-                                       symbolSize = 5, clear = True, **connect_kwargs)
-        
-        # If the use has zoomed on the previous frame, auto range might be disabled.
-        self.peak_dynamics_viewer.getPlotItem().enableAutoRange()
+        self.time_series_widget.plot(times, intensities)
