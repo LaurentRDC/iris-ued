@@ -260,7 +260,7 @@ class DiffractionDataset(h5py.File):
     def metadata(self):
         """ Dictionary of the dataset's metadata """
         metadata = dict()
-        for attr in (VALID_DATASET_METADATA.keys() | {'filename'}):
+        for attr in (VALID_DATASET_METADATA.keys() | {'filename', 'time_points'}):
             metadata[attr] = getattr(self, attr)
         metadata.update(self.compression_params)
         return metadata
@@ -282,7 +282,9 @@ class DiffractionDataset(h5py.File):
     
     def shift_time_zero(self, shift):
         """
-        Shift time-zero uniformly across time-points.
+        Insert a shift in time points. Reset the shift by setting it to zero. Shifts are
+        not consecutive, so that calling `shift_time_zero(20)` twice will not result
+        in a shift of 40ps. 
 
         Parameters
         ----------
@@ -290,8 +292,9 @@ class DiffractionDataset(h5py.File):
             Shift [ps]. A positive value of `shift` will move all time-points forward in time,
             whereas a negative value of `shift` will move all time-points backwards in time.
         """
+        differential = shift - self.time_zero_shift
         self.time_zero_shift = shift
-        self.experimental_parameters_group['time_points'][:] = self.time_points + shift
+        self.experimental_parameters_group['time_points'][:] = self.time_points + differential
         self.diff_eq.cache_clear()
     
     def _get_time_index(self, timedelay):

@@ -76,7 +76,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
     raw_data_signal = QtCore.pyqtSignal(object)
     averaged_data_signal = QtCore.pyqtSignal(object)
-    powder_data_signal = QtCore.pyqtSignal(object, object, object)
+    powder_data_signal = QtCore.pyqtSignal(object, object)
 
     time_series_signal = QtCore.pyqtSignal(object, object)
     powder_time_series_signal = QtCore.pyqtSignal(object, object)
@@ -232,7 +232,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     def set_time_zero_shift(self, shift):
         """ Set the time-zero shift in picoseconds """
         if shift != self.dataset.time_zero_shift:
-            self.dataset.time_zero_shift = shift
+            self.dataset.shift_time_zero(shift)
             self.dataset_metadata.emit(self.dataset.metadata)
 
             # If _powder_relative is True, the shift in time-zero will impact the display
@@ -301,7 +301,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.powder_dataset_loaded_signal.emit(False)
 
         self.averaged_data_signal.emit(None)
-        self.powder_data_signal.emit(None, None, None)
+        self.powder_data_signal.emit(None, None)
 
 class WorkThread(QtCore.QThread):
     """
