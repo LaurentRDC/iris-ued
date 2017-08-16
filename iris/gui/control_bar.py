@@ -39,7 +39,7 @@ class ControlBar(QtGui.QWidget):
         self.diffraction_dataset_controls.timedelay_widget.valueChanged.connect(self.averaged_data_request)
         self.diffraction_dataset_controls.show_pd_btn.toggled.connect(self.enable_peak_dynamics)
         self.diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_averaged)
-        self.diffraction_dataset_controls.time_zero_shift_widget.valueChanged.connect(self.time_zero_shift)
+        self.diffraction_dataset_controls.time_zero_shift_widget.editingFinished.connect(self.shift_time_zero)
         self.diffraction_dataset_controls.clear_time_zero_shift_btn.clicked.connect(lambda _: self.time_zero_shift.emit(0))
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
@@ -124,6 +124,11 @@ class ControlBar(QtGui.QWidget):
         self.powder_diffraction_dataset_controls.setEnabled(enable)
         self.notes_editor.setEnabled(enable)
         self.metadata_widget.setEnabled(enable)
+    
+    @QtCore.pyqtSlot()
+    def shift_time_zero(self):
+        shift = self.diffraction_dataset_controls.time_zero_shift_widget.value()
+        self.time_zero_shift.emit(shift)
 
 class RawDatasetControl(QtGui.QFrame):
 
@@ -247,7 +252,7 @@ class DiffractionDatasetControl(QtGui.QFrame):
         # Time-zero shift control
         # QDoubleSpinbox does not have a slot that sets the value without notifying everybody
         self.time_zero_shift_widget = QtGui.QDoubleSpinBox(parent = self)
-        self.time_zero_shift_widget.setRange(-100, 100)
+        self.time_zero_shift_widget.setRange(-1000, 1000)
         self.time_zero_shift_widget.setDecimals(3)
         self.time_zero_shift_widget.setSingleStep(0.5)
         self.time_zero_shift_widget.setSuffix(' ps')

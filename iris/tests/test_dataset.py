@@ -86,6 +86,15 @@ class TestDiffractionDataset(unittest.TestCase):
         for time, pattern in zip(list(self.dataset.time_points), self.patterns):
             self.assertTrue(np.allclose(self.dataset.diff_data(time), pattern))
     
+    def test_time_zero_shift(self):
+        """ Test that data changed with time_zero_shift() """
+        unshifted = np.array(self.dataset.time_points)
+        self.dataset.shift_time_zero(100)
+        shifted = np.array(self.dataset.time_points)
+
+        self.assertFalse(np.allclose(unshifted, shifted))
+        self.assertTrue(np.allclose(unshifted + 100, shifted))
+    
     def test_diff_eq(self):
         """ test that DiffractionDataset.diff_eq() returns the correct array """
         with self.subTest('No data before time-zero'):
