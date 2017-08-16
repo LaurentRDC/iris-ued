@@ -25,14 +25,14 @@ class MetadataEditDialog(QtGui.QDialog):
         self.camera_distance_widget.setValue(float(config['camera_distance']))
 
         self.pixel_width_widget = QtGui.QDoubleSpinBox(parent = self)
-        self.pixel_width_widget.setRange(0, 1)
+        self.pixel_width_widget.setRange(0, 1000)
         self.pixel_width_widget.setDecimals(2)
         self.pixel_width_widget.setSingleStep(0.01)
         self.pixel_width_widget.setSuffix(' μm')
         self.pixel_width_widget.setValue(float(config['pixel_width'])*1e6)
 
         self.temperature_widget = QtGui.QDoubleSpinBox(parent = self)
-        self.temperature_widget.setRange(0, 10e3)
+        self.temperature_widget.setRange(0, 1e4)
         self.temperature_widget.setDecimals(2)
         self.temperature_widget.setSingleStep(1)
         self.temperature_widget.setSuffix(' K')

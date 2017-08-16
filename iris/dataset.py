@@ -101,8 +101,8 @@ class DiffractionDataset(h5py.File):
                   fluence {} mj/cm**2 >'.format(self.sample_type,self.acquisition_date, self.fluence)
     
     @classmethod
-    def from_collection(cls, patterns, filename, time_points, metadata, 
-                        valid_mask = None, ckwargs = None, callback = None, **kwargs):
+    def from_collection(cls, patterns, filename, time_points, metadata, valid_mask = None, 
+                        dtype = None, ckwargs = None, callback = None, **kwargs):
         """
         Create a DiffractionDataset from a collection of diffraction patterns and metadata.
 
@@ -136,6 +136,9 @@ class DiffractionDataset(h5py.File):
         valid_mask : ndarray or None, optional
             Boolean array that evaluates to True on valid pixels. This information is useful in
             cases where a beamblock is used.
+        dtype : dtype or None, optional
+            Patterns will be cast to ``dtype``. If None (default), ``dtype`` will be set to the same
+            data-type as the first pattern in ``patterns``.
         ckwargs : dict, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
             Default is to use the `lzf` compression pipeline.
@@ -166,7 +169,8 @@ class DiffractionDataset(h5py.File):
             ckwargs = {'compression': 'lzf', 'shuffle': True, 'fletcher32': True, 'chunks': True}
 
         first, patterns = peek(patterns)
-        dtype = first.dtype
+        if dtype is None:
+            dtype = first.dtype
         resolution = first.shape
 
         if valid_mask is None:
@@ -189,8 +193,8 @@ class DiffractionDataset(h5py.File):
 
             pgp = file.diffraction_group
             dset = pgp.create_dataset(name = 'intensity', shape = resolution + (len(time_points), ), 
-                                      dtype = first.dtype, **ckwargs)
-            pgp.create_dataset(name = 'diff_eq', shape = resolution, dtype = first.dtype, fillvalue = 0.0, **ckwargs)
+                                      dtype = dtype, **ckwargs)
+            pgp.create_dataset(name = 'diff_eq', shape = resolution, dtype = dtype, fillvalue = 0.0, **ckwargs)
             
             # Making use of the H5DS dimension scales
             # http://docs.h5py.org/en/latest/high/dims.html
@@ -207,7 +211,7 @@ class DiffractionDataset(h5py.File):
     @classmethod
     def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
                  processes = 1, callback = None, align = True, ckwargs = dict(), 
-                 **kwargs):
+                 dtype = None, **kwargs):
         """
         Create a DiffractionDataset from a subclass of RawDatasetBase.
 
@@ -229,6 +233,9 @@ class DiffractionDataset(h5py.File):
             If True (default), raw images will be aligned on a per-scan basis.
         ckwargs : dict or None, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
+        dtype : dtype or None, optional
+            Patterns will be cast to ``dtype``. If None (default), ``dtype`` will be set to the same
+            data-type as the first pattern in ``patterns``.
         kwargs
             Keywords are passed to ``h5py.File`` constructor. 
             Default is file-mode 'x', which raises error if file already exists.
@@ -247,8 +254,10 @@ class DiffractionDataset(h5py.File):
         metadata['nscans'] = valid_scans
 
         kwargs.update({'callback': callback, 'ckwargs': ckwargs, 
-                       'valid_mask': valid_mask, 'metadata': metadata})
+                       'valid_mask': valid_mask, 'metadata': metadata,
+                       'dtype': dtype})
 
+        # TODO: include dtype in _raw_combine
         patterns = pmap(_raw_combine, raw.time_points, 
                         args = (raw, valid_scans, align), 
                         processes = processes,
@@ -562,7 +571,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             return np.zeros_like(self.px_radius)
 
         if not bgr:
-            return np.mean(b4t0_slice, axis = 0, out = out)
+            return np.mean(b4t0_slice, axis = 0)
         
         bg = self.powder_group['baseline'][:t0_index, :]
         return np.mean(b4t0_slice - bg, axis = 0)
@@ -724,7 +733,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.wavelet = wavelet
         self.niter = max_iter
     
-    def compute_angular_averages(self, center = None, normalized = True, angular_bounds = None, callback = None):
+    def compute_angular_averages(self, center = None, normalized = True, angular_bounds = None, 
+                                 trim = True, callback = None):
         """ 
         Compute the angular averages.
         
@@ -738,6 +748,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         angular_bounds : 2-tuple of float or None, optional
             Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis. 
             Angle bounds outside [0, 360) are mapped back to [0, 360).
+        trim : bool, optional
+            If True (default), leading and trailing zeroes due to pixel mask are trimmed.
         callback : callable or None, optional
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
@@ -762,15 +774,23 @@ class PowderDiffractionDataset(DiffractionDataset):
         callback(0)
         results = list()
         for index, timedelay in enumerate(self.time_points):
-            radius, avg = angular_average(self.diff_data(timedelay), 
+            px_radius, avg = angular_average(self.diff_data(timedelay), 
                                           center = self.center, 
                                           mask = np.logical_not(self.valid_mask), 
                                           angular_bounds = angular_bounds)
-            results.append((radius, avg))
+            results.append((px_radius, avg))
             callback(int(100*index / len(self.time_points)))
         
         # Concatenate arrays for intensity and error
         rintensity = np.stack([I for _, I in results], axis = 0)
+
+        # Due to possibly large beamblocks, the center of the pattern
+        # is invalid; hence, the first pixels are exactly zero.
+        # We remove those leading zeroes.
+        if trim:
+            first, last = _trim_bounds(rintensity[0, :])
+            rintensity = rintensity[:, first:last]
+            px_radius = px_radius[first:last]
 
         if normalized:
             rintensity /= np.sum(rintensity, axis = 1, keepdims = True)
@@ -781,7 +801,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.powder_group['intensity'].write_direct(rintensity)
         
         # We store the raw px radius and infer other measurements (e.g. diffraction angle) from it
-        px_radius = results[0][0]
         self.powder_group['px_radius'].resize(px_radius.shape)
         self.powder_group['px_radius'].write_direct(px_radius)
         
@@ -794,5 +813,20 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         callback(100)
 
+def _trim_bounds(arr):
+    """ Returns the bounds which would be used in numpy.trim_zeros """
+    first = 0
+    for i in arr:
+        if i != 0.:
+            break
+        else:
+            first = first + 1
+    last = len(arr)
+    for i in arr[::-1]:
+        if i != 0.:
+            break
+        else:
+            last = last - 1
+    return first, last
 
 class SinglePictureDataset: pass
