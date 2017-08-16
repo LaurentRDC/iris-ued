@@ -41,9 +41,13 @@ class TestDiffractionDatasetCreation(unittest.TestCase):
         metadata = {'fluence': 10, 'energy': 90}
 
         with DiffractionDataset.from_collection(patterns, filename = self.fname, 
-                                                time_points = list(range(10)), metadata = metadata, mode = 'w') as dataset:
+                                                time_points = list(range(10)), 
+                                                metadata = metadata, 
+                                                dtype = np.float16,
+                                                mode = 'w') as dataset:
             
             self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (256, 256, 10))
+            self.assertEqual(dataset.diffraction_group['intensity'].dtype, np.float16)
             self.assertEqual(dataset.fluence, metadata['fluence'])
             self.assertEqual(dataset.energy, metadata['energy'])
             self.assertSequenceEqual(tuple(dataset.time_points), list(range(10)))

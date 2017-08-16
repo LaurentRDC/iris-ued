@@ -41,6 +41,8 @@ class TimeSeriesWidget(QtGui.QWidget):
         # Internal state on whether or not to 'connect the dots'
         self._time_series_connect = False
 
+        self._symbol_size = 4
+
         # Internal memory on last time-series info
         self._last_times = None
         self._last_intensities = None
@@ -56,24 +58,37 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.connect_widget = QtGui.QCheckBox('Connect time-series', self)
         self.connect_widget.toggled.connect(self.enable_connect)
 
+        self.symbol_size_widget = QtGui.QSpinBox(parent = self)
+        self.symbol_size_widget.setRange(1, 25)
+        self.symbol_size_widget.setValue(self._symbol_size)
+        self.symbol_size_widget.valueChanged.connect(self.set_symbol_size)
+
         self.horz_log_widget = QtGui.QCheckBox('Horizontal log mode', self)
         self.horz_log_widget.toggled.connect(self.enable_horz_log)
         
         self.vert_log_widget = QtGui.QCheckBox('Vertical log mode', self)
         self.vert_log_widget.toggled.connect(self.enable_vert_log)
 
-        grid_btns = QtGui.QHBoxLayout()
+        grid_btns = QtGui.QFormLayout()
+        grid_btns.setFormAlignment(QtCore.Qt.AlignCenter)
         grid_btns.addWidget(self.horz_grid_widget)
         grid_btns.addWidget(self.vert_grid_widget)
 
-        log_modes = QtGui.QHBoxLayout()
+        log_modes = QtGui.QFormLayout()
+        log_modes.setFormAlignment(QtCore.Qt.AlignCenter)
         log_modes.addWidget(self.horz_log_widget)
         log_modes.addWidget(self.vert_log_widget)
+
+        symbol_specs = QtGui.QFormLayout()
+        symbol_specs.setFormAlignment(QtCore.Qt.AlignCenter)
+        symbol_specs.addRow('Symbol size: ', self.symbol_size_widget)
+        symbol_specs.addWidget(self.connect_widget)
         
         self.controls = QtGui.QHBoxLayout()
         self.controls.addLayout(grid_btns)
         self.controls.addLayout(log_modes)
-        self.controls.addWidget(self.connect_widget)
+        self.controls.addLayout(symbol_specs)
+        self.controls.addStretch()
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(self.plot_widget)
@@ -93,7 +108,7 @@ class TimeSeriesWidget(QtGui.QWidget):
         connect_kwargs = {'pen': None} if not self._time_series_connect else {}
         self.plot_widget.plot(x = self._last_times, y = self._last_intensities, 
                               symbol = 'o', symbolPen = pens, 
-                              symbolBrush = brushes, symbolSize = 4, 
+                              symbolBrush = brushes, symbolSize = self._symbol_size, 
                               clear = True, **connect_kwargs)
     
     @QtCore.pyqtSlot()
@@ -123,4 +138,9 @@ class TimeSeriesWidget(QtGui.QWidget):
     @QtCore.pyqtSlot(bool)
     def enable_connect(self, toggle):
         self._time_series_connect = toggle
+        self.refresh()
+    
+    @QtCore.pyqtSlot(int)
+    def set_symbol_size(self, size):
+        self._symbol_size = size
         self.refresh()

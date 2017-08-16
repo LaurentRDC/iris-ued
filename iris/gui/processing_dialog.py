@@ -18,7 +18,15 @@ improve compression ratio. """
 alignment_help = """If checked, diffraction patterns will be aligned 
 using masked normalized cross-correlation. This can double the processing time. """
 
-class H5FileWidget(QtGui.QFrame):
+DTYPE_NAMES = {'Auto': None,
+               '64-bit floats': np.float64,
+               '32-bit floats': np.float32,
+               '16-bit floats': np.float16,
+               '64-bit integers': np.int64,
+               '32-bit integers': np.int32,
+               '16-bit integers': np.int16}
+
+class H5FileWidget(QtGui.QWidget):
     """ Widget specifying all HDF5 file properties """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -33,10 +41,6 @@ class H5FileWidget(QtGui.QFrame):
         self.shuffle_filter_widget = QtGui.QCheckBox('Enable shuffle filter (?)', parent = self)
         self.shuffle_filter_widget.setToolTip(shuffle_help)
         self.shuffle_filter_widget.setChecked(True)
-
-        # Same style as control bar
-        self.setFrameShadow(QtGui.QFrame.Sunken)
-        self.setFrameShape(QtGui.QFrame.Panel)
 
         layout = QtGui.QFormLayout()
         layout.addRow('Compression filter: ', self.compression_filter_widget)
@@ -93,6 +97,10 @@ class ProcessingDialog(QtGui.QDialog):
         self.alignment_tf_widget.setToolTip(alignment_help)
         self.alignment_tf_widget.setChecked(True)
 
+        self.dtype_widget = QtGui.QComboBox(parent = self)
+        self.dtype_widget.addItems(DTYPE_NAMES.keys())
+        self.dtype_widget.setCurrentText('Auto')
+
         # Set exclude scan widget with a validator
         # integers separated by commas only
         self.exclude_scans_widget = QtGui.QLineEdit('', parent = self)
@@ -114,6 +122,7 @@ class ProcessingDialog(QtGui.QDialog):
         processing_options.addRow('Number of cores to use:',self.processes_widget)
         processing_options.addRow('Scans to exclude: ', self.exclude_scans_widget)
         processing_options.addRow(self.alignment_tf_widget)
+        processing_options.addRow('Data type: ', self.dtype_widget)
 
         params_layout = QtGui.QHBoxLayout()
         params_layout.addLayout(processing_options)
@@ -149,6 +158,9 @@ class ProcessingDialog(QtGui.QDialog):
 
         # HDF5 compression kwargs
         ckwargs = self.h5_file_widget.file_params()
+
+        # Force data type
+        dtype = DTYPE_NAMES[self.dtype_widget.currentText()]
         
         exclude_scans_text = self.exclude_scans_widget.text()
         try:
@@ -167,6 +179,7 @@ class ProcessingDialog(QtGui.QDialog):
                   'processes': self.processes_widget.value(),
                   'exclude_scans': exclude_scans,
                   'align': self.alignment_tf_widget.isChecked(),
+                  'dtype': dtype,
                   'ckwargs': ckwargs}
         
         self.processing_parameters_signal.emit(kwargs)
