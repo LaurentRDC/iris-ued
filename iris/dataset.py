@@ -1,6 +1,7 @@
 """
 @author: Laurent P. Rene de Cotret
 """
+from collections import namedtuple
 from contextlib import suppress
 from functools import lru_cache, partial
 from math import sqrt
@@ -19,12 +20,31 @@ from skued import electron_wavelength
 from skued.baseline import baseline_dt, dt_max_level
 from skued.image import angular_average, ialign
 
-def _raw_combine(raw, valid_scans, align, timedelay):
-    images = map(partial(raw.raw_data, timedelay), valid_scans)
-    pipe = iaverage(ialign(images)) if align else iaverage(images)
-    return last(pipe)
+# Centralized location where possible metadata is
+# listed. For convenience, we also list the units
+# Note that HDF5 cannot deal with None, so default cannot
+# be None
+DatasetMetadata = namedtuple('DatasetMetadata', ['type', 'default', 'units'])
+VALID_DATASET_METADATA = {'fluence':         DatasetMetadata(float, default = 0.0, units = 'mj/cm^2'),
+                          'energy':          DatasetMetadata(float, default = 90, units = 'keV'),
+                          'time_zero_shift': DatasetMetadata(float, default = 0.0, units = 'ps'),
+                          'nscans':          DatasetMetadata(tuple, default = (1,), units = 'count'),
+                          'acquisition_date':DatasetMetadata(str, default = '', units = None),
+                          'temperature':     DatasetMetadata(float, default = 293, units = 'K'),
+                          'exposure':        DatasetMetadata(float, default = 0, units = 's'),
+                          'notes':           DatasetMetadata(str, default = '', units = None),
+                          'pixel_width':     DatasetMetadata(float, default = 14e-6, units = 'm'),
+                          'camera_distance': DatasetMetadata(float, default = 0.2235, units = 'm')}
 
-class ExperimentalParameter(object):
+VALID_POWDER_METADATA = {'center':              DatasetMetadata(tuple, default = (0,0), units = 'px'),
+                         'angular_bounds':      DatasetMetadata(tuple, default = (0, 360), units = 'deg'),
+                         # Powder baseline attributes
+                         'first_stage':      DatasetMetadata(str, default = '', units = None),
+                         'wavelet':          DatasetMetadata(str, default = '', units = None),
+                         'level':            DatasetMetadata(int, default = 0, units = None),
+                         'niter':            DatasetMetadata(int, default = 0, units = None)}
+
+class DatasetMetadataDescriptor(object):
     """ Descriptor to experimental parameters. """
     def __init__(self, name, output, default = None):
         """ 
@@ -53,6 +73,11 @@ class ExperimentalParameter(object):
     def __delete__(self, instance):
         del instance.experimental_parameters_group.attrs[self.name]
 
+def _raw_combine(raw, valid_scans, align, timedelay):
+    images = map(partial(raw.raw_data, timedelay), valid_scans)
+    pipe = iaverage(ialign(images)) if align else iaverage(images)
+    return last(pipe)
+
 class DiffractionDataset(h5py.File):
     """
     Abstraction of an HDF5 file to represent diffraction datasets.
@@ -60,22 +85,14 @@ class DiffractionDataset(h5py.File):
     _diffraction_group_name = '/processed'
     _exp_params_group_name = '/'
 
-    required_metadata = frozenset({'fluence', 'energy', 'time_points'})
-    optional_metadata = frozenset({'nscans', 'acquisition_date', 'temperature', 
-                                   'exposure', 'time_zero_shift', 'notes',
-                                   'pixel_width', 'camera_distance'})
-    
-    nscans = ExperimentalParameter('nscans', tuple, default = (1,))
-    acquisition_date = ExperimentalParameter('acquisition_date', str, default = '')
-    fluence = ExperimentalParameter('fluence', float)
-    current = ExperimentalParameter('current', float, 0)
-    temperature = ExperimentalParameter('temperature', float, default = 293)
-    exposure = ExperimentalParameter('exposure', float, 0)
-    energy = ExperimentalParameter('energy', float, default = 90)
-    time_zero_shift = ExperimentalParameter('time_zero_shift', float, default = 0.0)
-    notes = ExperimentalParameter('notes', str, default = '')
-    pixel_width = ExperimentalParameter('pixel_width', float, default = 14e-6)
-    camera_distance = ExperimentalParameter('camera_distance', float, default = 0.2235)
+    valid_metadata = frozenset(VALID_DATASET_METADATA.keys())
+
+    def __init__(self, *args, **kwargs):           
+        super().__init__(*args, **kwargs)
+
+        # Dynamically set attributes
+        for name, metadata in VALID_DATASET_METADATA.items():
+            setattr(type(self), name, DatasetMetadataDescriptor(name, metadata.type, metadata.default))
 
     def __repr__(self):
         return '< DiffractionDataset object. \
@@ -99,13 +116,11 @@ class DiffractionDataset(h5py.File):
         time_points : array_like, shape (N,)
             Time-points of the diffraction patterns, in picoseconds.
         metadata : dict
-            The dictionary must contain the following keys:
+            The dictionary can contain the following keys:
 
             * ``'fluence'`` (`float`): photoexcitation fluence [mJ/cm^2]
             * ``'energy'`` (`float`): electron energy [keV]
-
-            The following keys are optional:
-
+            * ``'time_zero_shift'`` (`float`): Shift between time-zero and points in `time_points`.
             * ``'notes'`` (`str`): User notes. Can be any string
             * ``'acquisition_date'`` (`str`): Dataset acquisition date. Can be any string
             * ``'nscans'`` (`iterable`): Scans from which the dataset was assembled, e.g. ``(1,2,3,4,5,10)``.
@@ -116,7 +131,7 @@ class DiffractionDataset(h5py.File):
             * ``'pixel_width'`` (`float`): width of a single pixel [m].
             * ``'camera_distance'`` (`float`): distance between the electron detector and sample [m].
 
-            Any other key will not be recorded in the DiffractionDataset. 
+
         
         valid_mask : ndarray or None, optional
             Boolean array that evaluates to True on valid pixels. This information is useful in
@@ -134,10 +149,6 @@ class DiffractionDataset(h5py.File):
         Returns
         -------
         dataset : DiffractionDataset
-
-        Raises
-        ------
-        ValueError: if required metadata is not complete.
         """
         if callback is None: 
             callback = lambda _: None
@@ -147,15 +158,12 @@ class DiffractionDataset(h5py.File):
 
         time_points = np.array(time_points).reshape(-1)
 
+        # Fill-in missing metadata with default
+        for key in (set(VALID_DATASET_METADATA.keys()) - set(metadata.keys())):
+            metadata[key] = VALID_DATASET_METADATA[key].default
+
         if ckwargs is None:
             ckwargs = {'compression': 'lzf', 'shuffle': True, 'fletcher32': True, 'chunks': True}
-
-        # Required metadata must be present, and cannot be None (since HDF5 cannot deal with it.)
-        required_keys = set(cls.required_metadata) - set(['time_points'])
-        try:
-            assert required_keys <= metadata.keys()
-        except AssertionError:
-            raise ValueError('Required metadata {} not all present'.format(cls.required_metadata))
 
         first, patterns = peek(patterns)
         dtype = first.dtype
@@ -252,7 +260,7 @@ class DiffractionDataset(h5py.File):
     def metadata(self):
         """ Dictionary of the dataset's metadata """
         metadata = dict()
-        for attr in (self.required_metadata | self.optional_metadata | {'filename'}):
+        for attr in (VALID_DATASET_METADATA.keys() | {'filename'}):
             metadata[attr] = getattr(self, attr)
         metadata.update(self.compression_params)
         return metadata
@@ -432,18 +440,11 @@ class PowderDiffractionDataset(DiffractionDataset):
     """
     _powder_group_name = '/powder'
 
-    required_metadata = DiffractionDataset.required_metadata | frozenset({'center'})
-    optional_metadata = DiffractionDataset.optional_metadata | frozenset({'first_stage', 'wavelet', 'level', 'niter', 'angular_bounds'}) 
-
-    center = ExperimentalParameter('center', tuple)
-    first_stage = ExperimentalParameter(name = 'powder_wavelet_baseline_first_stage', output = str, default = None)
-    wavelet = ExperimentalParameter(name = 'powder_baseline_wavelet', output = str, default = None)
-    level = ExperimentalParameter(name = 'powder_baseline_transform_level', output = int, default = 0)
-    niter = ExperimentalParameter(name = 'powder_baseline_niter', output = int, default = 0)
-    angular_bounds = ExperimentalParameter('powder_average_angular_bounds', tuple, default = (0, 360))
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        for name, metadata in VALID_POWDER_METADATA.items():
+            setattr(type(self), name, DatasetMetadataDescriptor(name, metadata.type, metadata.default))        
 
         # Ensure that all required powder groups exist
         maxshape = (len(self.time_points), sqrt(2*max(self.resolution)**2))
@@ -455,6 +456,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         if 'px_radius' not in self.powder_group:
             self.powder_group.create_dataset('px_radius', shape = (maxshape[-1],), maxshape = (maxshape[-1],),
                                              dtype = np.float, fillvalue = 0.0)
+    
 
     @classmethod
     def from_dataset(cls, dataset, center, normalized = True, angular_bounds = None, callback = None):
@@ -488,6 +490,14 @@ class PowderDiffractionDataset(DiffractionDataset):
         powder_dataset = cls(fname, mode = 'r+')
         powder_dataset.compute_angular_averages(center, normalized, angular_bounds, callback)
         return powder_dataset
+
+    @property
+    def metadata(self):
+        powder_meta = dict()
+        for attr in VALID_POWDER_METADATA:
+            powder_meta[attr] = getattr(self, attr)
+        powder_meta.update(super().metadata)
+        return powder_meta
 
     @property
     def powder_group(self):
@@ -636,7 +646,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     def powder_time_series(self, qmin, qmax, bgr = False, relative = False, out = None):
         """
         Average intensity in a scattering angle range, over time.
-        Diffracted intensity is integrated in the closed interval [smin, smax]
+        Diffracted intensity is integrated in the closed interval [qmin, qmax]
 
         Parameters
         ----------
@@ -658,10 +668,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         out : ndarray, shape (N,)
             Average diffracted intensity over time.
         """
-        # Python slices are semi-open by design, therefore i_max + 1 is used
-        # so that the integration interval is closed.
-        i_min, i_max = np.argmin(np.abs(smin - self.scattering_vector)), np.argmin(np.abs(smax - self.scattering_vector))
-        i_max += 1
+        i_min, i_max = np.argmin(np.abs(qmin - self.scattering_vector)), np.argmin(np.abs(qmax - self.scattering_vector))
+        i_max += 1 # Python slices are semi-open by design, therefore i_max + 1 is used
         trace = np.array(self.powder_group['intensity'][:, i_min:i_max])
         if bgr :
             trace -= np.array(self.powder_group['baseline'][:, i_min:i_max])
