@@ -12,16 +12,17 @@ from os.path import dirname, join
 import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 from qdarkstyle import load_stylesheet_pyqt5
+from skimage.io import imread
 
 from .beam_properties_dialog import ElectronBeamPropertiesDialog
 from .control_bar import ControlBar
-from .controller import IrisController, ErrorAware
+from .controller import ErrorAware, IrisController
 from .data_viewer import ProcessedDataViewer
 from .fluence_calculator import FluenceCalculatorDialog
 from .knife_edge_tool import KnifeEdgeToolDialog
+from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
-from .metadata_edit_dialog import MetadataEditDialog
 from .promote_dialog import PromoteToPowderDialog
 from .resources_widget import ComputationalResourceWidget
 
@@ -53,7 +54,6 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         self.dataset_path_signal.connect(self.controller.load_dataset)
         self.raw_dataset_path_signal.connect(self.controller.load_raw_dataset)
-        self.single_picture_path_signal.connect(self.controller.load_single_picture)
 
         self.controls = ControlBar(parent = self)
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
@@ -264,8 +264,10 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     @QtCore.pyqtSlot()
     def load_single_picture(self):
         path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load diffraction picture', filter = '*.tif')[0]
-        if path:
-            self.single_picture_path_signal.emit(path)
+        if not path:
+            return
+        
+        return SinglePictureViewer(path).exec_()
     
     @QtCore.pyqtSlot()
     def launch_knife_edge_tool(self):
@@ -288,3 +290,16 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+class SinglePictureViewer(QtGui.QDialog):
+
+    def __init__(self, fname, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.image_viewer = pg.ImageView(parent = self)
+        self.image_viewer.setImage(imread(fname))
+
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(QtGui.QLabel('Filename: ' + fname, parent = self))
+        layout.addWidget(self.image_viewer)
+        self.setLayout(layout)
