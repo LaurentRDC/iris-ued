@@ -754,6 +754,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
         """
+        # TODO: allow to cut away regions
         if not any([self.center, center]):
             raise RuntimeError('Center attribute must be either saved in the dataset \
                                 as an attribute or be provided.')
@@ -784,14 +785,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         # Concatenate arrays for intensity and error
         rintensity = np.stack([I for _, I in results], axis = 0)
 
-        # Due to possibly large beamblocks, the center of the pattern
-        # is invalid; hence, the first pixels are exactly zero.
-        # We remove those leading zeroes.
-        if trim:
-            first, last = _trim_bounds(rintensity[0, :])
-            rintensity = rintensity[:, first:last]
-            px_radius = px_radius[first:last]
-
         if normalized:
             rintensity /= np.sum(rintensity, axis = 1, keepdims = True)
         
@@ -812,21 +805,3 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
 
         callback(100)
-
-def _trim_bounds(arr):
-    """ Returns the bounds which would be used in numpy.trim_zeros """
-    first = 0
-    for i in arr:
-        if i != 0.:
-            break
-        else:
-            first = first + 1
-    last = len(arr)
-    for i in arr[::-1]:
-        if i != 0.:
-            break
-        else:
-            last = last - 1
-    return first, last
-
-class SinglePictureDataset: pass
