@@ -46,7 +46,6 @@ def promote_to_powder(filename, center, callback):
         pass
     return filename
 
-# TODO: callback
 def recompute_angular_average(filename, center, callback):
     """ Re-compute the angular average of a PowderDiffractionDataset """
     with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
@@ -161,21 +160,21 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.processing_progress_signal.emit(0)
         self.worker.start()
     
-    @QtCore.pyqtSlot(tuple)
-    def promote_to_powder(self, center):
+    @QtCore.pyqtSlot(dict)
+    def promote_to_powder(self, params):
         """ Promote a DiffractionDataset to a PowderDiffractionDataset """
-        self.worker = WorkThread(function = promote_to_powder, kwargs = {'center': center, 'filename':self.dataset.filename, 
-                                                                         'callback':self.powder_promotion_progress.emit})
+        params.update({'filename':self.dataset.filename, 'callback':self.powder_promotion_progress.emit})
+        self.worker = WorkThread(function = promote_to_powder, kwargs = params)
         self.dataset.close()
         self.dataset = None
         self.worker.results_signal.connect(self.load_dataset)
         self.worker.start()
     
-    @QtCore.pyqtSlot(tuple)
-    def recompute_angular_average(self, center):
+    @QtCore.pyqtSlot(dict)
+    def recompute_angular_average(self, params):
         """ Compute the angular average of a PowderDiffractionDataset again """
-        self.worker = WorkThread(function = recompute_angular_average, kwargs = {'center': center, 'filename':self.dataset.filename,
-                                                                                 'callback': self.angular_average_progress.emit})
+        params.update({'filename':self.dataset.filename, 'callback':self.powder_promotion_progress.emit})
+        self.worker = WorkThread(function = recompute_angular_average, kwargs = params)
         self.dataset.close()
         self.dataset = None
         self.worker.results_signal.connect(self.load_dataset)

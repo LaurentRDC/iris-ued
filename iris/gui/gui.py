@@ -23,7 +23,7 @@ from .knife_edge_tool import KnifeEdgeToolDialog
 from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
-from .promote_dialog import PromoteToPowderDialog
+from .angular_average_dialog import AngularAverageDialog
 from .resources_widget import ComputationalResourceWidget
 
 image_folder = join(dirname(__file__), 'images')
@@ -227,7 +227,8 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     def launch_processsing_dialog(self):
         processing_dialog = ProcessingDialog(parent = self, raw = self.controller.raw_dataset)
         processing_dialog.processing_parameters_signal.connect(self.controller.process_raw_dataset)
-        return processing_dialog.exec_()
+        processing_dialog.exec_()
+        processing_dialog.processing_parameters_signal.disconnect(self.controller.process_raw_dataset)
     
     @QtCore.pyqtSlot()
     def launch_metadata_edit_dialog(self):
@@ -235,21 +236,22 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         metadata_dialog.updated_metadata_signal.connect(self.controller.update_metadata)
         metadata_dialog.exec_()
         metadata_dialog.updated_metadata_signal.disconnect(self.controller.update_metadata)
-        return
 
     @QtCore.pyqtSlot()
     def launch_promote_to_powder_dialog(self):
         image = self.controller.dataset.diff_data(self.controller.dataset.time_points[0])
-        promote_dialog = PromoteToPowderDialog(image, parent = self)
+        promote_dialog = AngularAverageDialog(image, parent = self)
         promote_dialog.center_signal.connect(self.controller.promote_to_powder)
-        return promote_dialog.exec_()
+        promote_dialog.exec_()
+        promote_dialog.center_signal.disconnect(self.controller.promote_to_powder)
     
     @QtCore.pyqtSlot()
     def launch_recompute_angular_average_dialog(self):
         image = self.controller.dataset.diff_data(self.controller.dataset.time_points[0])
-        dialog = PromoteToPowderDialog(image, parent = self)
-        dialog.center_signal.connect(self.controller.recompute_angular_average)
-        return dialog.exec_()
+        dialog = AngularAverageDialog(image, parent = self)
+        dialog.angular_average_signal.connect(self.controller.recompute_angular_average)
+        dialog.exec_()
+        dialog.angular_average_signal.disconnect(self.controller.recompute_angular_average)
     
     @QtCore.pyqtSlot()
     def load_raw_dataset(self):
@@ -300,6 +302,8 @@ class SinglePictureViewer(QtGui.QDialog):
         self.image_viewer.setImage(imread(fname))
 
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(QtGui.QLabel('Filename: ' + fname, parent = self))
+        fname_label = QtGui.QLabel('Filename: ' + fname, parent = self)
+        fname_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(fname_label)
         layout.addWidget(self.image_viewer)
         self.setLayout(layout)
