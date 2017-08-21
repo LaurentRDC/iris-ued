@@ -18,7 +18,7 @@ from skimage.io import imread
 from npstreams import iaverage, ipipe, last, peek, pmap
 from skued import electron_wavelength
 from skued.baseline import baseline_dt, dt_max_level
-from skued.image import angular_average, ialign
+from skued.image import azimuthal_average, ialign
 
 # Centralized location where possible metadata is
 # listed. For convenience, we also list the units
@@ -775,10 +775,10 @@ class PowderDiffractionDataset(DiffractionDataset):
         callback(0)
         results = list()
         for index, timedelay in enumerate(self.time_points):
-            px_radius, avg = angular_average(self.diff_data(timedelay), 
-                                          center = self.center, 
-                                          mask = np.logical_not(self.valid_mask), 
-                                          angular_bounds = angular_bounds)
+            px_radius, avg = azimuthal_average(self.diff_data(timedelay), 
+                                               center = self.center, 
+                                               mask = np.logical_not(self.valid_mask), 
+                                               angular_bounds = angular_bounds)
             results.append((px_radius, avg))
             callback(int(100*index / len(self.time_points)))
         
