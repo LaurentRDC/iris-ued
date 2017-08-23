@@ -10,7 +10,7 @@ Subclassing RawDatasetBase
 
 To take advantage of :mod:`iris`'s :class:`DiffractionDataset` and :class:`PowderDiffractionDataset`,
 an appropriate subclass of :class:`RawDatasetBase` must be implemented. This subclass can then be fed
-to :func:`process` to produce a :class:`DiffractionDataset`.
+to :meth:`DiffractionDataset.from_raw` to produce a :class:`DiffractionDataset`.
 
 How to assemble a RawDatasetBase subclass
 -----------------------------------------

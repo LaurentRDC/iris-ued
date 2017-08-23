@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Raw dataset classes
--------------------
+===================
 
 The following classes are defined herein:
 
@@ -10,11 +10,16 @@ The following classes are defined herein:
 
     RawDataset
     McGillRawDataset
+    FSURawDataset
+
+Subclassing RawDatasetBase
+==========================
 
 """
 import glob
 import re
 from abc import ABCMeta, abstractmethod
+from contextlib import suppress
 from os import listdir
 from os.path import isdir, isfile, join
 
@@ -25,6 +30,7 @@ from skimage.io import imread
 from npstreams import imean, last
 
 from .dataset import VALID_DATASET_METADATA
+
 
 def uint_subtract_safe(arr1, arr2):
     """ Subtract two unsigned arrays without rolling over """
@@ -101,22 +107,23 @@ class RawDatasetBase(metaclass = ABCMeta):
         valid_scans = set(self.nscans) - set(exclude_scans)
         return [self.raw_data_filename(timedelay, scan) for scan in valid_scans]
 
-def parse_tagfile(path):
-    """ Parse a tagfile.txt from a raw dataset into a dictionary of values """
-    metadata = dict()
-    with open(path) as f:
-        for line in f:
-            key, value = re.sub('\s+', '', line).split('=')
-            try:
-                value = float(value.strip('s'))    # exposure values have units
-            except:
-                value = None    # value might be 'BLANK'
-            metadata[key.lower()] = value
-    
-    return metadata
-
 class McGillRawDataset(RawDatasetBase):
     """ Wrapper around raw dataset as produced by McGill's UEDbeta. """
+
+    @classmethod
+    def parse_tagfile(cls, path):
+        """ Parse a tagfile.txt from a raw dataset into a dictionary of values """
+        metadata = dict()
+        with open(path) as f:
+            for line in f:
+                key, value = re.sub('\s+', '', line).split('=')
+                try:
+                    value = float(value.strip('s'))    # exposure values have units
+                except:
+                    value = None    # value might be 'BLANK'
+                metadata[key.lower()] = value
+        
+        return metadata
 
     def __init__(self, directory):
         if isdir(directory):
@@ -124,7 +131,7 @@ class McGillRawDataset(RawDatasetBase):
         else:
             raise ValueError('The path {} is not a directory'.format(directory))
         
-        self._from_tagfile = parse_tagfile(join(directory, 'tagfile.txt'))
+        self._from_tagfile = self.parse_tagfile(join(directory, 'tagfile.txt'))
         self.fluence = self._from_tagfile.get('fluence', 0)
         self.resolution = (2048, 2048)
         self.current = self._from_tagfile.get('current', 0)
@@ -173,3 +180,57 @@ class McGillRawDataset(RawDatasetBase):
         str_time = sign + '{0:.2f}'.format(float(timedelay))
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
         return join(self.raw_directory, filename)
+
+class FSURawDataset(RawDatasetBase):
+
+    @classmethod
+    def parse_notes(cls, path):
+        """ 
+        Parse the metadata in a notes.txt file 
+        """
+        metadata = dict()
+        unparsed = dict()
+        with open(path) as file:
+            for line in file:
+                line = line.strip().lower()
+                with suppress(ValueError): # not enough values to unpack
+                    key, val = line.split(':', maxsplit = 1)
+                    unparsed[key] = val
+        
+        metadata['acquisition_date'] = str(unparsed['date'] + unparsed['time'])
+        metadata['temperature'] = float(unparsed['temperature'].strip('k'))
+        metadata['exposure'] = float(unparsed['exposure time'].strip('ms')) * 1e-3 #from ms to seconds
+        metadata['nscans'] = tuple(range(1, int(unparsed['number of stages']) + 1))
+        metadata['energy'] = float(unparsed['cathode voltage'].strip('kv'))
+        metadata['notes'] = str(unparsed.get('user notes', ''))
+        return metadata
+
+    def __init__(self, directory):
+        if isdir(directory):
+            self.raw_directory = directory
+        else:
+            raise ValueError('The path {} is not a directory'.format(directory))
+        
+        for k, v in self.parse_notes(join(self.raw_directory, 'notes.txt')):
+            setattr(self, k, v)
+    
+    @property
+    def _image_list(self):
+        """ All images in the raw folder. """
+        return (f for f in listdir(self.raw_directory) 
+                  if isfile(join(self.raw_directory, f)) and f.endswith(('.tif', '.tiff')))
+
+    @cached_property
+    def _stage_positions(self):
+        # stage position given in mm
+        # filename format is tr_000000xx.tif
+        return list(map(lambda fname: fname[3:9], self._image_list))
+
+    @cached_property
+    def time_points(self):
+        # TODO: time-zero stage position
+        return 4*3.33*self._stage_positions
+    
+    def raw_data_filename(timedelay, scan = 1):
+        stage_pos = int(timedelay / (4 * 3.33))
+        return join(self.raw_directory, 'tr_{}p0.tif'.format(stage_pos))
