@@ -34,17 +34,20 @@ class AngularAverageDialog(QtGui.QDialog):
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setDefault(True)
 
+
         self.min_angular_bound_widget = QtGui.QDoubleSpinBox(parent = self)
         self.min_angular_bound_widget.setRange(0, 360)
         self.min_angular_bound_widget.setSingleStep(1)
         self.min_angular_bound_widget.setValue(0)
         self.min_angular_bound_widget.setSuffix(' deg')
+        self.min_angular_bound_widget.setEnabled(False)
 
         self.max_angular_bound_widget = QtGui.QDoubleSpinBox(parent = self)
         self.max_angular_bound_widget.setRange(0, 360)
         self.max_angular_bound_widget.setSingleStep
         self.max_angular_bound_widget.setValue(360)
         self.max_angular_bound_widget.setSuffix(' deg')
+        self.max_angular_bound_widget.setEnabled(False)
 
         self.min_angular_bound_widget.valueChanged.connect(self.max_angular_bound_widget.setMinimum)
         self.max_angular_bound_widget.valueChanged.connect(self.min_angular_bound_widget.setMaximum)
@@ -80,7 +83,7 @@ class AngularAverageDialog(QtGui.QDialog):
         center = (round(corner_y + radius), round(corner_x + radius)) #Flip output since image viewer plots transpose...
         
         params = {'center': center,
-                  'angular_bounds': (self.min_angular_bound_widget.value(), self.max_angular_bound_widget.value()),
-                  'normalized': self.normalize_widget.checked()}
-        self.angular_average_signal.emit(center)
+                  'angular_bounds': None,   #(self.min_angular_bound_widget.value(), self.max_angular_bound_widget.value()),
+                  'normalized': self.normalize_widget.isChecked()}
+        self.angular_average_signal.emit(params)
         super().accept()

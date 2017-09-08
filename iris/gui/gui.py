@@ -241,9 +241,9 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     def launch_promote_to_powder_dialog(self):
         image = self.controller.dataset.diff_data(self.controller.dataset.time_points[0])
         promote_dialog = AngularAverageDialog(image, parent = self)
-        promote_dialog.center_signal.connect(self.controller.promote_to_powder)
+        promote_dialog.angular_average_signal.connect(self.controller.promote_to_powder)
         promote_dialog.exec_()
-        promote_dialog.center_signal.disconnect(self.controller.promote_to_powder)
+        promote_dialog.angular_average_signal.disconnect(self.controller.promote_to_powder)
     
     @QtCore.pyqtSlot()
     def launch_recompute_angular_average_dialog(self):

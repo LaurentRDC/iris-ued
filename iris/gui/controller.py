@@ -40,16 +40,18 @@ class ErrorAware(QtCore.pyqtWrapperType):
         
         return super().__new__(meta, classname, bases, new_class_dict)
 
-def promote_to_powder(filename, center, callback):
+def promote_to_powder(**kwargs):
     """ Create a PowderDiffractionDataset from a DiffractionDataset """
-    with PowderDiffractionDataset.from_dataset(DiffractionDataset(filename), center = center, callback = callback):
+    filename = kwargs.pop('filename')
+    with PowderDiffractionDataset.from_dataset(DiffractionDataset(filename), **kwargs):
         pass
     return filename
 
-def recompute_angular_average(filename, center, callback):
+def recompute_angular_average(**kwargs):
     """ Re-compute the angular average of a PowderDiffractionDataset """
+    filename = kwargs.pop('filename')
     with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
-        dataset.compute_angular_averages(center = center, callback = callback)
+        dataset.compute_angular_averages(**kwargs)
     return filename
 
 def process(**kwargs):
