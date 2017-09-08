@@ -7,6 +7,7 @@ from functools import lru_cache, partial
 from math import sqrt
 from os import listdir
 from os.path import isdir, isfile, join
+from tempfile import TemporaryFile
 from warnings import warn
 
 import h5py
@@ -15,7 +16,7 @@ from cached_property import cached_property
 from scipy.signal import detrend
 from skimage.io import imread
 
-from npstreams import iaverage, ipipe, last, peek, pmap
+from npstreams import iaverage, ipipe, last, peek, pmap_unordered, ipipe
 from skued import electron_wavelength
 from skued.baseline import baseline_dt, dt_max_level
 from skued.image import azimuthal_average, ialign
@@ -74,9 +75,10 @@ class DatasetMetadataDescriptor(object):
         del instance.experimental_parameters_group.attrs[self.name]
 
 def _raw_combine(raw, valid_scans, align, timedelay):
+    order = list(raw.time_points).index(timedelay)
     images = map(partial(raw.raw_data, timedelay), valid_scans)
     pipe = iaverage(ialign(images)) if align else iaverage(images)
-    return last(pipe)
+    return order, last(pipe)
 
 class DiffractionDataset(h5py.File):
     """
@@ -108,9 +110,9 @@ class DiffractionDataset(h5py.File):
 
         Parameters
         ----------
-        patterns : iterable of ndarray
+        patterns : iterable of ndarray or ndarray
             Diffraction patterns. These should be in the same order as ``time_points``. Note that
-            the iterable can be a generator, in which case it will be consumed.
+            the iterable can be a generator, in which case it will be consumed. 
         filename : str or path-like
             Path to the assembled DiffractionDataset.
         time_points : array_like, shape (N,)
@@ -130,8 +132,6 @@ class DiffractionDataset(h5py.File):
             * ``'time_zero_shift'`` (`float`): time-zero shift between the input `time_points` and the 'real' time-zero [ps].
             * ``'pixel_width'`` (`float`): width of a single pixel [m].
             * ``'camera_distance'`` (`float`): distance between the electron detector and sample [m].
-
-
         
         valid_mask : ndarray or None, optional
             Boolean array that evaluates to True on valid pixels. This information is useful in
@@ -153,6 +153,8 @@ class DiffractionDataset(h5py.File):
         -------
         dataset : DiffractionDataset
         """
+        patterns = iter(patterns)
+
         if callback is None: 
             callback = lambda _: None
 
@@ -166,7 +168,8 @@ class DiffractionDataset(h5py.File):
             metadata[key] = VALID_DATASET_METADATA[key].default
 
         if ckwargs is None:
-            ckwargs = {'compression': 'lzf', 'shuffle': True, 'fletcher32': True, 'chunks': True}
+            ckwargs = {'compression': 'lzf', 'shuffle': True, 'fletcher32': True}
+        ckwargs['chunks'] = True # For some reason, if no chunking, writing to disk is SLOW
 
         first, patterns = peek(patterns)
         if dtype is None:
@@ -200,7 +203,7 @@ class DiffractionDataset(h5py.File):
             # http://docs.h5py.org/en/latest/high/dims.html
             dset.dims.create_scale(times, 'time-delay')
             dset.dims[2].attach_scale(times)
-            
+
             for index, pattern in enumerate(patterns):
                 dset.write_direct(pattern, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
                 callback(round(100 * index / np.size(time_points)))
@@ -229,6 +232,9 @@ class DiffractionDataset(h5py.File):
         processes : int or None, optional
             Number of Processes to spawn for processing. Default is number of available
             CPU cores.
+        callback : callable or None, optional
+            Callable that takes an int between 0 and 99. This can be used for progress update when
+            ``patterns`` is a generator and involves large computations.
         align : bool, optional
             If True (default), raw images will be aligned on a per-scan basis.
         ckwargs : dict or None, optional
@@ -249,21 +255,41 @@ class DiffractionDataset(h5py.File):
         IOError : If the filename is already associated with a file.
         TypeError: if ``raw`` is not an instance of RawDatasetBase
         """
+        if callback is None: 
+            callback = lambda _: None
+
         valid_scans = tuple(set(raw.nscans) - set(exclude_scans))
         metadata = raw.metadata.copy()
         metadata['nscans'] = valid_scans
+        ntimes = len(raw.time_points)
 
-        kwargs.update({'callback': callback, 'ckwargs': ckwargs, 
-                       'valid_mask': valid_mask, 'metadata': metadata,
+        kwargs.update({'ckwargs': ckwargs, 
+                       'valid_mask': valid_mask, 
+                       'metadata': metadata,
+                       'time_points': raw.time_points,
                        'dtype': dtype})
+        
+        # It is much safer and faster to first store reduced data into
+        # a numpy array
+        # TODO: memmap?
+        stack = np.empty(shape = raw.resolution + (ntimes,), dtype = dtype)
 
         # TODO: include dtype in _raw_combine
-        patterns = pmap(_raw_combine, raw.time_points, 
-                        args = (raw, valid_scans, align), 
-                        processes = processes,
-                        ntotal = len(raw.time_points))
+        reduced = pmap_unordered(_raw_combine, raw.time_points, 
+                                 args = (raw, valid_scans, align), 
+                                 processes = processes,
+                                 ntotal = ntimes)
+        
+        callback(0)
+        for progress, (index, pattern) in enumerate(reduced, start = 1):
+            stack[:,:,index] = pattern
+            callback(round(100 * progress / ntimes))  
 
-        return cls.from_collection(patterns = patterns, filename = filename, time_points = raw.time_points, **kwargs)
+        # We squeeze all patterns because numpy.split() doesn't
+        # remove the 3rd dimensions (axis = 2)
+        patterns = np.split(stack, ntimes, axis = 2)
+        return cls.from_collection(patterns = ipipe(np.ascontiguousarray, np.squeeze, patterns), 
+                                   filename = filename, **kwargs)
         
     @property
     def metadata(self):

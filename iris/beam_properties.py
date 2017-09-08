@@ -5,7 +5,7 @@ from os.path import join
 from glob import glob
 from warnings import warn
 
-from .raw import parse_tagfile
+from .raw import McGillRawDataset
 
 # TODO: beam pointing stability using scikit-image's register_translation?
 
@@ -41,7 +41,7 @@ def beam_properties(directory, reprate = 1000, exposure = None, energy = None, c
     if callback is None:
         callback = lambda _: None
     
-    metadata = parse_tagfile(join(directory, 'tagfile.txt'))
+    metadata = McGillRawDataset.parse_tagfile(join(directory, 'tagfile.txt'))
     exposure = metadata['exposure']
     energy = metadata['energy'] or 90
 
