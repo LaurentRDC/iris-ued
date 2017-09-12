@@ -98,9 +98,8 @@ class DiffractionDataset(h5py.File):
 
     def __repr__(self):
         return '< DiffractionDataset object. \
-                  Sample type: {}, \n \
                   Acquisition date : {}, \n \
-                  fluence {} mj/cm**2 >'.format(self.sample_type,self.acquisition_date, self.fluence)
+                  fluence {} mj/cm**2 >'.format(self.acquisition_date, self.fluence)
     
     @classmethod
     def from_collection(cls, patterns, filename, time_points, metadata, valid_mask = None, 
@@ -153,7 +152,8 @@ class DiffractionDataset(h5py.File):
         -------
         dataset : DiffractionDataset
         """
-        patterns = iter(patterns)
+        # H5py will raise an exception if arrays are not contiguous
+        patterns = map(np.ascontiguousarray, iter(patterns))
 
         if callback is None: 
             callback = lambda _: None
