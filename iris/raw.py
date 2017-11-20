@@ -12,7 +12,6 @@ from skimage.io import imread
 import sys
 from datetime import datetime as dt
 from warnings import warn, catch_warnings
-from skued import pmap
 
 from .optimizations import cached_property
 
