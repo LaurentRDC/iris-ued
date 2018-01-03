@@ -10,8 +10,7 @@ import warnings
 import numpy as np
 from pyqtgraph import QtCore
 
-from ..dataset import (DiffractionDataset, PowderDiffractionDataset)
-from ..raw import McGillRawDataset
+from ..dataset import (DiffractionDataset, PowderDiffractionDataset, McGillRawDataset)
 
 def error_aware(func):
     """

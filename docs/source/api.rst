@@ -14,14 +14,6 @@ Diffraction Dataset Classes
 .. autosummary::
     :toctree: classes/
 
-    RawDatasetBase
+    McGillRawDataset
     DiffractionDataset
     PowderDiffractionDataset
-
-Processing raw data
--------------------
-
-.. autosummary::
-    :toctree: functions/
-
-    process

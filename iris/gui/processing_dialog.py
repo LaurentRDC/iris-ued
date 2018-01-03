@@ -4,7 +4,7 @@ import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 import numpy as np
 
-from ..raw import McGillRawDataset
+from .. import McGillRawDataset
 
 fletcher32_help = """ Adds a checksum to each chunk to detect data corruption. 
 Attempts to read corrupted chunks will fail with an error. 

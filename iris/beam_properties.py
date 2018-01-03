@@ -5,7 +5,7 @@ from os.path import join
 from glob import glob
 from warnings import warn
 
-from .raw import McGillRawDataset
+from . import McGillRawDataset
 
 # TODO: beam pointing stability using scikit-image's register_translation?
 
