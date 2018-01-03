@@ -247,9 +247,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.raw_dataset = McGillRawDataset(path)
         self.raw_dataset_loaded_signal.emit(True)
         self.raw_dataset_metadata.emit({'time_points': self.raw_dataset.time_points,
-                                        'nscans': self.raw_dataset.nscans})
+                                        'scans': self.raw_dataset.scans})
         self.display_raw_data(timedelay_index = 0, 
-                              scan = min(self.raw_dataset.nscans))
+                              scan = min(self.raw_dataset.scans))
     
     @QtCore.pyqtSlot()
     def close_raw_dataset(self):

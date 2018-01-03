@@ -154,7 +154,7 @@ class RawDatasetControl(QtGui.QFrame):
         self.scan_widget.setTickPosition(QtGui.QSlider.TicksBelow)
         self.scan_widget.setTickInterval(1)
         self.scan_widget.sliderMoved.connect(
-            lambda pos: self.s_label.setText('Scan: {:d}'.format(self.nscans[pos])))
+            lambda pos: self.s_label.setText('Scan: {:d}'.format(self.scans[pos])))
 
         prev_timedelay_btn = QtGui.QPushButton('<', self)
         prev_timedelay_btn.clicked.connect(self.goto_prev_timedelay)
@@ -196,10 +196,10 @@ class RawDatasetControl(QtGui.QFrame):
     
     def update_dataset_metadata(self, metadata):
         self.time_points = metadata.get('time_points')
-        self.nscans = metadata.get('nscans')
+        self.scans = metadata.get('scans')
 
         self.timedelay_widget.setRange(0, len(self.time_points) - 1)
-        self.scan_widget.setRange(0, len(self.nscans) - 1)
+        self.scan_widget.setRange(0, len(self.scans) - 1)
         self.timedelay_widget.triggerAction(5)
         self.timedelay_widget.sliderMoved.emit(0)
         self.scan_widget.triggerAction(5)
