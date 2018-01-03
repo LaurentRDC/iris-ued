@@ -35,9 +35,10 @@ saves diffraction patterns and metadata:
     :noindex:
 
 The required metadata that must be passed to :meth:`DiffractionDataset.from_collection` is also listed in
-:attr:`DiffractionDataset.required_metadata`. Valid optional metadata is listed in :attr:`DiffractionDataset.optional_metadata`.
+:attr:`DiffractionDataset.valid_metadata`. Metadata not listed in :attr:`DiffractionDataset.valid_metadata`
+will be *ignored*.
 
-An other possibility is to create a :class:`DiffractionDataset` from a :class:`RawDatasetBase` subclass using the 
+An other possibility is to create a :class:`DiffractionDataset` from a :class:`AbstractRawDataset` subclass using the 
 :meth:`DiffractionDataset.from_raw` method :
 
 .. automethod:: DiffractionDataset.from_raw

@@ -1,11 +1,13 @@
 
-from .. import DiffractionDataset, PowderDiffractionDataset, McGillRawDataset, VALID_DATASET_METADATA
-from contextlib import suppress
-import numpy as np
-from itertools import repeat
-from numpy.random import random
 import os.path
 import unittest
+from contextlib import suppress
+from itertools import repeat
+
+import numpy as np
+from numpy.random import random
+
+from .. import DiffractionDataset, McGillRawDataset, PowderDiffractionDataset
 
 np.random.seed(23)
 
@@ -70,7 +72,7 @@ class TestDiffractionDataset(unittest.TestCase):
     def test_dataset_metadata(self):
         """ Test that the property 'metadata' is working correctly"""
         metadata = self.dataset.metadata
-        for required in VALID_DATASET_METADATA:
+        for required in DiffractionDataset.valid_metadata:
             self.assertIn(required, metadata)
         self.assertIn('filename', metadata)
 

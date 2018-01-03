@@ -6,4 +6,4 @@ scikit-ued >= 0.4.8
 pyqtgraph >= 0.10
 qdarkstyle >= 2.3
 npstreams >= 0.5
-cached-property >= 1.3
+cached_property >= 1.3
