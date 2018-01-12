@@ -47,7 +47,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        self._controller_thread = QtCore.QThread()
+        self._controller_thread = QtCore.QThread(parent = self)
         self.controller = IrisController() # No parent so that we can moveToThread
         self.controller.moveToThread(self._controller_thread)
         self._controller_thread.start()
