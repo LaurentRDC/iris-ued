@@ -54,6 +54,8 @@ class KnifeEdgeToolDialog(QtGui.QDialog):
     @QtCore.pyqtSlot()
     def load_measurement(self):
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Load measurement')[0]
+        if not filename : 
+            return
         positions, values = n.loadtxt(fname = filename, dtype = n.float, delimiter = ',', 
                                       skiprows = 2, usecols = (0,1), unpack = True)
         self._measurement_signal.emit(positions, values)

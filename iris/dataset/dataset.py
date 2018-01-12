@@ -31,7 +31,6 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     _diffraction_group_name = '/processed'
     _exp_params_group_name = '/'
 
-
     energy          = HDF5ExperimentalParameter('energy',          float, default = 90)
     pump_wavelength = HDF5ExperimentalParameter('pump_wavelength', int,   default = 800)
     fluence         = HDF5ExperimentalParameter('fluence',         float, default = 0)
@@ -205,6 +204,8 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         stack = np.empty(shape = raw.resolution + (ntimes,), dtype = dtype)
 
         # TODO: include dtype in _raw_combine
+        # ``reduced`` is an iterable of (index, image)
+        # and therefore there is no need to hanve an ordered map
         reduced = pmap_unordered(_raw_combine, raw.time_points, 
                                  args = (raw, valid_scans, align), 
                                  processes = processes,
