@@ -31,14 +31,14 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     _diffraction_group_name = '/processed'
     _exp_params_group_name = '/'
 
-    energy          = HDF5ExperimentalParameter('energy',          float, default = 90)
-    pump_wavelength = HDF5ExperimentalParameter('pump_wavelength', int,   default = 800)
-    fluence         = HDF5ExperimentalParameter('fluence',         float, default = 0)
-    time_zero_shift = HDF5ExperimentalParameter('time_zero_shift', float, default = 0)
-    temperature     = HDF5ExperimentalParameter('temperature',     float, default = 293)
-    exposure        = HDF5ExperimentalParameter('exposure',        float, default = 1)
+    energy          = HDF5ExperimentalParameter('energy',          float, default = 90)       # keV
+    pump_wavelength = HDF5ExperimentalParameter('pump_wavelength', int,   default = 800)      # nanometers
+    fluence         = HDF5ExperimentalParameter('fluence',         float, default = 0)        # milliJoules / centimeters ^ 2
+    time_zero_shift = HDF5ExperimentalParameter('time_zero_shift', float, default = 0)        # picoseconds
+    temperature     = HDF5ExperimentalParameter('temperature',     float, default = 293)      # kelvins
+    exposure        = HDF5ExperimentalParameter('exposure',        float, default = 1)        # seconds
     scans           = HDF5ExperimentalParameter('scans',           tuple, default = (1,))
-    camera_length   = HDF5ExperimentalParameter('camera_length',   float, default = 0.23)
+    camera_length   = HDF5ExperimentalParameter('camera_length',   float, default = 0.23)     # meters
     pixel_width     = HDF5ExperimentalParameter('pixel_width',     float, default = 14e-6)    # meters
     notes           = HDF5ExperimentalParameter('notes',           str,   default = '')
 
@@ -219,7 +219,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         # We squeeze all patterns because numpy.split() doesn't
         # remove the 3rd dimensions (axis = 2)
         patterns = np.split(stack, ntimes, axis = 2)
-        return cls.from_collection(patterns = ipipe(np.ascontiguousarray, np.squeeze, patterns), 
+        return cls.from_collection(patterns = map(np.squeeze, patterns), 
                                    filename = filename, **kwargs)
         
     @property
