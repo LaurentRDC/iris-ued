@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Siwick Research Group RawDataset class as an example use
-of RawDatasetBase
+of AbstractRawDataset
 """
 from contextlib import suppress
 from glob import iglob
