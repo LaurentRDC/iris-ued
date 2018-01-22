@@ -5,7 +5,7 @@ __license__ = 'MIT'
 __version__ = '5.0' # TODO: automatic versioning?
 
 from .dataset import (AbstractRawDataset, McGillRawDataset, DiffractionDataset, 
-                      PowderDiffractionDataset)
+                      PowderDiffractionDataset, MerlinRawDataset)
 from .beam_properties import beam_properties
 from .knife_edge import cdf, knife_edge
 from .merlin import mibheader, mibread, imibread

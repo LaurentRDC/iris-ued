@@ -10,7 +10,7 @@ import warnings
 import numpy as np
 from pyqtgraph import QtCore
 
-from ..dataset import (DiffractionDataset, PowderDiffractionDataset, McGillRawDataset)
+from ..dataset import (DiffractionDataset, PowderDiffractionDataset, McGillRawDataset, MerlinRawDataset)
 
 def error_aware(func):
     """
@@ -250,6 +250,20 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
                                         'scans': self.raw_dataset.scans})
         self.display_raw_data(timedelay_index = 0, 
                               scan = min(self.raw_dataset.scans))
+    
+    @QtCore.pyqtSlot(str)
+    def load_raw_merlin_dataset(self, path):
+        if not path:
+            return
+
+        self.close_raw_dataset()
+        self.raw_dataset = MerlinRawDataset(path)
+        self.raw_dataset_loaded_signal.emit(True)
+        self.raw_dataset_metadata.emit({'time_points': self.raw_dataset.time_points,
+                                        'scans': self.raw_dataset.scans})
+        self.display_raw_data(timedelay_index = 0, 
+                              scan = min(self.raw_dataset.scans))
+
     
     @QtCore.pyqtSlot()
     def close_raw_dataset(self):
