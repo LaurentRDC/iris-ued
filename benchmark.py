@@ -1,12 +1,17 @@
 
-from iris import McGillRawDataset, DiffractionDataset
-from os.path import join
+from iris import MerlinRawDataset, DiffractionDataset
+from npstreams import average
+import matplotlib
+matplotlib.rcParams['backend'] = 'Qt5Agg'
+import matplotlib.pyplot as plt
 
-TEST_PATH = 'C:\\Diffraction data\\2012.11.09.19.05.VO2.270uJ.50Hz.70nm'
+TEST_PATH = 'D:\\Merlin data\\test-sequential'
 
 if __name__ == '__main__':
-    raw = McGillRawDataset(TEST_PATH)
+    raw = MerlinRawDataset(TEST_PATH)
 
-    with DiffractionDataset.from_raw(raw, 'test.hdf5', callback = print, processes = 4,
-                                     exclude_scans = list(range(30, 120)), mode = 'w'):
-        pass
+    im = average(raw.raw_data(0.0, scan) for scan in raw.scans)
+    plt.figure()
+    plt.imshow(im)
+    plt.show()
+    

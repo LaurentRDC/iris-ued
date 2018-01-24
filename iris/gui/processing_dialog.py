@@ -101,7 +101,7 @@ class ProcessingDialog(QtGui.QDialog):
         self.raw = raw
 
         image = self.raw.raw_data(timedelay = raw.time_points[0], 
-                                  scan = raw.nscans[0], bgr = True)
+                                  scan = raw.scans[0], bgr = True)
 
         self.viewer = pg.ImageView(parent = self)
         self.viewer.setImage(image)

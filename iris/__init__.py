@@ -8,4 +8,4 @@ from .dataset import (AbstractRawDataset, McGillRawDataset, DiffractionDataset,
                       PowderDiffractionDataset, MerlinRawDataset)
 from .beam_properties import beam_properties
 from .knife_edge import cdf, knife_edge
-from .merlin import mibheader, mibread, imibread
+from .merlin_images import mibheader, mibread, imibread
