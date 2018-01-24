@@ -63,26 +63,26 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     """
     Controller behind Iris.
     """
-    raw_dataset_loaded_signal = QtCore.pyqtSignal(bool)
+    raw_dataset_loaded_signal       = QtCore.pyqtSignal(bool)
     processed_dataset_loaded_signal = QtCore.pyqtSignal(bool)
-    powder_dataset_loaded_signal = QtCore.pyqtSignal(bool)
+    powder_dataset_loaded_signal    = QtCore.pyqtSignal(bool)
 
-    raw_dataset_metadata = QtCore.pyqtSignal(dict)
-    dataset_metadata = QtCore.pyqtSignal(dict)
-    powder_dataset_metadata = QtCore.pyqtSignal(dict)
+    raw_dataset_metadata            = QtCore.pyqtSignal(dict)
+    dataset_metadata                = QtCore.pyqtSignal(dict)
+    powder_dataset_metadata         = QtCore.pyqtSignal(dict)
 
-    error_message_signal = QtCore.pyqtSignal(str)
+    error_message_signal            = QtCore.pyqtSignal(str)
 
-    raw_data_signal = QtCore.pyqtSignal(object)
-    averaged_data_signal = QtCore.pyqtSignal(object)
-    powder_data_signal = QtCore.pyqtSignal(object, object)
+    raw_data_signal                 = QtCore.pyqtSignal(object)
+    averaged_data_signal            = QtCore.pyqtSignal(object)
+    powder_data_signal              = QtCore.pyqtSignal(object, object)
 
-    time_series_signal = QtCore.pyqtSignal(object, object)
-    powder_time_series_signal = QtCore.pyqtSignal(object, object)
+    time_series_signal              = QtCore.pyqtSignal(object, object)
+    powder_time_series_signal       = QtCore.pyqtSignal(object, object)
 
-    processing_progress_signal = QtCore.pyqtSignal(int)
-    powder_promotion_progress = QtCore.pyqtSignal(int)
-    angular_average_progress = QtCore.pyqtSignal(int)
+    processing_progress_signal      = QtCore.pyqtSignal(int)
+    powder_promotion_progress       = QtCore.pyqtSignal(int)
+    angular_average_progress        = QtCore.pyqtSignal(int)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -264,7 +264,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.display_raw_data(timedelay_index = 0, 
                               scan = min(self.raw_dataset.scans))
 
-    
     @QtCore.pyqtSlot()
     def close_raw_dataset(self):
         self.raw_dataset = None
