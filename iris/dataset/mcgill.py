@@ -100,6 +100,8 @@ class McGillRawDataset(AbstractRawDataset):
             Time-delay in picoseconds.
         scan : int, optional
             Scan number. 
+        bgr : bool, optional
+            If True (default), laser background is removed before being returned. 
         
         Returns
         -------
@@ -117,6 +119,8 @@ class McGillRawDataset(AbstractRawDataset):
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
 
         im = imread(join(self.source, filename))
-        imp = np.subtract(im, self.background)
-        imp[np.greater(self.background, im)] = 0
-        return imp
+        if bgr:
+            im = np.subtract(im, self.background)
+            im[np.greater(self.background, im)] = 0
+        
+        return im
