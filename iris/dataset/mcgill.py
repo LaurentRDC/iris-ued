@@ -55,11 +55,11 @@ class McGillRawDataset(AbstractRawDataset):
         # Populate experimental parameters
         # from a metadata file called 'tagfile.txt'
         _metadata = parse_tagfile(join(self.source, 'tagfile.txt'))
-        self.fluence = _metadata.get('fluence', 0)
+        self.fluence = _metadata.get('fluence') or 0
         self.resolution = (2048, 2048)
-        self.current = _metadata.get('current', 0)
-        self.exposure = _metadata.get('exposure', 0)
-        self.energy = _metadata.get('energy', 90)
+        self.current = _metadata.get('current') or 0
+        self.exposure = _metadata.get('exposure') or 0
+        self.energy = _metadata.get('energy') or 90
         
         # Determine acquisition date
         # If directory name doesn't match the time pattern, the
