@@ -10,11 +10,11 @@ The following classes are defined herein:
 
     AbstractRawDataset
     McGillRawDataset
+    MerlinRawDataset
     FSURawDataset
 
 Subclassing RawDatasetBase
 ==========================
-
 """
 from abc import abstractmethod
 from contextlib import suppress
@@ -100,9 +100,31 @@ class AbstractRawDataset(metaclass = MetaRawDataset):
         """ Experimental parameters and dataset metadata as a dictionary. """
         # This property could be generated from some metadata file
         return {k:getattr(self, k) for k in self.valid_metadata} 
+
+    def iterscan(self, scan, **kwargs):
+        """
+        Generator function of images as part of a scan, in 
+        time-delay order.
+
+        Parameters
+        ----------
+        scan : int
+            Scan from which to yield the data.
+        kwargs
+            Keyword-arguments are passed to ``raw_data`` method.
+        
+        Yields
+        ------
+        data : `~numpy.ndarray`, ndim 2
+        """
+        if scan not in set(self.scans):
+            raise ValueError('There is no scan {} in available scans'.format(scan))
+        
+        for timedelay in self.time_points:
+            yield self.raw_data(timedelay = timedelay, scan = scan, **kwargs)
     
     @abstractmethod
-    def raw_data(self, timedelay, scan = 1, **kwargs):
+    def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs):
         """
         Returns an array of the image at a timedelay and scan.
         
@@ -112,6 +134,8 @@ class AbstractRawDataset(metaclass = MetaRawDataset):
             Acquisition time-delay.
         scan : int, optional
             Scan number. Default is 1.
+        bgr : bool, optional
+            If True (default), laser background is removed before being returned.
         
         Returns
         -------
