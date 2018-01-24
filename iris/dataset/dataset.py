@@ -10,7 +10,7 @@ import numpy as np
 from cached_property import cached_property
 from scipy.signal import detrend
 
-from npstreams import iaverage, ipipe, last, peek, pmap_unordered
+from npstreams import average, peek, pmap_unordered
 from skued import electron_wavelength
 from skued.baseline import baseline_dt, dt_max_level
 from skued.image import azimuthal_average, ialign
@@ -21,8 +21,9 @@ from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 def _raw_combine(raw, valid_scans, align, timedelay):
     order = list(raw.time_points).index(timedelay)
     images = map(partial(raw.raw_data, timedelay), valid_scans)
-    pipe = iaverage(ialign(images)) if align else iaverage(images)
-    return order, last(pipe)
+    if align:
+        images = ialign(images)
+    return order, average(images)
 
 class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     """
