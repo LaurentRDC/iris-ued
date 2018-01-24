@@ -39,12 +39,12 @@ class MerlinRawDataset(AbstractRawDataset):
         self.scans          = sorted(map(int, scans_str))
 
     @cached_property
-    def probe_off(self):
+    def background(self):
         """ Average of all ``probe off`` pictures. """
         images = iglob(join(self.source, 'probe_off', 'probe_off*.mib'))
         return mean(map(mibread, images))
 
-    def raw_data(self, timedelay, scan = 1, *args, **kwargs):
+    def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs):
         """
         Returns an array of the image at a timedelay and scan.
         
@@ -54,6 +54,8 @@ class MerlinRawDataset(AbstractRawDataset):
             Acquisition time-delay.
         scan : int, optional
             Scan number. Default is 1.
+        bgr : bool, optional
+            If True (default), laser background is removed before being returned.
         
         Returns
         -------
@@ -61,8 +63,10 @@ class MerlinRawDataset(AbstractRawDataset):
         """
         time_str = '{:.3f}'.format(timedelay)
         fname = join(self.source, time_str, 'pumpon_{}ps_{}.mib'.format(time_str, scan))
-        pumpon = mibread(fname)
-        sub = pumpon - self.probe_off
-        sub[self.probe_off > pumpon] = 0
-        sub[sub > 4096] = 0 # dead pixels
+        im = mibread(fname)
+
+        if bgr:
+            im = np.subtract(im, self.probe)
+            im[np.greater(self.background, im)] = 0
+        
         return sub

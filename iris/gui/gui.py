@@ -18,8 +18,6 @@ from .beam_properties_dialog import ElectronBeamPropertiesDialog
 from .control_bar import ControlBar
 from .controller import ErrorAware, IrisController
 from .data_viewer import ProcessedDataViewer
-from .fluence_calculator import FluenceCalculatorDialog
-from .knife_edge_tool import KnifeEdgeToolDialog
 from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
@@ -147,18 +145,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         #################
         # Tools
-        self.fluence_calculator_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Fluence calculator', self)
-        self.fluence_calculator_action.triggered.connect(self.launch_fluence_calculator_tool)
-
-        self.knife_edge_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Knife-edge analysis', self)
-        self.knife_edge_action.triggered.connect(self.launch_knife_edge_tool)
 
         self.beam_properties_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Electron beam properties', self)
         self.beam_properties_action.triggered.connect(self.launch_beam_properties_dialog)
 
         self.tools_menu = self.menu_bar.addMenu('&Tools')
-        self.tools_menu.addAction(self.fluence_calculator_action)
-        self.tools_menu.addAction(self.knife_edge_action)
         self.tools_menu.addAction(self.beam_properties_action)
 
         ###################
@@ -283,18 +274,8 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         return SinglePictureViewer(path).exec_()
     
     @QtCore.pyqtSlot()
-    def launch_knife_edge_tool(self):
-        window = KnifeEdgeToolDialog(parent = self)
-        return window.exec_()
-    
-    @QtCore.pyqtSlot()
     def launch_beam_properties_dialog(self):
         window = ElectronBeamPropertiesDialog(parent = self)
-        return window.exec_()
-    
-    @QtCore.pyqtSlot()
-    def launch_fluence_calculator_tool(self):
-        window = FluenceCalculatorDialog(parent = self)
         return window.exec_()
     
     @QtCore.pyqtSlot()
