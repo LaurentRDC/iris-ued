@@ -4,8 +4,6 @@ from os.path import dirname, join
 from . import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 
-from .time_series_widget import TimeSeriesWidget
-
 class ProcessedDataViewer(QtGui.QWidget):
     """
     Widget displaying the result of processing from McGillRawDataset
@@ -16,8 +14,6 @@ class ProcessedDataViewer(QtGui.QWidget):
         super().__init__(*args, **kwargs)
 
         self.image_viewer = pg.ImageView(parent = self)
-        self.peak_dynamics_viewer = TimeSeriesWidget()
-        self.peak_dynamics_viewer.hide()
 
         self.peak_dynamics_region = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.peak_dynamics_region.addScaleHandle([1, 1], [0, 0])
@@ -31,21 +27,18 @@ class ProcessedDataViewer(QtGui.QWidget):
 
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.image_viewer)
-        self.layout.addWidget(self.peak_dynamics_viewer)
         self.setLayout(self.layout)
-    
-    @QtCore.pyqtSlot(bool)
-    def toggle_peak_dynamics(self, toggle):
-        if toggle: 
-            self.peak_dynamics_region.show()
-            self.peak_dynamics_viewer.show()
-        else: 
-            self.peak_dynamics_region.hide()
-            self.peak_dynamics_viewer.hide()
     
     @QtCore.pyqtSlot(object, object)
     def update_peak_dynamics(self, time_points, integrated_intensity):
         self.peak_dynamics_viewer.plot(time_points, integrated_intensity)
+
+    @QtCore.pyqtSlot(bool)
+    def toggle_peak_dynamics(self, toggle):
+        if toggle: 
+            self.peak_dynamics_region.show()
+        else: 
+            self.peak_dynamics_region.hide()
 
     @QtCore.pyqtSlot(object)
     def display(self, image):
@@ -59,7 +52,6 @@ class ProcessedDataViewer(QtGui.QWidget):
         """
         if image is None:
             self.image_viewer.clear()
-            self.peak_dynamics_viewer.clear()
             return
         # autoLevels = False ensures that the colormap stays the same
         # when 'sliding' through data. This makes it easier to compare
