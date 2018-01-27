@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 from .. import McGillRawDataset, AbstractRawDataset
 from ..meta import ExperimentalParameter
+import numpy as np
 import unittest
 
 class TestRawDataset(AbstractRawDataset):
 
-    test = ExperimentalParameter('test', int, default = 0)
+    test        = ExperimentalParameter('test', int, default = 0)
+    resolution  = ExperimentalParameter('resolution', tuple, (16,16))
 
-    def raw_data(self, timedelay, scan = 1): return None
+    def raw_data(self, timedelay, scan = 1): 
+        return np.zeros((self.resolution), dtype = np.uint8)
 
 class TestAbstractRawDataset(unittest.TestCase):
 
