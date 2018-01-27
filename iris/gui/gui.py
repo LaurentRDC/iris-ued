@@ -22,7 +22,7 @@ from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .angular_average_dialog import AngularAverageDialog
-from .resources_widget import ComputationalResourceWidget
+from .time_series_dialog import TimeSeriesDialog
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -46,6 +46,8 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
+        self.peak_dynamics_window = None
+
         self._controller_thread = QtCore.QThread(parent = self)
         self.controller = IrisController() # No parent so that we can moveToThread
         self.controller.moveToThread(self._controller_thread)
@@ -56,6 +58,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.merlin_raw_dataset_path_signal.connect(self.controller.load_raw_merlin_dataset)
 
         self.controls = ControlBar(parent = self)
+        self.controls.enable_peak_dynamics.connect(self.toggle_peak_dynamics)
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
         self.controls.averaged_data_request.connect(self.controller.display_averaged_data)
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
@@ -85,9 +88,8 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         self.processed_viewer = ProcessedDataViewer(parent = self)
         self.processed_viewer.peak_dynamics_roi_signal.connect(self.controller.time_series)
-        self.controls.enable_peak_dynamics.connect(self.processed_viewer.toggle_peak_dynamics)
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
-        self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
+        self.controls.enable_peak_dynamics.connect(self.processed_viewer.toggle_peak_dynamics)
 
         self.powder_viewer = PowderViewer(parent = self)
         self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
@@ -219,6 +221,21 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     def show_error_message(self, msg):
         self.error_dialog = QtGui.QErrorMessage(parent = self)
         self.error_dialog.showMessage(msg)
+    
+    @QtCore.pyqtSlot(bool)
+    def toggle_peak_dynamics(self, toggle):
+        if toggle:
+            self.peak_dynamics_window = TimeSeriesDialog()
+            self.controller.time_series_signal.connect(self.peak_dynamics_window.plot)
+
+            self.peak_dynamics_window.resize(0.50*self.size())
+            self.peak_dynamics_window.show()
+
+        if not toggle and self.peak_dynamics_window is not None:
+            self.controller.time_series_signal.disconnect(self.peak_dynamics_window.plot)
+            self.peak_dynamics_window.hide()
+            self.peak_dynamics_window = None
+
     
     @QtCore.pyqtSlot()
     def launch_processsing_dialog(self):

@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Siwick Research Group RawDataset class as an example use
-of AbstractRawDataset
+Interface to datasets acquired by the Siwick group on the Merlin system.
 """
 from glob import glob, iglob
-from os.path import join, basename, isdir
 from os import listdir
-from cached_property import cached_property
-from npstreams import mean
+from os.path import basename, isdir, join
 
-from ..merlin_images import mibread
+import numpy as np
+from cached_property import cached_property
+
+from npstreams import mean, pmap
 
 from . import AbstractRawDataset
+from skued import mibread
 
 class MerlinRawDataset(AbstractRawDataset):
     """
@@ -59,14 +60,14 @@ class MerlinRawDataset(AbstractRawDataset):
         
         Returns
         -------
-        arr : `~numpy.ndarray`, ndim 2
+        arr : `~numpy.ndarray`
         """
         time_str = '{:.3f}'.format(timedelay)
         fname = join(self.source, time_str, 'pumpon_{}ps_{}.mib'.format(time_str, scan))
         im = mibread(fname)
 
         if bgr:
-            im = np.subtract(im, self.probe)
+            im = np.subtract(im, self.background)
             im[np.greater(self.background, im)] = 0
         
-        return sub
+        return im

@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Laurent P. René de Cotret'
-__email__ = 'laurent.renedecotret@mail.mcgill.ca'
-__license__ = 'MIT'
-__version__ = '5.0' # TODO: automatic versioning?
+""" Dataset interactions """
 
-from .dataset import (AbstractRawDataset, McGillRawDataset, DiffractionDataset, 
-                      PowderDiffractionDataset, MerlinRawDataset)
-from .beam_properties import beam_properties
-from .knife_edge import cdf, knife_edge
-from .merlin_images import mibheader, mibread, imibread
+from .raw import AbstractRawDataset
+from .merlin import MerlinRawDataset
+from .mcgill import McGillRawDataset
+from .dataset import DiffractionDataset, PowderDiffractionDataset
