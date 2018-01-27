@@ -17,9 +17,15 @@ Subclassing RawDatasetBase
 ==========================
 """
 from abc import abstractmethod
-from contextlib import suppress
+from functools import partial
+
+import numpy as np
+
+from npstreams import average, pmap
+from skued import ialign
 
 from .meta import ExperimentalParameter, MetaRawDataset
+
 
 class AbstractRawDataset(metaclass = MetaRawDataset):
     """
@@ -146,3 +152,39 @@ class AbstractRawDataset(metaclass = MetaRawDataset):
         IOError : Filename is not associated with an image/does not exist.
         """ 
         pass
+    
+    def reduced(self, exclude_scans = tuple(), align = True, processes = 1, dtype = np.float):
+        """
+        Generator of reduced dataset.
+
+        Parameters
+        ----------
+        exclude_scans : iterable, optional
+            Iterable of ints. These scans will be skipped when reducing the dataset.
+        align : bool, optional
+            If True (default), raw images will be aligned on a per-scan basis.
+        processes : int or None, optional
+            Number of Processes to spawn for processing. 
+        dtype : numpy.dtype or None, optional
+            Patterns will be cast to ``dtype``. If None (default), ``dtype`` will be set to the same
+            data-type as the first pattern in ``patterns``.
+
+        Yields
+        ------
+        pattern : `~numpy.ndarray`, ndim 2
+        """
+        valid_scans = list(sorted(set(self.scans) - set(exclude_scans)))
+
+        yield from pmap(_raw_combine, self.time_points,
+                        args = (self, valid_scans, align), 
+                        processes = processes,
+                        ntotal = len(self.time_points))
+
+# For multiprocessing, the function to be mapped must be 
+# global, hence defined outside of the AbstractRawDataset class
+# TODO: include dtype in _raw_combine
+def _raw_combine(raw, valid_scans, align, timedelay):
+    images = map(partial(raw.raw_data, timedelay), valid_scans)
+    if align:
+        images = ialign(images)
+    return average(images)
