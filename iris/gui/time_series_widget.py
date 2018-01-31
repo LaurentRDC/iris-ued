@@ -38,10 +38,12 @@ class TimeSeriesWidget(QtGui.QWidget):
                                       title = 'Diffraction time-series', 
                                       labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
 
+        self.plot_widget.getPlotItem().showGrid(x = True, y = True)
+
         # Internal state on whether or not to 'connect the dots'
         self._time_series_connect = False
 
-        self._symbol_size = 4
+        self._symbol_size = 5
 
         # Internal memory on last time-series info
         self._last_times = None
@@ -50,9 +52,11 @@ class TimeSeriesWidget(QtGui.QWidget):
 
         # Shortcut for some controls provided by PyQtGraph
         self.horz_grid_widget = QtGui.QCheckBox('Show horizontal grid', self)
+        self.horz_grid_widget.setChecked(True)
         self.horz_grid_widget.toggled.connect(self.enable_horz_grid)
         
         self.vert_grid_widget = QtGui.QCheckBox('Show vertical grid', self)
+        self.vert_grid_widget.setChecked(True)
         self.vert_grid_widget.toggled.connect(self.enable_vert_grid)
 
         self.connect_widget = QtGui.QCheckBox('Connect time-series', self)
@@ -82,15 +86,15 @@ class TimeSeriesWidget(QtGui.QWidget):
         symbol_specs = QtGui.QFormLayout()
         symbol_specs.setFormAlignment(QtCore.Qt.AlignCenter)
         symbol_specs.addRow('Symbol size: ', self.symbol_size_widget)
-        symbol_specs.addWidget(self.connect_widget)
-        
-        self.controls = QtGui.QHBoxLayout()
+
+        self.controls = QtGui.QVBoxLayout()
         self.controls.addLayout(grid_btns)
         self.controls.addLayout(log_modes)
+        self.controls.addWidget(self.connect_widget)
         self.controls.addLayout(symbol_specs)
         self.controls.addStretch()
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtGui.QHBoxLayout()
         layout.addWidget(self.plot_widget)
         layout.addLayout(self.controls)
         self.setLayout(layout)
