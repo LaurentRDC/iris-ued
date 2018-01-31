@@ -2,9 +2,12 @@ from collections.abc import Iterable
 from os.path import dirname, join
 
 from . import pyqtgraph as pg
-from pyqtgraph import QtCore, QtGui
 
-class ProcessedDataViewer(QtGui.QWidget):
+from PyQt5 import QtCore, QtWidgets
+
+from .time_series_widget import TimeSeriesWidget
+
+class ProcessedDataViewer(QtWidgets.QWidget):
     """
     Widget displaying the result of processing from McGillRawDataset
     """
@@ -14,24 +17,25 @@ class ProcessedDataViewer(QtGui.QWidget):
         super().__init__(*args, **kwargs)
 
         self.image_viewer = pg.ImageView(parent = self)
+        self.time_series_widget = TimeSeriesWidget(parent = self)
 
         self.peak_dynamics_region = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
         self.peak_dynamics_region.addScaleHandle([1, 1], [0, 0])
         self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
-        self.peak_dynamics_region.sigRegionChanged.connect(
-            lambda roi: self.peak_dynamics_roi_signal.emit(self.peak_dynamics_region.parentBounds().toRect()))
-
+        self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
         self.image_viewer.getView().addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.hide()
+        self.time_series_widget.hide()
 
-        self.layout = QtGui.QVBoxLayout()
+        self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.image_viewer)
+        self.layout.addWidget(self.time_series_widget)
         self.setLayout(self.layout)
     
-    @QtCore.pyqtSlot(object, object)
-    def update_peak_dynamics(self, time_points, integrated_intensity):
-        self.peak_dynamics_viewer.plot(time_points, integrated_intensity)
+    @QtCore.pyqtSlot()
+    def update_peak_dynamics(self):
+        self.peak_dynamics_roi_signal.emit(self.peak_dynamics_region.parentBounds().toRect())
 
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics(self, toggle):
@@ -39,6 +43,8 @@ class ProcessedDataViewer(QtGui.QWidget):
             self.peak_dynamics_region.show()
         else: 
             self.peak_dynamics_region.hide()
+        
+        self.time_series_widget.setVisible(toggle)
 
     @QtCore.pyqtSlot(object)
     def display(self, image):
@@ -58,3 +64,12 @@ class ProcessedDataViewer(QtGui.QWidget):
         # data at different time points.
         # Similarly for autoRange = False
         self.image_viewer.setImage(image, autoLevels = False, autoRange = False)
+        self.update_peak_dynamics()
+
+    @QtCore.pyqtSlot(object, object)
+    def display_peak_dynamics(self, times, intensities):
+        """ 
+        Display the time series associated with the integral between the bounds 
+        of the ROI
+        """
+        self.time_series_widget.plot(times, intensities)

@@ -478,7 +478,8 @@ class PowderDiffractionDataset(DiffractionDataset):
     def scattering_angle(self):
         """ Array of scattering angle :math:`2 \Theta` """
         # TODO: cache
-        return np.arctan(self.px_radius * self.pixel_width / self.camera_distance)
+        return self.px_radius
+        #return np.arctan(self.px_radius * self.pixel_width / self.camera_length)
 
     @property
     def scattering_vector(self):
@@ -609,22 +610,24 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         return out
     
-    def powder_time_series(self, qmin, qmax, bgr = False, relative = False, out = None):
+    def powder_time_series(self, rmin, rmax, bgr = False, relative = False, units = 'pixels', out = None):
         """
-        Average intensity in a scattering angle range, over time.
-        Diffracted intensity is integrated in the closed interval [qmin, qmax]
+        Average intensity over time.
+        Diffracted intensity is integrated in the closed interval [rmin, rmax]
 
         Parameters
         ----------
-        qmin : float
+        rmin : float
             Lower scattering vector bound [1/A]
-        qmax : float
+        rmax : float
             Higher scattering vector bound [1/A]. 
         bgr : bool, optional
             If True, background is removed. Default is False.
         relative : bool, optional
             If True, data is returned relative to the average of all diffraction patterns
             before photoexcitation.
+        units : str, {'pixels', 'momentum'}
+            Units of the bounds rmin and rmax.
         out : ndarray or None, optional
             1-D ndarray in which to store the results. The shape
             should be compatible with (len(time_points),)
@@ -634,7 +637,12 @@ class PowderDiffractionDataset(DiffractionDataset):
         out : ndarray, shape (N,)
             Average diffracted intensity over time.
         """
-        i_min, i_max = np.argmin(np.abs(qmin - self.scattering_vector)), np.argmin(np.abs(qmax - self.scattering_vector))
+        # In some cases, it is easier
+        if units not in {'pixels', 'momentum'}:
+            raise ValueError("``units`` must be either 'pixels' or 'momentum', not {}".format(units))
+        abscissa = self.px_radius if units == 'pixels' else self.scattering_vector
+        
+        i_min, i_max = np.argmin(np.abs(rmin - abscissa)), np.argmin(np.abs(rmax - abscissa))
         i_max += 1 # Python slices are semi-open by design, therefore i_max + 1 is used
         trace = np.array(self.powder_group['intensity'][:, i_min:i_max])
         if bgr :
