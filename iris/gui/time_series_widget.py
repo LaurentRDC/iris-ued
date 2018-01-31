@@ -73,26 +73,13 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.vert_log_widget = QtGui.QCheckBox('Vertical log mode', self)
         self.vert_log_widget.toggled.connect(self.enable_vert_log)
 
-        grid_btns = QtGui.QFormLayout()
-        grid_btns.setFormAlignment(QtCore.Qt.AlignCenter)
-        grid_btns.addWidget(self.horz_grid_widget)
-        grid_btns.addWidget(self.vert_grid_widget)
-
-        log_modes = QtGui.QFormLayout()
-        log_modes.setFormAlignment(QtCore.Qt.AlignCenter)
-        log_modes.addWidget(self.horz_log_widget)
-        log_modes.addWidget(self.vert_log_widget)
-
-        symbol_specs = QtGui.QFormLayout()
-        symbol_specs.setFormAlignment(QtCore.Qt.AlignCenter)
-        symbol_specs.addRow('Symbol size: ', self.symbol_size_widget)
-
-        self.controls = QtGui.QVBoxLayout()
-        self.controls.addLayout(grid_btns)
-        self.controls.addLayout(log_modes)
+        self.controls = QtGui.QFormLayout()
+        self.controls.addWidget(self.horz_grid_widget)
+        self.controls.addWidget(self.vert_grid_widget)
+        self.controls.addWidget(self.horz_log_widget)
+        self.controls.addWidget(self.vert_log_widget)
         self.controls.addWidget(self.connect_widget)
-        self.controls.addLayout(symbol_specs)
-        self.controls.addStretch()
+        self.controls.addRow('Symbol size: ', self.symbol_size_widget)
 
         layout = QtGui.QHBoxLayout()
         layout.addWidget(self.plot_widget)
