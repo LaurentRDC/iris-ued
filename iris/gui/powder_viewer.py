@@ -21,10 +21,6 @@ class PowderViewer(QtGui.QWidget):
     def __init__(self, *args, **kwargs):
         
         super().__init__(*args, **kwargs)
-
-        # Internal that stores whether time-series points should
-        # be connected or not
-        self._time_series_connect = False
                 
         self.powder_pattern_viewer = pg.PlotWidget(title = 'Azimuthally-averaged pattern(s)', 
                                                    labels = {'left': 'Intensity (counts)', 
