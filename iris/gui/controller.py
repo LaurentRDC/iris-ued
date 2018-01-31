@@ -130,7 +130,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         """ Emit a powder data signal with/out background """
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
-        self.powder_data_signal.emit(self.dataset.scattering_vector, 
+        self.powder_data_signal.emit(self.dataset.px_radius, 
                                      self.dataset.powder_data(timedelay = None, relative = self._relative_powder, bgr = self._bgr_powder))
     
     @QtCore.pyqtSlot(bool)
@@ -183,7 +183,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
     @QtCore.pyqtSlot(float, float)
     def powder_time_series(self, smin, smax):
-        time_series = self.dataset.powder_time_series(qmin = smin, qmax = smax, bgr = self._bgr_powder)
+        time_series = self.dataset.powder_time_series(rmin = smin, rmax = smax, bgr = self._bgr_powder, units = 'pixels')
         self.powder_time_series_signal.emit(self.dataset.time_points, time_series)
     
     @QtCore.pyqtSlot(object)
