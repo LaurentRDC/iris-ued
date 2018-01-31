@@ -23,6 +23,8 @@ class AngularAverageDialog(QtGui.QDialog):
         self.setWindowTitle('Promote to powder dataset')
         
         self.viewer = pg.ImageView(parent = self)
+        self.viewer.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
+                                  QtWidgets.QSizePolicy.MinimumExpanding)
         self.viewer.setImage(image)
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
         self.viewer.getView().addItem(self.center_finder)
