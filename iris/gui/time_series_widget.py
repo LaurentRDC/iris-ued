@@ -36,20 +36,23 @@ class TimeSeriesWidget(QtGui.QWidget):
 
         self.plot_widget = PlotWidget(parent = self,
                                       title = 'Diffraction time-series', 
-                                      labels = {'left': 'Intensity (a. u.)', 
+                                      labels = {'left'  : ('Intensity', 'a. u.'), 
                                                 'bottom': ('time', 'ps')})
 
         self.plot_widget.getPlotItem().showGrid(x = True, y = True)
 
         # Internal state on whether or not to 'connect the dots'
         self._time_series_connect = False
-
         self._symbol_size = 5
 
         # Internal memory on last time-series info
         self._last_times = None
         self._last_intensities = None
         self._refresh_signal.connect(self.plot)
+
+        self.flip_times_widget = QtGui.QCheckBox('(DEBUG) Reverse times', self)
+        self.flip_times_widget.setChecked(False)
+        self.flip_times_widget.toggled.connect(lambda _: self.refresh())
 
         # Shortcut for some controls provided by PyQtGraph
         self.horz_grid_widget = QtGui.QCheckBox('Show horizontal grid', self)
@@ -82,6 +85,7 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.controls.addWidget(self.vert_log_widget)
         self.controls.addWidget(self.connect_widget)
         self.controls.addWidget(self.symbol_size_widget)
+        self.controls.addWidget(self.flip_times_widget)
         self.controls.addStretch(1)
 
         layout = QtGui.QHBoxLayout()
@@ -95,6 +99,9 @@ class TimeSeriesWidget(QtGui.QWidget):
         self._last_times = np.asarray(time_points)
         self._last_intensities = np.asarray(intensity)
         self._last_intensities /= self._last_intensities.max()
+
+        if self.flip_times_widget.isChecked():
+            self._last_times = self._last_times[::-1]
 
         # Only compute the colors if number of time-points changes or first time
         pens, brushes = pens_and_brushes(len(time_points))
