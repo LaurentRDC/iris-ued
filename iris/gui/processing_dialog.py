@@ -107,7 +107,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.viewer.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
                                   QtWidgets.QSizePolicy.MinimumExpanding)
 
-        self.mask = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
+        self.mask = pg.ROI(pos = [0,0], size = [200,200], pen = pg.mkPen('r'))
         self.mask.addScaleHandle([1, 1], [0, 0])
         self.mask.addScaleHandle([0, 0], [1, 1])
         self.viewer.getView().addItem(self.mask)

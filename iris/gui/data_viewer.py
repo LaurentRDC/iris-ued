@@ -19,7 +19,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.image_viewer = pg.ImageView(parent = self)
         self.time_series_widget = TimeSeriesWidget(parent = self)
 
-        self.peak_dynamics_region = pg.ROI(pos = [800,800], size = [200,200], pen = pg.mkPen('r'))
+        self.peak_dynamics_region = pg.ROI(pos = [0,0], size = [200,200], pen = pg.mkPen('r'))
         self.peak_dynamics_region.addScaleHandle([1, 1], [0, 0])
         self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
