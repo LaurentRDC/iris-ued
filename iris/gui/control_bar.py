@@ -3,7 +3,7 @@ Control bar for all Iris's controls
 """
 from collections import Iterable
 from contextlib import suppress
-from pyqtgraph import QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
 try:
@@ -14,7 +14,7 @@ except ImportError:
 
 from pywt import Modes
 
-class ControlBar(QtGui.QWidget):
+class ControlBar(QtWidgets.QWidget):
     
     raw_data_request = QtCore.pyqtSignal(int, int)  # timedelay index, scan
     averaged_data_request = QtCore.pyqtSignal(int)  # timedelay index
@@ -47,7 +47,7 @@ class ControlBar(QtGui.QWidget):
         self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
         self.powder_diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_powder)
 
-        self.progress_bar = QtGui.QProgressBar(self)
+        self.progress_bar = QtWidgets.QProgressBar(self)
         if WITH_TASKBAR:
             self.win_progress_bar = QWinTaskbarProgress(self)
             self.win_progress_bar.setVisible(True)
@@ -58,11 +58,11 @@ class ControlBar(QtGui.QWidget):
         self.notes_editor = NotesEditor(parent = self)
         self.notes_editor.notes_updated.connect(self.notes_updated)
 
-        self.stack = QtGui.QTabWidget(parent = self)
+        self.stack = QtWidgets.QTabWidget(parent = self)
         self.stack.addTab(self.metadata_widget, 'Dataset metadata')
         self.stack.addTab(self.notes_editor, 'Dataset notes')
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.raw_dataset_controls)
         layout.addWidget(self.diffraction_dataset_controls)
         layout.addWidget(self.powder_diffraction_dataset_controls)
@@ -71,8 +71,8 @@ class ControlBar(QtGui.QWidget):
         self.setLayout(layout)
 
         for frame in (self.raw_dataset_controls, self.diffraction_dataset_controls, self.powder_diffraction_dataset_controls):
-            frame.setFrameShadow(QtGui.QFrame.Sunken)
-            frame.setFrameShape(QtGui.QFrame.Panel)
+            frame.setFrameShadow(QtWidgets.QFrame.Sunken)
+            frame.setFrameShape(QtWidgets.QFrame.Panel)
 
         self.setMaximumWidth(self.notes_editor.maximumWidth())
     
@@ -129,66 +129,70 @@ class ControlBar(QtGui.QWidget):
         shift = self.diffraction_dataset_controls.time_zero_shift_widget.value()
         self.time_zero_shift.emit(shift)
 
-class RawDatasetControl(QtGui.QFrame):
+class RawDatasetControl(QtWidgets.QFrame):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
         #############################
         # Navigating through raw data
-        self.td_label = QtGui.QLabel('Time-delay: ')
+        self.td_label = QtWidgets.QLabel('Time-delay: ')
         self.td_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.timedelay_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
+        self.timedelay_widget = QtWidgets.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.timedelay_widget.setMinimum(0)
         self.timedelay_widget.setTracking(False)
-        self.timedelay_widget.setTickPosition(QtGui.QSlider.TicksBelow)
+        self.timedelay_widget.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.timedelay_widget.setTickInterval(1)
         self.timedelay_widget.sliderMoved.connect(
             lambda pos: self.td_label.setText('Time-delay: {:.3f}ps'.format(self.time_points[pos])))
 
-        self.s_label = QtGui.QLabel('Scan: ')
+        self.s_label = QtWidgets.QLabel('Scan: ')
         self.s_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.scan_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
+        self.scan_widget = QtWidgets.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.scan_widget.setMinimum(0)
         self.scan_widget.setTracking(False)
-        self.scan_widget.setTickPosition(QtGui.QSlider.TicksBelow)
+        self.scan_widget.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.scan_widget.setTickInterval(1)
         self.scan_widget.sliderMoved.connect(
             lambda pos: self.s_label.setText('Scan: {:d}'.format(self.scans[pos])))
 
-        prev_timedelay_btn = QtGui.QPushButton('<', self)
+        prev_timedelay_btn = QtWidgets.QPushButton('<', self)
+        prev_timedelay_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         prev_timedelay_btn.clicked.connect(self.goto_prev_timedelay)
 
-        next_timedelay_btn = QtGui.QPushButton('>', self)
+        next_timedelay_btn = QtWidgets.QPushButton('>', self)
+        next_timedelay_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         next_timedelay_btn.clicked.connect(self.goto_next_timedelay)
 
-        prev_scan_btn = QtGui.QPushButton('<', self)
+        prev_scan_btn = QtWidgets.QPushButton('<', self)
+        prev_scan_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         prev_scan_btn.clicked.connect(self.goto_prev_scan)
 
-        next_scan_btn = QtGui.QPushButton('>', self)
+        next_scan_btn = QtWidgets.QPushButton('>', self)
+        next_scan_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         next_scan_btn.clicked.connect(self.goto_next_scan)
 
-        time_layout = QtGui.QHBoxLayout()
+        time_layout = QtWidgets.QHBoxLayout()
         time_layout.addWidget(self.td_label)
         time_layout.addWidget(self.timedelay_widget)
         time_layout.addWidget(prev_timedelay_btn)
         time_layout.addWidget(next_timedelay_btn)
 
-        scan_layout = QtGui.QHBoxLayout()
+        scan_layout = QtWidgets.QHBoxLayout()
         scan_layout.addWidget(self.s_label)
         scan_layout.addWidget(self.scan_widget)
         scan_layout.addWidget(prev_scan_btn)
         scan_layout.addWidget(next_scan_btn)
 
-        sliders = QtGui.QVBoxLayout()
+        sliders = QtWidgets.QVBoxLayout()
         sliders.addLayout(time_layout)
         sliders.addLayout(scan_layout)
 
-        title = QtGui.QLabel('<h2>Raw dataset controls<\h2>')
+        title = QtWidgets.QLabel('<h2>Raw dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(title)
         layout.addLayout(sliders)
         self.setLayout(layout)
@@ -229,7 +233,7 @@ class RawDatasetControl(QtGui.QFrame):
         self.scan_widget.triggerAction(1)
         self.scan_widget.setSliderDown(False)
 
-class DiffractionDatasetControl(QtGui.QFrame):
+class DiffractionDatasetControl(QtWidgets.QFrame):
 
     time_zero_shift = QtCore.pyqtSignal(float)
 
@@ -238,64 +242,68 @@ class DiffractionDatasetControl(QtGui.QFrame):
 
         ################################
         # Diffraction dataset navigation
-        self.td_label = QtGui.QLabel('Time-delay: ')
+        self.td_label = QtWidgets.QLabel('Time-delay: ')
         self.td_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.timedelay_widget = QtGui.QSlider(QtCore.Qt.Horizontal, parent = self)
+        self.timedelay_widget = QtWidgets.QSlider(QtCore.Qt.Horizontal, parent = self)
         self.timedelay_widget.setMinimum(0)
         self.timedelay_widget.setTracking(False)
-        self.timedelay_widget.setTickPosition(QtGui.QSlider.TicksBelow)
+        self.timedelay_widget.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.timedelay_widget.setTickInterval(1)
         self.timedelay_widget.sliderMoved.connect(
             lambda pos: self.td_label.setText('Time-delay: {:.3f}ps'.format(self.time_points[pos])))
 
         # Time-zero shift control
         # QDoubleSpinbox does not have a slot that sets the value without notifying everybody
-        self.time_zero_shift_widget = QtGui.QDoubleSpinBox(parent = self)
+        self.time_zero_shift_widget = QtWidgets.QDoubleSpinBox(parent = self)
         self.time_zero_shift_widget.setRange(-1000, 1000)
         self.time_zero_shift_widget.setDecimals(3)
         self.time_zero_shift_widget.setSingleStep(0.5)
         self.time_zero_shift_widget.setSuffix(' ps')
         self.time_zero_shift_widget.setValue(0.0)
 
-        self.clear_time_zero_shift_btn = QtGui.QPushButton('Clear time-zero shift', parent = self)
+        self.clear_time_zero_shift_btn = QtWidgets.QPushButton('Clear time-zero shift', parent = self)
 
-        prev_btn = QtGui.QPushButton('<', self)
+        prev_btn = QtWidgets.QPushButton('<', self)
+        prev_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         prev_btn.clicked.connect(self.goto_prev)
 
-        next_btn = QtGui.QPushButton('>', self)
+        next_btn = QtWidgets.QPushButton('>', self)
+        next_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         next_btn.clicked.connect(self.goto_next)
 
-        sliders = QtGui.QHBoxLayout()
+        sliders = QtWidgets.QHBoxLayout()
         sliders.addWidget(self.td_label)
         sliders.addWidget(self.timedelay_widget)
         sliders.addWidget(prev_btn)
         sliders.addWidget(next_btn)
 
-        self.show_pd_btn = QtGui.QPushButton('Show/hide peak dynamics', parent = self)
+        self.show_pd_btn = QtWidgets.QPushButton('Show/hide peak dynamics', parent = self)
+        self.show_pd_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.show_pd_btn.setCheckable(True)
         self.show_pd_btn.setChecked(False)
 
-        self.relative_btn = QtGui.QPushButton('show relative data (?)', parent = self)
+        self.relative_btn = QtWidgets.QPushButton('show relative data (?)', parent = self)
+        self.relative_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.relative_btn.setToolTip('Subtract pre-time-zero average from the data.')
         self.relative_btn.setCheckable(True)
         self.relative_btn.setChecked(False)
 
-        display_controls = QtGui.QGroupBox(title = 'Display options', parent = self)
-        display_controls_layout = QtGui.QHBoxLayout()
+        display_controls = QtWidgets.QGroupBox(title = 'Display options', parent = self)
+        display_controls_layout = QtWidgets.QHBoxLayout()
         display_controls_layout.addWidget(self.show_pd_btn)
         display_controls_layout.addWidget(self.relative_btn)
         display_controls.setLayout(display_controls_layout)
 
-        time_zero_shift_layout = QtGui.QHBoxLayout()
-        time_zero_shift_layout.addWidget(QtGui.QLabel('Time-zero shift: ', parent = self))
+        time_zero_shift_layout = QtWidgets.QHBoxLayout()
+        time_zero_shift_layout.addWidget(QtWidgets.QLabel('Time-zero shift: ', parent = self))
         time_zero_shift_layout.addWidget(self.time_zero_shift_widget)
         time_zero_shift_layout.addWidget(self.clear_time_zero_shift_btn)
 
-        title = QtGui.QLabel('<h2>Diffraction dataset controls<\h2>')
+        title = QtWidgets.QLabel('<h2>Diffraction dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(title)
         layout.addLayout(sliders)
         layout.addLayout(time_zero_shift_layout)
@@ -326,66 +334,69 @@ class DiffractionDatasetControl(QtGui.QFrame):
         self.timedelay_widget.triggerAction(1)
         self.timedelay_widget.setSliderDown(False)
 
-class PowderDiffractionDatasetControl(QtGui.QFrame):
+class PowderDiffractionDatasetControl(QtWidgets.QFrame):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         ######################
         # baseline computation
-        self.first_stage_cb = QtGui.QComboBox()
+        self.first_stage_cb = QtWidgets.QComboBox()
         self.first_stage_cb.addItems(ALL_FIRST_STAGE)
         if 'sym6' in ALL_FIRST_STAGE:
             self.first_stage_cb.setCurrentText('sym6')
 
-        self.wavelet_cb = QtGui.QComboBox()
+        self.wavelet_cb = QtWidgets.QComboBox()
         self.wavelet_cb.addItems(ALL_COMPLEX_WAV)
         if 'qshift3' in ALL_COMPLEX_WAV:
             self.wavelet_cb.setCurrentText('qshift3')
 
-        self.mode_cb = QtGui.QComboBox()
+        self.mode_cb = QtWidgets.QComboBox()
         self.mode_cb.addItems(Modes.modes)
         if 'smooth' in Modes.modes:
             self.mode_cb.setCurrentText('constant')
         
-        self.max_iter_widget = QtGui.QSpinBox()
+        self.max_iter_widget = QtWidgets.QSpinBox()
         self.max_iter_widget.setRange(0, 1000)
         self.max_iter_widget.setValue(100)
 
-        self.compute_baseline_btn = QtGui.QPushButton('Compute baseline', parent = self)
+        self.compute_baseline_btn = QtWidgets.QPushButton('Compute baseline', parent = self)
+        self.compute_baseline_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
-        self.baseline_removed_btn = QtGui.QPushButton('Show baseline-removed', parent = self)
+        self.baseline_removed_btn = QtWidgets.QPushButton('Show baseline-removed', parent = self)
+        self.baseline_removed_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.baseline_removed_btn.setCheckable(True)
         self.baseline_removed_btn.setChecked(False)
 
-        self.relative_btn = QtGui.QPushButton('Show relative', parent = self)
+        self.relative_btn = QtWidgets.QPushButton('Show relative', parent = self)
+        self.relative_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.relative_btn.setToolTip('Subtract pre-time-zero average from the data.')
         self.relative_btn.setCheckable(True)
         self.relative_btn.setChecked(False)
 
-        baseline_controls = QtGui.QFormLayout()
+        baseline_controls = QtWidgets.QFormLayout()
         baseline_controls.addRow('First stage wavelet: ', self.first_stage_cb)
         baseline_controls.addRow('Dual-tree wavelet: ', self.wavelet_cb)
         baseline_controls.addRow('Extensions mode: ', self.mode_cb)
         baseline_controls.addRow('Iterations: ', self.max_iter_widget)
-        baseline_controls.addRow(self.compute_baseline_btn)
+        baseline_controls.addWidget(self.compute_baseline_btn)
 
-        baseline_computation = QtGui.QGroupBox(title = 'Baseline parameters', parent = self)
+        baseline_computation = QtWidgets.QGroupBox(title = 'Baseline parameters', parent = self)
         baseline_computation.setLayout(baseline_controls)
 
-        display_controls = QtGui.QGroupBox(title = 'Display options', parent = self)
-        display_controls_layout = QtGui.QHBoxLayout()
+        display_controls = QtWidgets.QGroupBox(title = 'Display options', parent = self)
+        display_controls_layout = QtWidgets.QHBoxLayout()
         display_controls_layout.addWidget(self.baseline_removed_btn)
         display_controls_layout.addWidget(self.relative_btn)
         display_controls.setLayout(display_controls_layout)
 
         # TODO: add callback and progressbar for computing the baseline?
 
-        title = QtGui.QLabel('<h2>Powder dataset controls<\h2>')
+        title = QtWidgets.QLabel('<h2>Powder dataset controls<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(title)
         layout.addWidget(baseline_computation)
         layout.addWidget(display_controls)
@@ -401,22 +412,22 @@ class PowderDiffractionDatasetControl(QtGui.QFrame):
                 'level': None,
                 'callback': lambda : self.baseline_removed_btn.setChecked(True)}
 
-class MetadataWidget(QtGui.QWidget):
+class MetadataWidget(QtWidgets.QWidget):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        title = QtGui.QLabel('<h2>Dataset metadata<\h2>', parent = self)
+        title = QtWidgets.QLabel('<h2>Dataset metadata<\h2>', parent = self)
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
-        self.table = QtGui.QTableWidget(parent = self)
+        self.table = QtWidgets.QTableWidget(parent = self)
         self.table.setColumnCount(2)
         self.table.horizontalHeader().hide()
         self.table.verticalHeader().hide()
-        self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)   #no edit triggers, see QAbstractItemViews
+        self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)   #no edit triggers, see QAbstractItemViews
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(title)
         layout.addWidget(self.table)
         self.setLayout(layout)
@@ -432,34 +443,34 @@ class MetadataWidget(QtGui.QWidget):
                     key += ' (length)'
                     value = len(tuple(value))
 
-            self.table.setItem(row, 0, QtGui.QTableWidgetItem(key))
-            self.table.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
+            self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(key))
+            self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(value)))
         
         self.table.resizeColumnsToContents()
         self.table.horizontalHeader().setStretchLastSection(True)
 
-class NotesEditor(QtGui.QFrame):
+class NotesEditor(QtWidgets.QFrame):
 
     notes_updated = QtCore.pyqtSignal(str)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        title = QtGui.QLabel('<h2>Dataset notes and remarks<\h2>', parent = self)
+        title = QtWidgets.QLabel('<h2>Dataset notes and remarks<\h2>', parent = self)
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
-        update_btn = QtGui.QPushButton('Update notes', self)
+        update_btn = QtWidgets.QPushButton('Update notes', self)
         update_btn.clicked.connect(self.update_notes)
 
-        self.editor = QtGui.QTextEdit(parent = self)
+        self.editor = QtWidgets.QTextEdit(parent = self)
 
         # Set editor size such that 60 characters will fit
         font_info = QtGui.QFontInfo(self.editor.currentFont())
         self.editor.setMaximumWidth(40*font_info.pixelSize())
-        self.editor.setLineWrapMode(QtGui.QTextEdit.WidgetWidth)  # widget width
+        self.editor.setLineWrapMode(QtWidgets.QTextEdit.WidgetWidth)  # widget width
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(title)
         layout.addWidget(self.editor)
         layout.addWidget(update_btn)
