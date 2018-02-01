@@ -36,7 +36,8 @@ class TimeSeriesWidget(QtGui.QWidget):
 
         self.plot_widget = PlotWidget(parent = self,
                                       title = 'Diffraction time-series', 
-                                      labels = {'left': 'Intensity (a. u.)', 'bottom': ('time', 'ps')})
+                                      labels = {'left': 'Intensity (a. u.)', 
+                                                'bottom': ('time', 'ps')})
 
         self.plot_widget.getPlotItem().showGrid(x = True, y = True)
 
@@ -65,6 +66,7 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.symbol_size_widget = QtGui.QSpinBox(parent = self)
         self.symbol_size_widget.setRange(1, 25)
         self.symbol_size_widget.setValue(self._symbol_size)
+        self.symbol_size_widget.setPrefix('Symbol size: ')
         self.symbol_size_widget.valueChanged.connect(self.set_symbol_size)
 
         self.horz_log_widget = QtGui.QCheckBox('Horizontal log mode', self)
@@ -73,13 +75,14 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.vert_log_widget = QtGui.QCheckBox('Vertical log mode', self)
         self.vert_log_widget.toggled.connect(self.enable_vert_log)
 
-        self.controls = QtGui.QFormLayout()
+        self.controls = QtGui.QVBoxLayout()
         self.controls.addWidget(self.horz_grid_widget)
         self.controls.addWidget(self.vert_grid_widget)
         self.controls.addWidget(self.horz_log_widget)
         self.controls.addWidget(self.vert_log_widget)
         self.controls.addWidget(self.connect_widget)
-        self.controls.addRow('Symbol size: ', self.symbol_size_widget)
+        self.controls.addWidget(self.symbol_size_widget)
+        self.controls.addStretch(1)
 
         layout = QtGui.QHBoxLayout()
         layout.addWidget(self.plot_widget)

@@ -10,7 +10,8 @@ import numpy as np
 from cached_property import cached_property
 from scipy.signal import detrend
 
-from npstreams import average, peek, pmap_unordered
+from npstreams import average, peek, pmap_unordered, last
+from npstreams.stats import _ivar
 from skued import electron_wavelength
 from skued.baseline import baseline_dt, dt_max_level
 from skued.image import azimuthal_average, ialign
@@ -18,19 +19,61 @@ from skued.image import azimuthal_average, ialign
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
 
-def _raw_combine(raw, valid_scans, align, timedelay):
+def _raw_combine(raw, valid_scans, align, timedelay, errors):
     order = list(raw.time_points).index(timedelay)
     images = map(partial(raw.raw_data, timedelay), valid_scans)
     if align:
         images = ialign(images)
+
+    if errors:
+        return order, *avg_and_error(images)
     return order, average(images)
+
+def avg_and_error(arrays, axis = -1, ddof = 0, weights = None, ignore_nan = False):
+    """
+    Calculate the average and error in a stream conccurently.
+
+    Parameters
+    ----------
+    arrays : iterable of ndarrays
+        Arrays to be combined. This iterable can also a generator.
+    axis : int, optional
+        Reduction axis. Default is to combine the arrays in the stream as if 
+        they had been stacked along a new axis, then compute the standard error along this new axis.
+        If None, arrays are flattened. If `axis` is an int larger that
+        the number of dimensions in the arrays of the stream, standard error is computed
+        along the new axis.
+    ddof : int, optional
+        Means Delta Degrees of Freedom.  The divisor used in calculations
+        is ``N - ddof``, where ``N`` represents the number of elements.
+        By default `ddof` is one.
+    weights : iterable of ndarray, iterable of floats, or None, optional
+        Iterable of weights associated with the values in each item of `arrays`. 
+        Each value in an element of `arrays` contributes to the standard error 
+        according to its associated weight. The weights array can either be a float
+        or an array of the same shape as any element of `arrays`. If weights=None, 
+        then all data in each element of `arrays` are assumed to have a weight equal to one.
+    ignore_nan : bool, optional
+        If True, NaNs are set to zero weight. Default is propagation of NaNs.
+    
+    Returns
+    -------
+    avg : `~numpy.ndarray`
+        Weighted average. 
+    err : `~numpy.ndarray`
+        Weighted standard deviation.
+    """
+    avg, sq_avg, swgt = last(_ivar(arrays, axis, weights, ignore_nan))
+    std = np.sqrt((sq_avg - avg**2) * (swgt / (swgt - ddof)))
+    return avg, std
 
 class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     """
     Abstraction of an HDF5 file to represent diffraction datasets.
     """
     _diffraction_group_name = '/processed'
-    _exp_params_group_name = '/'
+    _error_group_name       = '/errors'
+    _exp_params_group_name  = '/'
 
     energy          = HDF5ExperimentalParameter('energy',          float, default = 90)       # keV
     pump_wavelength = HDF5ExperimentalParameter('pump_wavelength', int,   default = 800)      # nanometers
@@ -41,6 +84,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     scans           = HDF5ExperimentalParameter('scans',           tuple, default = (1,))
     camera_length   = HDF5ExperimentalParameter('camera_length',   float, default = 0.23)     # meters
     pixel_width     = HDF5ExperimentalParameter('pixel_width',     float, default = 14e-6)    # meters
+    aligned         = HDF5ExperimentalParameter('aligned',         bool,  default = False)
     notes           = HDF5ExperimentalParameter('notes',           str,   default = '')
 
     def __repr__(self):
@@ -145,7 +189,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     @classmethod
     def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
                  processes = 1, callback = None, align = True, ckwargs = dict(), 
-                 dtype = None, **kwargs):
+                 dtype = None, errors = False, **kwargs):
         """
         Create a DiffractionDataset from a subclass of AbstractRawDataset.
 
@@ -173,6 +217,8 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         dtype : dtype or None, optional
             Patterns will be cast to ``dtype``. If None (default), ``dtype`` will be set to the same
             data-type as the first pattern in ``patterns``.
+        errors : bool, optional
+            If True, error on the averaging is calculated.
         kwargs
             Keywords are passed to ``h5py.File`` constructor. 
             Default is file-mode 'x', which raises error if file already exists.
@@ -191,6 +237,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         valid_scans = tuple(set(raw.scans) - set(exclude_scans))
         metadata = raw.metadata.copy()
         metadata['scans'] = valid_scans
+        metadata['aligned'] = align
         ntimes = len(raw.time_points)
 
         kwargs.update({'ckwargs': ckwargs, 
@@ -208,10 +255,10 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         # ``reduced`` is an iterable of (index, image)
         # and therefore there is no need to hanve an ordered map
         reduced = pmap_unordered(_raw_combine, raw.time_points, 
-                                 args = (raw, valid_scans, align), 
+                                 args = (raw, valid_scans, align, errors), 
                                  processes = processes,
                                  ntotal = ntimes)
-        
+
         callback(0)
         for progress, (index, pattern) in enumerate(reduced, start = 1):
             stack[:,:,index] = pattern
@@ -391,6 +438,10 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     @property
     def diffraction_group(self):
         return self.require_group(name = self._diffraction_group_name)
+
+    @property
+    def error_group(self):
+        return self.require_group(name = self._error_group_name)
     
     @cached_property
     def compression_params(self):
