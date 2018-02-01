@@ -176,6 +176,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
 
             for index, pattern in enumerate(patterns):
                 dset.write_direct(pattern, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
+                file.flush()
                 callback(round(100 * index / np.size(time_points)))
 
         callback(100)
