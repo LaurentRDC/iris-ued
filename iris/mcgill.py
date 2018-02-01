@@ -13,7 +13,7 @@ import numpy as np
 from cached_property import cached_property
 from skimage.io import imread
 
-from npstreams import imean, last
+from npstreams import average
 
 from . import AbstractRawDataset
 
@@ -87,7 +87,7 @@ class McGillRawDataset(AbstractRawDataset):
     def background(self):
         """ Laser background """
         backgrounds = map(imread, iglob(join(self.source, 'background.*.pumpon.tif')))
-        return last(imean(backgrounds))
+        return average(backgrounds)
 
     def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs): 
         """
@@ -118,9 +118,9 @@ class McGillRawDataset(AbstractRawDataset):
         str_time = sign + '{0:.2f}'.format(float(timedelay))
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
 
-        im = imread(join(self.source, filename))
+        im = imread(join(self.source, filename)).astype(np.float)
         if bgr:
-            im = np.subtract(im, self.background)
-            im[np.greater(self.background, im)] = 0
+            im -= self.background
+            im[im < 0] = 0
         
         return im

@@ -1,10 +1,11 @@
-from pyqtgraph import QtGui, QtCore
+
+from PyQt5 import QtWidgets, QtCore
 import pyqtgraph as pg
 
 normalize_help = """ If checked, all powder patterns will be normalized to their overall intensity.
 This can get rid of systematic offsets between patterns at different time-delay. """
 
-class AngularAverageDialog(QtGui.QDialog):
+class AngularAverageDialog(QtWidgets.QDialog):
     """
     Modal dialog to promote a DiffractionDataset to a
     PowderDiffractionDataset
@@ -29,22 +30,22 @@ class AngularAverageDialog(QtGui.QDialog):
         self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
         self.viewer.getView().addItem(self.center_finder)
 
-        self.accept_btn = QtGui.QPushButton('Promote', self)
+        self.accept_btn = QtWidgets.QPushButton('Promote', self)
         self.accept_btn.clicked.connect(self.accept)
 
-        self.cancel_btn = QtGui.QPushButton('Cancel', self)
+        self.cancel_btn = QtWidgets.QPushButton('Cancel', self)
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setDefault(True)
 
 
-        self.min_angular_bound_widget = QtGui.QDoubleSpinBox(parent = self)
+        self.min_angular_bound_widget = QtWidgets.QDoubleSpinBox(parent = self)
         self.min_angular_bound_widget.setRange(0, 360)
         self.min_angular_bound_widget.setSingleStep(1)
         self.min_angular_bound_widget.setValue(0)
         self.min_angular_bound_widget.setSuffix(' deg')
         self.min_angular_bound_widget.setEnabled(False)
 
-        self.max_angular_bound_widget = QtGui.QDoubleSpinBox(parent = self)
+        self.max_angular_bound_widget = QtWidgets.QDoubleSpinBox(parent = self)
         self.max_angular_bound_widget.setRange(0, 360)
         self.max_angular_bound_widget.setSingleStep
         self.max_angular_bound_widget.setValue(360)
@@ -54,25 +55,25 @@ class AngularAverageDialog(QtGui.QDialog):
         self.min_angular_bound_widget.valueChanged.connect(self.max_angular_bound_widget.setMinimum)
         self.max_angular_bound_widget.valueChanged.connect(self.min_angular_bound_widget.setMaximum)
 
-        self.normalize_widget = QtGui.QCheckBox('Normalize (?)', self)
+        self.normalize_widget = QtWidgets.QCheckBox('Normalize (?)', self)
         self.normalize_widget.setChecked(False)
         self.normalize_widget.setToolTip(normalize_help)
 
-        angle_bounds_layout = QtGui.QFormLayout()
+        angle_bounds_layout = QtWidgets.QFormLayout()
         angle_bounds_layout.addRow('Min. angle: ', self.min_angular_bound_widget)
         angle_bounds_layout.addRow('Max. angle: ', self.max_angular_bound_widget)
 
-        params_layout = QtGui.QHBoxLayout()
+        params_layout = QtWidgets.QHBoxLayout()
         params_layout.addLayout(angle_bounds_layout)
         params_layout.addWidget(self.normalize_widget)
         params_layout.addStretch()
 
-        btns = QtGui.QHBoxLayout()
+        btns = QtWidgets.QHBoxLayout()
         btns.addWidget(self.accept_btn)
         btns.addWidget(self.cancel_btn)
 
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(QtGui.QLabel('Drag the circle onto a diffraction ring'))
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(QtWidgets.QLabel('Drag the circle onto a diffraction ring'))
         self.layout.addWidget(self.viewer)
         self.layout.addLayout(params_layout)
         self.layout.addLayout(btns)
