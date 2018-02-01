@@ -10,7 +10,7 @@ import numpy as np
 from cached_property import cached_property
 from scipy.signal import detrend
 
-from npstreams import average, peek, pmap_unordered, last
+from npstreams import average, peek, pmap, last
 from npstreams.stats import _ivar
 from skued import electron_wavelength
 from skued.baseline import baseline_dt, dt_max_level
@@ -19,15 +19,11 @@ from skued.image import azimuthal_average, ialign
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
 
-def _raw_combine(raw, valid_scans, align, timedelay, errors):
-    order = list(raw.time_points).index(timedelay)
+def _raw_combine(raw, valid_scans, align, invalid_mask, timedelay):
     images = map(partial(raw.raw_data, timedelay), valid_scans)
     if align:
-        images = ialign(images)
-
-    if errors:
-        return order, *avg_and_error(images)
-    return order, average(images)
+        images = ialign(images, mask = invalid_mask)
+    return average(images)
 
 def avg_and_error(arrays, axis = -1, ddof = 0, weights = None, ignore_nan = False):
     """
@@ -72,7 +68,6 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     Abstraction of an HDF5 file to represent diffraction datasets.
     """
     _diffraction_group_name = '/processed'
-    _error_group_name       = '/errors'
     _exp_params_group_name  = '/'
 
     energy          = HDF5ExperimentalParameter('energy',          float, default = 90)       # keV
@@ -189,7 +184,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     @classmethod
     def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
                  processes = 1, callback = None, align = True, ckwargs = dict(), 
-                 dtype = None, errors = False, **kwargs):
+                 dtype = None, **kwargs):
         """
         Create a DiffractionDataset from a subclass of AbstractRawDataset.
 
@@ -217,8 +212,6 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         dtype : dtype or None, optional
             Patterns will be cast to ``dtype``. If None (default), ``dtype`` will be set to the same
             data-type as the first pattern in ``patterns``.
-        errors : bool, optional
-            If True, error on the averaging is calculated.
         kwargs
             Keywords are passed to ``h5py.File`` constructor. 
             Default is file-mode 'x', which raises error if file already exists.
@@ -246,29 +239,19 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
                        'time_points': raw.time_points,
                        'dtype': dtype})
         
-        # It is much safer and faster to first store reduced data into
-        # a numpy array
-        # TODO: memmap?
-        stack = np.empty(shape = raw.resolution + (ntimes,), dtype = dtype)
+        invalid_mask = np.logical_not(valid_mask)
 
         # TODO: include dtype in _raw_combine
         # ``reduced`` is an iterable of (index, image)
         # and therefore there is no need to hanve an ordered map
-        reduced = pmap_unordered(_raw_combine, raw.time_points, 
-                                 args = (raw, valid_scans, align, errors), 
-                                 processes = processes,
-                                 ntotal = ntimes)
+        reduced = pmap(_raw_combine, raw.time_points, 
+                       args = (raw, valid_scans, align, invalid_mask), 
+                       processes = processes,
+                       ntotal = ntimes)
 
-        callback(0)
-        for progress, (index, pattern) in enumerate(reduced, start = 1):
-            stack[:,:,index] = pattern
-            callback(round(100 * progress / ntimes))  
-
-        # We squeeze all patterns because numpy.split() doesn't
-        # remove the 3rd dimensions (axis = 2)
-        patterns = np.split(stack, ntimes, axis = 2)
-        return cls.from_collection(patterns = map(np.squeeze, patterns), 
-                                   filename = filename, **kwargs)
+        return cls.from_collection(patterns = reduced, 
+                                   filename = filename, 
+                                   callback = callback, **kwargs)
         
     @property
     def metadata(self):
@@ -438,10 +421,6 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     @property
     def diffraction_group(self):
         return self.require_group(name = self._diffraction_group_name)
-
-    @property
-    def error_group(self):
-        return self.require_group(name = self._error_group_name)
     
     @cached_property
     def compression_params(self):

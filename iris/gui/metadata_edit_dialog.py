@@ -39,8 +39,8 @@ class MetadataEditDialog(QtGui.QDialog):
         self.temperature_widget.setValue(float(config['temperature']))
 
         self.fluence_widget = QtGui.QDoubleSpinBox(parent = self)
-        self.fluence_widget.setRange(0, 100)
-        self.fluence_widget.setDecimals(3)
+        self.fluence_widget.setRange(0, 1000)
+        self.fluence_widget.setDecimals(2)
         self.fluence_widget.setSingleStep(1)
         self.fluence_widget.setSuffix(' mJ/cm²')
         self.fluence_widget.setValue(float(config['fluence']))
@@ -69,10 +69,10 @@ class MetadataEditDialog(QtGui.QDialog):
     
     @QtCore.pyqtSlot()
     def accept(self):
-        params = {'camera_distance': float(self.camera_distance_widget.value()),
-                  'pixel_width': float(self.pixel_width_widget.value())*1e-6,
-                  'temperature': float(self.temperature_widget.value()),
-                  'fluence': float(self.fluence_widget.value())}
+        params = {'camera_length'   : float(self.camera_distance_widget.value()),
+                  'pixel_width'     : float(self.pixel_width_widget.value())*1e-6,
+                  'temperature'     : float(self.temperature_widget.value()),
+                  'fluence'         : float(self.fluence_widget.value())}
        
         self.updated_metadata_signal.emit(params)
         super().accept()
