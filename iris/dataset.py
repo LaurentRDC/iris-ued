@@ -2,6 +2,7 @@
 @author: Laurent P. Rene de Cotret
 """
 from functools import lru_cache, partial
+from itertools import repeat
 from math import sqrt
 from warnings import warn
 
@@ -10,20 +11,32 @@ import numpy as np
 from cached_property import cached_property
 from scipy.signal import detrend
 
-from npstreams import average, peek, pmap, last
+from npstreams import average, peek, pmap, itercopy
 from npstreams.stats import _ivar
-from skued import electron_wavelength
-from skued.baseline import baseline_dt, dt_max_level
-from skued.image import azimuthal_average, ialign
+from skued import electron_wavelength, baseline_dt, azimuthal_average, ialign
+from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
-
-def _raw_combine(raw, valid_scans, align, invalid_mask, timedelay):
+def _raw_combine(timedelay, raw, valid_scans, align, normalize, invalid_mask):
+    
     images = map(partial(raw.raw_data, timedelay), valid_scans)
     if align:
         images = ialign(images, mask = invalid_mask)
-    return average(images)
+    
+    if normalize:
+        valid = np.logical_not(invalid_mask)
+        images, images2 = itercopy(images, copies = 2)
+
+        # Compute the total intensity of first image
+        # This will be the reference point
+        first2, images2 = peek(images2)
+        initial_weight = np.sum(first2[valid])
+        weights = (initial_weight/np.sum(image[valid]) for image in images2)
+    else:
+        weights = repeat(1)
+
+    return average(images, weights = weights)
 
 def avg_and_error(arrays, axis = -1, ddof = 0, weights = None, ignore_nan = False):
     """
@@ -80,6 +93,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     camera_length   = HDF5ExperimentalParameter('camera_length',   float, default = 0.23)     # meters
     pixel_width     = HDF5ExperimentalParameter('pixel_width',     float, default = 14e-6)    # meters
     aligned         = HDF5ExperimentalParameter('aligned',         bool,  default = False)
+    normalized      = HDF5ExperimentalParameter('normalized',      bool,  default = False)
     notes           = HDF5ExperimentalParameter('notes',           str,   default = '')
 
     def __repr__(self):
@@ -136,7 +150,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         time_points = np.array(time_points).reshape(-1)
 
         if ckwargs is None:
-            ckwargs = {'compression': 'lzf', 'shuffle': True, 'fletcher32': True}
+            ckwargs = {'compression': 'lzf', 
+                       'shuffle'    : True, 
+                       'fletcher32' : True}
         ckwargs['chunks'] = True # For some reason, if no chunking, writing to disk is SLOW
 
         first, patterns = peek(patterns)
@@ -184,8 +200,8 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
 
     @classmethod
     def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
-                 processes = 1, callback = None, align = True, ckwargs = dict(), 
-                 dtype = None, **kwargs):
+                 processes = 1, callback = None, align = True, normalize = True, 
+                 ckwargs = dict(), dtype = None, **kwargs):
         """
         Create a DiffractionDataset from a subclass of AbstractRawDataset.
 
@@ -204,10 +220,11 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             Number of Processes to spawn for processing. Default is number of available
             CPU cores.
         callback : callable or None, optional
-            Callable that takes an int between 0 and 99. This can be used for progress update when
-            ``patterns`` is a generator and involves large computations.
+            Callable that takes an int between 0 and 99. This can be used for progress update.
         align : bool, optional
             If True (default), raw images will be aligned on a per-scan basis.
+        normalize : bool, optional
+            If True, images are normalized according to their total electron count.
         ckwargs : dict or None, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
         dtype : dtype or None, optional
@@ -227,26 +244,32 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         """
         if callback is None: 
             callback = lambda _: None
+        
+        if valid_mask is None:
+            valid_mask = np.ones(shape = raw.resolution, dtype = np.bool)
 
         valid_scans = tuple(set(raw.scans) - set(exclude_scans))
         metadata = raw.metadata.copy()
-        metadata['scans'] = valid_scans
-        metadata['aligned'] = align
+        metadata['scans']       = valid_scans
+        metadata['aligned']     = align
+        metadata['normalized']  = normalize
         ntimes = len(raw.time_points)
 
-        kwargs.update({'ckwargs': ckwargs, 
-                       'valid_mask': valid_mask, 
-                       'metadata': metadata,
+        kwargs.update({'ckwargs'    : ckwargs, 
+                       'valid_mask' : valid_mask, 
+                       'metadata'   : metadata,
                        'time_points': raw.time_points,
-                       'dtype': dtype})
+                       'dtype'      : dtype})
         
-        invalid_mask = np.logical_not(valid_mask)
-
         # TODO: include dtype in _raw_combine
-        # ``reduced`` is an iterable of (index, image)
-        # and therefore there is no need to hanve an ordered map
+        map_kwargs = {'raw'         : raw,
+                      'valid_scans' : valid_scans,
+                      'align'       : align,
+                      'normalize'   : normalize,
+                      'invalid_mask': np.logical_not(valid_mask)}
+
         reduced = pmap(_raw_combine, raw.time_points, 
-                       args = (raw, valid_scans, align, invalid_mask), 
+                       kwargs = map_kwargs,
                        processes = processes,
                        ntotal = ntimes)
 
@@ -265,8 +288,13 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     
     @cached_property
     def valid_mask(self):
-        """ Array that evaluates to True on valid pixels (i.e. not on beam-block, not hot pixels) """
+        """ Array that evaluates to True on valid pixels (i.e. not on beam-block, not hot pixels, etc.) """
         return np.array(self.experimental_parameters_group['valid_mask'])
+    
+    @cached_property
+    def invalid_mask(self):
+        """ Array that evaluates to True on invalid pixels (i.e. on beam-block, hot pixels, etc.) """
+        return np.logical_not(self.valid_mask)
 
     @property
     def time_points(self):
