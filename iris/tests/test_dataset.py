@@ -148,9 +148,23 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         self.assertEqual(self.dataset.niter, 0)
 
         self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', level = 1, mode = 'periodic')
+
         self.assertEqual(self.dataset.first_stage, 'sym6')
         self.assertEqual(self.dataset.wavelet, 'qshift3')
         self.assertEqual(self.dataset.level, 1)
+
+
+    def test_baseline_limits(self):
+        """ Test that the baseline is never less than 0, and the baseline-subtracted data is never negative. """
+
+        self.dataset.compute_baseline(first_stage = 'sym6', wavelet = 'qshift3', level = 1, mode = 'periodic')
+        
+        # Test that the baseline is always positive
+        baseline = self.dataset.powder_baseline(None)
+        self.assertTrue(np.all(np.greater_equal(baseline, 0)))
+
+        data_bgr = self.dataset.powder_data(None, bgr = True)
+        self.assertTrue(np.all(np.greater_equal(data_bgr, 0))) 
 
     def test_powder_data_retrieval(self):
         """ Test the size of the output from PowderDiffractionDataset.powder_data """

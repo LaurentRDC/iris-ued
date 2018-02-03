@@ -18,6 +18,10 @@ improve compression ratio. """
 alignment_help = """If checked, diffraction patterns will be aligned 
 using masked normalized cross-correlation. This can double the processing time. """
 
+normalization_help = """If checked, diffraction patterns are normalized so that the total
+intensity is equal for each picture at the same scan. For this to be effective, a good mask
+must be provided. """
+
 exclude_scans_help = """ Specify scans to exclude comma separated,
 e.g. 3,4, 5, 10, 32. """
 
@@ -117,6 +121,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.enable_compression_widget.toggled.connect(self.h5_file_widget.setEnabled)
 
         self.processes_widget = QtWidgets.QSpinBox(parent = self)
+        self.processes_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.processes_widget.setRange(1, cpu_count() - 1)
         self.processes_widget.setValue(min([cpu_count(), 7]))
 
@@ -124,7 +129,12 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.alignment_tf_widget.setToolTip(alignment_help)
         self.alignment_tf_widget.setChecked(False)
 
+        self.normalization_tf_widget = QtWidgets.QCheckBox('Normalize (?)', parent = self)
+        self.normalization_tf_widget.setToolTip(normalization_help)
+        self.normalization_tf_widget.setChecked(True)
+
         self.dtype_widget = QtWidgets.QComboBox(parent = self)
+        self.dtype_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.dtype_widget.addItems(DTYPE_NAMES.keys())
         self.dtype_widget.setCurrentText('Auto')
 
@@ -135,33 +145,39 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.exclude_scans_widget.setValidator(
             QtGui.QRegExpValidator(QtCore.QRegExp('^\d{1,4}(?:[,]\d{1,4})*$')))
 
-        self.save_btn = QtWidgets.QPushButton('Launch processing', self)
-        self.save_btn.clicked.connect(self.accept)
+        save_btn = QtWidgets.QPushButton('Launch processing', self)
+        save_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        save_btn.clicked.connect(self.accept)
 
-        self.cancel_btn = QtWidgets.QPushButton('Cancel', self)
-        self.cancel_btn.clicked.connect(self.reject)
-        self.cancel_btn.setDefault(True)
+        cancel_btn = QtWidgets.QPushButton('Cancel', self)
+        cancel_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        cancel_btn.clicked.connect(self.reject)
+        cancel_btn.setDefault(True)
 
         # Determine settings
         self.file_dialog = QtWidgets.QFileDialog(parent = self)
 
+        checks = QtWidgets.QHBoxLayout()
+        checks.addWidget(self.enable_compression_widget)
+        checks.addWidget(self.alignment_tf_widget)
+        checks.addWidget(self.normalization_tf_widget)
+
         processing_options = QtWidgets.QFormLayout()
-        processing_options.addRow(self.enable_compression_widget)
-        processing_options.addRow(self.alignment_tf_widget)
-        processing_options.addRow('Number of cores:',self.processes_widget)
+        processing_options.addRow('Number of cores:',   self.processes_widget)
         processing_options.addRow('Scans to exclude: ', self.exclude_scans_widget)
-        processing_options.addRow('Data type: ', self.dtype_widget)
+        processing_options.addRow('Data type: ',        self.dtype_widget)
 
         params_layout = QtWidgets.QHBoxLayout()
         params_layout.addLayout(processing_options)
         params_layout.addWidget(self.h5_file_widget)
 
         buttons = QtWidgets.QHBoxLayout()
-        buttons.addWidget(self.save_btn)
-        buttons.addWidget(self.cancel_btn)
+        buttons.addWidget(save_btn)
+        buttons.addWidget(cancel_btn)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.viewer)
+        self.layout.addLayout(checks)
         self.layout.addLayout(params_layout)
         self.layout.addLayout(buttons)
         self.setLayout(self.layout)
@@ -210,6 +226,7 @@ class ProcessingDialog(QtWidgets.QDialog):
                   'processes': self.processes_widget.value(),
                   'exclude_scans': exclude_scans,
                   'align': self.alignment_tf_widget.isChecked(),
+                  'normalize': self.normalization_tf_widget.isChecked(),
                   'dtype': dtype,
                   'ckwargs': ckwargs}
         
@@ -224,6 +241,6 @@ if __name__ == '__main__':
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet(load_stylesheet_pyqt5())
-    gui = ProcessingDialog(raw = McGillRawDataset('C:\\Diffraction data\\2017.08.12.15.47.VO2_50nm_29mJcm2_50Hz_18hrs'))
+    gui = ProcessingDialog(raw = McGillRawDataset('D:\\Diffraction data\\2017.08.12.15.47.VO2_50nm_29mJcm2_50Hz_18hrs'))
     gui.show()
     app.exec_()

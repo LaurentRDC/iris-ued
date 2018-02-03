@@ -97,6 +97,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # Internal state for display format of averaged and powder data
         self._relative_powder = False
         self._relative_averaged = False
+        self._timedelay_index = 0
 
         # array containers
         # Preallocation is important for arrays that change often. Then,
@@ -117,6 +118,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # loaded into memory, contrary to powder data
         # Source of 'cache miss' could be that _average_data_container is None,
         # new dataset loaded has different shape than before, etc.
+        self._timedelay_index = timedelay_index
         timedelay = self.dataset.time_points[timedelay_index]
         try:
             self._averaged_data_container[:] = self.dataset.diff_data(timedelay, relative = self._relative_averaged)
@@ -146,10 +148,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     @QtCore.pyqtSlot(bool)
     def enable_averaged_relative(self, enable):
         self._relative_averaged = enable
-
-        # update averaged data display if possible
-        if self._averaged_data_container is not None:
-            self.averaged_data_signal.emit(self._averaged_data_container)
+        self.display_averaged_data(self._timedelay_index)
     
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
@@ -191,6 +190,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         """" 
         Single-crystal time-series as the integrated diffracted intensity inside a rectangular ROI
         """
+        # Remember for updates
+        self._rect = rect
+
         #If coordinate is negative, return 0
         x1 = round(max(0, rect.topLeft().x() ))
         x2 = round(max(0, rect.x() + rect.width() ))
@@ -230,13 +232,19 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     @QtCore.pyqtSlot(float)
     def set_time_zero_shift(self, shift):
         """ Set the time-zero shift in picoseconds """
-        if shift != self.dataset.time_zero_shift:
-            self.dataset.shift_time_zero(shift)
-            self.dataset_metadata.emit(self.dataset.metadata)
+        if shift == self.dataset.time_zero_shift:
+            return
 
-            # If _powder_relative is True, the shift in time-zero will impact the display
-            if self._relative_powder:
-                self.display_powder_data()
+        self.dataset.shift_time_zero(shift)
+        self.dataset_metadata.emit(self.dataset.metadata)
+
+        # In case of a time-zero shift, diffraction time-series will
+        # be impacted
+        self.time_series(self._rect)
+
+        # If _powder_relative is True, the shift in time-zero will impact the display
+        if self._relative_powder:
+            self.display_powder_data()
     
     @QtCore.pyqtSlot(str)
     def load_raw_dataset(self, path):
