@@ -415,6 +415,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         
         if relative:
             out -= self.diff_eq()
+            out /= self.diff_eq()
 
         return out
     
@@ -734,7 +735,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         block = self.powder_data(timedelay = None, bgr = False)
         trend = block - detrend(block, axis = 1)
 
-        baseline_kwargs = {'array': block - trend, 
+        baseline_kwargs = {'array': block - trend,
                            'max_iter': max_iter, 'level': level, 
                            'first_stage': first_stage, 'wavelet': wavelet,
                            'axis': 1}
