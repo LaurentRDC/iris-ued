@@ -13,8 +13,8 @@ import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 from qdarkstyle import load_stylesheet_pyqt5
 from skimage.io import imread
+from skued import mibread
 
-from .beam_properties_dialog import ElectronBeamPropertiesDialog
 from .control_bar import ControlBar
 from .controller import ErrorAware, IrisController
 from .data_viewer import ProcessedDataViewer
@@ -144,15 +144,6 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.file_menu.addAction(self.close_raw_dataset_action)
         self.file_menu.addAction(self.close_dataset_action)
 
-        #################
-        # Tools
-
-        self.beam_properties_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Electron beam properties', self)
-        self.beam_properties_action.triggered.connect(self.launch_beam_properties_dialog)
-
-        self.tools_menu = self.menu_bar.addMenu('&Tools')
-        self.tools_menu.addAction(self.beam_properties_action)
-
         ###################
         # Operations on Diffraction Datasets
         # TODO: remove operations from control bar as they are added here
@@ -268,16 +259,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
     @QtCore.pyqtSlot()
     def load_single_picture(self):
-        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load diffraction picture', filter = '*.tif')[0]
+        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load diffraction picture', filter = 'Images (*.tif *.tiff *.mib)')[0]
         if not path:
             return
         
         return SinglePictureViewer(path).exec_()
-    
-    @QtCore.pyqtSlot()
-    def launch_beam_properties_dialog(self):
-        window = ElectronBeamPropertiesDialog(parent = self)
-        return window.exec_()
     
     @QtCore.pyqtSlot()
     def center_window(self):
@@ -291,8 +277,13 @@ class SinglePictureViewer(QtGui.QDialog):
     def __init__(self, fname, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        if fname.endswith(('.tif', '.tiff')):
+            im = imread(fname)
+        elif fname.endswith('.mib'):
+            im = mibread(fname)
+
         self.image_viewer = pg.ImageView(parent = self)
-        self.image_viewer.setImage(imread(fname))
+        self.image_viewer.setImage(im)
 
         layout = QtGui.QVBoxLayout()
         fname_label = QtGui.QLabel('Filename: ' + fname, parent = self)
