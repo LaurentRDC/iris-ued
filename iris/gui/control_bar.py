@@ -16,17 +16,17 @@ from pywt import Modes
 
 class ControlBar(QtWidgets.QWidget):
     
-    raw_data_request = QtCore.pyqtSignal(int, int)  # timedelay index, scan
-    averaged_data_request = QtCore.pyqtSignal(int)  # timedelay index
+    raw_data_request                = QtCore.pyqtSignal(int, int)  # timedelay index, scan
+    averaged_data_request           = QtCore.pyqtSignal(int)  # timedelay index
 
-    enable_peak_dynamics = QtCore.pyqtSignal(bool)
-    baseline_removed = QtCore.pyqtSignal(bool)
-    relative_powder = QtCore.pyqtSignal(bool)
-    relative_averaged = QtCore.pyqtSignal(bool)
+    enable_peak_dynamics            = QtCore.pyqtSignal(bool)
+    baseline_removed                = QtCore.pyqtSignal(bool)
+    relative_powder                 = QtCore.pyqtSignal(bool)
+    relative_averaged               = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
-    time_zero_shift = QtCore.pyqtSignal(float)
-    notes_updated = QtCore.pyqtSignal(str)
-    enable_connect_time_series = QtCore.pyqtSignal(bool)
+    time_zero_shift                 = QtCore.pyqtSignal(float)
+    notes_updated                   = QtCore.pyqtSignal(str)
+    enable_connect_time_series      = QtCore.pyqtSignal(bool)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
