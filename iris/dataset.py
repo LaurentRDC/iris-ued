@@ -250,17 +250,17 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             valid_mask = np.ones(shape = raw.resolution, dtype = np.bool)
 
         valid_scans = tuple(set(raw.scans) - set(exclude_scans))
+        
         metadata = raw.metadata.copy()
         metadata['scans']       = valid_scans
         metadata['aligned']     = align
         metadata['normalized']  = normalize
-        ntimes = len(raw.time_points)
 
         # Calculate a mask from a scan
         # to catch dead pixels, for example
         # TODO: implement different detectors with max ranges
         images = (raw.raw_data(timedelay, scan = valid_scans[0]) for timedelay in raw.time_points)
-        coll_mask = mask_from_collection(images, std_thresh = 5)
+        coll_mask = mask_from_collection(images, std_thresh = 3)
         invalid_mask = combine_masks(np.logical_not(valid_mask), coll_mask)
         valid_mask = np.logical_not(invalid_mask)
 
@@ -269,7 +269,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
                        'valid_mask' : valid_mask, 
                        'metadata'   : metadata,
                        'time_points': raw.time_points,
-                       'dtype'      : dtype})
+                       'dtype'      : dtype,
+                       'callback'   : callback,
+                       'filename'   : filename})
         
         map_kwargs = {'raw'         : raw,
                       'valid_scans' : valid_scans,
@@ -280,11 +282,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         reduced = pmap(_raw_combine, raw.time_points, 
                        kwargs = map_kwargs,
                        processes = processes,
-                       ntotal = ntimes)
+                       ntotal = len(raw.time_points))
 
-        return cls.from_collection(patterns = reduced, 
-                                   filename = filename, 
-                                   callback = callback, **kwargs)
+        return cls.from_collection(patterns = reduced, **kwargs)
         
     @property
     def metadata(self):
