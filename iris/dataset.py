@@ -13,7 +13,8 @@ from scipy.signal import detrend
 
 from npstreams import average, peek, pmap, itercopy
 from npstreams.stats import _ivar
-from skued import electron_wavelength, baseline_dt, azimuthal_average, ialign
+from skued import (electron_wavelength, baseline_dt, azimuthal_average, ialign, 
+                   mask_from_collection, combine_masks)
 from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
@@ -34,7 +35,7 @@ def _raw_combine(timedelay, raw, valid_scans, align, normalize, invalid_mask):
         initial_weight = np.sum(first2[valid])
         weights = (initial_weight/np.sum(image[valid]) for image in images2)
     else:
-        weights = repeat(1)
+        weights = None
 
     return average(images, weights = weights)
 
@@ -255,13 +256,21 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         metadata['normalized']  = normalize
         ntimes = len(raw.time_points)
 
+        # Calculate a mask from a scan
+        # to catch dead pixels, for example
+        # TODO: implement different detectors with max ranges
+        images = (raw.raw_data(timedelay, scan = valid_scans[0]) for timedelay in raw.time_points)
+        coll_mask = mask_from_collection(images, std_thresh = 5)
+        invalid_mask = combine_masks(np.logical_not(valid_mask), coll_mask)
+        valid_mask = np.logical_not(invalid_mask)
+
+        # Assemble the metadata
         kwargs.update({'ckwargs'    : ckwargs, 
                        'valid_mask' : valid_mask, 
                        'metadata'   : metadata,
                        'time_points': raw.time_points,
                        'dtype'      : dtype})
         
-        # TODO: include dtype in _raw_combine
         map_kwargs = {'raw'         : raw,
                       'valid_scans' : valid_scans,
                       'align'       : align,
@@ -416,6 +425,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         if relative:
             out -= self.diff_eq()
             out /= self.diff_eq()
+            out[:] = np.nan_to_num(out, copy = False)
 
         return out
     
