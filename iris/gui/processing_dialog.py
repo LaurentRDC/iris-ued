@@ -8,22 +8,23 @@ from .. import McGillRawDataset
 
 fletcher32_help = """ Adds a checksum to each chunk to detect data corruption. 
 Attempts to read corrupted chunks will fail with an error. 
-No significant speed penalty """
+No significant speed penalty """.replace('\n', '')
 
 shuffle_help = """ Block-oriented compressors like GZIP or LZF work better
-when presented with runs of similar values. Enabling the
-shuffle filter rearranges the bytes in the chunk and may
-improve compression ratio. """
+when presented with runs of similar values. Enabling the 
+shuffle filter rearranges the bytes in the chunk and may 
+improve compression ratio. """.replace('\n', '')
 
 alignment_help = """If checked, diffraction patterns will be aligned 
-using masked normalized cross-correlation. This can double the processing time. """
+using masked normalized cross-correlation. 
+This can double the processing time. """ .replace('\n', '')
 
 normalization_help = """If checked, diffraction patterns are normalized so that the total
-intensity is equal for each picture at the same scan. For this to be effective, a good mask
-must be provided. """
+ intensity is equal for each picture at the same scan. For this to be effective, a good mask 
+must be provided. """ .replace('\n', '')
 
 exclude_scans_help = """ Specify scans to exclude comma separated,
-e.g. 3,4, 5, 10, 32. """
+e.g. 3,4, 5, 10, 32. """ .replace('\n', '')
 
 DTYPE_NAMES = {'Auto': None,
                '64-bit floats': np.float64,
@@ -37,6 +38,9 @@ class H5FileWidget(QtWidgets.QWidget):
     """ Widget specifying all HDF5 file properties """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.enable_compression_widget = QtWidgets.QCheckBox('Enable compression')
+        self.enable_compression_widget.setChecked(False)
 
         self.lzf_btn = QtWidgets.QRadioButton('LZF', self)
         self.lzf_btn.setChecked(True)
@@ -64,25 +68,105 @@ class H5FileWidget(QtWidgets.QWidget):
         self.shuffle_filter_widget.setToolTip(shuffle_help)
         self.shuffle_filter_widget.setChecked(True)
 
-        layout = QtWidgets.QFormLayout()
-        layout.addRow(self.filters)
-        layout.addRow('GZIP level: ', self.gzip_level_widget)
-        layout.addRow(self.fletcher32_widget)
-        layout.addRow(self.shuffle_filter_widget)
+        params_layout = QtWidgets.QFormLayout()
+        params_layout.addRow(self.filters)
+        params_layout.addRow('GZIP level: ', self.gzip_level_widget)
+        params_layout.addRow(self.fletcher32_widget)
+        params_layout.addRow(self.shuffle_filter_widget)
+
+        params_widget = QtWidgets.QWidget(parent = self)
+        params_widget.setLayout(params_layout)
+        params_widget.setEnabled(False)
+        self.enable_compression_widget.toggled.connect(params_widget.setEnabled)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.enable_compression_widget)
+        layout.addWidget(params_widget)
 
         self.setLayout(layout)
 
     def file_params(self):
         """ Returns a dictionary with HDF5 file parameters """
+        if not self.enable_compression_widget.isChecked():
+            return dict()
+        
         compression = 'lzf' if self.lzf_btn.isChecked() else 'gzip'
         fletcher32 = self.fletcher32_widget.isChecked()
         shuffle = self.shuffle_filter_widget.isChecked()
         
-        params = {'compression': compression, 'fletcher32': fletcher32, 'shuffle': shuffle}
+        params = {'compression': compression, 
+                  'fletcher32': fletcher32, 
+                  'shuffle': shuffle}
+
         if compression == 'gzip':
             params['compression_opts'] = self.gzip_level_widget.value()
 
         return params
+
+class DataTransformationsWidget(QtWidgets.QWidget):
+    """ Widgets specifying all data transformations, 
+    e.g. clipping, normalization, alignment, etc. """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.alignment_tf_widget = QtWidgets.QCheckBox('Perform alignment (?)', parent = self)
+        self.alignment_tf_widget.setToolTip(alignment_help)
+        self.alignment_tf_widget.setChecked(False)
+
+        self.normalization_tf_widget = QtWidgets.QCheckBox('Normalize (?)', parent = self)
+        self.normalization_tf_widget.setToolTip(normalization_help)
+        self.normalization_tf_widget.setChecked(True)
+
+        self.enable_clip_widget = QtWidgets.QCheckBox('Clip pixel values', parent = self)
+        self.enable_clip_widget.setChecked(True)
+
+        self.clip_min_widget = QtWidgets.QDoubleSpinBox(parent = self)
+        self.clip_min_widget.setMinimum(0.0)
+        self.clip_min_widget.setValue(0.0)
+
+        self.clip_max_widget = QtWidgets.QDoubleSpinBox(parent = self)
+        self.clip_max_widget.setMinimum(0)
+        self.clip_max_widget.setValue(30000)
+
+        # Make sure minimum is never larger than maximum
+        self.clip_min_widget.valueChanged.connect(self.clip_max_widget.setMinimum)
+        self.clip_max_widget.valueChanged.connect(self.clip_min_widget.setMaximum)
+
+        clip_layout = QtWidgets.QFormLayout()
+        clip_layout.addRow('Minimum:', self.clip_min_widget)
+        clip_layout.addRow('Maximum:', self.clip_max_widget)
+
+        clip_widget = QtWidgets.QGroupBox('Clipping limits', parent = self)
+        clip_widget.setLayout(clip_layout)
+        clip_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        self.enable_clip_widget.toggled.connect(clip_widget.setEnabled)
+
+        checks = QtWidgets.QFormLayout()
+        checks.addRow(self.alignment_tf_widget)
+        checks.addRow(self.normalization_tf_widget)
+        checks.addRow(self.enable_clip_widget)
+        checks.addRow(clip_widget)
+
+        #layout = QtWidgets.QVBoxLayout()
+        #layout.addLayout(checks)
+        #layout.addWidget(clip_widget)
+        self.setLayout(checks)
+    
+    def data_transformations(self):
+
+        params = dict()
+        params['align']     = self.alignment_tf_widget.isChecked()
+        params['normalize'] = self.normalization_tf_widget.isChecked()
+
+        if self.enable_clip_widget.isChecked:
+            params['clip'] = [self.clip_min_widget.value(), self.clip_max_widget.value()]
+        else:
+            params['clip'] = None
+        
+        return params
+
+
 
 class ProcessingDialog(QtWidgets.QDialog):
     """
@@ -99,8 +183,11 @@ class ProcessingDialog(QtWidgets.QDialog):
         super().__init__(**kwargs)
         self.setModal(True)
         self.setWindowTitle('Diffraction Dataset Processing')
+
         self.h5_file_widget = H5FileWidget(parent = self)
-        self.h5_file_widget.setEnabled(False)
+
+        self.data_transformations_widget = DataTransformationsWidget(parent = self)
+
         self.raw = raw
 
         image = self.raw.raw_data(timedelay = raw.time_points[0], 
@@ -116,22 +203,10 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.mask.addScaleHandle([0, 0], [1, 1])
         self.viewer.getView().addItem(self.mask)
 
-        self.enable_compression_widget = QtWidgets.QCheckBox('Enable compression')
-        self.enable_compression_widget.setChecked(False)
-        self.enable_compression_widget.toggled.connect(self.h5_file_widget.setEnabled)
-
         self.processes_widget = QtWidgets.QSpinBox(parent = self)
         self.processes_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.processes_widget.setRange(1, cpu_count() - 1)
         self.processes_widget.setValue(min([cpu_count(), 7]))
-
-        self.alignment_tf_widget = QtWidgets.QCheckBox('Perform alignment (?)', parent = self)
-        self.alignment_tf_widget.setToolTip(alignment_help)
-        self.alignment_tf_widget.setChecked(False)
-
-        self.normalization_tf_widget = QtWidgets.QCheckBox('Normalize (?)', parent = self)
-        self.normalization_tf_widget.setToolTip(normalization_help)
-        self.normalization_tf_widget.setChecked(True)
 
         self.dtype_widget = QtWidgets.QComboBox(parent = self)
         self.dtype_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
@@ -157,11 +232,6 @@ class ProcessingDialog(QtWidgets.QDialog):
         # Determine settings
         self.file_dialog = QtWidgets.QFileDialog(parent = self)
 
-        checks = QtWidgets.QHBoxLayout()
-        checks.addWidget(self.enable_compression_widget)
-        checks.addWidget(self.alignment_tf_widget)
-        checks.addWidget(self.normalization_tf_widget)
-
         processing_options = QtWidgets.QFormLayout()
         processing_options.addRow('Number of cores:',   self.processes_widget)
         processing_options.addRow('Scans to exclude: ', self.exclude_scans_widget)
@@ -169,6 +239,7 @@ class ProcessingDialog(QtWidgets.QDialog):
 
         params_layout = QtWidgets.QHBoxLayout()
         params_layout.addLayout(processing_options)
+        params_layout.addWidget(self.data_transformations_widget)
         params_layout.addWidget(self.h5_file_widget)
 
         buttons = QtWidgets.QHBoxLayout()
@@ -177,7 +248,6 @@ class ProcessingDialog(QtWidgets.QDialog):
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.viewer)
-        self.layout.addLayout(checks)
         self.layout.addLayout(params_layout)
         self.layout.addLayout(buttons)
         self.setLayout(self.layout)
@@ -201,11 +271,6 @@ class ProcessingDialog(QtWidgets.QDialog):
         if filename == '':
             return
 
-        # HDF5 compression kwargs
-        ckwargs = dict()
-        if self.enable_compression_widget.isChecked():
-            ckwargs = self.h5_file_widget.file_params()
-
         # Force data type
         dtype = DTYPE_NAMES[self.dtype_widget.currentText()]
         
@@ -221,14 +286,16 @@ class ProcessingDialog(QtWidgets.QDialog):
         
         # The arguments to the iris.processing.process function
         # more arguments will be added by controller
-        kwargs = {'filename':filename, 
-                  'valid_mask': valid_mask,
-                  'processes': self.processes_widget.value(),
+        kwargs = {'filename'     : filename, 
+                  'valid_mask'   : valid_mask,
+                  'processes'    : self.processes_widget.value(),
                   'exclude_scans': exclude_scans,
-                  'align': self.alignment_tf_widget.isChecked(),
-                  'normalize': self.normalization_tf_widget.isChecked(),
-                  'dtype': dtype,
-                  'ckwargs': ckwargs}
+                  'dtype'        : dtype}
+        
+        # Some parameters are from different widgets
+        # HDF5 compression kwargs
+        kwargs['ckwargs'] = self.h5_file_widget.file_params()
+        kwargs.update(self.data_transformations_widget.data_transformations())
         
         self.processing_parameters_signal.emit(kwargs)
         super().accept()
