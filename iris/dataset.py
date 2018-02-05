@@ -19,63 +19,6 @@ from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
-def _raw_combine(timedelay, raw, valid_scans, align, normalize, invalid_mask):
-    
-    images = map(partial(raw.raw_data, timedelay), valid_scans)
-    if align:
-        images = ialign(images, mask = invalid_mask)
-    
-    if normalize:
-        valid = np.logical_not(invalid_mask)
-        images, images2 = itercopy(images, copies = 2)
-
-        # Compute the total intensity of first image
-        # This will be the reference point
-        first2, images2 = peek(images2)
-        initial_weight = np.sum(first2[valid])
-        weights = (initial_weight/np.sum(image[valid]) for image in images2)
-    else:
-        weights = None
-
-    return average(images, weights = weights)
-
-def avg_and_error(arrays, axis = -1, ddof = 0, weights = None, ignore_nan = False):
-    """
-    Calculate the average and error in a stream conccurently.
-
-    Parameters
-    ----------
-    arrays : iterable of ndarrays
-        Arrays to be combined. This iterable can also a generator.
-    axis : int, optional
-        Reduction axis. Default is to combine the arrays in the stream as if 
-        they had been stacked along a new axis, then compute the standard error along this new axis.
-        If None, arrays are flattened. If `axis` is an int larger that
-        the number of dimensions in the arrays of the stream, standard error is computed
-        along the new axis.
-    ddof : int, optional
-        Means Delta Degrees of Freedom.  The divisor used in calculations
-        is ``N - ddof``, where ``N`` represents the number of elements.
-        By default `ddof` is one.
-    weights : iterable of ndarray, iterable of floats, or None, optional
-        Iterable of weights associated with the values in each item of `arrays`. 
-        Each value in an element of `arrays` contributes to the standard error 
-        according to its associated weight. The weights array can either be a float
-        or an array of the same shape as any element of `arrays`. If weights=None, 
-        then all data in each element of `arrays` are assumed to have a weight equal to one.
-    ignore_nan : bool, optional
-        If True, NaNs are set to zero weight. Default is propagation of NaNs.
-    
-    Returns
-    -------
-    avg : `~numpy.ndarray`
-        Weighted average. 
-    err : `~numpy.ndarray`
-        Weighted standard deviation.
-    """
-    avg, sq_avg, swgt = last(_ivar(arrays, axis, weights, ignore_nan))
-    std = np.sqrt((sq_avg - avg**2) * (swgt / (swgt - ddof)))
-    return avg, std
 
 class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     """
@@ -182,15 +125,18 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             mask = gp.create_dataset('valid_mask', data = valid_mask, dtype = np.bool)
 
             pgp = file.diffraction_group
-            dset = pgp.create_dataset(name = 'intensity', shape = resolution + (len(time_points), ), 
+            dset = pgp.create_dataset(name = 'intensity', 
+                                      shape = resolution + (len(time_points), ), 
                                       dtype = dtype, **ckwargs)
-            pgp.create_dataset(name = 'diff_eq', shape = resolution, dtype = dtype, fillvalue = 0.0, **ckwargs)
             
             # Making use of the H5DS dimension scales
             # http://docs.h5py.org/en/latest/high/dims.html
             dset.dims.create_scale(times, 'time-delay')
             dset.dims[2].attach_scale(times)
 
+            # At each iteration, we flush the changes to file
+            # If this is not done, data can be accumulated in memory (>5GB)
+            # until this loop is done.
             for index, pattern in enumerate(patterns):
                 dset.write_direct(pattern, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
                 file.flush()
@@ -202,7 +148,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     @classmethod
     def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
                  processes = 1, callback = None, align = True, normalize = True, 
-                 ckwargs = dict(), dtype = None, **kwargs):
+                 clip = None, ckwargs = dict(), dtype = None, **kwargs):
         """
         Create a DiffractionDataset from a subclass of AbstractRawDataset.
 
@@ -226,6 +172,8 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             If True (default), raw images will be aligned on a per-scan basis.
         normalize : bool, optional
             If True, images are normalized according to their total electron count.
+        clip : iterable or None, optional
+            If not None, all image are clipped to values between `min(clip)` and `max(clip)`.
         ckwargs : dict or None, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
         dtype : dtype or None, optional
@@ -274,6 +222,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
                        'filename'   : filename})
         
         map_kwargs = {'raw'         : raw,
+                      'clip'        : clip,
                       'valid_scans' : valid_scans,
                       'align'       : align,
                       'normalize'   : normalize,
@@ -474,6 +423,72 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         if dataset.compression_opts: #could be None
             ckwargs.update(dataset.compression_opts)
         return ckwargs
+
+def _raw_combine(timedelay, raw, valid_scans, align, normalize, clip, invalid_mask):
+    
+    images = map(partial(raw.raw_data, timedelay), valid_scans)
+    if clip:
+        images = map(partial(iclip, low = min(clip), high = max(clip)), images)
+
+    if align:
+        images = ialign(images, mask = invalid_mask)
+    
+    if normalize:
+        valid = np.logical_not(invalid_mask)
+        images, images2 = itercopy(images, copies = 2)
+
+        # Compute the total intensity of first image
+        # This will be the reference point
+        first2, images2 = peek(images2)
+        initial_weight = np.sum(first2[valid])
+        weights = (initial_weight/np.sum(image[valid]) for image in images2)
+    else:
+        weights = None
+
+    return average(images, weights = weights)
+
+def iclip(im, low, high):
+    """ Clip images in-place """
+    np.clip(im, low, high, out = im)
+    return im
+
+def avg_and_error(arrays, axis = -1, ddof = 0, weights = None, ignore_nan = False):
+    """
+    Calculate the average and error in a stream conccurently.
+
+    Parameters
+    ----------
+    arrays : iterable of ndarrays
+        Arrays to be combined. This iterable can also a generator.
+    axis : int, optional
+        Reduction axis. Default is to combine the arrays in the stream as if 
+        they had been stacked along a new axis, then compute the standard error along this new axis.
+        If None, arrays are flattened. If `axis` is an int larger that
+        the number of dimensions in the arrays of the stream, standard error is computed
+        along the new axis.
+    ddof : int, optional
+        Means Delta Degrees of Freedom.  The divisor used in calculations
+        is ``N - ddof``, where ``N`` represents the number of elements.
+        By default `ddof` is one.
+    weights : iterable of ndarray, iterable of floats, or None, optional
+        Iterable of weights associated with the values in each item of `arrays`. 
+        Each value in an element of `arrays` contributes to the standard error 
+        according to its associated weight. The weights array can either be a float
+        or an array of the same shape as any element of `arrays`. If weights=None, 
+        then all data in each element of `arrays` are assumed to have a weight equal to one.
+    ignore_nan : bool, optional
+        If True, NaNs are set to zero weight. Default is propagation of NaNs.
+    
+    Returns
+    -------
+    avg : `~numpy.ndarray`
+        Weighted average. 
+    err : `~numpy.ndarray`
+        Weighted standard deviation.
+    """
+    avg, sq_avg, swgt = last(_ivar(arrays, axis, weights, ignore_nan))
+    std = np.sqrt((sq_avg - avg**2) * (swgt / (swgt - ddof)))
+    return avg, std
 
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
