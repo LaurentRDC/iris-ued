@@ -122,11 +122,11 @@ class DataTransformationsWidget(QtWidgets.QWidget):
         self.enable_clip_widget.setChecked(True)
 
         self.clip_min_widget = QtWidgets.QDoubleSpinBox(parent = self)
-        self.clip_min_widget.setMinimum(0.0)
+        self.clip_min_widget.setRange(0, 2**32 - 1)
         self.clip_min_widget.setValue(0.0)
 
         self.clip_max_widget = QtWidgets.QDoubleSpinBox(parent = self)
-        self.clip_max_widget.setMinimum(0)
+        self.clip_max_widget.setRange(0, 2**32 - 1)
         self.clip_max_widget.setValue(30000)
 
         # Make sure minimum is never larger than maximum
@@ -166,7 +166,109 @@ class DataTransformationsWidget(QtWidgets.QWidget):
         
         return params
 
+class MaskCreator(QtWidgets.QWidget):
+    """ Widget allowing for creation of arbitrary masks """
+    def __init__(self, image, **kwargs):
+        super().__init__(**kwargs)
 
+        self.resolution = np.array(image.shape)
+
+        self.rect_masks = list() # list of pg.ROI objects
+        self.circ_masks = list()
+
+        self.viewer = pg.ImageView(parent = self)
+        self.viewer.setImage(image)
+        self.viewer.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
+                                  QtWidgets.QSizePolicy.MinimumExpanding)
+
+        add_rect_mask_btn = QtWidgets.QPushButton('Add rectangular mask', self)
+        add_rect_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        add_rect_mask_btn.clicked.connect(self.add_rect_mask)
+
+        add_circ_mask_btn = QtWidgets.QPushButton('Add circular mask', self)
+        add_circ_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        add_circ_mask_btn.clicked.connect(self.add_circ_mask)
+
+        preview_mask_btn = QtWidgets.QPushButton('Preview mask', self)
+        preview_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        preview_mask_btn.clicked.connect(self.show_preview_mask)
+
+        clear_masks_btn = QtWidgets.QPushButton('Clear all masks', self)
+        clear_masks_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        clear_masks_btn.clicked.connect(self.clear_masks)
+
+        btns = QtWidgets.QHBoxLayout()
+        btns.addWidget(add_circ_mask_btn)
+        btns.addWidget(add_rect_mask_btn)
+        btns.addWidget(preview_mask_btn)
+        btns.addWidget(clear_masks_btn)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addLayout(btns)
+        layout.addWidget(self.viewer)
+        self.setLayout(layout)
+
+    @QtCore.pyqtSlot()
+    def add_rect_mask(self):
+        new_roi = pg.RectROI(pos = self.resolution / 2, size = self.resolution / 10, pen = pg.mkPen('r', width = 4))
+        new_roi.addScaleHandle([1, 1], [0, 0])
+        new_roi.addScaleHandle([0, 0], [1, 1])
+        self.viewer.addItem(new_roi)
+        self.rect_masks.append(new_roi)
+    
+    @QtCore.pyqtSlot()
+    def add_circ_mask(self):
+        new_roi = pg.CircleROI(pos = self.resolution / 2, size = self.resolution / 10, pen = pg.mkPen('r', width = 4))
+        self.viewer.addItem(new_roi)
+        self.circ_masks.append(new_roi)
+    
+    @QtCore.pyqtSlot()
+    def show_preview_mask(self):
+        image = np.array(self.viewer.image)
+        mask = self.composite_mask()
+        image[mask] = 0.0
+
+        dialog = QtWidgets.QDialog(parent = self)
+        dialog.setModal(True)
+
+        view_widget = pg.ImageView(parent = dialog)
+        view_widget.setImage(image)
+
+        return dialog.exec_()
+    
+    @QtCore.pyqtSlot()
+    def clear_masks(self):
+        for roi in (self.rect_masks + self.circ_masks):
+            self.viewer.removeItem(roi)
+        self.rect_masks.clear()
+        self.circ_masks.clear()
+    
+    def composite_mask(self):
+        """ Returns composite mask where invalid pixels are marked as True """
+        mask = np.zeros(self.resolution, dtype = np.bool)
+
+        if len(self.circ_masks + self.rect_masks) == 0:
+            return mask 
+
+        # No need to compute xx, yy, and rr if there are no
+        # circular masks, hence the check for empty list
+        if self.circ_masks:
+            xx, yy = np.meshgrid(np.arange(0, mask.shape[0]), 
+                                 np.arange(0, mask.shape[1]))
+            rr = np.empty_like(xx)
+
+            for circ_mask in self.circ_masks:            
+                radius = circ_mask.size().x()/2
+                corner_x, corner_y = circ_mask.pos().x(), circ_mask.pos().y()
+                xc, yc = (round(corner_y + radius), round(corner_x + radius)) #Flip output since image viewer plots transpose...
+                rr = np.hypot(xx - xc, yy - yc)
+                mask[rr <= radius] = 1
+
+        for rect_mask in self.rect_masks:
+            (x_slice, y_slice), _ = rect_mask.getArraySlice(data = mask, img = self.viewer.getImageItem())
+            mask[x_slice, y_slice] = True
+        
+        return mask
 
 class ProcessingDialog(QtWidgets.QDialog):
     """
@@ -184,24 +286,10 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.setModal(True)
         self.setWindowTitle('Diffraction Dataset Processing')
 
+        image = raw.raw_data(timedelay = raw.time_points[0], scan = raw.scans[0], bgr = True)
+        self.mask_widget = MaskCreator(image, parent = self)
         self.h5_file_widget = H5FileWidget(parent = self)
-
         self.data_transformations_widget = DataTransformationsWidget(parent = self)
-
-        self.raw = raw
-
-        image = self.raw.raw_data(timedelay = raw.time_points[0], 
-                                  scan = raw.scans[0], bgr = True)
-
-        self.viewer = pg.ImageView(parent = self)
-        self.viewer.setImage(image)
-        self.viewer.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
-                                  QtWidgets.QSizePolicy.MinimumExpanding)
-
-        self.mask = pg.ROI(pos = [0,0], size = [200,200], pen = pg.mkPen('r'))
-        self.mask.addScaleHandle([1, 1], [0, 0])
-        self.mask.addScaleHandle([0, 0], [1, 1])
-        self.viewer.getView().addItem(self.mask)
 
         self.processes_widget = QtWidgets.QSpinBox(parent = self)
         self.processes_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
@@ -247,25 +335,13 @@ class ProcessingDialog(QtWidgets.QDialog):
         buttons.addWidget(cancel_btn)
 
         self.layout = QtWidgets.QVBoxLayout()
-        self.layout.addWidget(self.viewer)
+        self.layout.addWidget(self.mask_widget)
         self.layout.addLayout(params_layout)
         self.layout.addLayout(buttons)
         self.setLayout(self.layout)
     
     @QtCore.pyqtSlot()
     def accept(self):
-
-        # Beamblock rect
-        rect = self.mask.parentBounds().toRect()
-        #If coordinate is negative, return 0
-        x1 = round(max(0, rect.topLeft().x() ))
-        x2 = round(max(0, rect.x() + rect.width() ))
-        y1 = round(max(0, rect.topLeft().y() ))
-        y2 = round(max(0, rect.y() + rect.height() ))
-
-        # TODO: use self.mask.getArrayRegion
-        valid_mask = np.ones(self.raw.resolution, dtype = np.bool)
-        valid_mask[x1:x2, y1:y2] = False
 
         filename = self.file_dialog.getSaveFileName(filter = '*.hdf5')[0]
         if filename == '':
@@ -287,13 +363,13 @@ class ProcessingDialog(QtWidgets.QDialog):
         # The arguments to the iris.processing.process function
         # more arguments will be added by controller
         kwargs = {'filename'     : filename, 
-                  'valid_mask'   : valid_mask,
                   'processes'    : self.processes_widget.value(),
                   'exclude_scans': exclude_scans,
                   'dtype'        : dtype}
         
         # Some parameters are from different widgets
         # HDF5 compression kwargs
+        kwargs['valid_mask'] = np.logical_not(self.mask_widget.composite_mask())
         kwargs['ckwargs'] = self.h5_file_widget.file_params()
         kwargs.update(self.data_transformations_widget.data_transformations())
         
@@ -304,10 +380,10 @@ if __name__ == '__main__':
     
     from qdarkstyle import load_stylesheet_pyqt5
     import sys
-    from .. import McGillRawDataset
+    from .. import MerlinRawDataset
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet(load_stylesheet_pyqt5())
-    gui = ProcessingDialog(raw = McGillRawDataset('D:\\Diffraction data\\2017.08.12.15.47.VO2_50nm_29mJcm2_50Hz_18hrs'))
+    gui = ProcessingDialog(raw = MerlinRawDataset('D:\\Merlin data\\graphite-30mj-tds-180degflip'))
     gui.show()
     app.exec_()

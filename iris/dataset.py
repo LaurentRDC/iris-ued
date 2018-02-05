@@ -206,7 +206,6 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
 
         # Calculate a mask from a scan
         # to catch dead pixels, for example
-        # TODO: implement different detectors with max ranges
         images = (raw.raw_data(timedelay, scan = valid_scans[0]) for timedelay in raw.time_points)
         coll_mask = mask_from_collection(images, std_thresh = 3)
         invalid_mask = combine_masks(np.logical_not(valid_mask), coll_mask)
