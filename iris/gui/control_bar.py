@@ -262,6 +262,7 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         self.time_zero_shift_widget.setValue(0.0)
 
         self.clear_time_zero_shift_btn = QtWidgets.QPushButton('Clear time-zero shift', parent = self)
+        self.clear_time_zero_shift_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         prev_btn = QtWidgets.QPushButton('<', self)
         prev_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
@@ -461,6 +462,7 @@ class NotesEditor(QtWidgets.QFrame):
         title.setAlignment(QtCore.Qt.AlignCenter)
 
         update_btn = QtWidgets.QPushButton('Update notes', self)
+        update_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         update_btn.clicked.connect(self.update_notes)
 
         self.editor = QtWidgets.QTextEdit(parent = self)
@@ -473,7 +475,7 @@ class NotesEditor(QtWidgets.QFrame):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(title)
         layout.addWidget(self.editor)
-        layout.addWidget(update_btn)
+        layout.addWidget(update_btn, 1, QtCore.Qt.AlignHCenter)
         self.setLayout(layout)
         self.setMaximumWidth(self.editor.maximumWidth())
         self.resize(self.minimumSize())
