@@ -152,7 +152,8 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
-        info_dict.update({'callback': self.processing_progress_signal.emit, 'raw': self.raw_dataset})
+        info_dict.update({'callback': self.processing_progress_signal.emit, 
+                          'raw': self.raw_dataset})
 
         self.worker = WorkThread(function = process, kwargs = info_dict)
         self.worker.results_signal.connect(self.load_dataset)
