@@ -38,7 +38,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
     dataset_path_signal             = QtCore.pyqtSignal(str)
     single_picture_path_signal      = QtCore.pyqtSignal(str)
-    raw_dataset_path_signal         = QtCore.pyqtSignal(str)
+    legacy_raw_dataset_path_signal         = QtCore.pyqtSignal(str)
     merlin_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
     error_message_signal            = QtCore.pyqtSignal(str)
 
@@ -53,7 +53,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self._controller_thread.start()
 
         self.dataset_path_signal.connect(self.controller.load_dataset)
-        self.raw_dataset_path_signal.connect(self.controller.load_raw_dataset)
+        self.legacy_raw_dataset_path_signal.connect(self.controller.load_legacy_raw_dataset)
         self.merlin_raw_dataset_path_signal.connect(self.controller.load_raw_merlin_dataset)
 
         self.controls = ControlBar(parent = self)
@@ -112,10 +112,10 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         ###################
         # Actions
-        self.load_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load raw dataset', self)
-        self.load_raw_dataset_action.triggered.connect(self.load_raw_dataset)
+        self.load_legacy_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&legacy MCGILL', self)
+        self.load_legacy_raw_dataset_action.triggered.connect(self.load_legacy_raw_dataset)
 
-        self.load_merlin_raw_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load MERLIN raw dataset', self)
+        self.load_merlin_raw_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&MERLIN', self)
         self.load_merlin_raw_action.triggered.connect(self.load_merlin_raw_dataset)
 
         self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
@@ -136,8 +136,10 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controller.processed_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
 
         self.file_menu = self.menu_bar.addMenu('&File')
-        self.file_menu.addAction(self.load_raw_dataset_action)
-        self.file_menu.addAction(self.load_merlin_raw_action)
+        load_raw_submenu = self.file_menu.addMenu('Load raw dataset...')
+        load_raw_submenu.addAction(self.load_legacy_raw_dataset_action)
+        load_raw_submenu.addAction(self.load_merlin_raw_action)
+
         self.file_menu.addAction(self.load_dataset_action)
         self.file_menu.addAction(self.load_single_picture_action)
         self.file_menu.addSeparator()
@@ -243,9 +245,9 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         dialog.angular_average_signal.disconnect(self.controller.recompute_angular_average)
     
     @QtCore.pyqtSlot()
-    def load_raw_dataset(self):
+    def load_legacy_raw_dataset(self):
         path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
-        self.raw_dataset_path_signal.emit(path)
+        self.legacy_raw_dataset_path_signal.emit(path)
     
     @QtCore.pyqtSlot()
     def load_merlin_raw_dataset(self):
