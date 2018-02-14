@@ -210,6 +210,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         coll_mask = mask_from_collection(images, std_thresh = 3)
         invalid_mask = combine_masks(np.logical_not(valid_mask), coll_mask)
         valid_mask = np.logical_not(invalid_mask)
+        callback(1)
 
         # Assemble the metadata
         kwargs.update({'ckwargs'    : ckwargs, 

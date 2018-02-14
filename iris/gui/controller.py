@@ -248,7 +248,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             self.display_powder_data()
     
     @QtCore.pyqtSlot(str)
-    def load_raw_dataset(self, path):
+    def load_legacy_raw_dataset(self, path):
         if not path:
             return
 
