@@ -7,7 +7,7 @@ from itertools import repeat
 import numpy as np
 from numpy.random import random
 
-from .. import DiffractionDataset, McGillRawDataset, PowderDiffractionDataset
+from .. import DiffractionDataset, LegacyMcGillRawDataset, PowderDiffractionDataset
 
 np.random.seed(23)
 
@@ -18,28 +18,28 @@ class TestDiffractionDatasetCreation(unittest.TestCase):
     
     def test_from_raw_default(self):
         """ Test that DiffractionDataset.from_raw() works with default settigns """
-        raw = McGillRawDataset(os.path.join(os.path.dirname(__file__), 'raw_dataset_test'))
+        raw = LegacyMcGillRawDataset(os.path.join(os.path.dirname(__file__), 'legacy_raw_dataset_test'))
 
         with DiffractionDataset.from_raw(raw, filename = self.fname, mode = 'w') as dataset:
             self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
     
     def test_from_raw_alignment(self):
         """ Test that DiffractionDataset.from_raw(..., align = True) does not throw any errors """
-        raw = McGillRawDataset(os.path.join(os.path.dirname(__file__), 'raw_dataset_test'))
+        raw = LegacyMcGillRawDataset(os.path.join(os.path.dirname(__file__), 'legacy_raw_dataset_test'))
 
         with DiffractionDataset.from_raw(raw, filename = self.fname, align = True, mode = 'w') as dataset:
             self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
     
     def test_from_raw_multiprocess(self):
         """ Test that DiffractionDataset.from_raw(..., processes = 2) does not throw any errors """
-        raw = McGillRawDataset(os.path.join(os.path.dirname(__file__), 'raw_dataset_test'))
+        raw = LegacyMcGillRawDataset(os.path.join(os.path.dirname(__file__), 'legacy_raw_dataset_test'))
 
         with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, processes = 2, mode = 'w') as dataset:
             self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
 
     def test_from_raw_with_clipping(self):
         """ Test that DiffractionDataset.from_raw(..., clip = [0, 10]) works as intended """
-        raw = McGillRawDataset(os.path.join(os.path.dirname(__file__), 'raw_dataset_test'))
+        raw = LegacyMcGillRawDataset(os.path.join(os.path.dirname(__file__), 'legacy_raw_dataset_test'))
         
         with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, processes = 2, clip = [0, 10], mode = 'w') as dataset:
             # Check that images are never over clipped value
@@ -145,7 +145,7 @@ class TestPowderDiffractionDataset(unittest.TestCase):
                                                           time_points = range(5), 
                                                           metadata = self.metadata,
                                                           mode = 'w')
-        self.dataset = PowderDiffractionDataset.from_dataset(diff_dataset, center = (64, 64))
+        self.dataset = PowderDiffractionDataset.from_dataset(diff_dataset, center = (23, 45))
 
     def test_baseline_attributes(self):
         """ Test that the attributes related to baseline have correct defaults and are

@@ -780,8 +780,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.wavelet = wavelet
         self.niter = max_iter
     
-    def compute_angular_averages(self, center = None, normalized = True, angular_bounds = None, 
-                                 trim = True, callback = None):
+    def compute_angular_averages(self, center = None, normalized = False, angular_bounds = None, callback = None):
         """ 
         Compute the angular averages.
         
@@ -795,8 +794,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         angular_bounds : 2-tuple of float or None, optional
             Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis. 
             Angle bounds outside [0, 360) are mapped back to [0, 360).
-        trim : bool, optional
-            If True (default), leading and trailing zeroes due to pixel mask are trimmed.
         callback : callable or None, optional
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
@@ -826,6 +823,7 @@ class PowderDiffractionDataset(DiffractionDataset):
                                                center = self.center, 
                                                mask = np.logical_not(self.valid_mask), 
                                                angular_bounds = angular_bounds)
+            
             results.append((px_radius, avg))
             callback(int(100*index / len(self.time_points)))
         
