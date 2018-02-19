@@ -245,6 +245,7 @@ class MaskCreator(QtWidgets.QWidget):
     
     def composite_mask(self):
         """ Returns composite mask where invalid pixels are marked as True """
+        # Initially, all pixels are valid
         mask = np.zeros(self.resolution, dtype = np.bool)
 
         if len(self.circ_masks + self.rect_masks) == 0:

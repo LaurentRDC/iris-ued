@@ -10,7 +10,7 @@ import warnings
 import numpy as np
 from pyqtgraph import QtCore
 
-from .. import DiffractionDataset, PowderDiffractionDataset, McGillRawDataset, MerlinRawDataset
+from .. import DiffractionDataset, PowderDiffractionDataset, LegacyMcGillRawDataset, MerlinRawDataset, McGillRawDataset
 
 def error_aware(func):
     """
@@ -246,6 +246,19 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # If _powder_relative is True, the shift in time-zero will impact the display
         if self._relative_powder:
             self.display_powder_data()
+
+    @QtCore.pyqtSlot(str)
+    def load_mcgill_raw_dataset(self, path):
+        if not path:
+            return
+
+        self.close_raw_dataset()
+        self.raw_dataset = McGillRawDataset(path)
+        self.raw_dataset_loaded_signal.emit(True)
+        self.raw_dataset_metadata.emit({'time_points': self.raw_dataset.time_points,
+                                        'scans': self.raw_dataset.scans})
+        self.display_raw_data(timedelay_index = 0, 
+                              scan = min(self.raw_dataset.scans))
     
     @QtCore.pyqtSlot(str)
     def load_legacy_raw_dataset(self, path):
@@ -253,7 +266,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             return
 
         self.close_raw_dataset()
-        self.raw_dataset = McGillRawDataset(path)
+        self.raw_dataset = LegacyMcGillRawDataset(path)
         self.raw_dataset_loaded_signal.emit(True)
         self.raw_dataset_metadata.emit({'time_points': self.raw_dataset.time_points,
                                         'scans': self.raw_dataset.scans})

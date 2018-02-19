@@ -28,22 +28,21 @@ class MerlinRawDataset(AbstractRawDataset):
 
         # Filenames have the form: 
         #           'pumpon_21.000ps_5.mib
-        pumpon_filenames = glob(join(self.source, '{:.3f}'.format(self.time_points[0]), 'pumpon_*ps_*'))
+        pumpon_filenames = glob(join(self.source, '{:.3f}'.format(self.time_points[0]), 'pumpon_*ps_*.tif'))
         scans_str = [basename(name).split('_')[-1].split('.')[0] for name in pumpon_filenames]
 
-        self.fluence        = 15
-        self.pixel_width    = 55
-        self.exposure       = 1e-3
-        self.energy         = 90
-        self.resolution = diffread(pumpon_filenames[0]).shape
+        self.fluence     = 15
+        self.pixel_width = 55
+        self.exposure    = 1e-3
+        self.energy      = 90
+        self.resolution  = diffread(pumpon_filenames[0]).shape
 
-        self.scans          = sorted(map(int, scans_str))
+        self.scans       = sorted(map(int, scans_str))
 
     @cached_property
     def background(self):
         """ Average of all ``probe off`` pictures. """
-        images = iglob(join(self.source, 'probe_off', 'probe_off*'))
-        return mean(map(diffread, images))
+        return diffread(join(self.source, 'probe_off.tif'))
 
     def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs):
         """
@@ -64,7 +63,7 @@ class MerlinRawDataset(AbstractRawDataset):
         """
         time_str = '{:.3f}'.format(timedelay)
         fname = join(self.source, time_str, 'pumpon_{}ps_{}.tif'.format(time_str, scan))
-        im = mibread(fname)
+        im = diffread(fname)
 
         if bgr:
             im = np.subtract(im, self.background)

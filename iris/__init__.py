@@ -6,5 +6,5 @@ __version__ = '5.0'
 
 from .raw import AbstractRawDataset
 from .merlin import MerlinRawDataset
-from .mcgill import McGillRawDataset
+from .mcgill import McGillRawDataset, LegacyMcGillRawDataset
 from .dataset import DiffractionDataset, PowderDiffractionDataset

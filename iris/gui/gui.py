@@ -38,7 +38,8 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
     dataset_path_signal             = QtCore.pyqtSignal(str)
     single_picture_path_signal      = QtCore.pyqtSignal(str)
-    legacy_raw_dataset_path_signal         = QtCore.pyqtSignal(str)
+    raw_dataset_path_signal         = QtCore.pyqtSignal(str)
+    legacy_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
     merlin_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
     error_message_signal            = QtCore.pyqtSignal(str)
 
@@ -53,6 +54,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self._controller_thread.start()
 
         self.dataset_path_signal.connect(self.controller.load_dataset)
+        self.raw_dataset_path_signal.connect(self.controller.load_mcgill_raw_dataset)
         self.legacy_raw_dataset_path_signal.connect(self.controller.load_legacy_raw_dataset)
         self.merlin_raw_dataset_path_signal.connect(self.controller.load_raw_merlin_dataset)
 
@@ -112,6 +114,9 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         ###################
         # Actions
+        self.load_mcgill_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&MCGILL', self)
+        self.load_mcgill_raw_dataset_action.triggered.connect(self.load_mcgill_raw_dataset)
+
         self.load_legacy_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&legacy MCGILL', self)
         self.load_legacy_raw_dataset_action.triggered.connect(self.load_legacy_raw_dataset)
 
@@ -137,6 +142,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         self.file_menu = self.menu_bar.addMenu('&File')
         load_raw_submenu = self.file_menu.addMenu('Load raw dataset...')
+        load_raw_submenu.addAction(self.load_mcgill_raw_dataset_action)
         load_raw_submenu.addAction(self.load_legacy_raw_dataset_action)
         load_raw_submenu.addAction(self.load_merlin_raw_action)
 
@@ -248,6 +254,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     def load_legacy_raw_dataset(self):
         path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
         self.legacy_raw_dataset_path_signal.emit(path)
+    
+    @QtCore.pyqtSlot()
+    def load_mcgill_raw_dataset(self):
+        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
+        self.raw_dataset_path_signal.emit(path)
     
     @QtCore.pyqtSlot()
     def load_merlin_raw_dataset(self):
