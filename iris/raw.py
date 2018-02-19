@@ -80,10 +80,8 @@ class AbstractRawDataset(metaclass = MetaRawDataset):
         TypeError : if an item from the metadata has an unexpected type.
         """
         self.source = source
-
-        for k, v in metadata.items():
-            if k in self.valid_metadata:
-                setattr(self, k, v)
+        if metadata:
+            self.update_metadata(metadata)
     
     def __repr__(self):
         string = '< RawDataset object. '
@@ -100,6 +98,19 @@ class AbstractRawDataset(metaclass = MetaRawDataset):
         """ Raise any exception triggered within the runtime context. """
         # Perform cleanup operations here
         pass
+    
+    def update_metadata(self, metadata):
+        """
+        Update metadata from a dictionary. Only appropriate keys are used; irrelevant keys are ignored.
+
+        Parameters
+        ----------
+        metadata : dictionary
+            See ``AbstractRawDataset.valid_metadata`` for valid keys.
+        """
+        for k, v in metadata.items():
+            if k in self.valid_metadata:
+                setattr(self, k, v)
 
     @property
     def metadata(self):
