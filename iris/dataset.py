@@ -204,14 +204,6 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         metadata['aligned']     = align
         metadata['normalized']  = normalize
 
-        # Calculate a mask from a scan
-        # to catch dead pixels, for example
-        images = (raw.raw_data(timedelay, scan = valid_scans[0]) for timedelay in raw.time_points)
-        coll_mask = mask_from_collection(images, std_thresh = 3)
-        invalid_mask = combine_masks(np.logical_not(valid_mask), coll_mask)
-        valid_mask = np.logical_not(invalid_mask)
-        callback(1)
-
         # Assemble the metadata
         kwargs.update({'ckwargs'    : ckwargs, 
                        'valid_mask' : valid_mask, 
@@ -758,15 +750,15 @@ class PowderDiffractionDataset(DiffractionDataset):
             If None (default), maximum level is used.
         """
         block = self.powder_data(timedelay = None, bgr = False)
-        trend = block - detrend(block, axis = 1)
+        #trend = block - detrend(block, axis = 1)
 
-        baseline_kwargs = {'array': block - trend,
+        baseline_kwargs = {'array': block,
                            'max_iter': max_iter, 'level': level, 
                            'first_stage': first_stage, 'wavelet': wavelet,
                            'axis': 1}
         baseline_kwargs.update(**kwargs)
         
-        baseline = np.ascontiguousarray(trend + baseline_dt(**baseline_kwargs)) # In rare cases this wasn't C-contiguous
+        baseline = np.ascontiguousarray(baseline_dt(**baseline_kwargs)) # In rare cases this wasn't C-contiguous
         
         # The baseline dataset is guaranteed to exist after compte_angular_averages was called. 
         self.powder_group['baseline'].resize(baseline.shape) 
@@ -842,9 +834,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.powder_group['px_radius'].resize(px_radius.shape)
         self.powder_group['px_radius'].write_direct(px_radius)
         
-        self.powder_group['intensity'].dims.create_scale(self.powder_group['px_radius'], 'radius [px]')
-        self.powder_group['intensity'].dims[0].attach_scale(self.powder_group['px_radius'])
-        self.powder_group['intensity'].dims[1].attach_scale(self.experimental_parameters_group['time_points'])
+        #self.powder_group['intensity'].dims.create_scale(self.powder_group['px_radius'], 'radius [px]')
+        #self.powder_group['intensity'].dims[0].attach_scale(self.powder_group['px_radius'])
+        #self.powder_group['intensity'].dims[1].attach_scale(self.experimental_parameters_group['time_points'])
         
         self.powder_group['baseline'].resize(rintensity.shape)
         self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
