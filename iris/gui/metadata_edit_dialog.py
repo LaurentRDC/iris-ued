@@ -22,7 +22,7 @@ class MetadataEditDialog(QtGui.QDialog):
         self.camera_distance_widget.setDecimals(4)
         self.camera_distance_widget.setSingleStep(0.0001)
         self.camera_distance_widget.setSuffix(' m')
-        self.camera_distance_widget.setValue(float(config['camera_distance']))
+        self.camera_distance_widget.setValue(float(config['camera_length']))
 
         self.pixel_width_widget = QtGui.QDoubleSpinBox(parent = self)
         self.pixel_width_widget.setRange(0, 1000)
