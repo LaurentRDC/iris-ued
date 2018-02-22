@@ -56,14 +56,8 @@ class McGillRawDataset(AbstractRawDataset):
         metadata['time_points']     = eval(exp_params['time points'])
 
         return metadata
-
-    @cached_property
-    def background(self):
-        """ Laser background """
-        backgrounds = map(imread, iglob(join(self.source, 'laser_background*.tif')))
-        return average(backgrounds)[:,:,0]
     
-    def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs):
+    def raw_data(self, timedelay, scan = 1, **kwargs):
         """
         Returns an array of the image at a timedelay and scan. Pump-on background 
         is removed from the pattern before being returned.
@@ -74,8 +68,6 @@ class McGillRawDataset(AbstractRawDataset):
             Time-delay in picoseconds.
         scan : int, optional
             Scan number. 
-        bgr : bool, optional
-            If True (default), laser background is removed before being returned. 
         
         Returns
         -------
@@ -93,12 +85,7 @@ class McGillRawDataset(AbstractRawDataset):
         directory = join(self.source, 'scan {:04d}'.format(scan))
         fname = next(iglob(join(directory, 'pumpon_{:+010.3f}ps_*.tif'.format(timedelay))))
 
-        im = imread(fname).astype(np.float)[:,:,0]
-        #if bgr:
-        #    im -= self.background
-        #    im[im < 0] = 0
-        
-        return im
+        return imread(fname)
 
 class LegacyMcGillRawDataset(AbstractRawDataset):
     """

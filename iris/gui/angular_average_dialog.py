@@ -85,6 +85,11 @@ class AngularAverageDialog(QtWidgets.QDialog):
         radius = self.center_finder.size().x()/2
         center = (round(corner_y + radius), round(corner_x + radius)) #Flip output since image viewer plots transpose...
         
+        # In case the images a row-order, the image will be
+        # transposed with respect to what is expected.
+        if pg.getConfigOption('imageAxisOrder') == 'row-major':
+            center = tuple(reversed(center))
+
         params = {'center': center,
                   'angular_bounds': None,   #(self.min_angular_bound_widget.value(), self.max_angular_bound_widget.value()),
                   'normalized': self.normalize_widget.isChecked()}
