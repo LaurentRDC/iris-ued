@@ -1,8 +1,0 @@
-Exposure =  15 s
-Fluence =  13
-Energy =  90
-Current =  BLANK
-EsizeX =  BLANK
-EsizeY =  BLANK
-LsizeX =  BLANK
-LsizeY =  BLANK

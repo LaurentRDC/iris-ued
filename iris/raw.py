@@ -1,184 +1,201 @@
 # -*- coding: utf-8 -*-
 """
-@author: Laurent P. René de Cotret
+Raw dataset classes
+===================
+
+The following classes are defined herein:
+
+.. autosummary::
+    :toctree: classes/
+
+    AbstractRawDataset
+    McGillRawDataset
+    MerlinRawDataset
+    FSURawDataset
+
+Subclassing RawDatasetBase
+==========================
 """
-import glob
-import numpy as n
-from os.path import join, isfile, isdir
-from os import listdir 
-import re
+from abc import abstractmethod
 from functools import partial
-from skimage.io import imread
-import sys
-from datetime import datetime as dt
-from warnings import warn, catch_warnings
 
-from .optimizations import cached_property
+import numpy as np
 
-def parse_tagfile(path):
-    """ Parse a tagfile.txt from a raw dataset into a dictionary of values """
-    metadata = dict()
-    with open(path) as f:
-        for line in f:
-            key, value = re.sub('\s+', '', line).split('=')
-            try:
-                value = float(value.strip('s'))    # exposure values have units
-            except:
-                value = None    # value might be 'BLANK'
-            metadata[key.lower()] = value
-    
-    return metadata
+from npstreams import average, pmap
+from skued import ialign
 
-class RawDataset(object):
+from .meta import ExperimentalParameter, MetaRawDataset
+
+
+class AbstractRawDataset(metaclass = MetaRawDataset):
     """
-    Wrapper around raw dataset as produced by UEDbeta.
+    Abstract base class for ultrafast electron diffraction data set. 
+    RawDatasetBase allows for enforced metadata types and values, 
+    as well as a standard interface. For example, AbstractRawDataset
+    implements the context manager interface.
+
+    Minimally, the following method must be implemented in subclasses:
+
+        * raw_data
+
+    It is suggested to also implement the following magic methods:
+
+        * __init__ 
+        * __exit__
     
-    Attributes
-    ----------
-    directory : str or path
-    
-    nscans : list of ints
-        Container of the available scans.
-    acquisition_date : str
-    
-    time_points_str : list of str
-        Time-points of the dataset as strings. As recorded in the TIFF filenames.
-    
-    time_points : list of floats
-    
-    pumpon_background : ndarray
-    
-    pumpoff_background : ndarray
-    
-    image_list : list of str
-    
-    Methods
-    -------
-    raw_data
-        Retrieve a raw image from a specific scan and time-delay.
+    The call signature should remain the same for all overwritten methods.
     """
 
-    resolution = (2048, 2048)
+    # List of valid metadata below
+    # Using the ExperimentalParameter allows for automatic registering
+    # of the parameters as valid.
+    # These attributes can be accessed using the usual property access
+    date            = ExperimentalParameter('date',            str,   default = '')
+    energy          = ExperimentalParameter('energy',          float, default = 90)       # keV
+    pump_wavelength = ExperimentalParameter('pump_wavelength', int,   default = 800)      # nanometers
+    fluence         = ExperimentalParameter('fluence',         float, default = 0)        # mj / cm**2
+    time_zero_shift = ExperimentalParameter('time_zero_shift', float, default = 0)        # picoseconds
+    temperature     = ExperimentalParameter('temperature',     float, default = 293)      # Kelvins
+    exposure        = ExperimentalParameter('exposure',        float, default = 1)        # seconds
+    resolution      = ExperimentalParameter('resolution',      tuple, default = (2048, 2048))
+    time_points     = ExperimentalParameter('time_points',     tuple, default = tuple())  # picoseconds
+    scans           = ExperimentalParameter('scans',           tuple, default = (1,))
+    camera_length   = ExperimentalParameter('camera_length',   float, default = 0.23)     # meters
+    pixel_width     = ExperimentalParameter('pixel_width',     float, default = 14e-6)    # meters
+    notes           = ExperimentalParameter('notes',           str,   default = '')
 
-    def __init__(self, directory):
-        if isdir(directory):
-            self.raw_directory = directory
-        else:
-            raise ValueError('The path {} is not a directory'.format(directory))
-        
-        self.metadata = parse_tagfile(join(directory, 'tagfile.txt'))
-    
-    @property
-    def fluence(self):
-        return self.metadata['fluence'] or 0
-    
-    @property
-    def current(self):
-        return self.metadata['current'] or 0
-    
-    @property
-    def exposure(self):
-        return self.metadata['exposure'] or 0
-    
-    @property
-    def energy(self):
-        return self.metadata['energy'] or 90
-    
-    @cached_property
-    def _exp_params_filename(self):
-        return join(self.raw_directory, 'tagfile.txt')
-    
-    @cached_property
-    def nscans(self):
-        """ List of integer scans. """
-        scans = [re.search('[n][s][c][a][n][.](\d+)', f).group() for f in self.image_list if 'nscan' in f]
-        return list(set([int(string.strip('nscan.')) for string in scans])) # Remove duplicates by using a set
-    
-    @cached_property
-    def acquisition_date(self):
-        """ Returns the acquisition date from the folder name as a string of the form: '2016.01.06.15.35' """
-        try:
-            return re.search('(\d+[.])+', self.raw_directory).group()[:-1]      #Last [:-1] removes a '.' at the end
-        except(AttributeError):     #directory name does not match time pattern
-            return '0.0.0.0.0'
-    
-    @cached_property
-    def time_points(self):
-        return tuple(map(float, self.time_points_str))
-    
-    @cached_property
-    def time_points_str(self):
-        """ Returns a list of sorted string times. """
-        # Get time points. Strip away '+' as they are superfluous.
-        time_data = [re.search('[+-]\d+[.]\d+', f).group() for f in self.image_list if 'timedelay' in f]
-        time_list =  list(set(time_data))     #Conversion to set then back to list to remove repeated values
-        time_list.sort(key = float)
-        return time_list
-
-    @property
-    def image_list(self):
-        """ All images in the raw folder. """
-        # Image list can't be a cached property since it's a generator.
-        return (f for f in listdir(self.raw_directory) 
-                  if isfile(join(self.raw_directory, f)) and f.endswith(('.tif', '.tiff')))
-    
-    @cached_property
-    def pumpon_background(self):
-        backgrounds = tuple(map(imread, glob.iglob(join(self.raw_directory, 'background.*.pumpon.tif'))))
-        return sum(backgrounds)/len(backgrounds)
-    
-    @cached_property
-    def pumpoff_background(self):
-        backgrounds = tuple(map(imread, glob.iglob(join(self.raw_directory, 'background.*.pumpoff.tif'))))
-        return sum(backgrounds)/len(backgrounds)
-        
-    def raw_data(self, timedelay, scan):
+    def __init__(self, source = None, metadata = dict()):
         """
-        Returns an array of the raw TIFF.
+        Parameters
+        ----------
+        source : object
+            Data source, for example a directory or external file.
+        metadata : dict or None, optional
+            Metadata and experimental parameters. Dictionary keys that are
+            not valid metadata, they are ignored. Metadata can also be
+            set directly later.
+
+        Raises
+        ------
+        TypeError : if an item from the metadata has an unexpected type.
+        """
+        self.source = source
+        if metadata:
+            self.update_metadata(metadata)
+    
+    def __repr__(self):
+        string = '< RawDataset object. '
+        for k, v in self.metadata.items():
+            string.join('\n {key}: {value} '.format(key = k, value = v))
+        string.join(' >')
+        return string
+    
+    def __enter__(self):
+        """ Return `self` upon entering the runtime context. """
+        return self
+    
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        """ Raise any exception triggered within the runtime context. """
+        # Perform cleanup operations here
+        pass
+    
+    def update_metadata(self, metadata):
+        """
+        Update metadata from a dictionary. Only appropriate keys are used; irrelevant keys are ignored.
+
+        Parameters
+        ----------
+        metadata : dictionary
+            See ``AbstractRawDataset.valid_metadata`` for valid keys.
+        """
+        for k, v in metadata.items():
+            if k in self.valid_metadata:
+                setattr(self, k, v)
+
+    @property
+    def metadata(self):
+        """ Experimental parameters and dataset metadata as a dictionary. """
+        # This property could be generated from some metadata file
+        return {k:getattr(self, k) for k in self.valid_metadata} 
+
+    def iterscan(self, scan, **kwargs):
+        """
+        Generator function of images as part of a scan, in 
+        time-delay order.
+
+        Parameters
+        ----------
+        scan : int
+            Scan from which to yield the data.
+        kwargs
+            Keyword-arguments are passed to ``raw_data`` method.
+        
+        Yields
+        ------
+        data : `~numpy.ndarray`, ndim 2
+        """
+        if scan not in set(self.scans):
+            raise ValueError('There is no scan {} in available scans'.format(scan))
+        
+        for timedelay in self.time_points:
+            yield self.raw_data(timedelay = timedelay, scan = scan, **kwargs)
+    
+    @abstractmethod
+    def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs):
+        """
+        Returns an array of the image at a timedelay and scan.
         
         Parameters
         ----------
-        timedelay : numerical
-            Time-delay in picoseconds.
-        scan : int, > 0
-            Scan number. 
+        timdelay : float
+            Acquisition time-delay.
+        scan : int, optional
+            Scan number. Default is 1.
+        bgr : bool, optional
+            If True (default), laser background is removed before being returned.
         
         Returns
         -------
-        arr : ndarray, shape (N,M), dtype uint16
+        arr : `~numpy.ndarray`, ndim 2
         
         Raises
         ------
-        ImageNotFoundError
-            Filename is not associated with a TIFF/does not exist.
+        IOError : Filename is not associated with an image/does not exist.
         """ 
-        #Template filename looks like:
-        #    'data.timedelay.+1.00.nscan.04.pumpon.tif'
-        sign = '' if float(timedelay) < 0 else '+'
-        str_time = sign + '{0:.2f}'.format(float(timedelay))
-        filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
-        return imread(join(self.raw_directory, filename))
+        pass
     
-    def timedelay_filenames(self, timedelay, exclude_scans = list()):
-        """ 
-        Returns filenames of raw data for a specific time-delay.
+    def reduced(self, exclude_scans = tuple(), align = True, processes = 1, dtype = np.float):
+        """
+        Generator of reduced dataset.
 
         Parameters
         ----------
-        timedelay : str or float
+        exclude_scans : iterable, optional
+            Iterable of ints. These scans will be skipped when reducing the dataset.
+        align : bool, optional
+            If True (default), raw images will be aligned on a per-scan basis.
+        processes : int or None, optional
+            Number of Processes to spawn for processing. 
+        dtype : numpy.dtype or None, optional
+            Patterns will be cast to ``dtype``. If None (default), ``dtype`` will be set to the same
+            data-type as the first pattern in ``patterns``.
 
-        exclude_scans : iterable of ints, optional
-        
-        Returns
-        -------
-        filenames : iterable of str
+        Yields
+        ------
+        pattern : `~numpy.ndarray`, ndim 2
         """
-        #Template filename looks like:
-        #    'data.timedelay.+1.00.nscan.04.pumpon.tif'
-        valid_scans = set(self.nscans) - set(exclude_scans)
-        filenames = list()
-        for scan in valid_scans:
-            sign = '' if float(timedelay) < 0 else '+'
-            str_time = sign + '{0:.2f}'.format(float(timedelay))
-            filenames.append(join(self.raw_directory, 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'))
-        return filenames
+        valid_scans = list(sorted(set(self.scans) - set(exclude_scans)))
+
+        yield from pmap(_raw_combine, self.time_points,
+                        args = (self, valid_scans, align), 
+                        processes = processes,
+                        ntotal = len(self.time_points))
+
+# For multiprocessing, the function to be mapped must be 
+# global, hence defined outside of the AbstractRawDataset class
+# TODO: include dtype in _raw_combine
+def _raw_combine(raw, valid_scans, align, timedelay):
+    images = map(partial(raw.raw_data, timedelay), valid_scans)
+    if align:
+        images = ialign(images)
+    return average(images)
