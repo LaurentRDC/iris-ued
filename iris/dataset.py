@@ -772,7 +772,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.wavelet = wavelet
         self.niter = max_iter
     
-    def compute_angular_averages(self, center = None, normalized = False, angular_bounds = None, callback = None):
+    def compute_angular_averages(self, center = None, normalized = False, angular_bounds = None, trim = True, callback = None):
         """ 
         Compute the angular averages.
         
@@ -786,6 +786,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         angular_bounds : 2-tuple of float or None, optional
             Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis. 
             Angle bounds outside [0, 360) are mapped back to [0, 360).
+        trim : bool, optional
+            If True, leading/trailing zeros - possibly due to masks - are trimmed. Default is False.
         callback : callable or None, optional
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
@@ -800,11 +802,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         if center is not None:
             self.center = center
-        
-        if angular_bounds is not None:
-            self.angular_bounds = angular_bounds
-        else:
-            self.angular_bounds = (0, 360)
 
         # Because it is difficult to know the angular averaged data's shape in advance, 
         # we calculate it first and store it next
@@ -814,13 +811,25 @@ class PowderDiffractionDataset(DiffractionDataset):
             px_radius, avg = azimuthal_average(self.diff_data(timedelay), 
                                                center = self.center, 
                                                mask = np.logical_not(self.valid_mask), 
-                                               angular_bounds = angular_bounds)
+                                               angular_bounds = angular_bounds,
+                                               trim = False)
             
-            results.append((px_radius, avg))
+            # px_radius is not stored but used once
+            results.append(avg)
             callback(int(100*index / len(self.time_points)))
         
         # Concatenate arrays for intensity and error
-        rintensity = np.stack([I for _, I in results], axis = 0)
+        # If trimming is enabled, there might be a problem where
+        # different averages are trimmed to different length
+        # therefore, we trim to the most restrictive bounds
+        if trim:
+            bounds = [_trim_bounds(I) for I in results]
+            min_bound = max( min(bound) for bound in bounds )
+            max_bound = min( max(bound) for bound in bounds )
+            results = [I[min_bound:max_bound] for I in results]
+            px_radius = px_radius[min_bound:max_bound]
+        
+        rintensity = np.stack(results, axis = 0)
 
         if normalized:
             rintensity /= np.sum(rintensity, axis = 1, keepdims = True)
@@ -842,3 +851,19 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
 
         callback(100)
+
+def _trim_bounds(arr):
+    """ Returns the bounds which would be used in numpy.trim_zeros but also trimmming nans"""
+    first = 0
+    for i in arr:
+        if (i != 0.):
+            break
+        else:
+            first = first + 1
+    last = len(arr)
+    for i in arr[::-1]:
+        if (i != 0.):
+            break
+        else:
+            last = last - 1
+    return first, last
