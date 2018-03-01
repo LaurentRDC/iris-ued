@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+__author__  = 'Laurent P. René de Cotret'
+__email__   = 'laurent.renedecotret@mail.mcgill.ca'
+__license__ = 'MIT'
+__version__ = '5.0'
 
-from .beam_properties import beam_properties
-from .dataset import DiffractionDataset, PowderDiffractionDataset, explore_dir
-from .knife_edge import cdf, knife_edge
-from .optimizations import cached_property
-from .raw import parse_tagfile, RawDataset
-from .utils import scattering_length
+from .raw import AbstractRawDataset
+from .merlin import MerlinRawDataset
+from .mcgill import McGillRawDataset, LegacyMcGillRawDataset
+from .dataset import DiffractionDataset, PowderDiffractionDataset
