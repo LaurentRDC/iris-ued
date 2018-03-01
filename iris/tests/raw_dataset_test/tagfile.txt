@@ -1,8 +1,0 @@
-Exposure =  5 s
-Fluence =  BLANK
-Energy =  BLANK
-Current =  BLANK
-EsizeX =  BLANK
-EsizeY =  BLANK
-LsizeX =  BLANK
-LsizeY =  BLANK
