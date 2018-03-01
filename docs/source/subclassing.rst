@@ -1,0 +1,43 @@
+.. include:: references.txt
+
+.. _subclassing:
+
+******************************
+Subclassing AbstractRawDataset
+******************************
+
+.. currentmodule:: iris
+
+To take advantage of :mod:`iris`'s :class:`DiffractionDataset` and :class:`PowderDiffractionDataset`,
+an appropriate subclass of :class:`AbstractRawDataset` must be implemented. This subclass can then be fed
+to :meth:`DiffractionDataset.from_raw` to produce a :class:`DiffractionDataset`.
+
+How to assemble a AbstractRawDataset subclass
+---------------------------------------------
+
+Ultrafast electron diffraction experiments typically have multiple *scans*. Each scan consists
+of a time-delay sweep. You can think of it as one scan being an experiment, and so each dataset
+is composed of multiple, equivalent experiments.
+
+With this in mind, :class:`AbstractRawDataset` subclasses automatically include the following metadata:
+
+* ``date`` (`str`): Acquisition date. Date format is up to you.
+* ``energy`` (`float`): Electron energy in keV.
+* ``pump_wavelength`` (`int`): photoexcitation wavelength in nanometers.
+* ``fluence`` (`float`): photoexcitation fluence :math:`\text{mJ}/\text{cm}**2`.
+* ``time_zero_shift (`float`): Time-zero shift in picoseconds. 
+* ``temperature`` (`float`): sample temperature in Kelvins.
+* ``exposure`` (`float`): picture exposure in seconds.
+* ``resolution`` (2-`tuple`): pixel resolution of pictures.
+* ``time_points`` (`tuple`): time-points in picoseconds.
+* ``scans`` (`tuple`): experimental scans.
+* ``camera_length`` (`float`): sample-to-camera distance in meters.
+* ``pixel_width`` (`float`): pixel width in meters.
+* ``notes`` (`str`): notes.
+
+Subclasses can add more metadata or override the current metadata with new defaults.
+
+The following method must be implemented:
+
+.. automethod::
+  AbstractRawDataset.raw_data

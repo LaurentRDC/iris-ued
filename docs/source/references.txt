@@ -1,0 +1,5 @@
+.. _Numpy: http://www.numpy.org
+.. _scikit-image: http://scikit-image.org/docs/stable/
+.. _Scipy: https://www.scipy.org
+.. _scikit-ued: https://scikit-ued.readthedocs.io/en/release
+.. _npstreams: https://npstreams.readthedocs.io/en/release/

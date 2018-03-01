@@ -12,17 +12,16 @@ from os.path import dirname, join
 import pyqtgraph as pg
 from pyqtgraph import QtCore, QtGui
 from qdarkstyle import load_stylesheet_pyqt5
+from skimage.io import imread
+from skued import mibread
 
-from .beam_properties_dialog import ElectronBeamPropertiesDialog
 from .control_bar import ControlBar
-from .controller import IrisController, ErrorAware
+from .controller import ErrorAware, IrisController
 from .data_viewer import ProcessedDataViewer
-from .fluence_calculator import FluenceCalculatorDialog
-from .knife_edge_tool import KnifeEdgeToolDialog
+from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
-from .promote_dialog import PromoteToPowderDialog
-from .resources_widget import ComputationalResourceWidget
+from .angular_average_dialog import AngularAverageDialog
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -37,22 +36,27 @@ def run(**kwargs):
 #       http://doc.qt.io/qt-5/qtwinextras-overview.html
 class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
-    dataset_path_signal = QtCore.pyqtSignal(str)
-    single_picture_path_signal = QtCore.pyqtSignal(str)
-    raw_dataset_path_signal = QtCore.pyqtSignal(str)
-    error_message_signal = QtCore.pyqtSignal(str)
+    dataset_path_signal             = QtCore.pyqtSignal(str)
+    single_picture_path_signal      = QtCore.pyqtSignal(str)
+    raw_dataset_path_signal         = QtCore.pyqtSignal(str)
+    legacy_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
+    merlin_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
+    error_message_signal            = QtCore.pyqtSignal(str)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        self._controller_thread = QtCore.QThread()
+        self.peak_dynamics_window = None
+
+        self._controller_thread = QtCore.QThread(parent = self)
         self.controller = IrisController() # No parent so that we can moveToThread
         self.controller.moveToThread(self._controller_thread)
         self._controller_thread.start()
 
         self.dataset_path_signal.connect(self.controller.load_dataset)
-        self.raw_dataset_path_signal.connect(self.controller.load_raw_dataset)
-        self.single_picture_path_signal.connect(self.controller.load_single_picture)
+        self.raw_dataset_path_signal.connect(self.controller.load_mcgill_raw_dataset)
+        self.legacy_raw_dataset_path_signal.connect(self.controller.load_legacy_raw_dataset)
+        self.merlin_raw_dataset_path_signal.connect(self.controller.load_raw_merlin_dataset)
 
         self.controls = ControlBar(parent = self)
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
@@ -84,15 +88,14 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         self.processed_viewer = ProcessedDataViewer(parent = self)
         self.processed_viewer.peak_dynamics_roi_signal.connect(self.controller.time_series)
-        self.controls.enable_peak_dynamics.connect(self.processed_viewer.toggle_peak_dynamics)
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
-        self.controller.time_series_signal.connect(self.processed_viewer.update_peak_dynamics)
+        self.controller.time_series_signal.connect(self.processed_viewer.display_peak_dynamics)
+        self.controls.enable_peak_dynamics.connect(self.processed_viewer.toggle_peak_dynamics)
 
         self.powder_viewer = PowderViewer(parent = self)
         self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
         self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
         self.controller.powder_time_series_signal.connect(self.powder_viewer.display_peak_dynamics)
-        self.controls.enable_connect_time_series.connect(self.powder_viewer.set_time_series_connect)
         # UI components
         self.controller.error_message_signal.connect(self.show_error_message)
         self.error_message_signal.connect(self.show_error_message)
@@ -111,8 +114,14 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         ###################
         # Actions
-        self.load_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load raw dataset', self)
-        self.load_raw_dataset_action.triggered.connect(self.load_raw_dataset)
+        self.load_mcgill_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&MCGILL', self)
+        self.load_mcgill_raw_dataset_action.triggered.connect(self.load_mcgill_raw_dataset)
+
+        self.load_legacy_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&legacy MCGILL', self)
+        self.load_legacy_raw_dataset_action.triggered.connect(self.load_legacy_raw_dataset)
+
+        self.load_merlin_raw_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&MERLIN', self)
+        self.load_merlin_raw_action.triggered.connect(self.load_merlin_raw_dataset)
 
         self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
         self.load_dataset_action.triggered.connect(self.load_dataset)
@@ -132,28 +141,16 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controller.processed_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
 
         self.file_menu = self.menu_bar.addMenu('&File')
-        self.file_menu.addAction(self.load_raw_dataset_action)
+        load_raw_submenu = self.file_menu.addMenu('Load raw dataset...')
+        load_raw_submenu.addAction(self.load_mcgill_raw_dataset_action)
+        load_raw_submenu.addAction(self.load_legacy_raw_dataset_action)
+        load_raw_submenu.addAction(self.load_merlin_raw_action)
+
         self.file_menu.addAction(self.load_dataset_action)
         self.file_menu.addAction(self.load_single_picture_action)
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.close_raw_dataset_action)
         self.file_menu.addAction(self.close_dataset_action)
-
-        #################
-        # Tools
-        self.fluence_calculator_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Fluence calculator', self)
-        self.fluence_calculator_action.triggered.connect(self.launch_fluence_calculator_tool)
-
-        self.knife_edge_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Knife-edge analysis', self)
-        self.knife_edge_action.triggered.connect(self.launch_knife_edge_tool)
-
-        self.beam_properties_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Electron beam properties', self)
-        self.beam_properties_action.triggered.connect(self.launch_beam_properties_dialog)
-
-        self.tools_menu = self.menu_bar.addMenu('&Tools')
-        self.tools_menu.addAction(self.fluence_calculator_action)
-        self.tools_menu.addAction(self.knife_edge_action)
-        self.tools_menu.addAction(self.beam_properties_action)
 
         ###################
         # Operations on Diffraction Datasets
@@ -166,6 +163,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.promote_to_powder_action.triggered.connect(self.launch_promote_to_powder_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.promote_to_powder_action.setEnabled)
 
+        self.update_metadata_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'save.png')), '&Update dataset metadata', self)
+        self.update_metadata_action.triggered.connect(self.launch_metadata_edit_dialog)
+        self.controller.processed_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
+        self.controller.powder_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
+
         self.recompute_angular_averages = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Recompute angular average', self)
         self.recompute_angular_averages.triggered.connect(self.launch_recompute_angular_average_dialog)
         self.controller.powder_dataset_loaded_signal.connect(self.recompute_angular_averages.setEnabled)
@@ -174,6 +176,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.diffraction_dataset_menu.addAction(self.processing_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.promote_to_powder_action)
+        self.diffraction_dataset_menu.addAction(self.update_metadata_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
 
@@ -221,25 +224,46 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     def launch_processsing_dialog(self):
         processing_dialog = ProcessingDialog(parent = self, raw = self.controller.raw_dataset)
         processing_dialog.processing_parameters_signal.connect(self.controller.process_raw_dataset)
-        return processing_dialog.exec_()
+        processing_dialog.exec_()
+        processing_dialog.processing_parameters_signal.disconnect(self.controller.process_raw_dataset)
     
+    @QtCore.pyqtSlot()
+    def launch_metadata_edit_dialog(self):
+        metadata_dialog = MetadataEditDialog(parent = self, config = self.controller.dataset.metadata)
+        metadata_dialog.updated_metadata_signal.connect(self.controller.update_metadata)
+        metadata_dialog.exec_()
+        metadata_dialog.updated_metadata_signal.disconnect(self.controller.update_metadata)
 
     @QtCore.pyqtSlot()
     def launch_promote_to_powder_dialog(self):
-        promote_dialog = PromoteToPowderDialog(dataset_filename = self.controller.dataset.filename, parent = self)
-        promote_dialog.center_signal.connect(self.controller.promote_to_powder)
-        return promote_dialog.exec_()
+        image = self.controller.dataset.diff_data(self.controller.dataset.time_points[0])
+        promote_dialog = AngularAverageDialog(image, parent = self)
+        promote_dialog.angular_average_signal.connect(self.controller.promote_to_powder)
+        promote_dialog.exec_()
+        promote_dialog.angular_average_signal.disconnect(self.controller.promote_to_powder)
     
     @QtCore.pyqtSlot()
     def launch_recompute_angular_average_dialog(self):
-        dialog = PromoteToPowderDialog(dataset_filename = self.controller.dataset.filename, parent = self)
-        dialog.center_signal.connect(self.controller.recompute_angular_average)
-        return dialog.exec_()
+        image = self.controller.dataset.diff_data(self.controller.dataset.time_points[0])
+        dialog = AngularAverageDialog(image, parent = self)
+        dialog.angular_average_signal.connect(self.controller.recompute_angular_average)
+        dialog.exec_()
+        dialog.angular_average_signal.disconnect(self.controller.recompute_angular_average)
     
     @QtCore.pyqtSlot()
-    def load_raw_dataset(self):
+    def load_legacy_raw_dataset(self):
+        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
+        self.legacy_raw_dataset_path_signal.emit(path)
+    
+    @QtCore.pyqtSlot()
+    def load_mcgill_raw_dataset(self):
         path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
         self.raw_dataset_path_signal.emit(path)
+    
+    @QtCore.pyqtSlot()
+    def load_merlin_raw_dataset(self):
+        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
+        self.merlin_raw_dataset_path_signal.emit(path)
 
     @QtCore.pyqtSlot()
     def load_dataset(self):
@@ -248,24 +272,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
     @QtCore.pyqtSlot()
     def load_single_picture(self):
-        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load diffraction picture', filter = '*.tif')[0]
-        if path:
-            self.single_picture_path_signal.emit(path)
-    
-    @QtCore.pyqtSlot()
-    def launch_knife_edge_tool(self):
-        window = KnifeEdgeToolDialog(parent = self)
-        return window.exec_()
-    
-    @QtCore.pyqtSlot()
-    def launch_beam_properties_dialog(self):
-        window = ElectronBeamPropertiesDialog(parent = self)
-        return window.exec_()
-    
-    @QtCore.pyqtSlot()
-    def launch_fluence_calculator_tool(self):
-        window = FluenceCalculatorDialog(parent = self)
-        return window.exec_()
+        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load diffraction picture', filter = 'Images (*.tif *.tiff *.mib)')[0]
+        if not path:
+            return
+        
+        return SinglePictureViewer(path).exec_()
     
     @QtCore.pyqtSlot()
     def center_window(self):
@@ -273,3 +284,23 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+class SinglePictureViewer(QtGui.QDialog):
+
+    def __init__(self, fname, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if fname.endswith(('.tif', '.tiff')):
+            im = imread(fname)
+        elif fname.endswith('.mib'):
+            im = mibread(fname)
+
+        self.image_viewer = pg.ImageView(parent = self)
+        self.image_viewer.setImage(im)
+
+        layout = QtGui.QVBoxLayout()
+        fname_label = QtGui.QLabel('Filename: ' + fname, parent = self)
+        fname_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(fname_label)
+        layout.addWidget(self.image_viewer)
+        self.setLayout(layout)
