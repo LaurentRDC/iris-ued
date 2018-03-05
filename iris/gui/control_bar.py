@@ -438,7 +438,7 @@ class MetadataWidget(QtWidgets.QWidget):
     def set_metadata(self, metadata):
         self.table.clear()
         self.table.setRowCount(len(metadata) - 1 if 'notes' in metadata else len(metadata))
-        for row, (key, value) in enumerate(metadata.items()):
+        for row, (key, value) in enumerate(sorted(metadata.items())):
             if isinstance(value, Iterable) and (not isinstance(value, str)):
                 if len(value) > 4:
                     key += ' (length)'
