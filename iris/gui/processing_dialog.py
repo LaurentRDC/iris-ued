@@ -119,7 +119,6 @@ class DataTransformationsWidget(QtWidgets.QWidget):
         self.normalization_tf_widget.setChecked(True)
 
         self.enable_clip_widget = QtWidgets.QCheckBox('Clip pixel values', parent = self)
-        self.enable_clip_widget.setChecked(True)
 
         self.clip_min_widget = QtWidgets.QDoubleSpinBox(parent = self)
         self.clip_min_widget.setRange(0, 2**32 - 1)
@@ -141,16 +140,15 @@ class DataTransformationsWidget(QtWidgets.QWidget):
         clip_widget.setLayout(clip_layout)
         clip_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.enable_clip_widget.toggled.connect(clip_widget.setEnabled)
+        self.enable_clip_widget.setChecked(False)
+        clip_widget.setEnabled(False)
 
         checks = QtWidgets.QFormLayout()
         checks.addRow(self.alignment_tf_widget)
         checks.addRow(self.normalization_tf_widget)
         checks.addRow(self.enable_clip_widget)
         checks.addRow(clip_widget)
-
-        #layout = QtWidgets.QVBoxLayout()
-        #layout.addLayout(checks)
-        #layout.addWidget(clip_widget)
+        
         self.setLayout(checks)
     
     def data_transformations(self):
