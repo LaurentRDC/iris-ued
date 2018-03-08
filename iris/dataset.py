@@ -1,6 +1,7 @@
 """
 @author: Laurent P. Rene de Cotret
 """
+from collections import OrderedDict
 from functools import lru_cache, partial
 from itertools import repeat
 from math import sqrt
@@ -229,12 +230,15 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         
     @property
     def metadata(self):
-        """ Dictionary of the dataset's metadata. """
+        """ Dictionary of the dataset's metadata. Dictionary is sorted alphabetically by keys."""
         meta = {k:getattr(self, k) for k in self.valid_metadata}
         meta['filename'] = self.filename
         meta['time_points'] = tuple(self.time_points)
         meta.update(self.compression_params)
-        return meta
+
+        # Ordered dictionary by keys is easiest to inspect
+        return OrderedDict(sorted(meta.items(), 
+                           key = lambda t: t[0]))
     
     @cached_property
     def valid_mask(self):
