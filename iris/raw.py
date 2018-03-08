@@ -17,6 +17,7 @@ Subclassing RawDatasetBase
 ==========================
 """
 from abc import abstractmethod
+from collections import OrderedDict
 from functools import partial
 
 import numpy as np
@@ -115,8 +116,10 @@ class AbstractRawDataset(metaclass = MetaRawDataset):
     @property
     def metadata(self):
         """ Experimental parameters and dataset metadata as a dictionary. """
-        # This property could be generated from some metadata file
-        return {k:getattr(self, k) for k in self.valid_metadata} 
+        meta = {k:getattr(self, k) for k in self.valid_metadata} 
+        # Ordered dictionary by keys is easiest to inspect
+        return OrderedDict(sorted(meta.items(), 
+                           key = lambda t: t[0]))
 
     def iterscan(self, scan, **kwargs):
         """
