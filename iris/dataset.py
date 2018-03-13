@@ -754,12 +754,9 @@ class PowderDiffractionDataset(DiffractionDataset):
             If None (default), maximum level is used.
         """
         block = self.powder_data(timedelay = None, bgr = False)
-        #trend = block - detrend(block, axis = 1)
 
-        baseline_kwargs = {'array': block,
-                           'max_iter': max_iter, 'level': level, 
-                           'first_stage': first_stage, 'wavelet': wavelet,
-                           'axis': 1}
+        baseline_kwargs = {'array': block, 'max_iter': max_iter, 'level': level, 
+                           'first_stage': first_stage, 'wavelet': wavelet, 'axis': 1}
         baseline_kwargs.update(**kwargs)
         
         baseline = np.ascontiguousarray(baseline_dt(**baseline_kwargs)) # In rare cases this wasn't C-contiguous
