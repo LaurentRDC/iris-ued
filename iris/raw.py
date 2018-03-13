@@ -18,6 +18,7 @@ Subclassing RawDatasetBase
 """
 from abc import abstractmethod
 from collections import OrderedDict
+from contextlib import AbstractContextManager
 from functools import partial
 
 import numpy as np
@@ -28,7 +29,7 @@ from skued import ialign
 from .meta import ExperimentalParameter, MetaRawDataset
 
 
-class AbstractRawDataset(metaclass = MetaRawDataset):
+class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
     """
     Abstract base class for ultrafast electron diffraction data set. 
     RawDatasetBase allows for enforced metadata types and values, 
@@ -39,10 +40,12 @@ class AbstractRawDataset(metaclass = MetaRawDataset):
 
         * raw_data
 
-    It is suggested to also implement the following magic methods:
+    It is suggested to also implement the following magic method:
 
         * __init__ 
-        * __exit__
+    
+    A list of concrete implementations of AbstractRawDatasets is available in 
+    the ``implementations`` class attribute.
     
     The call signature should remain the same for all overwritten methods.
     """
@@ -90,15 +93,6 @@ class AbstractRawDataset(metaclass = MetaRawDataset):
             string.join('\n {key}: {value} '.format(key = k, value = v))
         string.join(' >')
         return string
-    
-    def __enter__(self):
-        """ Return `self` upon entering the runtime context. """
-        return self
-    
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        """ Raise any exception triggered within the runtime context. """
-        # Perform cleanup operations here
-        pass
     
     def update_metadata(self, metadata):
         """
