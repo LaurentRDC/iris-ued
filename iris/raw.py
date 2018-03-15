@@ -23,7 +23,7 @@ from functools import partial
 
 import numpy as np
 
-from npstreams import average, pmap
+from npstreams import average, pmap, itercopy, peek
 from skued import ialign
 
 from .meta import ExperimentalParameter, MetaRawDataset
@@ -44,10 +44,15 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
 
         * __init__ 
     
+    For better results or performance during reduction, the following methods
+    can be specialized:
+
+        * reduced
+    
     A list of concrete implementations of AbstractRawDatasets is available in 
     the ``implementations`` class attribute.
     
-    The call signature should remain the same for all overwritten methods.
+    The call signature must remain the same for all overwritten methods.
     """
 
     # List of valid metadata below
@@ -87,12 +92,15 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         if metadata:
             self.update_metadata(metadata)
     
+    def __exit__(self, *exc):
+        pass
+    
     def __repr__(self):
-        string = '< RawDataset object. '
-        for k, v in self.metadata.items():
-            string.join('\n {key}: {value} '.format(key = k, value = v))
-        string.join(' >')
-        return string
+        rep = '< {} object with following metadata: '.format(type(self).__name__)
+        for key, val in self.metadata.items():
+            rep += '\n    {key}: {val}'.format(key = key, val = val)
+        
+        return rep + ' >'
     
     def update_metadata(self, metadata):
         """
@@ -112,8 +120,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         """ Experimental parameters and dataset metadata as a dictionary. """
         meta = {k:getattr(self, k) for k in self.valid_metadata} 
         # Ordered dictionary by keys is easiest to inspect
-        return OrderedDict(sorted(meta.items(), 
-                           key = lambda t: t[0]))
+        return OrderedDict( sorted(meta.items(), key = lambda t: t[0]) )
 
     def iterscan(self, scan, **kwargs):
         """
@@ -161,9 +168,12 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         """ 
         pass
     
-    def reduced(self, exclude_scans = tuple(), align = True, processes = 1, dtype = np.float):
+    def reduced(self, exclude_scans = tuple(), align = True, normalize = True, mask = None, processes = 1, dtype = np.float):
         """
-        Generator of reduced dataset.
+        Generator of reduced dataset. The reduced diffraction patterns are generated in order of time-delay.
+
+        This particular implementation normalizes diffracted intensity of pictures acquired at the same time-delay
+        while rejecting masked pixels.
 
         Parameters
         ----------
@@ -171,11 +181,15 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
             Iterable of ints. These scans will be skipped when reducing the dataset.
         align : bool, optional
             If True (default), raw images will be aligned on a per-scan basis.
+        normalize : bool, optional
+            If True (default), equivalent diffraction pictures (e.g. same time-delay, different scans) 
+            are normalized to the same diffracted intensity.
+        mask : array-like of bool or None, optional
+            If not None, pixels where ``mask = True`` are ignored for certain operations (e.g. alignment).
         processes : int or None, optional
             Number of Processes to spawn for processing. 
         dtype : numpy.dtype or None, optional
-            Patterns will be cast to ``dtype``. If None (default), ``dtype`` will be set to the same
-            data-type as the first pattern in ``patterns``.
+            Reduced patterns will be cast to ``dtype``.
 
         Yields
         ------
@@ -183,16 +197,36 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         """
         valid_scans = list(sorted(set(self.scans) - set(exclude_scans)))
 
-        yield from pmap(_raw_combine, self.time_points,
-                        args = (self, valid_scans, align), 
-                        processes = processes,
-                        ntotal = len(self.time_points))
+        kwargs = {'raw'         : self,
+                  'valid_scans' : list(sorted(set(self.scans) - set(exclude_scans))),
+                  'align'       : align,
+                  'normalize'   : normalize,
+                  'invalid_mask': mask,
+                  'dtype'       : dtype}
+
+        yield from pmap(_raw_combine, self.time_points, kwargs = kwargs,
+                        processes = processes, ntotal = len(self.time_points))
 
 # For multiprocessing, the function to be mapped must be 
-# global, hence defined outside of the AbstractRawDataset class
-# TODO: include dtype in _raw_combine
-def _raw_combine(raw, valid_scans, align, timedelay):
+# global, hence defined outside of the McGillRawDataset class
+def _raw_combine(timedelay, raw, valid_scans, normalize, align, invalid_mask, dtype):
+
     images = map(partial(raw.raw_data, timedelay), valid_scans)
+
     if align:
-        images = ialign(images)
-    return average(images)
+        images = ialign(images, mask = invalid_mask)
+    
+    # Set up normalization
+    if normalize:
+        valid = np.logical_not(invalid_mask)
+        images, images2 = itercopy(images, copies = 2)
+
+        # Compute the total intensity of first image
+        # This will be the reference point
+        first2, images2 = peek(images2)
+        initial_weight = np.sum(first2[valid])
+        weights = (initial_weight/np.sum(image[valid]) for image in images2)
+    else:
+        weights = None
+
+    return average(images, weights = weights).astype(dtype)

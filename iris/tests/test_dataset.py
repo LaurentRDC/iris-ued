@@ -36,14 +36,6 @@ class TestDiffractionDatasetCreation(unittest.TestCase):
 
         with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, processes = 2, mode = 'w') as dataset:
             self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
-
-    def test_from_raw_with_clipping(self):
-        """ Test that DiffractionDataset.from_raw(..., clip = [0, 10]) works as intended """
-        raw = LegacyMcGillRawDataset(os.path.join(os.path.dirname(__file__), 'legacy_raw_dataset_test'))
-        
-        with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, processes = 2, clip = [0, 10], mode = 'w') as dataset:
-            # Check that images are never over clipped value
-            self.assertTrue(np.all(np.less_equal(dataset.diffraction_group['intensity'], 10)))
     
     def test_from_collection(self):
         """ Test the creation of a DiffractionDataset from a collection of patterns """
