@@ -3,8 +3,8 @@
 Siwick Research Group RawDataset class as an example use
 of AbstractRawDataset
 """
-from contextlib import suppress
 from configparser import ConfigParser
+from contextlib import suppress
 from glob import iglob
 from os import listdir
 from os.path import isdir, isfile, join
@@ -12,11 +12,12 @@ from re import search, sub
 
 import numpy as np
 from cached_property import cached_property
-from skimage.io import imread
 
-from npstreams import average
+from npstreams import average 
+from skued import diffread
 
 from . import AbstractRawDataset
+
 
 class McGillRawDataset(AbstractRawDataset):
 
@@ -85,7 +86,7 @@ class McGillRawDataset(AbstractRawDataset):
         directory = join(self.source, 'scan {:04d}'.format(scan))
         fname = next(iglob(join(directory, 'pumpon_{:+010.3f}ps_*.tif'.format(timedelay))))
 
-        return imread(fname)
+        return diffread(fname)
 
 class LegacyMcGillRawDataset(AbstractRawDataset):
     """
@@ -156,7 +157,7 @@ class LegacyMcGillRawDataset(AbstractRawDataset):
     @cached_property
     def background(self):
         """ Laser background """
-        backgrounds = map(imread, iglob(join(self.source, 'background.*.pumpon.tif')))
+        backgrounds = map(diffread, iglob(join(self.source, 'background.*.pumpon.tif')))
         return average(backgrounds)
 
     def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs): 
@@ -188,7 +189,7 @@ class LegacyMcGillRawDataset(AbstractRawDataset):
         str_time = sign + '{0:.2f}'.format(float(timedelay))
         filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
 
-        im = imread(join(self.source, filename)).astype(np.float)
+        im = diffread(join(self.source, filename)).astype(np.float)
         if bgr:
             im -= self.background
             im[im < 0] = 0

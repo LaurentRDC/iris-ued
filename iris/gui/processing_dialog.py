@@ -118,36 +118,9 @@ class DataTransformationsWidget(QtWidgets.QWidget):
         self.normalization_tf_widget.setToolTip(normalization_help)
         self.normalization_tf_widget.setChecked(True)
 
-        self.enable_clip_widget = QtWidgets.QCheckBox('Clip pixel values', parent = self)
-
-        self.clip_min_widget = QtWidgets.QDoubleSpinBox(parent = self)
-        self.clip_min_widget.setRange(0, 2**32 - 1)
-        self.clip_min_widget.setValue(0.0)
-
-        self.clip_max_widget = QtWidgets.QDoubleSpinBox(parent = self)
-        self.clip_max_widget.setRange(0, 2**32 - 1)
-        self.clip_max_widget.setValue(30000)
-
-        # Make sure minimum is never larger than maximum
-        self.clip_min_widget.valueChanged.connect(self.clip_max_widget.setMinimum)
-        self.clip_max_widget.valueChanged.connect(self.clip_min_widget.setMaximum)
-
-        clip_layout = QtWidgets.QFormLayout()
-        clip_layout.addRow('Minimum:', self.clip_min_widget)
-        clip_layout.addRow('Maximum:', self.clip_max_widget)
-
-        clip_widget = QtWidgets.QGroupBox('Clipping limits', parent = self)
-        clip_widget.setLayout(clip_layout)
-        clip_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
-        self.enable_clip_widget.toggled.connect(clip_widget.setEnabled)
-        self.enable_clip_widget.setChecked(False)
-        clip_widget.setEnabled(False)
-
         checks = QtWidgets.QFormLayout()
         checks.addRow(self.alignment_tf_widget)
         checks.addRow(self.normalization_tf_widget)
-        checks.addRow(self.enable_clip_widget)
-        checks.addRow(clip_widget)
         
         self.setLayout(checks)
     
@@ -156,11 +129,6 @@ class DataTransformationsWidget(QtWidgets.QWidget):
         params = dict()
         params['align']     = self.alignment_tf_widget.isChecked()
         params['normalize'] = self.normalization_tf_widget.isChecked()
-
-        if self.enable_clip_widget.isChecked:
-            params['clip'] = [self.clip_min_widget.value(), self.clip_max_widget.value()]
-        else:
-            params['clip'] = None
         
         return params
 
