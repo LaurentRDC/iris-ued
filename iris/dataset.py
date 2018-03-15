@@ -42,9 +42,11 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     notes           = HDF5ExperimentalParameter('notes',           str,   default = '')
 
     def __repr__(self):
-        return '< DiffractionDataset object. \
-                  Acquisition date : {}, \n \
-                  fluence {} mj/cm**2 >'.format(self.acquisition_date, self.fluence)
+        rep = '< {} object with following metadata: '.format(type(self).__name__)
+        for key, val in self.metadata.items():
+            rep += '\n    {key}: {val}'.format(key = key, val = val)
+        
+        return rep + ' >'
     
     @classmethod
     def from_collection(cls, patterns, filename, time_points, metadata, valid_mask = None, 
@@ -149,7 +151,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     @classmethod
     def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
                  processes = 1, callback = None, align = True, normalize = True, 
-                 clip = None, ckwargs = dict(), dtype = None, **kwargs):
+                 ckwargs = dict(), dtype = None, **kwargs):
         """
         Create a DiffractionDataset from a subclass of AbstractRawDataset.
 
@@ -172,9 +174,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         align : bool, optional
             If True (default), raw images will be aligned on a per-scan basis.
         normalize : bool, optional
-            If True, images are normalized according to their total electron count.
-        clip : iterable or None, optional
-            If not None, all image are clipped to values between `min(clip)` and `max(clip)`.
+            If True, images within a scan are normalized to the same integrated diffracted intensity.
         ckwargs : dict or None, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
         dtype : dtype or None, optional
@@ -197,13 +197,11 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         
         if valid_mask is None:
             valid_mask = np.ones(shape = raw.resolution, dtype = np.bool)
-
-        valid_scans = tuple(set(raw.scans) - set(exclude_scans))
         
         metadata = raw.metadata.copy()
-        metadata['scans']       = valid_scans
-        metadata['aligned']     = align
-        metadata['normalized']  = normalize
+        metadata['scans']      = tuple(set(raw.scans) - set(exclude_scans))
+        metadata['aligned']    = align
+        metadata['normalized'] = normalize
 
         # Assemble the metadata
         kwargs.update({'ckwargs'    : ckwargs, 
@@ -214,18 +212,13 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
                        'callback'   : callback,
                        'filename'   : filename})
         
-        map_kwargs = {'raw'         : raw,
-                      'clip'        : clip,
-                      'valid_scans' : valid_scans,
-                      'align'       : align,
-                      'normalize'   : normalize,
-                      'invalid_mask': np.logical_not(valid_mask)}
-
-        reduced = pmap(_raw_combine, raw.time_points, 
-                       kwargs = map_kwargs,
-                       processes = processes,
-                       ntotal = len(raw.time_points))
-
+        reduced = raw.reduced(exclude_scans = exclude_scans, 
+                              align = align, 
+                              normalize = normalize,
+                              mask = np.logical_not(valid_mask),
+                              processes = processes, 
+                              dtype = dtype)
+        
         return cls.from_collection(patterns = reduced, **kwargs)
         
     @property
@@ -442,49 +435,6 @@ def _raw_combine(timedelay, raw, valid_scans, align, normalize, clip, invalid_ma
         weights = None
 
     return average(images, weights = weights)
-
-def iclip(im, low, high):
-    """ Clip images in-place """
-    np.clip(im, low, high, out = im)
-    return im
-
-def avg_and_error(arrays, axis = -1, ddof = 0, weights = None, ignore_nan = False):
-    """
-    Calculate the average and error in a stream conccurently.
-
-    Parameters
-    ----------
-    arrays : iterable of ndarrays
-        Arrays to be combined. This iterable can also a generator.
-    axis : int, optional
-        Reduction axis. Default is to combine the arrays in the stream as if 
-        they had been stacked along a new axis, then compute the standard error along this new axis.
-        If None, arrays are flattened. If `axis` is an int larger that
-        the number of dimensions in the arrays of the stream, standard error is computed
-        along the new axis.
-    ddof : int, optional
-        Means Delta Degrees of Freedom.  The divisor used in calculations
-        is ``N - ddof``, where ``N`` represents the number of elements.
-        By default `ddof` is one.
-    weights : iterable of ndarray, iterable of floats, or None, optional
-        Iterable of weights associated with the values in each item of `arrays`. 
-        Each value in an element of `arrays` contributes to the standard error 
-        according to its associated weight. The weights array can either be a float
-        or an array of the same shape as any element of `arrays`. If weights=None, 
-        then all data in each element of `arrays` are assumed to have a weight equal to one.
-    ignore_nan : bool, optional
-        If True, NaNs are set to zero weight. Default is propagation of NaNs.
-    
-    Returns
-    -------
-    avg : `~numpy.ndarray`
-        Weighted average. 
-    err : `~numpy.ndarray`
-        Weighted standard deviation.
-    """
-    avg, sq_avg, swgt = last(_ivar(arrays, axis, weights, ignore_nan))
-    std = np.sqrt((sq_avg - avg**2) * (swgt / (swgt - ddof)))
-    return avg, std
 
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
