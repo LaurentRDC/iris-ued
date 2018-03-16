@@ -15,7 +15,7 @@ from scipy.signal import detrend
 from npstreams import average, peek, pmap, itercopy
 from npstreams.stats import _ivar
 from skued import (electron_wavelength, baseline_dt, azimuthal_average, ialign, 
-                   mask_from_collection, combine_masks)
+                   mask_from_collection, combine_masks, nfold)
 from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
@@ -220,6 +220,37 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
                               dtype = dtype)
         
         return cls.from_collection(patterns = reduced, **kwargs)
+    
+    def symmetrize(self, mod, center, callback = None):
+        """
+        Symmetrize diffraction images based on n-fold rotational symmetry.
+
+        .. warning::
+            This is an irreversible in-place operation.
+
+        Parameters
+        ----------
+        mod : int
+            Fold symmetry number. 
+        center : array-like, shape (2,) or None
+            Coordinates of the center (in pixels). If None, the data is symmetrized around the
+            center of the images.
+        callback : callable or None, optional
+            Callable that takes an int between 0 and 99. This can be used for progress update.
+        
+        Raises
+        ------
+        ValueError: if ``mod`` is not a divisor of 360.
+        """
+        fold = partial(nfold, mod = mod, center = center, mask = self.invalid_mask)
+
+        ntimes = len(self.time_points)
+        dset = self.diffraction_group['intensity']
+        for index, time_point in enumerate(self.time_points):
+            dset[:,:, index] = fold(dset[:,:, index])
+            callback( int(100 * index / ntimes) )
+        
+        self.diff_eq.cache_clear()
         
     @property
     def metadata(self):
@@ -412,29 +443,6 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         if dataset.compression_opts: #could be None
             ckwargs.update(dataset.compression_opts)
         return ckwargs
-
-def _raw_combine(timedelay, raw, valid_scans, align, normalize, clip, invalid_mask):
-    
-    images = map(partial(raw.raw_data, timedelay), valid_scans)
-    if clip:
-        images = map(partial(iclip, low = min(clip), high = max(clip)), images)
-
-    if align:
-        images = ialign(images, mask = invalid_mask)
-    
-    if normalize:
-        valid = np.logical_not(invalid_mask)
-        images, images2 = itercopy(images, copies = 2)
-
-        # Compute the total intensity of first image
-        # This will be the reference point
-        first2, images2 = peek(images2)
-        initial_weight = np.sum(first2[valid])
-        weights = (initial_weight/np.sum(image[valid]) for image in images2)
-    else:
-        weights = None
-
-    return average(images, weights = weights)
 
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
