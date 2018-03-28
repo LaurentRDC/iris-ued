@@ -242,6 +242,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         ------
         ValueError: if ``mod`` is not a divisor of 360.
         """
+        if callback is None: 
+            callback = lambda _: None
+        
         fold = partial(nfold, mod = mod, center = center, mask = self.invalid_mask)
 
         ntimes = len(self.time_points)
