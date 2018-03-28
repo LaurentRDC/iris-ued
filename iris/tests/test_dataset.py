@@ -86,6 +86,11 @@ class TestDiffractionDataset(unittest.TestCase):
     def test_resolution(self):
         """ Test that dataset resolution is correct """
         self.assertSequenceEqual(self.patterns[0].shape, self.dataset.resolution)
+
+    def test_symmetrization(self):
+        """ Test that dataset symmetrization raises no errors """
+        self.dataset.symmetrize(mod = 2, center = (128,128))
+        self.assertSequenceEqual(self.patterns[0].shape, self.dataset.resolution)
     
     def test_data(self):
         """ Test that data stored in DiffractionDataset is correct """
