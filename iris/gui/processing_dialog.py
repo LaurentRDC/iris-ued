@@ -242,6 +242,7 @@ class ProcessingDialog(QtWidgets.QDialog):
     Modal dialog used to select dataset processing options.
     """
     processing_parameters_signal = QtCore.pyqtSignal(dict)
+    error_message_signal         = QtCore.pyqtSignal(str)
 
     def __init__(self, raw, **kwargs):
         """
@@ -252,6 +253,8 @@ class ProcessingDialog(QtWidgets.QDialog):
         super().__init__(**kwargs)
         self.setModal(True)
         self.setWindowTitle('Diffraction Dataset Processing')
+
+        self.error_message_signal.connect(self.show_error_message)
 
         image = raw.raw_data(timedelay = raw.time_points[0], scan = raw.scans[0], bgr = True)
         self.mask_widget = MaskCreator(image, parent = self)
@@ -271,9 +274,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         # Set exclude scan widget with a validator
         # integers separated by commas only
         self.exclude_scans_widget = QtWidgets.QLineEdit(parent = self)
-        self.exclude_scans_widget.setPlaceholderText('[comma-separated]')
-        self.exclude_scans_widget.setValidator(
-            QtGui.QRegExpValidator(QtCore.QRegExp('^\d{1,4}(?:[,]\d{1,4})*$')))
+        self.exclude_scans_widget.setPlaceholderText('e.g. 1:5, 6, 7, 10:50, 100')
 
         save_btn = QtWidgets.QPushButton('Launch processing', self)
         save_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
@@ -306,6 +307,11 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.layout.addLayout(params_layout)
         self.layout.addLayout(buttons)
         self.setLayout(self.layout)
+
+    @QtCore.pyqtSlot(str)
+    def show_error_message(self, msg):
+        self.error_dialog = QtGui.QErrorMessage(parent = self)
+        self.error_dialog.showMessage(msg)
     
     @QtCore.pyqtSlot()
     def accept(self):
@@ -319,13 +325,10 @@ class ProcessingDialog(QtWidgets.QDialog):
         
         exclude_scans_text = self.exclude_scans_widget.text()
         try:
-            exclude_scans = [int(exclude_scans_text)]
+            exclude_scans = parse_range(exclude_scans_text)
         except ValueError:
-            exclude_scans_text = exclude_scans_text.split(',')
-            try:
-                exclude_scans = list(map(int, exclude_scans_text))
-            except:
-                exclude_scans = []
+            self.error_message_signal.emit('Exclude scans unparseable:\n {}'.format(exclude_scans_text))
+            return
         
         # The arguments to the iris.processing.process function
         # more arguments will be added by controller
@@ -343,14 +346,60 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.processing_parameters_signal.emit(kwargs)
         super().accept()
 
+def parse_range(range_str):
+    """ 
+    Parse an integer range into a list of numbers. 
+    
+    Parameters
+    ----------
+    range_str : str
+        String of the form : "-10, 1:5, 10:50, 100, 101". 
+        Ranges are inclusive (the endpoint is included).
+    
+    Returns
+    -------
+    range : iterable of ints
+        Iterable of integers. Guaranteed to be sorted and unique.
+    
+    Raises
+    ------
+    ValueError : if the input ``range_str`` is unparseable.
+    """
+    range_str = str(range_str)
+    elements = range_str.split(',')
+    if not elements:
+        return list()
+    
+    iterable = list()
+
+    # Two possibilities : ints or ranges
+    # Either elem = int
+    # or     elem = start:stop
+    # Note : stop + 1 because inclusive ranges
+    for elem in elements:
+        try:
+            fl = int(elem)
+            iterable.append(fl)
+        except ValueError:
+            try:
+                start, stop = tuple(map(int, elem.split(':')))
+                iterable.extend(range(start, stop + 1))
+            except:
+                # Raise exception from None because full traceback is not useful
+                # especially in terms of GUI error messages
+                raise ValueError('Unparseable input: ', range_str) from None
+    
+    return list(sorted(set(iterable)))
+
 if __name__ == '__main__':
     
     from qdarkstyle import load_stylesheet_pyqt5
     import sys
-    from .. import MerlinRawDataset
+    from .. import McGillRawDataset
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet(load_stylesheet_pyqt5())
-    gui = ProcessingDialog(raw = MerlinRawDataset('D:\\Merlin data\\graphite-30mj-tds-180degflip'))
+    gui = ProcessingDialog(raw = McGillRawDataset('D:\\Diffraction data\\2018.03.05 - TiSe2 overnight 2'))
+    gui.processing_parameters_signal.connect(print)
     gui.show()
     app.exec_()
