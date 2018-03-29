@@ -19,17 +19,10 @@ def pens_and_brushes(num):
     return pens, brushes
 
 class TimeSeriesWidget(QtGui.QWidget):
-    """
-    Time-series widget with built-in display controls.
-
-    Slots
-    -----
-    plot : (array, array)
-        Plot a time-series.
-    """
+    """ Time-series widget with built-in display controls. """
 
     # Internal refresh signal
-    _refresh_signal = QtCore.pyqtSignal(object, object)
+    _refresh_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,18 +43,16 @@ class TimeSeriesWidget(QtGui.QWidget):
         self._last_intensities = None
         self._refresh_signal.connect(self.plot)
 
-        self.flip_times_widget = QtGui.QCheckBox('(DEBUG) Reverse times', self)
-        self.flip_times_widget.setChecked(False)
-        self.flip_times_widget.toggled.connect(lambda _: self.refresh())
-
         # Shortcut for some controls provided by PyQtGraph
         self.horz_grid_widget = QtGui.QCheckBox('Show horizontal grid', self)
         self.horz_grid_widget.setChecked(True)
-        self.horz_grid_widget.toggled.connect(self.enable_horz_grid)
+        self.horz_grid_widget.toggled.connect(
+            lambda toggle: self.plot_widget.getPlotItem().showGrid(x = toggle))
         
         self.vert_grid_widget = QtGui.QCheckBox('Show vertical grid', self)
         self.vert_grid_widget.setChecked(True)
-        self.vert_grid_widget.toggled.connect(self.enable_vert_grid)
+        self.vert_grid_widget.toggled.connect(
+            lambda toggle: self.plot_widget.getPlotItem().showGrid(y = toggle))
 
         self.connect_widget = QtGui.QCheckBox('Connect time-series', self)
         self.connect_widget.toggled.connect(self.enable_connect)
@@ -73,10 +64,12 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.symbol_size_widget.valueChanged.connect(self.set_symbol_size)
 
         self.horz_log_widget = QtGui.QCheckBox('Horizontal log mode', self)
-        self.horz_log_widget.toggled.connect(self.enable_horz_log)
+        self.horz_log_widget.toggled.connect(
+            lambda toggle: self.plot_widget.getPlotItem().setLogMode(x = toggle))
         
         self.vert_log_widget = QtGui.QCheckBox('Vertical log mode', self)
-        self.vert_log_widget.toggled.connect(self.enable_vert_log)
+        self.vert_log_widget.toggled.connect(
+            lambda toggle: self.plot_widget.getPlotItem().setLogMode(y = toggle))
 
         self.controls = QtGui.QVBoxLayout()
         self.controls.addWidget(self.horz_grid_widget)
@@ -85,7 +78,6 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.controls.addWidget(self.vert_log_widget)
         self.controls.addWidget(self.connect_widget)
         self.controls.addWidget(self.symbol_size_widget)
-        self.controls.addWidget(self.flip_times_widget)
         self.controls.addStretch(1)
 
         layout = QtGui.QHBoxLayout()
@@ -94,19 +86,26 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.setLayout(layout)
     
     @QtCore.pyqtSlot(object, object)
+    @QtCore.pyqtSlot(np.ndarray, np.ndarray)
     def plot(self, time_points, intensity):
+        """
+        Plot the a time-series
 
+        Parameters
+        ----------
+        time_points : `~numpy.ndarray`, shape (N,)
+            Time-delays [ps]
+        intensity : `~numpy.ndarray`, shape (N,)
+            Diffracted intensity [a.u.]
+        """
         self._last_times = np.asarray(time_points)
         self._last_intensities = np.asarray(intensity)
         self._last_intensities /= self._last_intensities.max()
 
-        if self.flip_times_widget.isChecked():
-            self._last_times = self._last_times[::-1]
-
         # Only compute the colors if number of time-points changes or first time
         pens, brushes = pens_and_brushes(len(time_points))
 
-        connect_kwargs = {'pen': None} if not self._time_series_connect else {}
+        connect_kwargs = {'pen': None} if not self._time_series_connect else dict()
         self.plot_widget.plot(x = self._last_times, y = self._last_intensities, 
                               symbol = 'o', symbolPen = pens, 
                               symbolBrush = brushes, symbolSize = self._symbol_size, 
@@ -119,22 +118,6 @@ class TimeSeriesWidget(QtGui.QWidget):
     @QtCore.pyqtSlot()
     def clear(self):
         self.plot_widget.clear()
-    
-    @QtCore.pyqtSlot(bool)
-    def enable_horz_grid(self, toggle):
-        self.plot_widget.getPlotItem().showGrid(x = toggle)
-    
-    @QtCore.pyqtSlot(bool)
-    def enable_vert_grid(self, toggle):
-        self.plot_widget.getPlotItem().showGrid(y = toggle)
-    
-    @QtCore.pyqtSlot(bool)
-    def enable_horz_log(self, toggle):
-        self.plot_widget.getPlotItem().setLogMode(x = toggle)
-
-    @QtCore.pyqtSlot(bool)
-    def enable_vert_log(self, toggle):
-        self.plot_widget.getPlotItem().setLogMode(y = toggle)
 
     @QtCore.pyqtSlot(bool)
     def enable_connect(self, toggle):
