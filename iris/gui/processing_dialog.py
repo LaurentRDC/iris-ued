@@ -354,18 +354,23 @@ def parse_range(range_str):
     ----------
     range_str : str
         String of the form : "-10, 1:5, 10:50, 100, 101". 
-        Ranges are inclusive (the endpoint is included).
+        Ranges are inclusive (the endpoint is included). Can also be
+        an empty string.
     
     Returns
     -------
     range : iterable of ints
-        Iterable of integers. Guaranteed to be sorted and unique.
+        Iterable of integers (possibly empty). Guaranteed to be sorted and unique.
     
     Raises
     ------
     ValueError : if the input ``range_str`` is unparseable.
     """
     range_str = str(range_str)
+    range_str = range_str.replace(' ','')
+    if not range_str:
+        return list()
+
     elements = range_str.split(',')
     if not elements:
         return list()
