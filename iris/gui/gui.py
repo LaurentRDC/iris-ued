@@ -23,6 +23,10 @@ from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .angular_average_dialog import AngularAverageDialog
 
+# Get all proper subclasses of AbstractRawDataset
+# to build a loading menu
+from .. import AbstractRawDataset
+
 image_folder = join(dirname(__file__), 'images')
 
 def run(**kwargs):
@@ -37,8 +41,8 @@ def run(**kwargs):
 class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
     dataset_path_signal             = QtCore.pyqtSignal(str)
+    raw_dataset_path_signal         = QtCore.pyqtSignal(str, object)    # path and class
     single_picture_path_signal      = QtCore.pyqtSignal(str)
-    raw_dataset_path_signal         = QtCore.pyqtSignal(str)
     legacy_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
     merlin_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
     error_message_signal            = QtCore.pyqtSignal(str)
@@ -54,9 +58,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self._controller_thread.start()
 
         self.dataset_path_signal.connect(self.controller.load_dataset)
-        self.raw_dataset_path_signal.connect(self.controller.load_mcgill_raw_dataset)
-        self.legacy_raw_dataset_path_signal.connect(self.controller.load_legacy_raw_dataset)
-        self.merlin_raw_dataset_path_signal.connect(self.controller.load_raw_merlin_dataset)
+        self.raw_dataset_path_signal.connect(self.controller.load_raw_dataset)
 
         self.controls = ControlBar(parent = self)
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
@@ -114,14 +116,15 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         ###################
         # Actions
-        self.load_mcgill_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&MCGILL', self)
-        self.load_mcgill_raw_dataset_action.triggered.connect(self.load_mcgill_raw_dataset)
 
-        self.load_legacy_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&legacy MCGILL', self)
-        self.load_legacy_raw_dataset_action.triggered.connect(self.load_legacy_raw_dataset)
+        self.file_menu = self.menu_bar.addMenu('&File')
+        load_raw_submenu = self.file_menu.addMenu('Load raw dataset...')
 
-        self.load_merlin_raw_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&MERLIN', self)
-        self.load_merlin_raw_action.triggered.connect(self.load_merlin_raw_dataset)
+        # Dynamically add an option for each implementation of AbstractRawDataset
+        # Note : because of dynamical nature of these bindings,
+        # it must be done in a separate method
+        for cls in AbstractRawDataset.implementations:
+            self._create_load_raw(cls, load_raw_submenu)
 
         self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
         self.load_dataset_action.triggered.connect(self.load_dataset)
@@ -139,12 +142,6 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.close_dataset_action.setEnabled(False)
         self.controller.powder_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
         self.controller.processed_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
-
-        self.file_menu = self.menu_bar.addMenu('&File')
-        load_raw_submenu = self.file_menu.addMenu('Load raw dataset...')
-        load_raw_submenu.addAction(self.load_mcgill_raw_dataset_action)
-        load_raw_submenu.addAction(self.load_legacy_raw_dataset_action)
-        load_raw_submenu.addAction(self.load_merlin_raw_action)
 
         self.file_menu.addAction(self.load_dataset_action)
         self.file_menu.addAction(self.load_single_picture_action)
@@ -210,6 +207,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.setWindowTitle('Iris - UED data exploration')
         self.center_window()
         self.showMaximized()
+    
+    def _create_load_raw(self, cls, submenu):
+        return submenu.addAction(QtGui.QIcon(join(image_folder, 'locator.png')),
+                                 '&Load {}'.format(cls.__name__),
+                                 lambda : self.load_raw_dataset(cls))
         
     def closeEvent(self, event):
         self._controller_thread.quit()
@@ -253,20 +255,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         dialog.exec_()
         dialog.angular_average_signal.disconnect(self.controller.recompute_angular_average)
     
-    @QtCore.pyqtSlot()
-    def load_legacy_raw_dataset(self):
+    @QtCore.pyqtSlot(object)
+    def load_raw_dataset(self, cls):
+        print(cls, type(cls))
         path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
-        self.legacy_raw_dataset_path_signal.emit(path)
-    
-    @QtCore.pyqtSlot()
-    def load_mcgill_raw_dataset(self):
-        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
-        self.raw_dataset_path_signal.emit(path)
-    
-    @QtCore.pyqtSlot()
-    def load_merlin_raw_dataset(self):
-        path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
-        self.merlin_raw_dataset_path_signal.emit(path)
+        self.raw_dataset_path_signal.emit(path, cls)
 
     @QtCore.pyqtSlot()
     def load_dataset(self):
