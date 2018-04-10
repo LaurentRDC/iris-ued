@@ -73,6 +73,5 @@ if __name__ == '__main__':
                        'Natural Language :: English',
                        'Operating System :: OS Independent',
                        'Programming Language :: Python',
-                       'Programming Language :: Python :: 3.5',
                        'Programming Language :: Python :: 3.6']
             )
