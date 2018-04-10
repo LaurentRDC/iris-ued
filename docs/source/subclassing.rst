@@ -19,7 +19,13 @@ Ultrafast electron diffraction experiments typically have multiple *scans*. Each
 of a time-delay sweep. You can think of it as one scan being an experiment, and so each dataset
 is composed of multiple, equivalent experiments.
 
-With this in mind, :class:`AbstractRawDataset` subclasses automatically include the following metadata:
+To subclass :class:`AbstractRawDataset`, the method :func:`AbstractRawDataset.raw_data` must minimally implemented.
+It must follow the following specification:
+
+.. automethod::
+  AbstractRawDataset.raw_data
+
+:class:`AbstractRawDataset` subclasses automatically include the following metadata:
 
 * ``date`` (`str`): Acquisition date. Date format is up to you.
 * ``energy`` (`float`): Electron energy in keV.
@@ -37,7 +43,5 @@ With this in mind, :class:`AbstractRawDataset` subclasses automatically include 
 
 Subclasses can add more metadata or override the current metadata with new defaults.
 
-The following method must be implemented:
-
-.. automethod::
-  AbstractRawDataset.raw_data
+All proper subclasses of :class:`AbstractRawDataset` are automatically added to the possible raw dataset formats
+that can be loaded from the GUI.
