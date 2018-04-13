@@ -59,6 +59,19 @@ def process(**kwargs):
         fname = dset.filename
     return fname
 
+def indicate_in_progress(method):
+    """ Decorator for IrisController methods that should
+    emit the ``operation_in_progress`` signal and automatically
+    revert when the operation is finished. """
+    @wraps(method)
+    def new_method(*args, **kwargs):
+        args[0].operation_in_progress.emit(True)
+        try:
+            return method(*args, **kwargs)
+        finally:
+            args[0].operation_in_progress.emit(False)
+    return new_method
+
 class IrisController(QtCore.QObject, metaclass = ErrorAware):
     """
     Controller behind Iris.
@@ -72,6 +85,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     powder_dataset_metadata         = QtCore.pyqtSignal(dict)
 
     error_message_signal            = QtCore.pyqtSignal(str)
+    operation_in_progress           = QtCore.pyqtSignal(bool)
 
     raw_data_signal                 = QtCore.pyqtSignal(object)
     averaged_data_signal            = QtCore.pyqtSignal(object)
@@ -157,6 +171,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
         self.worker = WorkThread(function = process, kwargs = info_dict)
         self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
         self.processing_progress_signal.emit(0)
         self.worker.start()
@@ -169,6 +184,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.dataset.close()
         self.dataset = None
         self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.start()
     
     @QtCore.pyqtSlot(dict)
@@ -179,6 +195,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.dataset.close()
         self.dataset = None
         self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.start()
 
     @QtCore.pyqtSlot(float, float)
@@ -213,6 +230,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.worker.done_signal.connect(lambda b: callback())
         self.worker.done_signal.connect(lambda b: self.dataset_metadata.emit(self.dataset.metadata))
         self.worker.done_signal.connect(lambda b: self.display_powder_data())
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.start()
     
     @QtCore.pyqtSlot(dict)
@@ -248,6 +266,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             self.display_powder_data()
     
     @QtCore.pyqtSlot(str, object)
+    @indicate_in_progress
     def load_raw_dataset(self, path, cls):
         """
         Load a raw dataset according to an AbstractRawDataset.
@@ -274,6 +293,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
                               scan = min(self.raw_dataset.scans))
 
     @QtCore.pyqtSlot()
+    @indicate_in_progress
     def close_raw_dataset(self):
         self.raw_dataset = None
         self.raw_dataset_loaded_signal.emit(False)
@@ -281,6 +301,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         
     @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
     @QtCore.pyqtSlot(str)
+    @indicate_in_progress
     def load_dataset(self, path):
         if not path: #e.g. path = ''
             return 
@@ -302,6 +323,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             self.powder_dataset_loaded_signal.emit(True)
     
     @QtCore.pyqtSlot()
+    @indicate_in_progress
     def close_dataset(self):
         with suppress(AttributeError):
             self.dataset.close()
