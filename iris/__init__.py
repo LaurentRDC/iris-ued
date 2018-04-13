@@ -7,3 +7,5 @@ __version__ = '5.0'
 from .raw import AbstractRawDataset
 from .mcgill import McGillRawDataset, LegacyMcGillRawDataset
 from .dataset import DiffractionDataset, PowderDiffractionDataset
+
+from . import plugins
