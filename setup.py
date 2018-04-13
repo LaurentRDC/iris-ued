@@ -11,8 +11,8 @@ from setuptools import setup, find_packages
 
 PACKAGE_NAME    = 'iris'
 DESCRIPTION     = 'Ultrafast electron diffraction data exploration'
-URL             = 'www.physics.mcgill.ca/siwicklab/software.html'
-DOWNLOAD_URL    = 'http://github.com/LaurentRDC/iris'
+URL             = 'http://iris-ued.readthedocs.io'
+DOWNLOAD_URL    = 'http://github.com/LaurentRDC/iris-ued'
 AUTHOR          = 'Laurent P. René de Cotret'
 AUTHOR_EMAIL    = 'laurent.renedecotret@mail.mcgill.ca'
 BASE_PACKAGE    = 'iris'
