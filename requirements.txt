@@ -6,6 +6,6 @@ scikit-image >=0.13
 scikit-ued >= 0.5.7
 pyqtgraph >= 0.10
 qdarkstyle >= 2.3
-npstreams >= 1.4.1
+npstreams >= 1.4
 cached_property >= 1.3
 pluginbase >= 0.5
