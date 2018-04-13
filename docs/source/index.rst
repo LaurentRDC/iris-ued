@@ -15,11 +15,13 @@ The code presented herein has been in use at some point by the
 .. warning::
         This code is in development and may break without warning.
 
+.. image:: iris_screen.png
+
 Links
 =====
 
-* `Source code <https://github.com/LaurentRDC/iris`_
-* `Issues <https://github.com/LaurentRDC/iris/issues>`_
+* `Source code <https://github.com/LaurentRDC/iris-ued>`_
+* `Issues <https://github.com/LaurentRDC/iris-ued/issues>`_
 
 .. _iris_docs:
 
