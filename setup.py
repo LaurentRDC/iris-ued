@@ -56,8 +56,8 @@ if __name__ == '__main__':
         include_package_data = True,
         zip_safe = False,
         project_urls = {
-            'Documentation' : 'http://iris.readthedocs.io/en/master/',
-            'Source'        : 'https://github.com/LaurentRDC/iris',
+            'Documentation' : 'http://iris-ued.readthedocs.io/en/master/',
+            'Source'        : 'https://github.com/LaurentRDC/iris-ued',
         },
         python_requires = '>= 3.6',
         classifiers = ['Development Status :: 4 - Beta',
