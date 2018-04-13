@@ -20,5 +20,7 @@ if not PLUGIN_DIR.exists():
 
 source = PluginBase(package = 'iris.plugins').make_plugin_source(searchpath = [str(PLUGIN_DIR)])
 
+# TODO: make imports available to iris.plugins
+# like iris.plugins was a package itself
 for plugin_name in source.list_plugins():
     source.load_plugin(plugin_name)
