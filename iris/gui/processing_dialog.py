@@ -4,8 +4,6 @@ import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets, QtGui
 import numpy as np
 
-from .. import McGillRawDataset
-
 fletcher32_help = """ Adds a checksum to each chunk to detect data corruption. 
 Attempts to read corrupted chunks will fail with an error. 
 No significant speed penalty """.replace('\n', '')
@@ -248,7 +246,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         """
         Parameters
         ----------
-        raw : McGillRawDataset
+        raw : AbstractRawDataset instance
         """
         super().__init__(**kwargs)
         self.setModal(True)
@@ -395,16 +393,3 @@ def parse_range(range_str):
                 raise ValueError('Unparseable input: ', range_str) from None
     
     return list(sorted(set(iterable)))
-
-if __name__ == '__main__':
-    
-    from qdarkstyle import load_stylesheet_pyqt5
-    import sys
-    from .. import McGillRawDataset
-
-    app = QtWidgets.QApplication(sys.argv)
-    app.setStyleSheet(load_stylesheet_pyqt5())
-    gui = ProcessingDialog(raw = McGillRawDataset('D:\\Diffraction data\\2018.03.05 - TiSe2 overnight 2'))
-    gui.processing_parameters_signal.connect(print)
-    gui.show()
-    app.exec_()
