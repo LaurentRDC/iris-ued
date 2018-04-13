@@ -13,6 +13,12 @@ To use your own raw data with :mod:`iris`, a plug-in functionality is made avail
 Plug-ins are Python modules that implement a subclass of :class:`AbstractRawDataset`, and should be placed in :file:`~/iris_plugins` (:file:`C:\\Users\\UserName\\iris_plugins` on Windows). Subclasses
 of :class:`AbstractRawDataset` are automatically detected by :mod:`iris` and can be used via the GUI.
 
+Installed plug-ins can be imported from :mod:`iris.plugins`::
+
+  from iris.plugins import DatasetSubclass
+
+which would work if the :class:`DatasetSubclass` is defined in the file :file:`~/iris_plugins/<anything>.py`. Example plug-ins is available `here <https://github.com/LaurentRDC/iris-ued/tree/master/example_plugins>`_
+
 ******************************
 Subclassing AbstractRawDataset
 ******************************
