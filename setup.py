@@ -4,7 +4,6 @@ from itertools import chain
 import os
 import re
 from setuptools import setup, find_packages
-from unittest import TestLoader
 
 # To upload to pypi.org:
 #   >>> python setup.py sdist
@@ -12,7 +11,7 @@ from unittest import TestLoader
 
 PACKAGE_NAME    = 'iris'
 DESCRIPTION     = 'Ultrafast electron diffraction data exploration'
-URL             = 'www.physics.mcgill.ca/siwicklab'
+URL             = 'www.physics.mcgill.ca/siwicklab/software.html'
 DOWNLOAD_URL    = 'http://github.com/LaurentRDC/iris'
 AUTHOR          = 'Laurent P. René de Cotret'
 AUTHOR_EMAIL    = 'laurent.renedecotret@mail.mcgill.ca'
@@ -30,18 +29,10 @@ with open('README.rst') as f:
 with open('requirements.txt') as f:
     REQUIREMENTS = [line for line in f.read().split('\n') if len(line.strip())]
 
-exclude = {'exclude': ['docs', '*cache']}
+exclude = {'exclude': ['docs', '*cache', '*tests']}
 PACKAGES = [BASE_PACKAGE + '.' + x for x in find_packages(os.path.join(base_path, BASE_PACKAGE), **exclude)]
 if BASE_PACKAGE not in PACKAGES:
     PACKAGES.append(BASE_PACKAGE)
-
-#To create a Windows installer for this, run:
-# >>> python setup.py bdist_wininst
-
-image_list = glob('iris\\gui\\images\\*.png')
-
-def iris_test_suite():
-    return TestLoader().discover('.')
 
 if __name__ == '__main__':
     setup(
@@ -59,11 +50,14 @@ if __name__ == '__main__':
         install_requires = REQUIREMENTS,
         keywords = ['iris'],
         packages = PACKAGES,
-        data_files = [('iris\\gui\\images', image_list)],
+        data_files = [('iris\\gui\\images', glob('iris\\gui\\images\\*.png'))],
         entry_points = {'gui_scripts': ['iris = iris.gui:run']},
         include_package_data = True,
         zip_safe = False,
-        test_suite = 'setup.iris_test_suite', 
+        project_urls = {
+            'Documentation' : 'http://iris.readthedocs.io/en/master/',
+            'Source'        : 'https://github.com/LaurentRDC/iris',
+        },
         python_requires = '>= 3.6',
         classifiers = ['Development Status :: 4 - Beta',
                        'Environment :: Console',
