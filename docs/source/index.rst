@@ -31,7 +31,7 @@ General Documentation
 
     installation
     dataset
-    subclassing
+    plugins
     api
 
 Authors

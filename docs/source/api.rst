@@ -14,19 +14,14 @@ Diffraction Dataset Classes
 .. autosummary::
     :toctree: classes/
 
-    McGillRawDataset
     DiffractionDataset
     PowderDiffractionDataset
 
-Utilities
-=========
 
-Merlin Image Binary files
--------------------------
+Abstract Base Classes
+=====================
 
 .. autosummary::
-    :toctree: functions/
+    :toctree: classes/
 
-    imibread
-    mibread
-    mibheader
+    AbstractRawDataset
