@@ -106,5 +106,5 @@ ENV/
 
 # Others
 benchmark.py
-.vscode/
-notebooks
+*.vscode/
+*notebooks/
