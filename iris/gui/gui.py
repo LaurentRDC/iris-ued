@@ -257,7 +257,6 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
     @QtCore.pyqtSlot(object)
     def load_raw_dataset(self, cls):
-        print(cls, type(cls))
         path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
         self.raw_dataset_path_signal.emit(path, cls)
 
