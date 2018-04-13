@@ -15,8 +15,6 @@ Iris
 Iris is both a library for interacting with ultrafast electron diffraction data, as well as a GUI frontend
 for interactively exploring this data.
 
-.. image:: iris_screen.png
-
 Iris also includes a plug-in manager so that you can explore your data.
 
 Installation
