@@ -4,8 +4,8 @@ Iris
 .. image:: https://img.shields.io/appveyor/ci/LaurentRDC/iris-ued/master.svg
     :target: https://ci.appveyor.com/project/LaurentRDC/iris-ued
     :alt: Windows Build Status
-.. image:: https://readthedocs.org/projects/iris-ued/badge/?version=latest
-    :target: http://iris-ued.readthedocs.io
+.. image:: https://readthedocs.org/projects/iris-ued/badge/?version=master
+    :target: http://iris-ued.readthedocs.io/
     :alt: Documentation Build Status
 .. image:: https://img.shields.io/pypi/v/iris-ued.svg
     :target: https://pypi.python.org/pypi/iris-ued
