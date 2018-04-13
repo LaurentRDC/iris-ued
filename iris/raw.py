@@ -2,19 +2,6 @@
 """
 Raw dataset classes
 ===================
-
-The following classes are defined herein:
-
-.. autosummary::
-    :toctree: classes/
-
-    AbstractRawDataset
-    McGillRawDataset
-    MerlinRawDataset
-    FSURawDataset
-
-Subclassing RawDatasetBase
-==========================
 """
 from abc import abstractmethod
 from collections import OrderedDict
@@ -27,7 +14,6 @@ from npstreams import average, pmap, itercopy, peek
 from skued import ialign
 
 from .meta import ExperimentalParameter, MetaRawDataset
-
 
 class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
     """
@@ -50,7 +36,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         * reduced
     
     A list of concrete implementations of AbstractRawDatasets is available in 
-    the ``implementations`` class attribute.
+    the ``implementations`` class attribute. Subclasses are automatically added.
     
     The call signature must remain the same for all overwritten methods.
     """
