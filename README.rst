@@ -18,6 +18,12 @@ To install the latest development version from `Github <https://github.com/Laure
 Each version is tested against Python 3.6. If you are using a different version, tests can be run
 using the standard library's `unittest` module.
 
+Documentation
+-------------
+
+The `Documentation on readthedocs.io <https://iris.readthedocs.io>`_ provides API-level documentation, as 
+well as tutorials.
+
 Support / Report Issues
 -----------------------
 
