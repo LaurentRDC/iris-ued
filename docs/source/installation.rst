@@ -15,28 +15,34 @@ Requirements
     excellent `Intel Distribution for Python <https://software.intel.com/en-us/intel-distribution-for-python>`_
     which provides easy access to all of the above dependencies and more.
 
-**iris** works on Linux, Mac OS X and Windows. It requires Python 3.5+.
+:mod:`iris` works on Linux, Mac OS X and Windows. It requires Python 3.6+.
 
 GUI Libraries
 =============
 
-The GUI frontend of iris requires PyQt5. Since PyQt5 is not available on the Python Package Index,
-you will need to install it either via conda or using an installer. This requirement cannot, at this
+The GUI frontend of :mod:`iris` requires PyQt5. This requirement cannot, at this
 time, be substituted with Pyside.
 
 Install iris
 ============
 
-You can install the latest developer version of iris by cloning the git
+:mod:`iris` is available on PyPI as **iris-ued**::
+
+    python -m pip install iris-ued
+
+You can install the latest developer version of :mod:`iris` by cloning the git
 repository::
 
-    git clone https://github.com/LaurentRDC/iris.git
+    git clone https://github.com/LaurentRDC/iris-ued.git
 
 ...then installing the package with::
 
-    cd iris
+    cd iris-ued
     python setup.py install
 
+In Python code, :mod:`iris` can be imported as follows ::
+
+    import iris
 
 Testing
 =======

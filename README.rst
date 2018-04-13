@@ -4,7 +4,7 @@ Iris
 .. image:: https://img.shields.io/appveyor/ci/LaurentRDC/iris-ued/master.svg
     :target: https://ci.appveyor.com/project/LaurentRDC/iris-ued
     :alt: Windows Build Status
-.. image:: https://readthedocs.org/projects/iris-ued/badge/?version=master
+.. image:: https://readthedocs.org/projects/iris-ued/badge/?version=latest
     :target: http://iris-ued.readthedocs.io
     :alt: Documentation Build Status
 .. image:: https://img.shields.io/pypi/v/iris-ued.svg
@@ -29,6 +29,8 @@ To install the latest development version from `Github <https://github.com/Laure
 Iris is available on PyPI; it can be installed with `pip <https://pip.pypa.io>`_.::
 
     python -m pip install iris-ued
+
+Once installed, the package can be imported as :mod:`iris`.
 
 Each version is tested against Python 3.6. If you are using a different version, tests can be run
 using the standard library's `unittest` module.
