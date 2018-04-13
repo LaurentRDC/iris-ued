@@ -10,7 +10,7 @@ import sys
 from os.path import dirname, join
 
 import pyqtgraph as pg
-from pyqtgraph import QtCore, QtGui
+from PyQt5 import QtGui, QtWidgets, QtCore
 from qdarkstyle import load_stylesheet_pyqt5
 from skimage.io import imread
 from skued import mibread
@@ -22,6 +22,7 @@ from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .angular_average_dialog import AngularAverageDialog
+from .qbusyindicator import QBusyIndicator
 
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
@@ -38,7 +39,7 @@ def run(**kwargs):
 
 # TODO: show progress on windows taskbar
 #       http://doc.qt.io/qt-5/qtwinextras-overview.html
-class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
+class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     
     dataset_path_signal             = QtCore.pyqtSignal(str)
     raw_dataset_path_signal         = QtCore.pyqtSignal(str, object)    # path and class
@@ -88,8 +89,18 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controller.raw_dataset_metadata.connect(self.controls.update_raw_dataset_metadata)
         self.controller.dataset_metadata.connect(self.controls.update_dataset_metadata)
 
-        #########
-        # Viewers
+        # Status bar ----------------------------------------------------------
+        # Operation in progress widget
+        # Including custom 'busy' indicator
+        # TODO: add progress bar here
+        status_bar = QtWidgets.QStatusBar(parent = self)
+        self.setStatusBar(status_bar)
+
+        busy_indicator = QBusyIndicator(parent = self)
+        self.controller.operation_in_progress.connect(busy_indicator.toggle_animation)
+        status_bar.addPermanentWidget(busy_indicator)
+
+        # Viewers -------------------------------------------------------------
         self.raw_data_viewer = pg.ImageView(parent = self, name = 'Raw data')
         self.raw_data_viewer.resize(self.raw_data_viewer.maximumSize())
         self.controller.raw_data_signal.connect(lambda obj: self.raw_data_viewer.clear() if obj is None else self.raw_data_viewer.setImage(obj))
@@ -108,10 +119,10 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         self.controller.error_message_signal.connect(self.show_error_message)
         self.error_message_signal.connect(self.show_error_message)
 
-        self.file_dialog = QtGui.QFileDialog(parent = self)      
+        self.file_dialog = QtWidgets.QFileDialog(parent = self)      
         self.menu_bar = self.menuBar()
 
-        self.viewer_stack = QtGui.QTabWidget()
+        self.viewer_stack = QtWidgets.QTabWidget()
         self.viewer_stack.addTab(self.raw_data_viewer, 'View raw dataset')
         self.viewer_stack.addTab(self.processed_viewer, 'View processed dataset')
         self.viewer_stack.addTab(self.powder_viewer, 'View radial averages')
@@ -132,18 +143,18 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         for cls in AbstractRawDataset.implementations:
             self._create_load_raw(cls, load_raw_submenu)
 
-        self.load_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
+        self.load_dataset_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load dataset', self)
         self.load_dataset_action.triggered.connect(self.load_dataset)
 
-        self.load_single_picture_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load diffraction picture', self)
+        self.load_single_picture_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Load diffraction picture', self)
         self.load_single_picture_action.triggered.connect(self.load_single_picture)
 
-        self.close_raw_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Close raw dataset', self)
+        self.close_raw_dataset_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Close raw dataset', self)
         self.close_raw_dataset_action.triggered.connect(self.controller.close_raw_dataset)
         self.close_raw_dataset_action.setEnabled(False)
         self.controller.raw_dataset_loaded_signal.connect(self.close_raw_dataset_action.setEnabled)
 
-        self.close_dataset_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Close dataset', self)
+        self.close_dataset_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '&Close dataset', self)
         self.close_dataset_action.triggered.connect(self.controller.close_dataset)
         self.close_dataset_action.setEnabled(False)
         self.controller.powder_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
@@ -158,20 +169,20 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
         ###################
         # Operations on Diffraction Datasets
         # TODO: remove operations from control bar as they are added here
-        self.processing_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process raw data', self)
+        self.processing_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Process raw data', self)
         self.processing_action.triggered.connect(self.launch_processsing_dialog)
         self.controller.raw_dataset_loaded_signal.connect(self.processing_action.setEnabled)
 
-        self.promote_to_powder_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Calculate angular average', self)
+        self.promote_to_powder_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Calculate angular average', self)
         self.promote_to_powder_action.triggered.connect(self.launch_promote_to_powder_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.promote_to_powder_action.setEnabled)
 
-        self.update_metadata_action = QtGui.QAction(QtGui.QIcon(join(image_folder, 'save.png')), '&Update dataset metadata', self)
+        self.update_metadata_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'save.png')), '&Update dataset metadata', self)
         self.update_metadata_action.triggered.connect(self.launch_metadata_edit_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
         self.controller.powder_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
 
-        self.recompute_angular_averages = QtGui.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Recompute angular average', self)
+        self.recompute_angular_averages = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Recompute angular average', self)
         self.recompute_angular_averages.triggered.connect(self.launch_recompute_angular_average_dialog)
         self.controller.powder_dataset_loaded_signal.connect(self.recompute_angular_averages.setEnabled)
 
@@ -185,14 +196,14 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
 
         ###################
         # Layout
-        control_layout = QtGui.QVBoxLayout()
+        control_layout = QtWidgets.QVBoxLayout()
         control_layout.addWidget(self.controls)
 
-        self.layout = QtGui.QHBoxLayout()
+        self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.viewer_stack)
         self.layout.addLayout(control_layout)
 
-        self.central_widget = QtGui.QWidget()
+        self.central_widget = QtWidgets.QWidget()
         self.central_widget.setLayout(self.layout)
         self.setCentralWidget(self.central_widget)
         
@@ -225,7 +236,7 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     
     @QtCore.pyqtSlot(str)
     def show_error_message(self, msg):
-        self.error_dialog = QtGui.QErrorMessage(parent = self)
+        self.error_dialog = QtWidgets.QErrorMessage(parent = self)
         self.error_dialog.showMessage(msg)
     
     @QtCore.pyqtSlot()
@@ -282,11 +293,11 @@ class Iris(QtGui.QMainWindow, metaclass = ErrorAware):
     @QtCore.pyqtSlot()
     def center_window(self):
         qr = self.frameGeometry()
-        cp = QtGui.QDesktopWidget().availableGeometry().center()
+        cp = QtWidgets.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-class SinglePictureViewer(QtGui.QDialog):
+class SinglePictureViewer(QtWidgets.QDialog):
 
     def __init__(self, fname, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -299,8 +310,8 @@ class SinglePictureViewer(QtGui.QDialog):
         self.image_viewer = pg.ImageView(parent = self)
         self.image_viewer.setImage(im)
 
-        layout = QtGui.QVBoxLayout()
-        fname_label = QtGui.QLabel('Filename: ' + fname, parent = self)
+        layout = QtWidgets.QVBoxLayout()
+        fname_label = QtWidgets.QLabel('Filename: ' + fname, parent = self)
         fname_label.setAlignment(QtCore.Qt.AlignCenter)
         layout.addWidget(fname_label)
         layout.addWidget(self.image_viewer)
