@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 #   >>> python setup.py sdist
 #   >>> twine upload dist/iris-x.x.x.tar.gz
 
-PACKAGE_NAME    = 'iris'
+PACKAGE_NAME    = 'iris-ued'
 DESCRIPTION     = 'Ultrafast electron diffraction data exploration'
 URL             = 'http://iris-ued.readthedocs.io'
 DOWNLOAD_URL    = 'http://github.com/LaurentRDC/iris-ued'

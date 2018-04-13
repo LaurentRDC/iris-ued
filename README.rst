@@ -1,6 +1,9 @@
 Iris
 ====
 
+.. image:: https://img.shields.io/appveyor/ci/LaurentRDC/iris-ued/master.svg
+    :target: https://ci.appveyor.com/project/LaurentRDC/iris-ued
+    :alt: Windows Build Status
 .. image:: https://readthedocs.org/projects/iris-ued/badge/?version=master
     :target: http://iris-ued.readthedocs.io
     :alt: Documentation Build Status
