@@ -103,4 +103,8 @@ ENV/
 
 # PyCharm
 .idea/
+
+# Others
 benchmark.py
+.vscode/
+notebooks
