@@ -7,7 +7,7 @@ __version__ = '5.0b3'
 # Versioning should be compliant with PyPI guide 
 # https://packaging.python.org/tutorials/distributing-packages/#choosing-a-versioning-scheme
 
-from .raw import AbstractRawDataset
+from .raw import AbstractRawDataset, check_raw_bounds
 from .mcgill import McGillRawDataset, LegacyMcGillRawDataset
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .meta import ExperimentalParameter

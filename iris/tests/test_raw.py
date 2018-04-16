@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .. import McGillRawDataset, AbstractRawDataset
+from .. import McGillRawDataset, AbstractRawDataset, check_raw_bounds
 from ..meta import ExperimentalParameter
 import numpy as np
 import unittest
@@ -9,6 +9,13 @@ class TestRawDataset(AbstractRawDataset):
     test        = ExperimentalParameter('test', int, default = 0)
     resolution  = ExperimentalParameter('resolution', tuple, (16,16))
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.time_points = list(range(0, 10))
+        self.scans       = list(range(1, 3))
+
+    @check_raw_bounds
     def raw_data(self, timedelay, scan = 1): 
         return np.zeros((self.resolution), dtype = np.uint8)
 
@@ -26,7 +33,17 @@ class TestAbstractRawDataset(unittest.TestCase):
 
         * raw_data
         """
-        TestRawDataset()        
+        TestRawDataset()    
+
+    def test_data_bounds(self):
+        """ Test that a ValueError is raised if ``timedelay`` or ``scan`` are out-of-bounds. """
+        test_dataset = TestRawDataset()
+
+        with self.assertRaises(ValueError):
+            test_dataset.raw_data(timedelay = 20, scan = 1)
+        
+        with self.assertRaises(ValueError):
+            test_dataset.raw_data(timedelay = 5, scan = -1)
     
     def test_experimental_parameters(self):
         """ Test the behavior of the ExperimentalParameter descriptor """
