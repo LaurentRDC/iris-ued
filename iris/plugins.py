@@ -13,8 +13,6 @@ from runpy import run_path
 
 from pathlib import Path
 
-from pluginbase import PluginBase
-
 # Pluging location is ~\iris_plugins
 PLUGIN_DIR = Path.home() / Path('iris_plugins')
 
