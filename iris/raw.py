@@ -242,7 +242,7 @@ def check_raw_bounds(method):
         if (not valid_scan) or (not valid_timedelay):
             raise ValueError('Requested time-delay {t} and scan {s} are invalid or out-of-bounds'.format(t = timedelay, s = scan))
         
-        return self.method(timedelay, scan, *args, **kwargs)
+        return method(self, timedelay, scan, *args, **kwargs)
     
     return checked_method
 
