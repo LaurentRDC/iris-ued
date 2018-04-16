@@ -5,7 +5,7 @@ Raw dataset classes
 """
 from abc import abstractmethod
 from collections import OrderedDict
-from functools import partial
+from functools import partial, wraps
 
 import numpy as np
 
@@ -152,6 +152,7 @@ class AbstractRawDataset(object, metaclass = MetaRawDataset):
         
         Raises
         ------
+        ValueError : if ``timedelay`` or ``scan`` are invalid / out of bounds.
         IOError : Filename is not associated with an image/does not exist.
         """ 
         pass
@@ -218,3 +219,30 @@ def _raw_combine(timedelay, raw, valid_scans, normalize, align, invalid_mask, dt
         weights = None
 
     return average(images, weights = weights).astype(dtype)
+
+def check_raw_bounds(method):
+    """
+    Decorator that automatically checks out-of-bounds errors while
+    querying raw diffraction data.
+
+    In case of out-of-bounds queries, a ``ValueError`` is raised.
+
+    ``method`` is expected to be a reimplemented :meth:`AbstractRawDataset.raw_data` method.
+    See :meth:`AbstractRawDataset.raw_data` for the expected call signature.
+    """
+    # Note that we use the expected call signature from AbstractRawDataset.raw_data
+    @wraps(method)
+    def checked_method(self, timedelay, scan, *args, **kwargs):
+        timedelay = float(timedelay)
+        scan = int(scan)
+
+        valid_scan = scan in self.scans
+        valid_timedelay = timedelay in self.time_points
+
+        if (not valid_scan) or (not valid_timedelay):
+            raise ValueError('Requested time-delay {t} and scan {s} are invalid or out-of-bounds'.format(t = timedelay, s = scan))
+        
+        return self.method(timedelay, scan, *args, **kwargs)
+    
+    return checked_method
+

@@ -16,8 +16,7 @@ from cached_property import cached_property
 from npstreams import average 
 from skued import diffread
 
-from . import AbstractRawDataset
-
+from . import AbstractRawDataset, check_raw_bounds
 
 class McGillRawDataset(AbstractRawDataset):
 
@@ -58,33 +57,38 @@ class McGillRawDataset(AbstractRawDataset):
 
         return metadata
     
+    @check_raw_bounds
     def raw_data(self, timedelay, scan = 1, **kwargs):
         """
-        Returns an array of the image at a timedelay and scan. Pump-on background 
-        is removed from the pattern before being returned.
+        Returns an array of the image at a timedelay and scan. Dark background is
+        always removed.
         
         Parameters
         ----------
-        timedelay : float
-            Time-delay in picoseconds.
+        timdelay : float
+            Acquisition time-delay.
         scan : int, optional
-            Scan number. 
+            Scan number. Default is 1.
+        kwargs
+            Extra keyword arguments are ignored.
         
         Returns
         -------
-        arr : ndarray, shape (N,M)
+        arr : `~numpy.ndarray`, ndim 2
         
         Raises
         ------
-        ImageNotFoundError
-            Filename is not associated with an image/does not exist.
+        ValueError : if ``timedelay`` or ``scan`` are invalid / out of bounds.
+        IOError : Filename is not associated with an image/does not exist.
         """ 
-        timedelay = float(timedelay)
-        scan = int(scan)
-
         # scan directory looks like 'scan 0132'
+        # Note that a glob pattern is required because every diffraction pattern
+        # has a timestamp in the filename.
         directory = join(self.source, 'scan {:04d}'.format(scan))
-        fname = next(iglob(join(directory, 'pumpon_{:+010.3f}ps_*.tif'.format(timedelay))))
+        try:
+            fname = next(iglob(join(directory, 'pumpon_{:+010.3f}ps_*.tif'.format(timedelay))))
+        except StopIteration:
+            raise IOError('Expected the file {} to exist, but could not find it.'.format(fname))
 
         return diffread(fname)
 
@@ -160,34 +164,34 @@ class LegacyMcGillRawDataset(AbstractRawDataset):
         backgrounds = map(diffread, iglob(join(self.source, 'background.*.pumpon.tif')))
         return average(backgrounds)
 
+    @check_raw_bounds
     def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs): 
         """
-        Returns an array of the image at a timedelay and scan. Pump-on background 
-        is removed from the pattern before being returned.
+        Returns an array of the image at a timedelay and scan.
         
         Parameters
         ----------
-        timedelay : float
-            Time-delay in picoseconds.
+        timdelay : float
+            Acquisition time-delay.
         scan : int, optional
-            Scan number. 
+            Scan number. Default is 1.
         bgr : bool, optional
-            If True (default), laser background is removed before being returned. 
+            If True (default), laser background is removed before being returned.
         
         Returns
         -------
-        arr : ndarray, shape (N,M)
+        arr : `~numpy.ndarray`, ndim 2
         
         Raises
         ------
-        ImageNotFoundError
-            Filename is not associated with an image/does not exist.
+        ValueError : if ``timedelay`` or ``scan`` are invalid / out of bounds.
+        IOError : Filename is not associated with an image/does not exist.
         """ 
         #Template filename looks like:
         #    'data.timedelay.+1.00.nscan.04.pumpon.tif'
-        sign = '' if float(timedelay) < 0 else '+'
-        str_time = sign + '{0:.2f}'.format(float(timedelay))
-        filename = 'data.timedelay.' + str_time + '.nscan.' + str(int(scan)).zfill(2) + '.pumpon.tif'
+        sign = '' if timedelay < 0 else '+'
+        str_time = sign + '{0:.2f}'.format(timedelay)
+        filename = 'data.timedelay.' + str_time + '.nscan.' + str(scan).zfill(2) + '.pumpon.tif'
 
         im = diffread(join(self.source, filename)).astype(np.float)
         if bgr:
