@@ -15,7 +15,7 @@ environment:
       TEST_CMD: "python -m unittest discover --verbose"
 
       CONDA_DEPENDENCIES: "numpy scipy scikit-image pyqt h5py"
-      PIP_DEPENDENCIES: "scikit-ued pyqtgraph qdarkstyle npstreams cached_property pluginbase"
+      PIP_DEPENDENCIES: "scikit-ued pyqtgraph qdarkstyle npstreams cached_property"
 
   matrix:
 
