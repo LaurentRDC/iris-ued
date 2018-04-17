@@ -1,16 +1,17 @@
 """
 Controller behind Iris
 """
-from functools import wraps
 import traceback
-from contextlib import suppress
-from types import FunctionType
 import warnings
+from contextlib import suppress
+from functools import wraps
+from types import FunctionType
 
 import numpy as np
-from pyqtgraph import QtCore
+from PyQt5 import QtCore
 
-from .. import (DiffractionDataset, PowderDiffractionDataset, AbstractRawDataset)
+from .. import AbstractRawDataset, DiffractionDataset, PowderDiffractionDataset
+
 
 def error_aware(func):
     """
@@ -28,7 +29,7 @@ def error_aware(func):
             warnings.warn(exc, UserWarning)
     return aware_func
 
-class ErrorAware(QtCore.pyqtWrapperType):
+class ErrorAware(type(QtCore.QObject)):
     
     def __new__(meta, classname, bases, class_dict):
         new_class_dict = dict()
