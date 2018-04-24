@@ -108,22 +108,6 @@ class ControlBar(QtWidgets.QWidget):
     def request_baseline_computation(self):
         self.baseline_computation_parameters.emit(self.powder_diffraction_dataset_controls.baseline_parameters())
     
-    @QtCore.pyqtSlot(bool)
-    def enable_raw_dataset_controls(self, enable):
-        self.raw_dataset_controls.setEnabled(enable)
-    
-    @QtCore.pyqtSlot(bool)
-    def enable_diffraction_dataset_controls(self, enable):
-        self.diffraction_dataset_controls.setEnabled(enable)
-        self.notes_editor.setEnabled(enable)
-        self.metadata_widget.setEnabled(enable)
-    
-    @QtCore.pyqtSlot(bool)
-    def enable_powder_diffraction_dataset_controls(self, enable):
-        self.powder_diffraction_dataset_controls.setEnabled(enable)
-        self.notes_editor.setEnabled(enable)
-        self.metadata_widget.setEnabled(enable)
-    
     @QtCore.pyqtSlot()
     def shift_time_zero(self):
         shift = self.diffraction_dataset_controls.time_zero_shift_widget.value()

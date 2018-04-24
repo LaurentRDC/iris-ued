@@ -71,15 +71,12 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controls.time_zero_shift.connect(self.controller.set_time_zero_shift)
 
-        self.controller.raw_dataset_loaded_signal.connect(self.controls.enable_raw_dataset_controls)
         self.controller.raw_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.raw_data_viewer))
         self.controller.raw_dataset_loaded_signal.connect(self.controls.raw_dataset_controls.setVisible)
 
-        self.controller.processed_dataset_loaded_signal.connect(self.controls.enable_diffraction_dataset_controls)
         self.controller.processed_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.processed_viewer))
         self.controller.processed_dataset_loaded_signal.connect(self.controls.diffraction_dataset_controls.setVisible)
 
-        self.controller.powder_dataset_loaded_signal.connect(self.controls.enable_powder_diffraction_dataset_controls)
         self.controller.powder_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.powder_viewer))
         self.controller.powder_dataset_loaded_signal.connect(self.controls.powder_diffraction_dataset_controls.setVisible)
         

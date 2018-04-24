@@ -28,10 +28,16 @@ Iris is available on PyPI; it can be installed with `pip <https://pip.pypa.io>`_
 
     python -m pip install iris-ued
 
-Once installed, the package can be imported as :code:`iris`.
-
 Each version is tested against Python 3.6. If you are using a different version, tests can be run
 using the standard library's `unittest` module.
+
+Usage
+-----
+
+Once installed, the package can be imported as :code:`iris`. 
+
+The GUI component can be launched from a command line interpreter as :code:`python -m iris`
+or :code:`pythonw -m iris` (no console window).
 
 Documentation
 -------------
