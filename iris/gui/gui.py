@@ -12,8 +12,7 @@ from os.path import dirname, join
 import pyqtgraph as pg
 from PyQt5 import QtGui, QtWidgets, QtCore
 from qdarkstyle import load_stylesheet_pyqt5
-from skimage.io import imread
-from skued import mibread
+from skued import diffread
 
 from .control_bar import ControlBar
 from .controller import ErrorAware, IrisController
@@ -284,8 +283,10 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load diffraction picture', filter = 'Images (*.tif *.tiff *.mib)')[0]
         if not path:
             return
-        
-        return SinglePictureViewer(path).exec_()
+
+        viewer = SinglePictureViewer(path)
+        viewer.resize(0.75*self.size())
+        return viewer.exec_()
     
     @QtCore.pyqtSlot()
     def center_window(self):
@@ -299,10 +300,8 @@ class SinglePictureViewer(QtWidgets.QDialog):
     def __init__(self, fname, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if fname.endswith(('.tif', '.tiff')):
-            im = imread(fname)
-        elif fname.endswith('.mib'):
-            im = mibread(fname)
+        #scikit-ued's diffread ensures that 'color' images are reduced to 2-dimensional greyscale
+        im = diffread(fname)
 
         self.image_viewer = pg.ImageView(parent = self)
         self.image_viewer.setImage(im)
