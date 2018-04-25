@@ -102,6 +102,20 @@ class ExperimentalParameter:
              instance.__dict__[self.name] = value
 
 class HDF5ExperimentalParameter(ExperimentalParameter):
+    """ 
+    Descriptor to experimental parameters and metadata stored in an iris DiffractionDataset.
+    These should never be instantiated directly; they are created dynamically at dataset creation.
+
+    Parameters
+    ----------
+    name : str
+        Parameter name
+    ptype : type or callable
+        Parameter type, e.g. float, or callable, e.g. numpy.array. 
+    default : object or None
+        Default value of the parameter. If None, no default value is set. Hence, the
+        default value can never be None.
+    """
 
     def __get__(self, instance, cls):
         value = instance.experimental_parameters_group.attrs.get(self.name, default = self.default)
