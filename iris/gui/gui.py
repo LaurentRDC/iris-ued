@@ -22,6 +22,7 @@ from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .angular_average_dialog import AngularAverageDialog
 from .qbusyindicator import QBusyIndicator
+from .symmetrize_dialog import SymmetrizeDialog
 
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
@@ -169,6 +170,10 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.processing_action.triggered.connect(self.launch_processsing_dialog)
         self.controller.raw_dataset_loaded_signal.connect(self.processing_action.setEnabled)
 
+        self.symmetrize_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Symmetrize data', self)
+        self.symmetrize_action.triggered.connect(self.launch_symmetrize_dialog)
+        self.controller.processed_dataset_loaded_signal.connect(self.symmetrize_action.setEnabled)
+
         self.promote_to_powder_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Calculate angular average', self)
         self.promote_to_powder_action.triggered.connect(self.launch_promote_to_powder_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.promote_to_powder_action.setEnabled)
@@ -184,6 +189,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
 
         self.diffraction_dataset_menu = self.menu_bar.addMenu('&Dataset')
         self.diffraction_dataset_menu.addAction(self.processing_action)
+        self.diffraction_dataset_menu.addAction(self.symmetrize_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.promote_to_powder_action)
         self.diffraction_dataset_menu.addAction(self.update_metadata_action)
@@ -242,6 +248,15 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         processing_dialog.processing_parameters_signal.connect(self.controller.process_raw_dataset)
         processing_dialog.exec_()
         processing_dialog.processing_parameters_signal.disconnect(self.controller.process_raw_dataset)
+
+    @QtCore.pyqtSlot()
+    def launch_symmetrize_dialog(self):
+        symmetrize_dialog = SymmetrizeDialog(parent = self, 
+                                             image = self.controller.dataset.diff_data(timedelay = self.controller.dataset.time_points[0]))
+        symmetrize_dialog.resize(0.75*self.size())
+        symmetrize_dialog.symmetrize_parameters_signal.connect(self.controller.symmetrize)
+        symmetrize_dialog.exec_()
+        symmetrize_dialog.symmetrize_parameters_signal.disconnect(self.controller.symmetrize)
     
     @QtCore.pyqtSlot()
     def launch_metadata_edit_dialog(self):
