@@ -17,8 +17,9 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         self.setModal(True)
         self.setWindowTitle('Data Symmetrization')
 
-        description_label = QtWidgets.QLabel(parent)
+        description_label = QtWidgets.QLabel(parent = self)
         description_label.setText(description)
+        description_label.setAlignment(QtCore.Qt.AlignHCenter)
 
         self.viewer = pg.ImageView(parent = self)
         self.viewer.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
@@ -34,10 +35,14 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         self.accept_btn = QtWidgets.QPushButton('Symmetrize', self)
         self.accept_btn.clicked.connect(self.accept)
+        self.accept_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, 
+                                      QtWidgets.QSizePolicy.Maximum)
 
         self.cancel_btn = QtWidgets.QPushButton('Cancel', self)
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setDefault(True)
+        self.cancel_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, 
+                                      QtWidgets.QSizePolicy.Maximum)
 
         self.error_message_signal.connect(self.show_error_message)
 
