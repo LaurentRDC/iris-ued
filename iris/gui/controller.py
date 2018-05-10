@@ -6,6 +6,7 @@ import warnings
 from contextlib import suppress
 from functools import wraps
 from types import FunctionType
+from shutil import copy2
 
 import numpy as np
 from PyQt5 import QtCore
@@ -53,6 +54,22 @@ def recompute_angular_average(**kwargs):
     with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
         dataset.compute_angular_averages(**kwargs)
     return filename
+
+def symmetrize(dataset, destination, **kwargs):
+    """ 
+    Copies a dataset and symmetrize it. Keyword arguments
+    are passed to `DiffractionDataset.symmetrize`.
+    
+    Parameters
+    ----------
+    dataset : path-like
+    destination : path-like
+    """
+    copy2(dataset, destination)
+
+    with DiffractionDataset(destination) as dset:
+        dset.symmetrize(**kwargs)
+        return dset.filename
 
 def process(**kwargs):
     """ Process a RawDataset into a DiffractionDataset """
@@ -165,6 +182,20 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self._relative_averaged = enable
         self.display_averaged_data(self._timedelay_index)
     
+    @QtCore.pyqtSlot(str, dict)
+    def symmetrize(self, destination, params):
+        """ Copy the currently-loaded dataset, symmetrize the copy, and load the copy. """
+        kwargs = {'dataset'    : self.dataset.filename,
+                  'destination': destination,
+                  'callback': self.processing_progress_signal.emit}
+        kwargs.update(params)
+        self.dataset.close()
+
+        self.worker = WorkThread(function = symmetrize, kwargs = kwargs)
+        self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
+        self.worker.start()
+
     @QtCore.pyqtSlot(dict)
     def process_raw_dataset(self, info_dict):
         info_dict.update({'callback': self.processing_progress_signal.emit, 
