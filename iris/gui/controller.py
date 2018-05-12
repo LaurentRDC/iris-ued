@@ -69,7 +69,8 @@ def symmetrize(dataset, destination, **kwargs):
 
     with DiffractionDataset(destination) as dset:
         dset.symmetrize(**kwargs)
-        return dset.filename
+        fname = dset.filename
+    return fname
 
 def process(**kwargs):
     """ Process a RawDataset into a DiffractionDataset """
