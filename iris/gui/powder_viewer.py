@@ -1,5 +1,5 @@
 import pyqtgraph as pg
-from pyqtgraph import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from functools import lru_cache
 from skued import spectrum_colors
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
@@ -13,7 +13,7 @@ def pens_and_brushes(num):
     brushes = list(map(pg.mkBrush, qcolors))
     return pens, brushes
 
-class PowderViewer(QtGui.QWidget):
+class PowderViewer(QtWidgets.QWidget):
 
     baseline_parameters_signal = QtCore.pyqtSignal(dict)
     peak_dynamics_roi_signal = QtCore.pyqtSignal(float, float)  #left pos, right pos
@@ -31,7 +31,7 @@ class PowderViewer(QtGui.QWidget):
         self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.powder_pattern_viewer)
         layout.addWidget(self.time_series_widget)
         self.setLayout(layout)

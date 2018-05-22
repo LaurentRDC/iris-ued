@@ -1,7 +1,6 @@
 """
 Control bar for all Iris's controls
 """
-from collections import Iterable
 from contextlib import suppress
 from PyQt5 import QtWidgets, QtCore, QtGui
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
