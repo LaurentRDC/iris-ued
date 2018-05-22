@@ -775,6 +775,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.first_stage = first_stage
         self.wavelet = wavelet
         self.niter = max_iter
+
+        self.powder_eq.cache_clear()
     
     def compute_angular_averages(self, center = None, normalized = False, angular_bounds = None, trim = True, callback = None):
         """ 
@@ -846,12 +848,14 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.powder_group['px_radius'].resize(px_radius.shape)
         self.powder_group['px_radius'].write_direct(px_radius)
 
+        # Use px_radius as placeholder for scattering_vector until calibration
         self.powder_group['scattering_vector'].resize(px_radius.shape)
         self.powder_group['scattering_vector'].write_direct(px_radius)
         
         self.powder_group['baseline'].resize(rintensity.shape)
         self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
 
+        self.powder_eq.cache_clear()
         callback(100)
 
 def _trim_bounds(arr):
