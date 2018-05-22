@@ -28,6 +28,8 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     _diffraction_group_name = '/processed'
     _exp_params_group_name  = '/'
 
+    # Subclasses can add more experimental parameters like those below
+    # The types must be representable by h5py
     energy          = HDF5ExperimentalParameter('energy',          float, default = 90)       # keV
     pump_wavelength = HDF5ExperimentalParameter('pump_wavelength', int,   default = 800)      # nanometers
     fluence         = HDF5ExperimentalParameter('fluence',         float, default = 0)        # milliJoules / centimeters ^ 2
@@ -473,6 +475,7 @@ class PowderDiffractionDataset(DiffractionDataset):
                 self.powder_group.create_dataset(name = name, shape = maxshape, maxshape = maxshape, 
                                                  dtype = np.float, fillvalue = 0.0, **self.compression_params)
         
+        # Radius from center in units of pixels
         if 'px_radius' not in self.powder_group:
             self.powder_group.create_dataset('px_radius', shape = (maxshape[-1],), maxshape = (maxshape[-1],),
                                              dtype = np.float, fillvalue = 0.0)
@@ -522,7 +525,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     @property
     def scattering_angle(self):
         """ Array of scattering angle :math:`2 \Theta` """
-        # TODO: cache
+        # TODO: calibrate scattering angle
         return self.px_radius
         #return np.arctan(self.px_radius * self.pixel_width / self.camera_length)
 
@@ -747,12 +750,12 @@ class PowderDiffractionDataset(DiffractionDataset):
             Center of the diffraction patterns. If None (default), the dataset
             attribute will be used instead.
         normalized : bool, optional
-            If True, each pattern is normalized to its integral. Default is False.
+            If True, each pattern is normalized to its integral.
         angular_bounds : 2-tuple of float or None, optional
             Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis. 
             Angle bounds outside [0, 360) are mapped back to [0, 360).
         trim : bool, optional
-            If True, leading/trailing zeros - possibly due to masks - are trimmed. Default is False.
+            If True, leading/trailing zeros - possibly due to masks - are trimmed.
         callback : callable or None, optional
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
@@ -775,7 +778,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         for index, timedelay in enumerate(self.time_points):
             px_radius, avg = azimuthal_average(self.diff_data(timedelay), 
                                                center = self.center, 
-                                               mask = np.logical_not(self.valid_mask), 
+                                               mask = self.invalid_mask, 
                                                angular_bounds = angular_bounds,
                                                trim = False)
             
@@ -807,10 +810,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         # We store the raw px radius and infer other measurements (e.g. diffraction angle) from it
         self.powder_group['px_radius'].resize(px_radius.shape)
         self.powder_group['px_radius'].write_direct(px_radius)
-        
-        #self.powder_group['intensity'].dims.create_scale(self.powder_group['px_radius'], 'radius [px]')
-        #self.powder_group['intensity'].dims[0].attach_scale(self.powder_group['px_radius'])
-        #self.powder_group['intensity'].dims[1].attach_scale(self.experimental_parameters_group['time_points'])
         
         self.powder_group['baseline'].resize(rintensity.shape)
         self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
