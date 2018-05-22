@@ -162,7 +162,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         image = raw.raw_data(timedelay = raw.time_points[0], scan = raw.scans[0], bgr = True)
         self.mask_widget = MaskCreator(image, parent = self)
 
-        title = QtWidgets.QLabel('<h2>Raw dataset controls<\h2>')
+        title = QtWidgets.QLabel('<h2>Data Processing Options<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -252,24 +252,30 @@ class ProcessingDialog(QtWidgets.QDialog):
         processing_options.addRow(self.alignment_tf_widget)
         processing_options.addRow(self.normalization_tf_widget)
 
-        params_layout = QtWidgets.QVBoxLayout()
-        params_layout.addWidget(title)
-        params_layout.addLayout(processing_options)
-        params_layout.addLayout(hdf5_layout)
-        params_layout.addStretch()
-
         buttons = QtWidgets.QHBoxLayout()
         buttons.addWidget(save_btn)
         buttons.addWidget(cancel_btn)
 
-        top_layout = QtWidgets.QHBoxLayout()
-        top_layout.addWidget(self.mask_widget)
-        top_layout.addLayout(params_layout)
+        params_layout = QtWidgets.QVBoxLayout()
+        params_layout.addWidget(title)
+        params_layout.addLayout(processing_options)
+        params_layout.addLayout(hdf5_layout)
+        params_layout.addLayout(buttons)
 
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.addLayout(top_layout)
-        self.layout.addLayout(buttons)
-        self.setLayout(self.layout)
+        params_widget = QtWidgets.QFrame()
+        params_widget.setLayout(params_layout)
+        params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
+        params_widget.setFrameShape(QtWidgets.QFrame.Panel)
+
+        left_layout = QtWidgets.QVBoxLayout()
+        left_layout.addWidget(params_widget)
+        left_layout.addStretch()
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.mask_widget)
+        layout.addLayout(left_layout)
+
+        self.setLayout(layout)
 
     @QtCore.pyqtSlot(str)
     def show_error_message(self, msg):
