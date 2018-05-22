@@ -472,7 +472,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         maxshape = (len(self.time_points), sqrt(2*max(self.resolution)**2))
         for name in {'intensity', 'baseline',}:
             if name not in self.powder_group:
-                self.powder_group.create_dataset(name = name, shape = (maxshape[-1],), maxshape = maxshape, 
+                self.powder_group.create_dataset(name = name, shape = maxshape, maxshape = maxshape, 
                                                  dtype = np.float, fillvalue = 0.0, **self.compression_params)
         
         # Radius from center in units of pixels
