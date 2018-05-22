@@ -3,8 +3,6 @@
 @author: Laurent P. René de Cotret
 """
 
-import functools
-import multiprocessing
 import os
 import sys
 from os.path import dirname, join
