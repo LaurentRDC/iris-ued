@@ -1,17 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Viewer widgets for PowderDiffractionDatasets
+"""
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
-from functools import lru_cache
-from skued import spectrum_colors
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
-from .time_series_widget import TimeSeriesWidget
-
-@lru_cache(maxsize = 1)
-def pens_and_brushes(num):
-    qcolors = tuple(map(lambda c: QtGui.QColor.fromRgbF(*c), spectrum_colors(num)))
-    pens = list(map(pg.mkPen, qcolors))
-    brushes = list(map(pg.mkBrush, qcolors))
-    return pens, brushes
+from .time_series_widget import TimeSeriesWidget, pens_and_brushes
 
 class PowderViewer(QtWidgets.QWidget):
 

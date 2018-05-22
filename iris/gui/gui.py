@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author: Laurent P. René de Cotret
+Main GUI for iris
 """
 
 import os
