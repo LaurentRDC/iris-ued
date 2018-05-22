@@ -528,13 +528,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         return np.array(self.powder_group['px_radius'])
 
     @property
-    def scattering_angle(self):
-        """ Array of scattering angle :math:`2 \Theta` """
-        # TODO: calculate scattering angle from scattering vector
-        return self.px_radius
-        #return np.arctan(self.px_radius * self.pixel_width / self.camera_length)
-
-    @property
     def scattering_vector(self):
         """ Array of scattering vector norm :math:`|G|` [:math:`1/\AA`] """
         # Scattering vector norm is defined as G = 4 pi sin(theta)/wavelength
@@ -583,7 +576,6 @@ class PowderDiffractionDataset(DiffractionDataset):
         
         self.powder_group['scattering_vector'].resize(I.shape)
         self.powder_group['scattering_vector'].write_direct(q)
-        
     
     @lru_cache(maxsize = 2) # with and without background
     def powder_eq(self, bgr = False):
