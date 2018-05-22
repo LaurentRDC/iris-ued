@@ -8,12 +8,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 from skued import Crystal, powder_calq
 
+EXPLANATION = """Calibrate the scattering vector range of polycrystalline data. Select two peaks of known Miller indices by dragging the vertical lines, 
+and use an appropriate structure. Some structures are built-in, but you can also use a CIF of your own. Make sure the structure 
+parameters are what you expect before calibration. """.replace('\n', '')
+
 class MillerIndexWidget(QtWidgets.QWidget):
     """
     Widget for specifying a peak's Miller indices
     """
-
-    miller_index = QtCore.pyqtSignal(int, int, int)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,6 +68,10 @@ class QCalibratorDialog(QtWidgets.QDialog):
         super().__init__(**kwargs)
         self.setModal(True)
 
+        explanation_label = QtWidgets.QLabel(EXPLANATION)
+        explanation_label.setAlignment(QtCore.Qt.AlignHCenter)
+        explanation_label.setWordWrap(True)
+
         self.intensity = I
         self.crystal = None
 
@@ -81,32 +87,43 @@ class QCalibratorDialog(QtWidgets.QDialog):
         plot_widget.addItem(self.peak1_indicator)
         plot_widget.addItem(self.peak2_indicator)
 
+        # Crystal creation ----------------------------------------------------
+        database_title = QtWidgets.QLabel('<h3>Structure description</h3>')
+        database_title.setAlignment(QtCore.Qt.AlignHCenter)
+
+        database_widget = QtWidgets.QComboBox(parent = self)
+        database_widget.addItems(sorted(Crystal.builtins))
+        database_widget.currentTextChanged.connect(self.create_database_crystal)
+
+        structure_file_btn = QtWidgets.QPushButton('Open explorer', self)
+        structure_file_btn.clicked.connect(self.load_cif)
+        structure_file_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+
         crystal_label = QtWidgets.QTextEdit(parent = self)
         crystal_label.setReadOnly(True)
         crystal_label.setLineWrapMode(QtWidgets.QTextEdit.WidgetWidth)
         self.new_crystal.connect(lambda c : crystal_label.setText(str(c)))
 
-        crystal_label_title = QtWidgets.QLabel('Crystal structure')
+        crystal_label_title = QtWidgets.QLabel('<h3>Crystal structure</h3>')
         crystal_label_title.setAlignment(QtCore.Qt.AlignHCenter)
 
-        database_title = QtWidgets.QLabel('Structure description')
-        database_title.setAlignment(QtCore.Qt.AlignHCenter)
+        crystal_creation_layout = QtWidgets.QFormLayout()
+        crystal_creation_layout.addRow(database_title)
+        crystal_creation_layout.addRow('Select a database structure: ', database_widget)
+        crystal_creation_layout.addRow('Load structure from file: ', structure_file_btn)
+        crystal_creation_layout.addRow(crystal_label_title)
+        crystal_creation_layout.addRow(crystal_label)
 
-        database_widget = QtWidgets.QListWidget(parent = self)
-        database_widget.addItems(sorted(Crystal.builtins))
-        database_widget.currentTextChanged.connect(self.create_database_crystal)
-
-        left_peak_label = QtWidgets.QLabel('Left peak indices')
-        left_peak_label.setAlignment(QtCore.Qt.AlignHCenter)
-
+        # Peak specifications -------------------------------------------------
         self.left_peak_miller = MillerIndexWidget(parent = self)
         self.left_peak_miller.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
-        right_peak_label = QtWidgets.QLabel('Right peak indices')
-        right_peak_label.setAlignment(QtCore.Qt.AlignHCenter)
-
         self.right_peak_miller = MillerIndexWidget(parent = self)
         self.right_peak_miller.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+
+        peak_layout = QtWidgets.QFormLayout()
+        peak_layout.addRow('Left peak: ', self.left_peak_miller)
+        peak_layout.addRow('Right peak: ', self.right_peak_miller)
 
         self.accept_btn = QtWidgets.QPushButton('Calibrate', parent = self)
         self.accept_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
@@ -121,19 +138,11 @@ class QCalibratorDialog(QtWidgets.QDialog):
         btns.addWidget(self.accept_btn)
         btns.addWidget(self.cancel_btn)
 
-        peaks_layout = QtWidgets.QHBoxLayout()
-        peaks_layout.addWidget(self.left_peak_miller)
-        peaks_layout.addWidget(self.right_peak_miller)
-
         left_layout = QtWidgets.QVBoxLayout()
-        left_layout.addWidget(database_title)
-        left_layout.addWidget(database_widget)
-        left_layout.addWidget(crystal_label_title)
-        left_layout.addWidget(crystal_label)
-        left_layout.addWidget(left_peak_label)
-        left_layout.addWidget(self.left_peak_miller)
-        left_layout.addWidget(right_peak_label)
-        left_layout.addWidget(self.right_peak_miller)
+        left_layout.addWidget(explanation_label)
+        left_layout.addLayout(crystal_creation_layout)
+        left_layout.addLayout(peak_layout)
+        left_layout.addStretch()
         left_layout.addLayout(btns)
 
         # Put left layout in a widget for better control on size 
@@ -154,6 +163,15 @@ class QCalibratorDialog(QtWidgets.QDialog):
         self.crystal = crystal
         self.new_crystal.emit(self.crystal)
     
+    @QtCore.pyqtSlot()
+    def load_cif(self):
+        path, *_ = QtWidgets.QFileDialog.getOpenFileName(parent = self, caption = 'Load structure from CIF', filter = '*.cif')
+        if not path:
+            return
+        
+        self.crystal = Crystal.from_cif(path)
+        self.new_crystal.emit(self.crystal)
+    
     @QtCore.pyqtSlot(str)
     def show_error_message(self, msg):
         self.error_dialog = QtGui.QErrorMessage(parent = self)
@@ -162,7 +180,7 @@ class QCalibratorDialog(QtWidgets.QDialog):
     @QtCore.pyqtSlot()
     def accept(self):
         if self.crystal is None:
-            self.show_error_message('Select a Crystal from the database first.')
+            self.show_error_message('Missing structure. Select a Crystal from the database or load a structure file (CIF).')
             return
             
         positions = self.peak1_indicator.getXPos(), self.peak2_indicator.getXPos()
