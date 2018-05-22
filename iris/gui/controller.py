@@ -166,7 +166,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         """ Emit a powder data signal with/out background """
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
-        self.powder_data_signal.emit(self.dataset.px_radius, 
+        self.powder_data_signal.emit(self.dataset.scattering_vector, 
                                      self.dataset.powder_data(timedelay = None, relative = self._relative_powder, bgr = self._bgr_powder))
     
     @QtCore.pyqtSlot(bool)
@@ -254,6 +254,13 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         integrated = self.dataset.time_series( (x1, x2, y1, y2) )
         self.time_series_signal.emit(self.dataset.time_points, integrated)
     
+    @QtCore.pyqtSlot(dict)
+    def powder_calq(self, params):
+        """ Calibrate the range of q-vector for a polycrystalline data of known structure. Parameters
+        are passed to `skued.powder_calq`. """
+        self.dataset.powder_calq(**params)
+        self.display_powder_data()
+
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
         """ Compute the powder baseline. The dictionary `params` is passed to 
