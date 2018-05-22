@@ -1,4 +1,7 @@
-
+# -*- coding: utf-8 -*-
+"""
+Dialog for symmetrization of DiffractionDataset
+"""
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets, QtGui
 

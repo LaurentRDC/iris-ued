@@ -1,4 +1,7 @@
-
+# -*- coding: utf-8 -*-
+"""
+Dialog for processing between AbstractRawDataset and DiffractionDataset
+"""
 from os import cpu_count
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets, QtGui

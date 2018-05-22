@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+"""
+Dialog for editing a restricted set of metadata
+"""
 from PyQt5 import QtWidgets, QtCore, QtWidgets
 
 class MetadataEditDialog(QtWidgets.QDialog):

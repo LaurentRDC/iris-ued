@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+"""
+Viewer widgets for DiffractionDatasets
+"""
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets
 
@@ -5,7 +9,7 @@ from .time_series_widget import TimeSeriesWidget
 
 class ProcessedDataViewer(QtWidgets.QWidget):
     """
-    Widget displaying the result of processing from McGillRawDataset
+    Widget displaying DiffractionDatasets
     """
     peak_dynamics_roi_signal = QtCore.pyqtSignal(object)
 
