@@ -843,9 +843,11 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.powder_group['intensity'].resize(rintensity.shape)
         self.powder_group['intensity'].write_direct(rintensity)
         
-        # We store the raw px radius and infer other measurements (e.g. diffraction angle) from it
         self.powder_group['px_radius'].resize(px_radius.shape)
         self.powder_group['px_radius'].write_direct(px_radius)
+
+        self.powder_group['scattering_vector'].resize(px_radius.shape)
+        self.powder_group['scattering_vector'].write_direct(px_radius)
         
         self.powder_group['baseline'].resize(rintensity.shape)
         self.powder_group['baseline'].write_direct(np.zeros_like(rintensity))
