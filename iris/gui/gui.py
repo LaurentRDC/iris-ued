@@ -19,6 +19,7 @@ from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .angular_average_dialog import AngularAverageDialog
+from .calibrate_q_dialog import QCalibratorDialog
 from .qbusyindicator import QBusyIndicator
 from .symmetrize_dialog import SymmetrizeDialog
 
@@ -200,6 +201,10 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.recompute_angular_averages.triggered.connect(self.launch_recompute_angular_average_dialog)
         self.controller.powder_dataset_loaded_signal.connect(self.recompute_angular_averages.setEnabled)
 
+        self.calibrate_scattvector_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '&Calibrate scattering vector', self)
+        self.calibrate_scattvector_action.triggered.connect(self.launch_calq_dialog)
+        self.controller.powder_dataset_loaded_signal.connect(self.calibrate_scattvector_action.setEnabled)
+
         self.diffraction_dataset_menu = self.menu_bar.addMenu('&Dataset')
         self.diffraction_dataset_menu.addAction(self.processing_action)
         self.diffraction_dataset_menu.addAction(self.symmetrize_action)
@@ -208,6 +213,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.diffraction_dataset_menu.addAction(self.update_metadata_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
+        self.diffraction_dataset_menu.addAction(self.calibrate_scattvector_action)
 
         ###################
         # Layout
@@ -296,6 +302,15 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         dialog.angular_average_signal.connect(self.controller.recompute_angular_average)
         dialog.exec_()
         dialog.angular_average_signal.disconnect(self.controller.recompute_angular_average)
+    
+    @QtCore.pyqtSlot()
+    def launch_calq_dialog(self):
+        I = self.controller.dataset.powder_eq()
+        dialog = QCalibratorDialog(I, parent = self)
+        dialog.resize(0.75*self.size())
+        dialog.calibration_parameters.connect(self.controller.powder_calq)
+        dialog.exec_()
+        dialog.calibration_parameters.disconnect(self.controller.powder_calq)
     
     @QtCore.pyqtSlot(object)
     def load_raw_dataset(self, cls):
