@@ -7,6 +7,8 @@ from itertools import repeat
 import numpy as np
 from numpy.random import random
 
+from skued import Crystal
+
 from .. import DiffractionDataset, LegacyMcGillRawDataset, PowderDiffractionDataset
 
 np.random.seed(23)
@@ -158,6 +160,15 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         self.assertEqual(self.dataset.wavelet, 'qshift3')
         self.assertEqual(self.dataset.level, 1)
 
+    def test_powder_calq(self):
+        """ Test scattering vector calibration """
+        crystal = Crystal.from_database('vo2-m1')
+        self.dataset.powder_calq(crystal, (10, 100), [(1,0,0), (2,0,0)])
+
+        # Check that shapes match
+        self.assertTupleEqual(self.dataset.powder_eq().shape, self.dataset.scattering_vector.shape)
+        # Check that scattering_vector is strictly increasing
+        self.assertTrue(np.all(np.greater(np.diff(self.dataset.scattering_vector), 0)))
 
     def test_baseline_limits(self):
         """ Test that the baseline is never less than 0, and the baseline-subtracted data is never negative. """

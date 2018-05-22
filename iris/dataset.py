@@ -15,7 +15,7 @@ from scipy.signal import detrend
 
 from npstreams import average, itercopy, peek, pmap
 from skued import (azimuthal_average, baseline_dt, combine_masks,
-                   electron_wavelength, ialign, mask_from_collection, nfold)
+                   electron_wavelength, ialign, mask_from_collection, nfold, powder_calq)
 from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
@@ -472,13 +472,18 @@ class PowderDiffractionDataset(DiffractionDataset):
         maxshape = (len(self.time_points), sqrt(2*max(self.resolution)**2))
         for name in {'intensity', 'baseline',}:
             if name not in self.powder_group:
-                self.powder_group.create_dataset(name = name, shape = maxshape, maxshape = maxshape, 
+                self.powder_group.create_dataset(name = name, shape = (maxshape[-1],), maxshape = maxshape, 
                                                  dtype = np.float, fillvalue = 0.0, **self.compression_params)
         
         # Radius from center in units of pixels
+        shape = self.powder_group['intensity'].shape
+        placeholder = np.arange(0, shape[-1])
         if 'px_radius' not in self.powder_group:
-            self.powder_group.create_dataset('px_radius', shape = (maxshape[-1],), maxshape = (maxshape[-1],),
-                                             dtype = np.float, fillvalue = 0.0)
+            self.powder_group.create_dataset('px_radius', data = placeholder, maxshape = (maxshape[-1],), dtype = np.float)
+
+        # Radius from center in units of inverse angstroms
+        if 'scattering_vector' not in self.powder_group:
+            self.powder_group.create_dataset('scattering_vector', data = placeholder, maxshape = (maxshape[-1],), dtype = np.float)
     
     @classmethod
     def from_dataset(cls, dataset, center, normalized = True, angular_bounds = None, callback = None):
@@ -525,7 +530,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     @property
     def scattering_angle(self):
         """ Array of scattering angle :math:`2 \Theta` """
-        # TODO: calibrate scattering angle
+        # TODO: calculate scattering angle from scattering vector
         return self.px_radius
         #return np.arctan(self.px_radius * self.pixel_width / self.camera_length)
 
@@ -533,8 +538,7 @@ class PowderDiffractionDataset(DiffractionDataset):
     def scattering_vector(self):
         """ Array of scattering vector norm :math:`|G|` [:math:`1/\AA`] """
         # Scattering vector norm is defined as G = 4 pi sin(theta)/wavelength
-        # TODO: cache
-        return 4*np.pi*np.sin(self.scattering_angle/2) / electron_wavelength(self.energy)
+        return np.array(self.powder_group['scattering_vector'])
 
     def shift_time_zero(self, *args, **kwargs):
         """
@@ -548,6 +552,38 @@ class PowderDiffractionDataset(DiffractionDataset):
         """
         self.powder_eq.cache_clear()
         return super().shift_time_zero(*args, **kwargs)
+    
+    def powder_calq(self, crystal, peak_indices, miller_indices):
+        """
+        Determine the scattering vector q corresponding to a polycrystalline diffraction pattern
+        and a known crystal structure.
+
+        For best results, multiple peaks (and corresponding Miller indices) should be provided; the
+        absolute minimum is two.
+
+        Parameters
+        ----------
+        crystal : skued.Crystal instance
+            Crystal that gave rise to the diffraction data.
+        peak_indices : n-tuple of ints
+            Array index location of diffraction peaks. For best
+            results, peaks should be well-separated. More than two peaks can be used.
+        miller_indices : iterable of 3-tuples
+            Indices associated with the peaks of ``peak_indices``. More than two peaks can be used.
+            E.g. ``indices = [(2,2,0), (-3,0,2)]``
+        
+        Raises
+        ------
+        ValueError : if the number of peak indices does not match the number of Miller indices.
+        ValueError : if the number of peaks given is lower than two.
+        """
+        I = self.powder_eq()
+        q = powder_calq(I = I, crystal = crystal, 
+                        peak_indices = peak_indices, miller_indices = miller_indices)
+        
+        self.powder_group['scattering_vector'].resize(I.shape)
+        self.powder_group['scattering_vector'].write_direct(q)
+        
     
     @lru_cache(maxsize = 2) # with and without background
     def powder_eq(self, bgr = False):
