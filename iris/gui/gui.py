@@ -27,6 +27,7 @@ from .symmetrize_dialog import SymmetrizeDialog
 # to build a loading menu
 from .. import AbstractRawDataset
 
+# Support for Windows Taskbar
 try:
     from PyQt5.QtWinExtras import QWinTaskbarProgress
     WITH_TASKBAR = True
@@ -136,7 +137,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.viewer_stack = QtWidgets.QTabWidget()
         self.viewer_stack.addTab(self.raw_data_viewer, 'View raw dataset')
         self.viewer_stack.addTab(self.processed_viewer, 'View processed dataset')
-        self.viewer_stack.addTab(self.powder_viewer, 'View radial averages')
+        self.viewer_stack.addTab(self.powder_viewer, 'View azimuthal averages')
 
         self.controller.raw_dataset_loaded_signal.connect(lambda toggle: self.viewer_stack.setTabEnabled(0, toggle))
         self.controller.processed_dataset_loaded_signal.connect(lambda toggle: self.viewer_stack.setTabEnabled(1, toggle))
