@@ -6,7 +6,8 @@ Time-series widget
 from functools import lru_cache
 
 import numpy as np
-from pyqtgraph import PlotWidget, PlotDataItem, QtCore, QtGui, mkBrush, mkPen
+from PyQt5 import QtCore, QtWidgets, QtGui
+from pyqtgraph import PlotWidget, mkBrush, mkPen
 
 from skued import spectrum_colors
 
@@ -18,7 +19,7 @@ def pens_and_brushes(num):
     brushes = list(map(mkBrush, qcolors))
     return pens, brushes
 
-class TimeSeriesWidget(QtGui.QWidget):
+class TimeSeriesWidget(QtWidgets.QWidget):
     """ Time-series widget with built-in display controls. """
 
     # Internal refresh signal
@@ -44,34 +45,34 @@ class TimeSeriesWidget(QtGui.QWidget):
         self._refresh_signal.connect(self.plot)
 
         # Shortcut for some controls provided by PyQtGraph
-        self.horz_grid_widget = QtGui.QCheckBox('Show horizontal grid', self)
+        self.horz_grid_widget = QtWidgets.QCheckBox('Show horizontal grid', self)
         self.horz_grid_widget.setChecked(True)
         self.horz_grid_widget.toggled.connect(
             lambda toggle: self.plot_widget.getPlotItem().showGrid(x = toggle))
         
-        self.vert_grid_widget = QtGui.QCheckBox('Show vertical grid', self)
+        self.vert_grid_widget = QtWidgets.QCheckBox('Show vertical grid', self)
         self.vert_grid_widget.setChecked(True)
         self.vert_grid_widget.toggled.connect(
             lambda toggle: self.plot_widget.getPlotItem().showGrid(y = toggle))
 
-        self.connect_widget = QtGui.QCheckBox('Connect time-series', self)
+        self.connect_widget = QtWidgets.QCheckBox('Connect time-series', self)
         self.connect_widget.toggled.connect(self.enable_connect)
 
-        self.symbol_size_widget = QtGui.QSpinBox(parent = self)
+        self.symbol_size_widget = QtWidgets.QSpinBox(parent = self)
         self.symbol_size_widget.setRange(1, 25)
         self.symbol_size_widget.setValue(self._symbol_size)
         self.symbol_size_widget.setPrefix('Symbol size: ')
         self.symbol_size_widget.valueChanged.connect(self.set_symbol_size)
 
-        self.horz_log_widget = QtGui.QCheckBox('Horizontal log mode', self)
+        self.horz_log_widget = QtWidgets.QCheckBox('Horizontal log mode', self)
         self.horz_log_widget.toggled.connect(
             lambda toggle: self.plot_widget.getPlotItem().setLogMode(x = toggle))
         
-        self.vert_log_widget = QtGui.QCheckBox('Vertical log mode', self)
+        self.vert_log_widget = QtWidgets.QCheckBox('Vertical log mode', self)
         self.vert_log_widget.toggled.connect(
             lambda toggle: self.plot_widget.getPlotItem().setLogMode(y = toggle))
 
-        self.controls = QtGui.QVBoxLayout()
+        self.controls = QtWidgets.QVBoxLayout()
         self.controls.addWidget(self.horz_grid_widget)
         self.controls.addWidget(self.vert_grid_widget)
         self.controls.addWidget(self.horz_log_widget)
@@ -80,7 +81,7 @@ class TimeSeriesWidget(QtGui.QWidget):
         self.controls.addWidget(self.symbol_size_widget)
         self.controls.addStretch(1)
 
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.plot_widget)
         layout.addLayout(self.controls)
         self.setLayout(layout)
