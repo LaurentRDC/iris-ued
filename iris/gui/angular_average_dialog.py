@@ -1,4 +1,7 @@
-
+# -*- coding: utf-8 -*-
+"""
+Dialog for azimuthal average of diffraction data
+"""
 from PyQt5 import QtWidgets, QtCore
 import pyqtgraph as pg
 

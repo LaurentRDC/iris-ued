@@ -11,7 +11,6 @@ from pyqtgraph import PlotWidget, mkBrush, mkPen
 
 from skued import spectrum_colors
 
-
 @lru_cache(maxsize = 1)
 def pens_and_brushes(num):
     qcolors = tuple(map(lambda c: QtGui.QColor.fromRgbF(*c), spectrum_colors(num)))

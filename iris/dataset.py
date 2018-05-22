@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-@author: Laurent P. Rene de Cotret
+Diffraction dataset types
 """
 from collections import OrderedDict
 from functools import lru_cache, partial
