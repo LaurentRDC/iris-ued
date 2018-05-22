@@ -1,6 +1,7 @@
 """
 Control bar for all Iris's controls
 """
+from collections import Iterable
 from contextlib import suppress
 from PyQt5 import QtWidgets, QtCore, QtGui
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
@@ -46,12 +47,6 @@ class ControlBar(QtWidgets.QWidget):
         self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
         self.powder_diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_powder)
 
-        self.progress_bar = QtWidgets.QProgressBar(self)
-        if WITH_TASKBAR:
-            self.win_progress_bar = QWinTaskbarProgress(self)
-            self.win_progress_bar.setVisible(True)
-            self.progress_bar.valueChanged.connect(self.win_progress_bar.setValue)
-
         self.metadata_widget = MetadataWidget(parent = self)
 
         self.notes_editor = NotesEditor(parent = self)
@@ -66,7 +61,6 @@ class ControlBar(QtWidgets.QWidget):
         layout.addWidget(self.diffraction_dataset_controls)
         layout.addWidget(self.powder_diffraction_dataset_controls)
         layout.addWidget(self.stack)
-        layout.addWidget(self.progress_bar)
         self.setLayout(layout)
 
         for frame in (self.raw_dataset_controls, self.diffraction_dataset_controls, self.powder_diffraction_dataset_controls):
@@ -84,19 +78,6 @@ class ControlBar(QtWidgets.QWidget):
         self.diffraction_dataset_controls.update_dataset_metadata(metadata)
         self.notes_editor.editor.setPlainText(metadata.pop('notes', 'No notes available'))
         self.metadata_widget.set_metadata(metadata)
-
-    @QtCore.pyqtSlot(int)
-    def update_processing_progress(self, value):
-        self.progress_bar.setValue(value)
-        
-    
-    @QtCore.pyqtSlot(int)
-    def update_powder_promotion_progress(self, value):
-        self.progress_bar.setValue(value)
-
-    @QtCore.pyqtSlot(int)
-    def update_angular_average_progress(self, value):
-        self.progress_bar.setValue(value)
 
     @QtCore.pyqtSlot(int)
     def request_raw_data(self, wtv):

@@ -26,6 +26,12 @@ from .symmetrize_dialog import SymmetrizeDialog
 # to build a loading menu
 from .. import AbstractRawDataset
 
+try:
+    from PyQt5.QtWinExtras import QWinTaskbarProgress
+    WITH_TASKBAR = True
+except ImportError:
+    WITH_TASKBAR = False
+
 image_folder = join(dirname(__file__), 'images')
 
 def run(**kwargs):
@@ -78,19 +84,28 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.controller.powder_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.powder_viewer))
         self.controller.powder_dataset_loaded_signal.connect(self.controls.powder_diffraction_dataset_controls.setVisible)
         
-        self.controller.processing_progress_signal.connect(self.controls.update_processing_progress)
-        self.controller.powder_promotion_progress.connect(self.controls.update_powder_promotion_progress)
-        self.controller.angular_average_progress.connect(self.controls.update_angular_average_progress)
         self.controller.raw_dataset_metadata.connect(self.controls.update_raw_dataset_metadata)
         self.controller.dataset_metadata.connect(self.controls.update_dataset_metadata)
+
+        # Progress bar --------------------------------------------------------
+        self.progress_bar = QtWidgets.QProgressBar(self)
+        self.progress_bar.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Maximum)
+        if WITH_TASKBAR:
+            self.win_progress_bar = QWinTaskbarProgress(self)
+            self.win_progress_bar.setVisible(True)
+            self.progress_bar.valueChanged.connect(self.win_progress_bar.setValue)
+
+        self.controller.processing_progress_signal.connect(self.progress_bar.setValue)
+        self.controller.powder_promotion_progress.connect(self.progress_bar.setValue)
+        self.controller.angular_average_progress.connect(self.progress_bar.setValue)
 
         # Status bar ----------------------------------------------------------
         # Operation in progress widget
         # Including custom 'busy' indicator
-        # TODO: add progress bar here
         status_bar = QtWidgets.QStatusBar(parent = self)
         self.setStatusBar(status_bar)
 
+        # Busy indicator ------------------------------------------------------
         busy_indicator = QBusyIndicator(parent = self)
         self.controller.operation_in_progress.connect(busy_indicator.toggle_animation)
         status_bar.addPermanentWidget(busy_indicator)
@@ -198,6 +213,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         # Layout
         control_layout = QtWidgets.QVBoxLayout()
         control_layout.addWidget(self.controls)
+        control_layout.addWidget(self.progress_bar)
 
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.viewer_stack)
