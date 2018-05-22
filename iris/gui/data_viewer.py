@@ -1,8 +1,4 @@
-from collections.abc import Iterable
-from os.path import dirname, join
-
-from . import pyqtgraph as pg
-
+import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets
 
 from .time_series_widget import TimeSeriesWidget
