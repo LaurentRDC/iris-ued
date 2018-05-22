@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-Controller behind Iris
+Controller object to handle DiffractionDataset objects
 """
 import traceback
 import warnings

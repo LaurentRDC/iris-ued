@@ -1,5 +1,4 @@
-
-
+# -*- coding: utf-8 -*-
 """
     Modified from:
         Author: Jared P. Sutton <jpsutton@gmail.com>

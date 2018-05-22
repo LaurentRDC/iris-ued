@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Control bar for all Iris's controls
 """
