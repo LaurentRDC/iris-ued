@@ -197,7 +197,7 @@ class AbstractRawDataset(object, metaclass = MetaRawDataset):
                         processes = processes, ntotal = len(self.time_points))
 
 # For multiprocessing, the function to be mapped must be 
-# global, hence defined outside of the McGillRawDataset class
+# global, hence defined outside of the class method
 def _raw_combine(timedelay, raw, valid_scans, normalize, align, invalid_mask, dtype):
 
     images = map(partial(raw.raw_data, timedelay), valid_scans)
