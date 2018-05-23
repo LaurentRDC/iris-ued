@@ -129,6 +129,7 @@ class QCalibratorDialog(QtWidgets.QDialog):
         peak_layout = QtWidgets.QFormLayout()
         peak_layout.addRow('Left peak: ', self.left_peak_miller)
         peak_layout.addRow('Right peak: ', self.right_peak_miller)
+        peak_layout.setFormAlignment(QtCore.Qt.AlignCenter)
 
         self.accept_btn = QtWidgets.QPushButton('Calibrate', parent = self)
         self.accept_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
