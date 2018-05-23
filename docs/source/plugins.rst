@@ -40,6 +40,15 @@ It must follow the following specification:
 .. automethod::
   AbstractRawDataset.raw_data
 
+For better performance, or to tailor data reduction to your data acquisition scheme,
+the following method can also be overloaded:
+
+.. automethod::
+  AbstractRawDataset.reduced
+
+AbstractRawDataset metadata
+---------------------------
+
 :class:`AbstractRawDataset` subclasses automatically include the following metadata:
 
 * ``date`` (`str`): Acquisition date. Date format is up to you.

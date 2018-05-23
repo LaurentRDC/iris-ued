@@ -32,6 +32,7 @@ General Documentation
     :maxdepth: 2
 
     installation
+    workflow
     dataset
     plugins
     api
