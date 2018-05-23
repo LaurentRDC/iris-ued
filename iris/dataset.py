@@ -529,8 +529,7 @@ class PowderDiffractionDataset(DiffractionDataset):
 
     @property
     def scattering_vector(self):
-        """ Array of scattering vector norm :math:`|G|` [:math:`1/\AA`] """
-        # Scattering vector norm is defined as G = 4 pi sin(theta)/wavelength
+        """ Array of scattering vector norm :math:`|q|` [:math:`1/\AA`] """
         return np.array(self.powder_group['scattering_vector'])
 
     def shift_time_zero(self, *args, **kwargs):
