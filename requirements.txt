@@ -1,9 +1,9 @@
-numpy >= 1.11.2
+numpy >= 1.12
 scipy >= 0.17
 h5py >= 2.6.0
 PyQt5
-scikit-image >=0.13
-scikit-ued >= 0.5.7
+scikit-image >= 0.13
+scikit-ued >= 0.5.8
 pyqtgraph >= 0.10
 qdarkstyle >= 2.3
 npstreams >= 1.4
