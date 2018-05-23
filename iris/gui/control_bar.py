@@ -35,6 +35,7 @@ class ControlBar(QtWidgets.QWidget):
         self.raw_dataset_controls = RawDatasetControl(parent = self)
         self.raw_dataset_controls.timedelay_widget.valueChanged.connect(self.request_raw_data)
         self.raw_dataset_controls.scan_widget.valueChanged.connect(self.request_raw_data)
+#        self.raw_dataset_controls.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
         self.diffraction_dataset_controls = DiffractionDatasetControl(parent = self)
         self.diffraction_dataset_controls.timedelay_widget.valueChanged.connect(self.averaged_data_request)
@@ -42,11 +43,13 @@ class ControlBar(QtWidgets.QWidget):
         self.diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_averaged)
         self.diffraction_dataset_controls.time_zero_shift_widget.editingFinished.connect(self.shift_time_zero)
         self.diffraction_dataset_controls.clear_time_zero_shift_btn.clicked.connect(lambda _: self.time_zero_shift.emit(0))
+#        self.diffraction_dataset_controls.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
         self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
         self.powder_diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_powder)
+#        self.powder_diffraction_dataset_controls.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
         self.metadata_widget = MetadataWidget(parent = self)
 
@@ -56,12 +59,14 @@ class ControlBar(QtWidgets.QWidget):
         self.stack = QtWidgets.QTabWidget(parent = self)
         self.stack.addTab(self.metadata_widget, 'Dataset metadata')
         self.stack.addTab(self.notes_editor, 'Dataset notes')
+        #self.stack.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.raw_dataset_controls)
         layout.addWidget(self.diffraction_dataset_controls)
         layout.addWidget(self.powder_diffraction_dataset_controls)
         layout.addWidget(self.stack)
+        layout.addStretch()
         self.setLayout(layout)
 
         for frame in (self.raw_dataset_controls, self.diffraction_dataset_controls, self.powder_diffraction_dataset_controls):
