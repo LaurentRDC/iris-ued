@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 from skued import Crystal, powder_calq
 
+
 EXPLANATION = """Calibrate the scattering vector range of polycrystalline data. Select two peaks of known Miller indices by dragging the vertical lines, 
 and use an appropriate structure. Some structures are built-in, but you can also use a CIF of your own. Make sure the structure 
 parameters are what you expect before calibration. """.replace('\n', '')
@@ -67,6 +68,7 @@ class QCalibratorDialog(QtWidgets.QDialog):
     def __init__(self, I, **kwargs):
         super().__init__(**kwargs)
         self.setModal(True)
+        self.setWindowTitle('Scattering vector range calibration')
 
         explanation_label = QtWidgets.QLabel(EXPLANATION)
         explanation_label.setAlignment(QtCore.Qt.AlignHCenter)
@@ -94,17 +96,20 @@ class QCalibratorDialog(QtWidgets.QDialog):
         database_widget = QtWidgets.QComboBox(parent = self)
         database_widget.addItems(sorted(Crystal.builtins))
         database_widget.currentTextChanged.connect(self.create_database_crystal)
+        database_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         structure_file_btn = QtWidgets.QPushButton('Open explorer', self)
         structure_file_btn.clicked.connect(self.load_cif)
         structure_file_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
-        crystal_label = QtWidgets.QTextEdit(parent = self)
-        crystal_label.setReadOnly(True)
-        crystal_label.setLineWrapMode(QtWidgets.QTextEdit.WidgetWidth)
-        self.new_crystal.connect(lambda c : crystal_label.setText(str(c)))
+        crystal_label = QtWidgets.QLabel(parent = self)
+        crystal_label.setWordWrap(True)
+        crystal_label.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        crystal_label.setFrameShadow(QtWidgets.QFrame.Sunken)
+        crystal_label.setFrameShape(QtWidgets.QFrame.Box)
+        self.new_crystal.connect(lambda c : crystal_label.setText(str(c)))  # Use str, not repr, for shorter representation
 
-        crystal_label_title = QtWidgets.QLabel('<h3>Crystal structure</h3>')
+        crystal_label_title = QtWidgets.QLabel('<h3>Selected crystal structure</h3>')
         crystal_label_title.setAlignment(QtCore.Qt.AlignHCenter)
 
         crystal_creation_layout = QtWidgets.QFormLayout()
@@ -138,21 +143,21 @@ class QCalibratorDialog(QtWidgets.QDialog):
         btns.addWidget(self.accept_btn)
         btns.addWidget(self.cancel_btn)
 
-        left_layout = QtWidgets.QVBoxLayout()
-        left_layout.addWidget(explanation_label)
-        left_layout.addLayout(crystal_creation_layout)
-        left_layout.addLayout(peak_layout)
-        left_layout.addStretch()
-        left_layout.addLayout(btns)
+        right_layout = QtWidgets.QVBoxLayout()
+        right_layout.addWidget(explanation_label)
+        right_layout.addLayout(crystal_creation_layout)
+        right_layout.addLayout(peak_layout)
+        right_layout.addStretch()
+        right_layout.addLayout(btns)
 
         # Put left layout in a widget for better control on size 
-        left_widget = QtWidgets.QWidget()
-        left_widget.setLayout(left_layout)
-        left_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.MinimumExpanding)
+        right_widget = QtWidgets.QWidget()
+        right_widget.setLayout(right_layout)
+        right_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Minimum)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(plot_widget)
-        layout.addWidget(left_widget)
+        layout.addWidget(right_widget)
         self.setLayout(layout)
 
         plot_widget.resize(plot_widget.maximumSize())
@@ -192,3 +197,21 @@ class QCalibratorDialog(QtWidgets.QDialog):
                                      self.right_peak_miller.miller_indices) }
         self.calibration_parameters.emit(params)
         super().accept()
+
+if __name__ == '__main__':
+
+    from PyQt5 import QtGui
+    import sys
+    from qdarkstyle import load_stylesheet_pyqt5
+    from skued import Crystal, powdersim
+    import numpy as np
+
+    cryst = Crystal.from_database('vo2-m1')
+    s = np.linspace(0.1, 1, 512)
+    I = powdersim(cryst, s)
+
+    app = QtGui.QApplication(sys.argv)
+    app.setStyleSheet(load_stylesheet_pyqt5())
+    gui = QCalibratorDialog(I)
+    gui.show()
+    sys.exit(app.exec_())
