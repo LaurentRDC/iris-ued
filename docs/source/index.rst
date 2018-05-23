@@ -15,7 +15,7 @@ The code presented herein has been in use at some point by the
 .. warning::
         This code is in development and may break without warning.
 
-.. image:: iris_screen.png
+.. image:: images\iris_screen.png
 
 Links
 =====
