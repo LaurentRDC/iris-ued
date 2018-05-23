@@ -98,6 +98,7 @@ class MaskCreator(QtWidgets.QWidget):
         image[mask] = 0.0
 
         dialog = QtWidgets.QDialog(parent = self)
+        dialog.setWindowTitle('Mask preview')
         dialog.setModal(True)
 
         view_widget = pg.ImageView(parent = dialog)
