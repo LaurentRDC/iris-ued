@@ -106,6 +106,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
     error_message_signal            = QtCore.pyqtSignal(str)
     operation_in_progress           = QtCore.pyqtSignal(bool)
+    status_message_signal           = QtCore.pyqtSignal(str)
 
     raw_data_signal                 = QtCore.pyqtSignal(object)
     averaged_data_signal            = QtCore.pyqtSignal(object)
@@ -332,6 +333,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
                                         'scans': self.raw_dataset.scans})
         self.display_raw_data(timedelay_index = 0, 
                               scan = min(self.raw_dataset.scans))
+        self.status_message_signal.emit(path + ' loaded.')
 
     @QtCore.pyqtSlot()
     @indicate_in_progress
@@ -339,6 +341,8 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.raw_dataset = None
         self.raw_dataset_loaded_signal.emit(False)
         self.raw_data_signal.emit(None)
+
+        self.status_message_signal.emit('Raw dataset closed')
         
     @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
     @QtCore.pyqtSlot(str)
@@ -362,6 +366,8 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         if isinstance(self.dataset, PowderDiffractionDataset):
             self.display_powder_data()
             self.powder_dataset_loaded_signal.emit(True)
+        
+        self.status_message_signal.emit(path + ' loaded.')
     
     @QtCore.pyqtSlot()
     @indicate_in_progress
@@ -374,6 +380,8 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
         self.averaged_data_signal.emit(None)
         self.powder_data_signal.emit(None, None)
+
+        self.status_message_signal.emit('Dataset closed')
 
 class WorkThread(QtCore.QThread):
     """
