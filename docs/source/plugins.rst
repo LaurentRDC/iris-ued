@@ -55,7 +55,7 @@ AbstractRawDataset metadata
 * ``energy`` (`float`): Electron energy in keV.
 * ``pump_wavelength`` (`int`): photoexcitation wavelength in nanometers.
 * ``fluence`` (`float`): photoexcitation fluence :math:`\text{mJ}/\text{cm}**2`.
-* ``time_zero_shift (`float`): Time-zero shift in picoseconds. 
+* ``time_zero_shift`` (`float`): Time-zero shift in picoseconds. 
 * ``temperature`` (`float`): sample temperature in Kelvins.
 * ``exposure`` (`float`): picture exposure in seconds.
 * ``resolution`` (2-`tuple`): pixel resolution of pictures.
