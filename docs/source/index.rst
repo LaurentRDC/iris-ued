@@ -12,10 +12,7 @@ data, as well as a GUI frontend to interactively explore this data.
 The code presented herein has been in use at some point by the 
 `Siwick research group <http://www.physics.mcgill.ca/siwicklab>`_.
 
-.. warning::
-        This code is in development and may break without warning.
-
-.. image:: images\iris_screen.png
+.. image:: images/iris_screen.png
 
 Links
 =====
