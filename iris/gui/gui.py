@@ -76,7 +76,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.controls.relative_averaged.connect(self.controller.enable_averaged_relative)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controls.time_zero_shift.connect(self.controller.set_time_zero_shift)
-        self.controls.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Expanding)
+        self.controls.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.MinimumExpanding)
 
         self.controller.raw_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.raw_data_viewer))
         self.controller.raw_dataset_loaded_signal.connect(self.controls.raw_dataset_controls.setVisible)
