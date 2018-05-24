@@ -235,7 +235,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
     @QtCore.pyqtSlot(float, float)
     def powder_time_series(self, smin, smax):
-        time_series = self.dataset.powder_time_series(rmin = smin, rmax = smax, bgr = self._bgr_powder, units = 'pixels')
+        time_series = self.dataset.powder_time_series(rmin = smin, rmax = smax, bgr = self._bgr_powder, units = 'momentum')
         self.powder_time_series_signal.emit(self.dataset.time_points, time_series)
     
     @QtCore.pyqtSlot(object)
