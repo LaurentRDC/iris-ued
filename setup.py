@@ -57,7 +57,7 @@ if __name__ == '__main__':
         project_urls = {
             'Documentation' : 'http://iris-ued.readthedocs.io/en/master/',
             'Source'        : 'https://github.com/LaurentRDC/iris-ued',
-            'Tracker'       : 'https://github.com/LaurentRDC/iris-ued/issues'
+            'Tracker'       : 'https://github.com/LaurentRDC/iris-ued/issues',
             'Home'          : 'http://www.physics.mcgill.ca/siwicklab/software.html'
         },
         python_requires = '>= 3.6',
