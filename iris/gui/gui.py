@@ -160,6 +160,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.load_plugin_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'eye.png')), '& Load plug-in (restarts program)', self)
         self.load_plugin_action.setToolTip('Copy a plug-in file into the internal storage. The application will restart and the new plug-in will be available.')
         self.load_plugin_action.triggered.connect(self.load_plugin)
+        self.controller.operation_in_progress.connect(self.load_plugin_action.setDisabled)  # wouldn't want to restart during processing
 
         self.close_dataset_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '& Close dataset', self)
         self.close_dataset_action.triggered.connect(self.controller.close_dataset)
