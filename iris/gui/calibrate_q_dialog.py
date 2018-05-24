@@ -70,8 +70,12 @@ class QCalibratorDialog(QtWidgets.QDialog):
         self.setModal(True)
         self.setWindowTitle('Scattering vector range calibration')
 
+        title = QtWidgets.QLabel('<h2>Scattering Calibration<\h2>')
+        title.setTextFormat(QtCore.Qt.RichText)
+        title.setAlignment(QtCore.Qt.AlignCenter)
+
         explanation_label = QtWidgets.QLabel(EXPLANATION)
-        explanation_label.setAlignment(QtCore.Qt.AlignHCenter)
+        explanation_label.setAlignment(QtCore.Qt.AlignCenter)
         explanation_label.setWordWrap(True)
 
         self.intensity = I
@@ -81,7 +85,6 @@ class QCalibratorDialog(QtWidgets.QDialog):
 
         plot_widget = pg.PlotWidget(parent = self)
         plot_widget.plot(np.arange(0, len(self.intensity)), self.intensity)
-        plot_widget.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Minimum)
 
         self.peak1_indicator = pg.InfiniteLine(0, movable = True)
         self.peak2_indicator = pg.InfiniteLine(len(I), movable = True)
@@ -90,41 +93,39 @@ class QCalibratorDialog(QtWidgets.QDialog):
         plot_widget.addItem(self.peak2_indicator)
 
         # Crystal creation ----------------------------------------------------
-        database_title = QtWidgets.QLabel('<h3>Structure description</h3>')
-        database_title.setAlignment(QtCore.Qt.AlignHCenter)
-
         database_widget = QtWidgets.QComboBox(parent = self)
         database_widget.addItems(sorted(Crystal.builtins))
         database_widget.currentTextChanged.connect(self.create_database_crystal)
-        database_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         structure_file_btn = QtWidgets.QPushButton('Open explorer', self)
         structure_file_btn.clicked.connect(self.load_cif)
         structure_file_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         crystal_label = QtWidgets.QLabel(parent = self)
+        crystal_label.setText('No structure selected.')
         crystal_label.setWordWrap(True)
-        crystal_label.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.MinimumExpanding)
-        crystal_label.setFrameShadow(QtWidgets.QFrame.Sunken)
-        crystal_label.setFrameShape(QtWidgets.QFrame.Box)
         self.new_crystal.connect(lambda c : crystal_label.setText(str(c)))  # Use str, not repr, for shorter representation
 
         crystal_label_title = QtWidgets.QLabel('<h3>Selected crystal structure</h3>')
         crystal_label_title.setAlignment(QtCore.Qt.AlignHCenter)
 
+        crystal_description_layout = QtWidgets.QVBoxLayout()
+        crystal_description_layout.addWidget(crystal_label_title)
+        crystal_description_layout.addWidget(crystal_label)
+
+        crystal_description_widget = QtWidgets.QFrame(self)
+        crystal_description_widget.setLayout(crystal_description_layout)
+        crystal_description_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
+        crystal_description_widget.setFrameShape(QtWidgets.QFrame.Panel)
+
         crystal_creation_layout = QtWidgets.QFormLayout()
-        crystal_creation_layout.addRow(database_title)
         crystal_creation_layout.addRow('Select a database structure: ', database_widget)
         crystal_creation_layout.addRow('Load structure from file: ', structure_file_btn)
-        crystal_creation_layout.addRow(crystal_label_title)
-        crystal_creation_layout.addRow(crystal_label)
+        crystal_creation_layout.addRow(crystal_description_widget)
 
         # Peak specifications -------------------------------------------------
-        self.left_peak_miller = MillerIndexWidget(parent = self)
-        self.left_peak_miller.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
-
+        self.left_peak_miller  = MillerIndexWidget(parent = self)
         self.right_peak_miller = MillerIndexWidget(parent = self)
-        self.right_peak_miller.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         peak_layout = QtWidgets.QFormLayout()
         peak_layout.addRow('Left peak: ', self.left_peak_miller)
@@ -144,24 +145,28 @@ class QCalibratorDialog(QtWidgets.QDialog):
         btns.addWidget(self.accept_btn)
         btns.addWidget(self.cancel_btn)
 
+        params_layout = QtWidgets.QVBoxLayout()
+        params_layout.addWidget(title)
+        params_layout.addWidget(explanation_label)
+        params_layout.addLayout(crystal_creation_layout)
+        params_layout.addLayout(peak_layout)
+        params_layout.addStretch()
+        params_layout.addLayout(btns)
+
+        params_widget = QtWidgets.QFrame(parent = self)
+        params_widget.setLayout(params_layout)
+        params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
+        params_widget.setFrameShape(QtWidgets.QFrame.Panel)
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+
         right_layout = QtWidgets.QVBoxLayout()
-        right_layout.addWidget(explanation_label)
-        right_layout.addLayout(crystal_creation_layout)
-        right_layout.addLayout(peak_layout)
+        right_layout.addWidget(params_widget)
         right_layout.addStretch()
-        right_layout.addLayout(btns)
 
-        # Put left layout in a widget for better control on size 
-        right_widget = QtWidgets.QWidget()
-        right_widget.setLayout(right_layout)
-        right_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Minimum)
-
-        layout = QtWidgets.QHBoxLayout()
-        layout.addWidget(plot_widget)
-        layout.addWidget(right_widget)
-        self.setLayout(layout)
-
-        plot_widget.resize(plot_widget.maximumSize())
+        self.layout = QtWidgets.QHBoxLayout()
+        self.layout.addWidget(plot_widget)
+        self.layout.addLayout(right_layout)
+        self.setLayout(self.layout)
 
     @QtCore.pyqtSlot(str)
     def create_database_crystal(self, name):
@@ -198,21 +203,3 @@ class QCalibratorDialog(QtWidgets.QDialog):
                                      self.right_peak_miller.miller_indices) }
         self.calibration_parameters.emit(params)
         super().accept()
-
-if __name__ == '__main__':
-
-    from PyQt5 import QtGui
-    import sys
-    from qdarkstyle import load_stylesheet_pyqt5
-    from skued import Crystal, powdersim
-    import numpy as np
-
-    cryst = Crystal.from_database('vo2-m1')
-    s = np.linspace(0.1, 1, 512)
-    I = powdersim(cryst, s)
-
-    app = QtGui.QApplication(sys.argv)
-    app.setStyleSheet(load_stylesheet_pyqt5())
-    gui = QCalibratorDialog(I)
-    gui.show()
-    sys.exit(app.exec_())

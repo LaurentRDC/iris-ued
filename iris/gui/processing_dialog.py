@@ -71,10 +71,11 @@ class MaskCreator(QtWidgets.QWidget):
         btns.addWidget(add_rect_mask_btn)
         btns.addWidget(preview_mask_btn)
         btns.addWidget(clear_masks_btn)
+        btns.addStretch()
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addLayout(btns)
         layout.addWidget(self.viewer)
+        layout.addLayout(btns)
         self.setLayout(layout)
 
     @QtCore.pyqtSlot()
@@ -163,24 +164,21 @@ class ProcessingDialog(QtWidgets.QDialog):
         image = raw.raw_data(timedelay = raw.time_points[0], scan = raw.scans[0], bgr = True)
         self.mask_widget = MaskCreator(image, parent = self)
 
-        title = QtWidgets.QLabel('<h2>Data Processing Options<\h2>')
+        title = QtWidgets.QLabel('<h2>Data Reduction Options<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
         self.processes_widget = QtWidgets.QSpinBox(parent = self)
-        self.processes_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.processes_widget.setRange(1, cpu_count() - 1)
         self.processes_widget.setValue(min([cpu_count(), 7]))
 
         self.dtype_widget = QtWidgets.QComboBox(parent = self)
-        self.dtype_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.dtype_widget.addItems(DTYPE_NAMES.keys())
         self.dtype_widget.setCurrentText('Auto')
 
         # Set exclude scan widget with a validator
         self.exclude_scans_widget = QtWidgets.QLineEdit(parent = self)
         self.exclude_scans_widget.setPlaceholderText('e.g. 1:5, 6, 7, 10:50, 100')
-        self.exclude_scans_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         self.alignment_tf_widget = QtWidgets.QCheckBox('Perform alignment (?)', parent = self)
         self.alignment_tf_widget.setToolTip(alignment_help)
@@ -190,19 +188,25 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.normalization_tf_widget.setToolTip(normalization_help)
         self.normalization_tf_widget.setChecked(True)
 
-        self.enable_compression_widget = QtWidgets.QCheckBox('Enable compression')
-        self.enable_compression_widget.setChecked(False)
+        self.fletcher32_widget = QtWidgets.QCheckBox('Enable Fletcher32 filter (?)', parent = self)
+        self.fletcher32_widget.setToolTip(fletcher32_help)
+
+        self.shuffle_filter_widget = QtWidgets.QCheckBox('Enable shuffle filter (?)', parent = self)
+        self.shuffle_filter_widget.setToolTip(shuffle_help)
+
+        self.no_compression_btn = QtWidgets.QRadioButton('No compression', self)
+        self.no_compression_btn.setChecked(True)
 
         self.lzf_btn = QtWidgets.QRadioButton('LZF', self)
-        self.lzf_btn.setChecked(True)
-
+        
         self.gzip_btn = QtWidgets.QRadioButton('GZIP', self)
         
         filter_btns = QtWidgets.QVBoxLayout()
+        filter_btns.addWidget(self.no_compression_btn)
         filter_btns.addWidget(self.lzf_btn)
         filter_btns.addWidget(self.gzip_btn)
 
-        self.filters = QtWidgets.QGroupBox('Compression filters', parent = self)
+        self.filters = QtWidgets.QGroupBox('HDF5 Compression filters', parent = self)
         self.filters.setLayout(filter_btns)
         self.filters.setFlat(True)
 
@@ -212,34 +216,10 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.gzip_btn.toggled.connect(self.gzip_level_widget.setEnabled)
         self.gzip_level_widget.setEnabled(False)
 
-        self.fletcher32_widget = QtWidgets.QCheckBox('Enable Fletcher32 filter (?)', parent = self)
-        self.fletcher32_widget.setToolTip(fletcher32_help)
-
-        self.shuffle_filter_widget = QtWidgets.QCheckBox('Enable shuffle filter (?)', parent = self)
-        self.shuffle_filter_widget.setToolTip(shuffle_help)
-        self.shuffle_filter_widget.setChecked(True)
-
-        hdf5_params_layout = QtWidgets.QFormLayout()
-        hdf5_params_layout.addRow(self.filters)
-        hdf5_params_layout.addRow('GZIP level: ', self.gzip_level_widget)
-        hdf5_params_layout.addRow(self.fletcher32_widget)
-        hdf5_params_layout.addRow(self.shuffle_filter_widget)
-
-        hdf5_params_widget = QtWidgets.QGroupBox(title = 'HDF5 file parameters', parent = self)
-        hdf5_params_widget.setLayout(hdf5_params_layout)
-        hdf5_params_widget.setEnabled(False)
-        self.enable_compression_widget.toggled.connect(hdf5_params_widget.setEnabled)
-
-        hdf5_layout = QtWidgets.QVBoxLayout()
-        hdf5_layout.addWidget(self.enable_compression_widget)
-        hdf5_layout.addWidget(hdf5_params_widget)
-
-        save_btn = QtWidgets.QPushButton('Launch processing', self)
-        save_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        save_btn = QtWidgets.QPushButton('Launch', self)
         save_btn.clicked.connect(self.accept)
 
         cancel_btn = QtWidgets.QPushButton('Cancel', self)
-        cancel_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         cancel_btn.clicked.connect(self.reject)
         cancel_btn.setDefault(True)
 
@@ -247,11 +227,15 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.file_dialog = QtWidgets.QFileDialog(parent = self)
 
         processing_options = QtWidgets.QFormLayout()
-        processing_options.addRow('Number of cores:',   self.processes_widget)
-        processing_options.addRow('Scans to exclude: ', self.exclude_scans_widget)
-        processing_options.addRow('Data type: ',        self.dtype_widget)
+        processing_options.addRow('Number of CPU cores:', self.processes_widget)
+        processing_options.addRow('Scans to exclude: ',   self.exclude_scans_widget)
+        processing_options.addRow('Final data type: ',    self.dtype_widget)
         processing_options.addRow(self.alignment_tf_widget)
         processing_options.addRow(self.normalization_tf_widget)
+        processing_options.addRow(self.fletcher32_widget)
+        processing_options.addRow(self.shuffle_filter_widget)
+        processing_options.addRow(self.filters)
+        processing_options.addRow('GZIP level: ', self.gzip_level_widget)
 
         buttons = QtWidgets.QHBoxLayout()
         buttons.addWidget(save_btn)
@@ -259,22 +243,23 @@ class ProcessingDialog(QtWidgets.QDialog):
 
         params_layout = QtWidgets.QVBoxLayout()
         params_layout.addWidget(title)
+        params_layout.addSpacing(10)
         params_layout.addLayout(processing_options)
-        params_layout.addLayout(hdf5_layout)
         params_layout.addLayout(buttons)
 
         params_widget = QtWidgets.QFrame()
         params_widget.setLayout(params_layout)
         params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
         params_widget.setFrameShape(QtWidgets.QFrame.Panel)
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
-        left_layout = QtWidgets.QVBoxLayout()
-        left_layout.addWidget(params_widget)
-        left_layout.addStretch()
+        right_layout = QtWidgets.QVBoxLayout()
+        right_layout.addWidget(params_widget)
+        right_layout.addStretch()
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.mask_widget)
-        layout.addLayout(left_layout)
+        layout.addLayout(right_layout)
 
         self.setLayout(layout)
 
@@ -285,22 +270,21 @@ class ProcessingDialog(QtWidgets.QDialog):
 
     def file_params(self):
         """ Returns a dictionary with HDF5 file parameters """
-        if not self.enable_compression_widget.isChecked():
-            return dict()
-        
-        compression = 'lzf' if self.lzf_btn.isChecked() else 'gzip'
+
         fletcher32 = self.fletcher32_widget.isChecked()
         shuffle = self.shuffle_filter_widget.isChecked()
         
-        params = {'compression': compression, 
-                  'fletcher32': fletcher32, 
+        params = {'fletcher32': fletcher32, 
                   'shuffle': shuffle}
 
-        if compression == 'gzip':
+        if self.no_compression_btn.isChecked():
+            return params
+
+        params['compression'] = 'lzf' if self.lzf_btn.isChecked() else 'gzip'
+        if params['compression'] == 'gzip':
             params['compression_opts'] = self.gzip_level_widget.value()
 
         return params
-
     
     @QtCore.pyqtSlot()
     def accept(self):
