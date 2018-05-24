@@ -166,7 +166,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
 
         ###################
         # Operations on Diffraction Datasets
-        # TODO: remove operations from control bar as they are added here
         self.processing_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '& Process raw data', self)
         self.processing_action.triggered.connect(self.launch_processsing_dialog)
         self.controller.raw_dataset_loaded_signal.connect(self.processing_action.setEnabled)
@@ -242,13 +241,19 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.viewer_stack.resize(self.viewer_stack.maximumSize())
 
         #Window settings ------------------------------------------------------
-        self.setGeometry(0, 0, 1920, 1080)
+        # Set un-maximizzed geometry to be 75% of availiable screen space
+        available = QtWidgets.QApplication.desktop().availableGeometry()
+        available.setSize(0.75*available.size())
+        self.setGeometry(available)
+
         self.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
         self.setWindowTitle('Iris - UED data exploration')
         self.center_window()
         self.showMaximized()
     
     def _create_load_raw(self, cls, submenu):
+        # Note : because of dynamical nature of these bindings,
+        # it must be done in a separate method
         return submenu.addAction(QtGui.QIcon(join(image_folder, 'locator.png')),
                                  '&Load {}'.format(cls.__name__),
                                  lambda : self.load_raw_dataset(cls))
@@ -316,11 +321,15 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     @QtCore.pyqtSlot(object)
     def load_raw_dataset(self, cls):
         path = self.file_dialog.getExistingDirectory(parent = self, caption = 'Load raw dataset')
+        if not path:
+            return
         self.raw_dataset_path_signal.emit(path, cls)
 
     @QtCore.pyqtSlot()
     def load_dataset(self):
         path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load dataset', filter = '*.hdf5')[0]
+        if not path:
+            return
         self.dataset_path_signal.emit(path)
     
     @QtCore.pyqtSlot()
@@ -357,6 +366,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
 
 
 class SinglePictureViewer(QtWidgets.QDialog):
+    """ Dialog for representing a single image. """
 
     def __init__(self, fname, *args, **kwargs):
         super().__init__(*args, **kwargs)
