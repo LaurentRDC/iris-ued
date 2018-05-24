@@ -4,18 +4,17 @@ Diffraction dataset types
 """
 from collections import OrderedDict
 from functools import lru_cache, partial
-from itertools import repeat
 from math import sqrt
 from warnings import warn
 
 import h5py
 import numpy as np
 from cached_property import cached_property
-from scipy.signal import detrend
 
 from npstreams import average, itercopy, peek, pmap
 from skued import (azimuthal_average, baseline_dt, combine_masks,
-                   electron_wavelength, ialign, mask_from_collection, nfold, powder_calq)
+                   electron_wavelength, ialign, mask_from_collection, nfold,
+                   powder_calq)
 from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset

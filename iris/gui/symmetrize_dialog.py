@@ -2,9 +2,9 @@
 """
 Dialog for symmetrization of DiffractionDataset
 """
-import pyqtgraph as pg
-from PyQt5 import QtCore, QtWidgets, QtGui
 import numpy as np
+import pyqtgraph as pg
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 description = """Align the circle so that its center is aligned with the diffraction center. """
 

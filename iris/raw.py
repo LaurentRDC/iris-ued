@@ -5,16 +5,18 @@ Raw dataset classes
 """
 from abc import abstractmethod
 from collections import OrderedDict
+from contextlib import AbstractContextManager
 from functools import partial, wraps
 
 import numpy as np
 
-from npstreams import average, pmap, itercopy, peek
+from npstreams import average, itercopy, peek, pmap
 from skued import ialign
 
 from .meta import ExperimentalParameter, MetaRawDataset
 
-class AbstractRawDataset(object, metaclass = MetaRawDataset):
+
+class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
     """
     Abstract base class for ultrafast electron diffraction data set. 
     RawDatasetBase allows for enforced metadata types and values, 
@@ -76,9 +78,6 @@ class AbstractRawDataset(object, metaclass = MetaRawDataset):
         self.source = source
         if metadata:
             self.update_metadata(metadata)
-    
-    def __enter__(self):
-        return self
     
     def __exit__(self, *exc):
         pass
@@ -245,4 +244,3 @@ def check_raw_bounds(method):
         return method(self, timedelay, scan, *args, **kwargs)
     
     return checked_method
-

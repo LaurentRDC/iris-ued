@@ -3,17 +3,12 @@
 Control bar for all Iris's controls
 """
 from collections import Iterable
-from contextlib import suppress
-from PyQt5 import QtWidgets, QtCore, QtGui
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from pywt import Modes
+
 from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
-try:
-    from PyQt5.QtWinExtras import QWinTaskbarProgress
-    WITH_TASKBAR = True
-except ImportError:
-    WITH_TASKBAR = False
-
-from pywt import Modes
 
 class ControlBar(QtWidgets.QWidget):
     

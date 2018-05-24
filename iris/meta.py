@@ -5,6 +5,7 @@ Meta tools for raw datasets
 from abc import ABCMeta
 from contextlib import suppress
 
+
 class MetaRawDataset(ABCMeta):
     """
     Metaclass for AbstractRawDataset. 

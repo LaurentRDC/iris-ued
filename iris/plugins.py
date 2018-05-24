@@ -9,9 +9,8 @@ Plug-ins should be placed in ~\iris_plugins.
 Plug-in classes can be imported from ``iris.plugins``.
 """
 
-from runpy import run_path
-
 from pathlib import Path
+from runpy import run_path
 
 # Pluging location is ~\iris_plugins
 PLUGIN_DIR = Path.home() / Path('iris_plugins')
