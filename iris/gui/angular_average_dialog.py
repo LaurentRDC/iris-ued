@@ -2,9 +2,10 @@
 """
 Dialog for azimuthal average of diffraction data
 """
-from PyQt5 import QtWidgets, QtCore
-import pyqtgraph as pg
 import numpy as np
+import pyqtgraph as pg
+from PyQt5 import QtCore, QtWidgets
+
 
 normalize_help = """ If checked, all powder patterns will be normalized to their overall intensity.
 This can get rid of systematic offsets between patterns at different time-delay. """
