@@ -3,13 +3,11 @@
 Main GUI for iris
 """
 
-import os
 import sys
 from os.path import dirname, join
 
 import pyqtgraph as pg
 from PyQt5 import QtGui, QtWidgets, QtCore
-from qdarkstyle import load_stylesheet_from_environment
 from skued import diffread
 
 from .control_bar import ControlBar
@@ -29,22 +27,11 @@ from .. import AbstractRawDataset, __version__
 
 image_folder = join(dirname(__file__), 'images')
 
-def run(**kwargs):
-    app = QtGui.QApplication(sys.argv)
-    app.setStyleSheet(load_stylesheet_from_environment(is_pyqtgraph = True))
-    app.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
-    gui = Iris()
-    return app.exec_()
-
-# TODO: show progress on windows taskbar
-#       http://doc.qt.io/qt-5/qtwinextras-overview.html
 class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     
     dataset_path_signal             = QtCore.pyqtSignal(str)
     raw_dataset_path_signal         = QtCore.pyqtSignal(str, object)    # path and class
     single_picture_path_signal      = QtCore.pyqtSignal(str)
-    legacy_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
-    merlin_raw_dataset_path_signal  = QtCore.pyqtSignal(str)
     error_message_signal            = QtCore.pyqtSignal(str)
 
     def __init__(self, *args, **kwargs):
@@ -184,7 +171,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.processing_action.triggered.connect(self.launch_processsing_dialog)
         self.controller.raw_dataset_loaded_signal.connect(self.processing_action.setEnabled)
 
-        self.symmetrize_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '& Symmetrize data', self)
+        self.symmetrize_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '& Symmetrize data (beta)', self)
         self.symmetrize_action.triggered.connect(self.launch_symmetrize_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.symmetrize_action.setEnabled)
 
@@ -256,7 +243,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
 
         #Window settings ------------------------------------------------------
         self.setGeometry(0, 0, 1920, 1080)
-        self.setWindowIcon(QtGui.QIcon(os.path.join(image_folder, 'eye.png')))
+        self.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
         self.setWindowTitle('Iris - UED data exploration')
         self.center_window()
         self.showMaximized()
