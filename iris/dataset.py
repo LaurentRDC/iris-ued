@@ -82,19 +82,23 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         kwargs
             Keywords are passed to ``h5py.File`` constructor. 
             Default is file-mode 'x', which raises error if file already exists.
+            Default libver is 'latest'.
         
         Returns
         -------
         dataset : DiffractionDataset
         """
+        if 'mode' not in kwargs:
+            kwargs['mode'] = 'x'
+        
+        if 'libver' not in kwargs:
+            kwargs['libver'] = 'latest'
+
         # H5py will raise an exception if arrays are not contiguous
         patterns = map(np.ascontiguousarray, iter(patterns))
 
         if callback is None: 
             callback = lambda _: None
-
-        if 'mode' not in kwargs:
-            kwargs['mode'] = 'x'    #safest mode
 
         time_points = np.array(time_points).reshape(-1)
 
@@ -148,7 +152,8 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
                 callback(round(100 * index / np.size(time_points)))
 
         callback(100)
-        return cls(filename)
+        kwargs['mode'] = 'r+'
+        return cls(filename, **kwargs)
 
     @classmethod
     def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
