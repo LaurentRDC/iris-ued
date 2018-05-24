@@ -5,6 +5,8 @@ Main GUI for iris
 
 import sys
 from os.path import dirname, join
+from pathlib import Path
+from shutil import copy2
 
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -14,6 +16,7 @@ from skued import diffread
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
 from .. import AbstractRawDataset, __version__
+from ..plugins import PLUGIN_DIR
 from .angular_average_dialog import AngularAverageDialog
 from .calibrate_q_dialog import QCalibratorDialog
 from .control_bar import ControlBar
@@ -33,6 +36,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     raw_dataset_path_signal         = QtCore.pyqtSignal(str, object)    # path and class
     single_picture_path_signal      = QtCore.pyqtSignal(str)
     error_message_signal            = QtCore.pyqtSignal(str)
+    restart_signal                  = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -133,6 +137,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         # Actions
 
         self.file_menu = self.menu_bar.addMenu('&File')
+        self.file_menu.setToolTipsVisible(True)
         load_raw_submenu = self.file_menu.addMenu('Load raw dataset...')
 
         # Dynamically add an option for each implementation of AbstractRawDataset
@@ -152,6 +157,10 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.close_raw_dataset_action.setEnabled(False)
         self.controller.raw_dataset_loaded_signal.connect(self.close_raw_dataset_action.setEnabled)
 
+        self.load_plugin_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'eye.png')), '& Load plug-in (restarts program)', self)
+        self.load_plugin_action.setToolTip('Copy a plug-in file into the internal storage. The application will restart and the new plug-in will be available.')
+        self.load_plugin_action.triggered.connect(self.load_plugin)
+
         self.close_dataset_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '& Close dataset', self)
         self.close_dataset_action.triggered.connect(self.controller.close_dataset)
         self.close_dataset_action.setEnabled(False)
@@ -163,6 +172,8 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.close_raw_dataset_action)
         self.file_menu.addAction(self.close_dataset_action)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.load_plugin_action)
 
         ###################
         # Operations on Diffraction Datasets
@@ -348,6 +359,21 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         cp = QtWidgets.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+    
+    @QtCore.pyqtSlot()
+    def load_plugin(self):
+        """ Load plug-in and restart application. """
+        path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load plug-in file', filter = 'Python source (*.py)')[0]
+        if not path:
+            return
+        
+        path = Path(path)
+        
+        copy2(path, PLUGIN_DIR / path.name)
+
+        self.controller.close_dataset()
+        self.controller.close_raw_dataset()
+        self.restart_signal.emit()
     
     @QtCore.pyqtSlot()
     def launch_documentation(self):
