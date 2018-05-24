@@ -4,9 +4,13 @@ Dialog for azimuthal average of diffraction data
 """
 from PyQt5 import QtWidgets, QtCore
 import pyqtgraph as pg
+import numpy as np
 
 normalize_help = """ If checked, all powder patterns will be normalized to their overall intensity.
 This can get rid of systematic offsets between patterns at different time-delay. """
+
+explanation = """Drag and resize the red circle until it sits on top of a diffraction ring. 
+This allows for easy determination of the picture center. """.replace('\n', '')
 
 class AngularAverageDialog(QtWidgets.QDialog):
     """
@@ -25,13 +29,23 @@ class AngularAverageDialog(QtWidgets.QDialog):
         super().__init__(*args, **kwargs)
         self.setModal(True)
         self.setWindowTitle('Promote to powder dataset')
+
+        title = QtWidgets.QLabel('<h2>Azimuthal Average Options<\h2>')
+        title.setTextFormat(QtCore.Qt.RichText)
+        title.setAlignment(QtCore.Qt.AlignCenter)
+
+        explanation_label = QtWidgets.QLabel(explanation, parent = self)
+        explanation_label.setWordWrap(True)
         
         self.viewer = pg.ImageView(parent = self)
         self.viewer.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
                                   QtWidgets.QSizePolicy.MinimumExpanding)
         self.viewer.setImage(image)
-        self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
+        self.center_finder = pg.CircleROI(pos = np.array(image.shape)/2 - 100, size = [200,200], pen = pg.mkPen('r'))
         self.viewer.getView().addItem(self.center_finder)
+
+        self.partial_circle_btn = QtWidgets.QCheckBox('Restrict azimuthal angle', self)
+        self.partial_circle_btn.setChecked(False)
 
         self.accept_btn = QtWidgets.QPushButton('Promote', self)
         self.accept_btn.clicked.connect(self.accept)
@@ -40,13 +54,13 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setDefault(True)
 
-
         self.min_angular_bound_widget = QtWidgets.QDoubleSpinBox(parent = self)
         self.min_angular_bound_widget.setRange(0, 360)
         self.min_angular_bound_widget.setSingleStep(1)
         self.min_angular_bound_widget.setValue(0)
         self.min_angular_bound_widget.setSuffix(' deg')
         self.min_angular_bound_widget.setEnabled(False)
+        self.partial_circle_btn.toggled.connect(self.min_angular_bound_widget.setEnabled)
 
         self.max_angular_bound_widget = QtWidgets.QDoubleSpinBox(parent = self)
         self.max_angular_bound_widget.setRange(0, 360)
@@ -54,6 +68,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.max_angular_bound_widget.setValue(360)
         self.max_angular_bound_widget.setSuffix(' deg')
         self.max_angular_bound_widget.setEnabled(False)
+        self.partial_circle_btn.toggled.connect(self.max_angular_bound_widget.setEnabled)
 
         self.min_angular_bound_widget.valueChanged.connect(self.max_angular_bound_widget.setMinimum)
         self.max_angular_bound_widget.valueChanged.connect(self.min_angular_bound_widget.setMaximum)
@@ -63,23 +78,34 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.normalize_widget.setToolTip(normalize_help)
 
         angle_bounds_layout = QtWidgets.QFormLayout()
+        angle_bounds_layout.addRow(self.partial_circle_btn)
         angle_bounds_layout.addRow('Min. angle: ', self.min_angular_bound_widget)
         angle_bounds_layout.addRow('Max. angle: ', self.max_angular_bound_widget)
-
-        params_layout = QtWidgets.QHBoxLayout()
-        params_layout.addLayout(angle_bounds_layout)
-        params_layout.addWidget(self.normalize_widget)
-        params_layout.addStretch()
 
         btns = QtWidgets.QHBoxLayout()
         btns.addWidget(self.accept_btn)
         btns.addWidget(self.cancel_btn)
 
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.addWidget(QtWidgets.QLabel('Drag the circle onto a diffraction ring'))
+        params_layout = QtWidgets.QVBoxLayout()
+        params_layout.addWidget(title)
+        params_layout.addWidget(explanation_label)
+        params_layout.addWidget(self.normalize_widget)
+        params_layout.addLayout(angle_bounds_layout)
+        params_layout.addLayout(btns)
+
+        params_widget = QtWidgets.QFrame(parent = self)
+        params_widget.setLayout(params_layout)
+        params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
+        params_widget.setFrameShape(QtWidgets.QFrame.Panel)
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+
+        right_layout = QtWidgets.QVBoxLayout()
+        right_layout.addWidget(params_widget)
+        right_layout.addStretch()
+
+        self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.viewer)
-        self.layout.addLayout(params_layout)
-        self.layout.addLayout(btns)
+        self.layout.addLayout(right_layout)
         self.setLayout(self.layout)
     
     @QtCore.pyqtSlot()
@@ -94,7 +120,11 @@ class AngularAverageDialog(QtWidgets.QDialog):
             center = tuple(reversed(center))
 
         params = {'center': center,
-                  'angular_bounds': None,   #(self.min_angular_bound_widget.value(), self.max_angular_bound_widget.value()),
-                  'normalized': self.normalize_widget.isChecked()}
+                  'normalized': self.normalize_widget.isChecked(),
+                  'angular_bounds': None}       # default
+        
+        if self.partial_circle_btn.isChecked():
+            params['angular_bounds'] = (self.min_angular_bound_widget.value(), self.max_angular_bound_widget.value())
+
         self.angular_average_signal.emit(params)
         super().accept()
