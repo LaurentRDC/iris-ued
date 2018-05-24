@@ -27,13 +27,6 @@ from .symmetrize_dialog import SymmetrizeDialog
 # to build a loading menu
 from .. import AbstractRawDataset, __version__
 
-# Support for Windows Taskbar
-try:
-    from PyQt5.QtWinExtras import QWinTaskbarProgress
-    WITH_TASKBAR = True
-except ImportError:
-    WITH_TASKBAR = False
-
 image_folder = join(dirname(__file__), 'images')
 
 def run(**kwargs):
@@ -94,10 +87,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         # Progress bar --------------------------------------------------------
         self.progress_bar = QtWidgets.QProgressBar(self)
         self.progress_bar.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Maximum)
-        if WITH_TASKBAR:
-            self.win_progress_bar = QWinTaskbarProgress(self)
-            self.win_progress_bar.setVisible(True)
-            self.progress_bar.valueChanged.connect(self.win_progress_bar.setValue)
 
         self.controller.processing_progress_signal.connect(self.progress_bar.setValue)
         self.controller.powder_promotion_progress.connect(self.progress_bar.setValue)
