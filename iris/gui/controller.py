@@ -6,14 +6,13 @@ import traceback
 import warnings
 from contextlib import suppress
 from functools import wraps
-from types import FunctionType
 from shutil import copy2
+from types import FunctionType
 
 import numpy as np
 from PyQt5 import QtCore
 
 from .. import AbstractRawDataset, DiffractionDataset, PowderDiffractionDataset
-
 
 def error_aware(func):
     """
@@ -32,6 +31,7 @@ def error_aware(func):
     return aware_func
 
 class ErrorAware(type(QtCore.QObject)):
+    """ Metaclass for error-aware Qt applications. """
     
     def __new__(meta, classname, bases, class_dict):
         new_class_dict = dict()
@@ -504,7 +504,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
     @indicate_in_progress
     def close_dataset(self):
         """ Close current DiffractionDataset. """
-        with suppress(AttributeError):
+        with suppress(AttributeError):  # in case self.dataset is None
             self.dataset.close()
         self.dataset = None
         self.processed_dataset_loaded_signal.emit(False)

@@ -6,10 +6,11 @@ Time-series widget
 from functools import lru_cache
 
 import numpy as np
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from pyqtgraph import PlotWidget, mkBrush, mkPen
 
 from skued import spectrum_colors
+
 
 @lru_cache(maxsize = 1)
 def pens_and_brushes(num):

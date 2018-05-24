@@ -13,10 +13,11 @@ from re import search, sub
 import numpy as np
 from cached_property import cached_property
 
-from npstreams import average 
+from npstreams import average
 from skued import diffread
 
 from . import AbstractRawDataset, check_raw_bounds
+
 
 class McGillRawDataset(AbstractRawDataset):
 

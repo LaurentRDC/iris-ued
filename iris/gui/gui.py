@@ -7,23 +7,23 @@ import sys
 from os.path import dirname, join
 
 import pyqtgraph as pg
-from PyQt5 import QtGui, QtWidgets, QtCore
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 from skued import diffread
 
+# Get all proper subclasses of AbstractRawDataset
+# to build a loading menu
+from .. import AbstractRawDataset, __version__
+from .angular_average_dialog import AngularAverageDialog
+from .calibrate_q_dialog import QCalibratorDialog
 from .control_bar import ControlBar
 from .controller import ErrorAware, IrisController
 from .data_viewer import ProcessedDataViewer
 from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
-from .angular_average_dialog import AngularAverageDialog
-from .calibrate_q_dialog import QCalibratorDialog
 from .qbusyindicator import QBusyIndicator
 from .symmetrize_dialog import SymmetrizeDialog
-
-# Get all proper subclasses of AbstractRawDataset
-# to build a loading menu
-from .. import AbstractRawDataset, __version__
 
 image_folder = join(dirname(__file__), 'images')
 
