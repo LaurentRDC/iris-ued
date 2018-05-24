@@ -16,7 +16,6 @@ To start the GUI from the command line::
 The first screen is shown below.
 
 .. image:: images/startup.png
-    :scale: 100 %
 
 Loading raw data
 ----------------
@@ -37,7 +36,7 @@ Once a plug-in is installed, a new raw data format will appear.
 Here is an example of loaded raw data: Raw data controls are available to the right.
 
 .. image:: images/raw_data.png
-    :scale: 100 %
+    :align: center
 
 Data reduction
 --------------
@@ -77,19 +76,16 @@ Once processing is complete, the resulting diffraction dataset will be loaded. N
 
 .. image:: images/processed_view.png
     :align: center
-    :scale: 100 %
 
 The 'Show/hide peak dynamics' button can be toggled. Doing so allows for the exploration of the time-evolution of the data.
 
 .. image:: images/peak_dynamics_single.png
     :align: center
-    :scale: 100 %
 
 When a diffraction dataset is loaded, new options become available.
 
 .. image:: images/dataset_options.png
     :align: center
-    :scale: 100 %
 
 One of these options, 'Compute angular averages', is best suited for polycrystalline diffraction. It opens the following dialog:
 
@@ -107,21 +103,18 @@ After the azimuthal averages have been computed, a new section of the GUI will b
 
 .. image:: images/poly_view.png
     :align: center
-    :scale: 100 %
 
 The top screen shows the superposition of all radial profiles. Dragging the yellow lines allows for exploration of time-evolution 
 on the bottom screen. Note that the trace colors on the top are associated with the time-points and colors of the bottom image.
 
 .. image:: images/poly_view_2.png
     :align: center
-    :scale: 100 %
 
 The baseline can be removed using the controls on the right. You can play with the baseline parameters and compute a baseline many times 
 without any problems.
 
 .. image:: images/poly_view_3.png
     :align: center
-    :scale: 100 %
 
 Polycrystalline scattering vector calibration
 ---------------------------------------------
