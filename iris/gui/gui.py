@@ -323,7 +323,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     
     @QtCore.pyqtSlot()
     def launch_calq_dialog(self):
-        I = self.controller.dataset.powder_eq()
+        I = self.controller.dataset.powder_eq(bgr = True)
         dialog = QCalibratorDialog(I, parent = self)
         dialog.resize(0.75*self.size())
         dialog.calibration_parameters.connect(self.controller.powder_calq)
