@@ -4,8 +4,9 @@ Dialog for symmetrization of DiffractionDataset
 """
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets, QtGui
+import numpy as np
 
-description = """ Align the circle so that its center is aligned with the diffraction center. """
+description = """Align the circle so that its center is aligned with the diffraction center. """
 
 class SymmetrizeDialog(QtWidgets.QDialog):
     """
@@ -18,17 +19,21 @@ class SymmetrizeDialog(QtWidgets.QDialog):
     def __init__(self, image, **kwargs):
         super().__init__(**kwargs)
         self.setModal(True)
-        self.setWindowTitle('Data Symmetrization')
+        self.setWindowTitle('Symmetrization')
 
-        description_label = QtWidgets.QLabel(parent = self)
-        description_label.setText(description)
-        description_label.setAlignment(QtCore.Qt.AlignHCenter)
+        title = QtWidgets.QLabel('<h2>Symmetrization Options<\h2>')
+        title.setTextFormat(QtCore.Qt.RichText)
+        title.setAlignment(QtCore.Qt.AlignCenter)
+
+        description_label = QtWidgets.QLabel(description, parent = self)
+        description_label.setWordWrap(True)
+        description_label.setAlignment(QtCore.Qt.AlignCenter)
 
         self.viewer = pg.ImageView(parent = self)
         self.viewer.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
                                   QtWidgets.QSizePolicy.MinimumExpanding)
         self.viewer.setImage(image)
-        self.center_finder = pg.CircleROI(pos = [1000,1000], size = [200,200], pen = pg.mkPen('r'))
+        self.center_finder = pg.CircleROI(pos = np.array(image.shape)/2 - 100, size = [200,200], pen = pg.mkPen('r'))
         self.viewer.getView().addItem(self.center_finder)
 
         self.mod_widget = QtWidgets.QComboBox(parent = self)
@@ -53,14 +58,28 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         btns.addWidget(self.accept_btn)
         btns.addWidget(self.cancel_btn)
 
-        params = QtWidgets.QFormLayout()
-        params.addRow('Rotational multiplicity: ', self.mod_widget)
+        multiplicity_layout = QtWidgets.QFormLayout()
+        multiplicity_layout.addRow('Rotational multiplicity: ', self.mod_widget)
 
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.addWidget(description_label)
+        params_layout = QtWidgets.QVBoxLayout()
+        params_layout.addWidget(title)
+        params_layout.addWidget(description_label)
+        params_layout.addLayout(multiplicity_layout)
+        params_layout.addLayout(btns)
+
+        params_widget = QtWidgets.QFrame(parent = self)
+        params_widget.setLayout(params_layout)
+        params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
+        params_widget.setFrameShape(QtWidgets.QFrame.Panel)
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+
+        right_layout = QtWidgets.QVBoxLayout()
+        right_layout.addWidget(params_widget)
+        right_layout.addStretch()
+
+        self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.viewer)
-        self.layout.addLayout(params)
-        self.layout.addLayout(btns)
+        self.layout.addLayout(right_layout)
         self.setLayout(self.layout)
 
     @QtCore.pyqtSlot(str)

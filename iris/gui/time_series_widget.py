@@ -71,7 +71,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.vert_log_widget.toggled.connect(
             lambda toggle: self.plot_widget.getPlotItem().setLogMode(y = toggle))
 
-        self.controls = QtWidgets.QVBoxLayout()
+        self.controls = QtWidgets.QHBoxLayout()
         self.controls.addWidget(self.horz_grid_widget)
         self.controls.addWidget(self.vert_grid_widget)
         self.controls.addWidget(self.horz_log_widget)
@@ -80,7 +80,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.controls.addWidget(self.symbol_size_widget)
         self.controls.addStretch(1)
 
-        layout = QtWidgets.QHBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.plot_widget)
         layout.addLayout(self.controls)
         self.setLayout(layout)
