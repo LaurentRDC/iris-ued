@@ -49,26 +49,28 @@ if __name__ == '__main__':
         maintainer = AUTHOR,
         maintainer_email = AUTHOR_EMAIL,
         install_requires = REQUIREMENTS,
-        keywords = ['iris'],
+        keywords = ['ultrafast electron diffraction visualization pyqtgraph'],
         packages = PACKAGES,
         data_files = [('iris\\gui\\images', glob('iris\\gui\\images\\*.png'))],
         entry_points = {'gui_scripts': ['iris = iris.gui:run']},
         include_package_data = True,
-        zip_safe = False,
         project_urls = {
             'Documentation' : 'http://iris-ued.readthedocs.io/en/master/',
             'Source'        : 'https://github.com/LaurentRDC/iris-ued',
+            'Tracker'       : 'https://github.com/LaurentRDC/iris-ued/issues'
+            'Home'          : 'http://www.physics.mcgill.ca/siwicklab/software.html'
         },
         python_requires = '>= 3.6',
-        classifiers = ['Development Status :: 4 - Beta',
-                       'Environment :: Console',
+        classifiers = ['Development Status :: 5 - Production/Stable',
                        'Intended Audience :: Science/Research',
                        'Topic :: Scientific/Engineering',
                        'Topic :: Scientific/Engineering :: Physics',
+                       'Topic :: Scientific/Engineering :: Chemistry',
                        'Topic :: Scientific/Engineering :: Visualization',
                        'License :: OSI Approved :: MIT License',
                        'Natural Language :: English',
                        'Operating System :: OS Independent',
                        'Programming Language :: Python',
-                       'Programming Language :: Python :: 3.6']
+                       'Programming Language :: Python :: 3.6',
+                       'Programming Language :: Python :: Implementation :: CPython']
             )
