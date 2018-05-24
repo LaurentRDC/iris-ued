@@ -19,16 +19,24 @@ The first screen is shown below.
 
 Loading raw data
 ----------------
-The file menu can be used to load raw data. Depending on the installed plugins, options will be available.
+The file menu can be used to load raw data. Depending on the installed plugins, options will be available. To install 
+a new plug-in, use the following option:
+
+.. image:: images/load_plugin_option.png
+    :scale: 50 %
+    :align: center
+
+You'll be able to select a plug-in file which will be copied to the plug-in directory. The program will then restart.
+Once a plug-in is installed, a new raw data format will appear.
 
 .. image:: images/load_raw.png
     :scale: 50 %
     :align: center
 
+Here is an example of loaded raw data: Raw data controls are available to the right.
+
 .. image:: images/raw_data.png
     :align: center
-
-Raw data controls are available to the right.
 
 Data reduction
 --------------
@@ -111,7 +119,7 @@ without any problems.
 Polycrystalline scattering vector calibration
 ---------------------------------------------
 
-On the above images, the scattering vector range is meaningless. To calibrate the scattering vector range
+On the above images, the scattering vector range might not be right. To calibrate the scattering vector range
 based on a known structure, select the 'Calibrate scattering vector' option from the 'Dataset' menu.
 
 .. image:: images/calibrate_option.png
@@ -132,9 +140,4 @@ scattering vector range.
 
 .. image:: images/calibration_dialog_2.png
     :scale: 75 %
-    :align: center
-
-The resulting pattern makes more sense.
-
-.. image:: images/poly_view_5.png
     :align: center
