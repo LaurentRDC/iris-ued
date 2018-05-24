@@ -30,6 +30,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
     It is suggested to also implement the following magic method:
 
         * __init__ 
+        * __exit__
     
     For better results or performance during reduction, the following methods
     can be specialized:
