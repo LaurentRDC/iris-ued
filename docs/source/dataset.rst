@@ -47,7 +47,8 @@ An other possibility is to create a :class:`DiffractionDataset` from a :class:`A
 Important Methods for the :class:`DiffractionDataset`
 -----------------------------------------------------
 
-The following three methods are the bread-and-butter of interacting with data:
+The following three methods are the bread-and-butter of interacting with data. See the API section
+for a complete description.
 
 .. automethod:: DiffractionDataset.diff_data
     :noindex:
@@ -70,4 +71,17 @@ Specializing a :class:`DiffractionDataset` object into a :class:`PowderDiffracti
     with PowderDiffractionDataset.from_dataset(dataset_path, center) as dset:
         # Do computation
 
-Take at
+Important Methods for the :class:`PowderDiffractionDataset`
+----------------------------------------------------------
+
+The following methods are specific to polycrystalline diffraction data. See the API section
+for a complete description.
+
+.. automethod:: PowderDiffractionDataset.powder_eq
+    :noindex:
+.. automethod:: PowderDiffractionDataset.powder_data
+    :noindex:
+.. automethod:: PowderDiffractionDataset.powder_calq
+    :noindex:
+.. automethod:: PowderDiffractionDataset.compute_baseline
+    :noindex:
