@@ -4,9 +4,9 @@ Viewer widgets for PowderDiffractionDatasets
 """
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
-from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
 
 from .time_series_widget import TimeSeriesWidget, pens_and_brushes
+
 
 class PowderViewer(QtWidgets.QWidget):
 

@@ -3,9 +3,10 @@
 Dialog for processing between AbstractRawDataset and DiffractionDataset
 """
 from os import cpu_count
-import pyqtgraph as pg
-from PyQt5 import QtCore, QtWidgets, QtGui
+
 import numpy as np
+import pyqtgraph as pg
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 fletcher32_help = """ Adds a checksum to each chunk to detect data corruption. 
 Attempts to read corrupted chunks will fail with an error. 

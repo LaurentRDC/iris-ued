@@ -2,7 +2,8 @@
 """
 Dialog for editing a restricted set of metadata
 """
-from PyQt5 import QtWidgets, QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
+
 
 class MetadataEditDialog(QtWidgets.QDialog):
     """ Modal dialog to specify modify metadata

@@ -7,6 +7,7 @@ from PyQt5 import QtCore, QtWidgets
 
 from .time_series_widget import TimeSeriesWidget
 
+
 class ProcessedDataViewer(QtWidgets.QWidget):
     """
     Widget displaying DiffractionDatasets
