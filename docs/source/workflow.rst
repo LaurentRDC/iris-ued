@@ -50,20 +50,20 @@ Once raw data is loaded, the following option becomes available:
 This opens the data reduction dialog.
 
 .. image:: images/reduction_window.png
-    :scale: 75 %
+    :scale: 50 %
     :align: center
 
 Parts of the data can be masked. To add a mask, use the controls on the top of the dialog. Masks can be moved and resized. 
 Note that all images will be masked, so this is best for beam blocks, known hot pixels, etc. 
 
 .. image:: images/reduction_mask.png
-    :scale: 75 %
+    :scale: 50 %
     :align: center
 
 A preview of the mask can be generated:
 
 .. image:: images/mask_preview.png
-    :scale: 75 %
+    :scale: 50 %
     :align: center
 
 Once you are satisfied with the processing parameters, the 'Launch processing' button will open a file dialog so that 
@@ -90,7 +90,7 @@ When a diffraction dataset is loaded, new options become available.
 One of these options, 'Compute angular averages', is best suited for polycrystalline diffraction. It opens the following dialog:
 
 .. image:: images/azimuthal_dialog_1.png
-    :scale: 75 %
+    :scale: 50 %
     :align: center
 
 Drag and resize the red circle so it coincides with a diffraction ring. This will allow for the determination of the diffraction center. 
@@ -129,7 +129,7 @@ based on a known structure, select the 'Calibrate scattering vector' option from
 This opens the calibration dialog.
 
 .. image:: images/calibration_dialog.png
-    :scale: 75 %
+    :scale: 50 %
     :align: center
 
 You must either select a structure file (CIF) or one of the built-in structures. Once a structure is selected, it's description 
@@ -139,5 +139,5 @@ Then, drag the left and right yellow bars on two diffraction peaks with known Mi
 scattering vector range.
 
 .. image:: images/calibration_dialog_2.png
-    :scale: 75 %
+    :scale: 50 %
     :align: center
