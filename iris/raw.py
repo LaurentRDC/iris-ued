@@ -60,7 +60,7 @@ class AbstractRawDataset(object, metaclass = MetaRawDataset):
     pixel_width     = ExperimentalParameter('pixel_width',     float, default = 14e-6)    # meters
     notes           = ExperimentalParameter('notes',           str,   default = '')
 
-    def __init__(self, source = None, metadata = dict()):
+    def __init__(self, source = None, metadata = None):
         """
         Parameters
         ----------
@@ -159,7 +159,7 @@ class AbstractRawDataset(object, metaclass = MetaRawDataset):
         """ 
         pass
     
-    def reduced(self, exclude_scans = tuple(), align = True, normalize = True, mask = None, processes = 1, dtype = np.float):
+    def reduced(self, exclude_scans = None, align = True, normalize = True, mask = None, processes = 1, dtype = np.float):
         """
         Generator of reduced dataset. The reduced diffraction patterns are generated in order of time-delay.
 
@@ -168,8 +168,8 @@ class AbstractRawDataset(object, metaclass = MetaRawDataset):
 
         Parameters
         ----------
-        exclude_scans : iterable, optional
-            Iterable of ints. These scans will be skipped when reducing the dataset.
+        exclude_scans : iterable or None, optional
+            These scans will be skipped when reducing the dataset.
         align : bool, optional
             If True (default), raw images will be aligned on a per-scan basis.
         normalize : bool, optional
@@ -186,6 +186,9 @@ class AbstractRawDataset(object, metaclass = MetaRawDataset):
         ------
         pattern : `~numpy.ndarray`, ndim 2
         """
+        if not exclude_scans:
+            exclude_scans = set([])
+        
         valid_scans = list(sorted(set(self.scans) - set(exclude_scans)))
 
         kwargs = {'raw'         : self,
