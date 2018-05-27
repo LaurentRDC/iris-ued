@@ -155,9 +155,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         return cls(filename, **kwargs)
 
     @classmethod
-    def from_raw(cls, raw, filename, exclude_scans = set([]), valid_mask = None, 
+    def from_raw(cls, raw, filename, exclude_scans = None, valid_mask = None, 
                  processes = 1, callback = None, align = True, normalize = True, 
-                 ckwargs = dict(), dtype = None, **kwargs):
+                 ckwargs = None, dtype = None, **kwargs):
         """
         Create a DiffractionDataset from a subclass of AbstractRawDataset.
 
@@ -167,7 +167,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             Raw dataset instance.
         filename : str or path-like
             Path to the assembled DiffractionDataset.
-        exclude_scans : iterable of ints, optional
+        exclude_scans : iterable of ints or None, optional
             Scans to exclude from the processing. Default is to include all scans.
         valid_mask : ndarray or None, optional
             Boolean array that evaluates to True on valid pixels. This information is useful in
@@ -200,6 +200,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         """
         if callback is None: 
             callback = lambda _: None
+        
+        if exclude_scans is None:
+            exclude_scans = set([])
         
         if valid_mask is None:
             valid_mask = np.ones(shape = raw.resolution, dtype = np.bool)
