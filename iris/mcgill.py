@@ -21,7 +21,7 @@ from . import AbstractRawDataset, check_raw_bounds
 
 class McGillRawDataset(AbstractRawDataset):
 
-    def __init__(self, source):
+    def __init__(self, source, *args, **kwargs):
         if not isdir(source):
             raise ValueError('{} does not point to an existing directory'.format(source))
         
@@ -109,7 +109,7 @@ class LegacyMcGillRawDataset(AbstractRawDataset):
     ValueError : if the source directory does not exist.
     """
 
-    def __init__(self, source, metadata = dict()):
+    def __init__(self, source, *args, **kwargs):
         if not isdir(source):
             raise ValueError('{} does not point to an existing directory'.format(source))
         super().__init__(source)
