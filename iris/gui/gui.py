@@ -178,9 +178,14 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.open_plugin_directory_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'eye.png')), '& Open plug-in directory', self)
         self.open_plugin_directory_action.triggered.connect(lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("file:///" + str(PLUGIN_DIR), QtCore.QUrl.TolerantMode)))
 
+        self.howto_write_plugin_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'revert.png')), '& Writing a plug-in', self)
+        self.howto_write_plugin_action.triggered.connect(lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://iris-ued.readthedocs.io/en/master/plugins.html")))
+
         self.plugin_menu = self.menu_bar.addMenu('Plug-ins')
         self.plugin_menu.addAction(self.load_plugin_action)
         self.plugin_menu.addAction(self.open_plugin_directory_action)
+        self.plugin_menu.addSeparator()
+        self.plugin_menu.addAction(self.howto_write_plugin_action)
 
         ###################
         # Operations on Diffraction Datasets
@@ -226,13 +231,13 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.about_action.triggered.connect(self.show_about)
 
         self.launch_documentation_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'revert.png')), '& Open online documentation', self)
-        self.launch_documentation_action.triggered.connect(self.launch_documentation)
+        self.launch_documentation_action.triggered.connect(lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://iris-ued.readthedocs.io/en/master/")))
 
         self.goto_repository_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'revert.png')), '& Go to GitHub Repository', self)
-        self.goto_repository_action.triggered.connect(self.goto_repository)
+        self.goto_repository_action.triggered.connect(lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/")))
 
         self.report_issue_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'revert.png')), '& Report issue', self)
-        self.report_issue_action.triggered.connect(self.report_issue)
+        self.report_issue_action.triggered.connect(lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/issues/new")))
 
         self.help_menu = self.menu_bar.addMenu('&Help')
         self.help_menu.addAction(self.about_action)
@@ -404,21 +409,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.controller.close_dataset()
         self.controller.close_raw_dataset()
         self.restart_signal.emit()
-    
-    @QtCore.pyqtSlot()
-    def launch_documentation(self):
-        """ Open online documentation in the default browser """
-        return QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://iris-ued.readthedocs.io/en/master/"))
-
-    @QtCore.pyqtSlot()
-    def report_issue(self):
-        """ Open a new GitHub issue in the default browser """
-        return QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/issues/new"))
-
-    @QtCore.pyqtSlot()
-    def goto_repository(self):
-        """ Open a new GitHub issue in the default browser """
-        return QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/"))
     
     @QtCore.pyqtSlot()
     def show_about(self):
