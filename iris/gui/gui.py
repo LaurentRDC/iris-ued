@@ -30,6 +30,13 @@ from .symmetrize_dialog import SymmetrizeDialog
 
 image_folder = join(dirname(__file__), 'images')
 
+LOAD_PLUGIN_EXPLANATION = """You will be prompted to select a plug-in file. This file will be COPIED into:
+
+{dir}
+
+Once this is done, iris will have to restart. The plug-in will remain installed as long as it can be found 
+in the above directory""".format(dir = PLUGIN_DIR)
+
 class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     
     dataset_path_signal             = QtCore.pyqtSignal(str)
@@ -364,6 +371,8 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     @QtCore.pyqtSlot()
     def load_plugin(self):
         """ Load plug-in and restart application. """
+        QtWidgets.QMessageBox.information(self, 'Loading a plug-in', LOAD_PLUGIN_EXPLANATION)
+
         path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load plug-in file', filter = 'Python source (*.py)')[0]
         if not path:
             return
