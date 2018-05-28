@@ -89,7 +89,7 @@ class McGillRawDataset(AbstractRawDataset):
         try:
             fname = next(iglob(join(directory, 'pumpon_{:+010.3f}ps_*.tif'.format(timedelay))))
         except StopIteration:
-            raise IOError('Expected the file {} to exist, but could not find it.'.format(fname))
+            raise IOError('Expected the file for {t}ps and scan {s} to exist, but could not find it.'.format(t = timedelay, s = scan))
 
         return diffread(fname)
 
