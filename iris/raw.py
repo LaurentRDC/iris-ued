@@ -18,7 +18,7 @@ from .meta import ExperimentalParameter, MetaRawDataset
 class AbstractRawDataset(object, metaclass = MetaRawDataset):
     """
     Abstract base class for ultrafast electron diffraction data set. 
-    RawDatasetBase allows for enforced metadata types and values, 
+    AbstractRawDataset allows for enforced metadata types and values, 
     as well as a standard interface. For example, AbstractRawDataset
     implements the context manager interface.
 
