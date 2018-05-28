@@ -229,8 +229,8 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
 
         self.help_menu = self.menu_bar.addMenu('&Help')
         self.help_menu.addAction(self.about_action)
-        self.help_menu.addAction(self.launch_documentation_action)
         self.help_menu.addSeparator()
+        self.help_menu.addAction(self.launch_documentation_action)
         self.help_menu.addAction(self.goto_repository_action)
         self.help_menu.addAction(self.report_issue_action)
 
@@ -353,9 +353,19 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         if not path:
             return
 
-        viewer = SinglePictureViewer(path)
-        viewer.resize(0.75*self.size())
-        return viewer.exec_()
+        self.image_viewer = pg.ImageView(parent = self)
+        self.image_viewer.setImage(diffread(path))
+
+        layout = QtWidgets.QVBoxLayout()
+        fname_label = QtWidgets.QLabel('Filename: ' + path, parent = self)
+        fname_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(fname_label)
+        layout.addWidget(self.image_viewer)
+
+        dialog = QtWidgets.QDialog()
+        dialog.setLayout(layout)
+        dialog.resize(0.75*self.size())
+        return dialog.exec_()
     
     @QtCore.pyqtSlot()
     def center_window(self):
@@ -427,22 +437,3 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         <h4>Installed plug-ins</h4>
         {'<br>'.join(cls.__name__ for cls in AbstractRawDataset.implementations)} """
         return QtWidgets.QMessageBox.about(self, 'About Iris', about)
-
-class SinglePictureViewer(QtWidgets.QDialog):
-    """ Dialog for representing a single image. """
-
-    def __init__(self, fname, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        #scikit-ued's diffread ensures that 'color' images are reduced to 2-dimensional greyscale
-        im = diffread(fname)
-
-        self.image_viewer = pg.ImageView(parent = self)
-        self.image_viewer.setImage(im)
-
-        layout = QtWidgets.QVBoxLayout()
-        fname_label = QtWidgets.QLabel('Filename: ' + fname, parent = self)
-        fname_label.setAlignment(QtCore.Qt.AlignCenter)
-        layout.addWidget(fname_label)
-        layout.addWidget(self.image_viewer)
-        self.setLayout(layout)
