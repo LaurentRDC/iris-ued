@@ -3,7 +3,6 @@
 Main GUI for iris
 """
 
-import sys
 from os.path import dirname, join
 from pathlib import Path
 from shutil import copy2
@@ -15,7 +14,7 @@ from skued import diffread
 
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
-from .. import AbstractRawDataset, __version__
+from .. import AbstractRawDataset, __version__, __author__, __license__
 from ..plugins import PLUGIN_DIR
 from .angular_average_dialog import AngularAverageDialog
 from .calibrate_q_dialog import QCalibratorDialog
@@ -29,13 +28,6 @@ from .qbusyindicator import QBusyIndicator
 from .symmetrize_dialog import SymmetrizeDialog
 
 image_folder = join(dirname(__file__), 'images')
-
-LOAD_PLUGIN_EXPLANATION = """You will be prompted to select a plug-in file. This file will be COPIED into:
-
-{dir}
-
-Once this is done, iris will have to restart. The plug-in will remain installed as long as it can be found 
-in the above directory""".format(dir = PLUGIN_DIR)
 
 class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     
@@ -223,6 +215,9 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         ###################
         # Helps and misc operations
 
+        self.about_action = QtWidgets.QAction('& About', self)
+        self.about_action.triggered.connect(self.show_about)
+
         self.launch_documentation_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'revert.png')), '& Open online documentation', self)
         self.launch_documentation_action.triggered.connect(self.launch_documentation)
 
@@ -233,6 +228,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.report_issue_action.triggered.connect(self.report_issue)
 
         self.help_menu = self.menu_bar.addMenu('&Help')
+        self.help_menu.addAction(self.about_action)
         self.help_menu.addAction(self.launch_documentation_action)
         self.help_menu.addSeparator()
         self.help_menu.addAction(self.goto_repository_action)
@@ -371,7 +367,14 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     @QtCore.pyqtSlot()
     def load_plugin(self):
         """ Load plug-in and restart application. """
-        QtWidgets.QMessageBox.information(self, 'Loading a plug-in', LOAD_PLUGIN_EXPLANATION)
+        explanation = """You will be prompted to select a plug-in file. This file will be COPIED into:
+
+        {dir}
+
+        Once this is done, iris will have to restart. The plug-in will remain installed as long as it can be found 
+        in the above directory""".format(dir = PLUGIN_DIR)
+
+        QtWidgets.QMessageBox.information(self, 'Loading a plug-in', explanation)
 
         path = self.file_dialog.getOpenFileName(parent = self, caption = 'Load plug-in file', filter = 'Python source (*.py)')[0]
         if not path:
@@ -399,7 +402,31 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     def goto_repository(self):
         """ Open a new GitHub issue in the default browser """
         return QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/"))
+    
+    @QtCore.pyqtSlot()
+    def show_about(self):
+        """ Show the About information """
+        import h5py
+        import sys
+        import skued
 
+        about = f"""<h2>About Iris</h2>
+        Iris is both a Python library and a GUI program for the exploration of ultrafast electron diffraction data. <br>
+        License: {__license__}                    <br>
+        Author: {__author__}                      <br>
+        Install location: {Path(__file__).parent} <br> 
+
+        <h4>Versions</h4>
+        Python version: {sys.version}             <br>
+        Iris version: {__version__}               <br>
+        Qt version: {QtCore.qVersion()}           <br>
+        scikit-ued version: {skued.__version__}   <br>
+        h5py version: {h5py.version.version}      <br>
+        HDF5 version: {h5py.version.hdf5_version} <br>
+
+        <h4>Installed plug-ins</h4>
+        {'<br>'.join(cls.__name__ for cls in AbstractRawDataset.implementations)} """
+        return QtWidgets.QMessageBox.about(self, 'About Iris', about)
 
 class SinglePictureViewer(QtWidgets.QDialog):
     """ Dialog for representing a single image. """
