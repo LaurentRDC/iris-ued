@@ -358,7 +358,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         """
         self.dataset.powder_calq(**params)
         self.display_powder_data()
-        self.status_message_signal('Scattering vector range calibrated.')
+        self.status_message_signal.emit('Scattering vector range calibrated.')
 
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
