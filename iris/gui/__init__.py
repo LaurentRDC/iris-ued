@@ -17,7 +17,7 @@ DETACHED_PROCESS = 0x00000008          # 0x8 | 0x200 == 0x208
 @contextmanager
 def pyqt5_environment():
     """ Set the PyQtGraph QT library to PyQt5 while Iris GUI is running. Revert back when done. """
-    old_qt_lib = os.environ['PYQTGRAPH_QT_LIB']
+    old_qt_lib = os.environ.get('PYQTGRAPH_QT_LIB', 'PyQt5')    # environment variable might not exist
     os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     yield
     os.environ['PYQTGRAPH_QT_LIB'] = old_qt_lib
