@@ -92,10 +92,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         # Progress bar added to status bar ------------------------------------
         status_bar.addPermanentWidget(self.progress_bar)
 
-        # Version label -------------------------------------------------------
-        version_label = QtWidgets.QLabel('  Version ' + __version__ + '  ')
-        status_bar.addWidget(version_label, 2)
-
         # Busy indicator ------------------------------------------------------
         busy_indicator = QBusyIndicator(parent = self)
         self.controller.operation_in_progress.connect(busy_indicator.toggle_animation)
@@ -416,21 +412,23 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         import h5py
         import sys
         import skued
+        import pyqtgraph
 
         about = f"""<h2>About Iris</h2>
         Iris is both a Python library and a GUI program for the exploration of ultrafast electron diffraction data. <br>
-        License: {__license__}                    <br>
-        Author: {__author__}                      <br>
-        Install location: {Path(__file__).parent} <br> 
+        <b>License</b>: {__license__}                    <br>
+        <b>Author</b>: {__author__}                      <br>
+        <b>Install location</b>: {Path(__file__).parent} <br> 
 
-        <h4>Versions</h4>
-        Python version: {sys.version}             <br>
-        Iris version: {__version__}               <br>
-        Qt version: {QtCore.qVersion()}           <br>
-        scikit-ued version: {skued.__version__}   <br>
-        h5py version: {h5py.version.version}      <br>
-        HDF5 version: {h5py.version.hdf5_version} <br>
+        <h3>Versions</h3>                                <br>
+        <b>Python version</b>: {sys.version}             <br>
+        <b>iris version</b>: {__version__}               <br>
+        <b>Qt version</b>: {QtCore.qVersion()}           <br>
+        <b>PyQtGraph version</b>: {pyqtgraph.__version__}<br>
+        <b>scikit-ued version</b>: {skued.__version__}   <br>
+        <b>h5py version</b>: {h5py.version.version}      <br>
+        <b>HDF5 version</b>: {h5py.version.hdf5_version} <br>
 
-        <h4>Installed plug-ins</h4>
+        <h3>Installed plug-ins</h3>
         {'<br>'.join(cls.__name__ for cls in AbstractRawDataset.implementations)} """
         return QtWidgets.QMessageBox.about(self, 'About Iris', about)
