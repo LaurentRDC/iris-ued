@@ -156,11 +156,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.close_raw_dataset_action.setEnabled(False)
         self.controller.raw_dataset_loaded_signal.connect(self.close_raw_dataset_action.setEnabled)
 
-        self.load_plugin_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'eye.png')), '& Load plug-in (restarts program)', self)
-        self.load_plugin_action.setToolTip('Copy a plug-in file into the internal storage. The application will restart and the new plug-in will be available.')
-        self.load_plugin_action.triggered.connect(self.load_plugin)
-        self.controller.operation_in_progress.connect(self.load_plugin_action.setDisabled)  # wouldn't want to restart during processing
-
         self.close_dataset_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '& Close dataset', self)
         self.close_dataset_action.triggered.connect(self.controller.close_dataset)
         self.close_dataset_action.setEnabled(False)
@@ -172,8 +167,20 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.close_raw_dataset_action)
         self.file_menu.addAction(self.close_dataset_action)
-        self.file_menu.addSeparator()
-        self.file_menu.addAction(self.load_plugin_action)
+
+        ###################
+        # Plug-in Actions
+        self.load_plugin_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'eye.png')), '& Install plug-in (restarts program)', self)
+        self.load_plugin_action.setToolTip('Copy a plug-in file into the internal storage. The application will restart and the new plug-in will be available.')
+        self.load_plugin_action.triggered.connect(self.load_plugin)
+        self.controller.operation_in_progress.connect(self.load_plugin_action.setDisabled)  # wouldn't want to restart during processing
+
+        self.open_plugin_directory_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'eye.png')), '& Open plug-in directory', self)
+        self.open_plugin_directory_action.triggered.connect(lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("file:///" + str(PLUGIN_DIR), QtCore.QUrl.TolerantMode)))
+
+        self.plugin_menu = self.menu_bar.addMenu('Plug-ins')
+        self.plugin_menu.addAction(self.load_plugin_action)
+        self.plugin_menu.addAction(self.open_plugin_directory_action)
 
         ###################
         # Operations on Diffraction Datasets
