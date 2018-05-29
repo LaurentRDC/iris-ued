@@ -164,7 +164,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         if timedelay not in set(self.time_points):
             raise ValueError('There is no scan {} in available scans'.format(scan))
         
-        valid_scans = sorted(set(self.scans) - exclude_scans)
+        valid_scans = sorted(set(self.scans) - set(exclude_scans))
         for scan in valid_scans:
             yield self.raw_data(timedelay = timedelay, scan = scan, **kwargs)
     
@@ -205,7 +205,8 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         exclude_scans : iterable or None, optional
             These scans will be skipped when reducing the dataset.
         align : bool, optional
-            If True (default), raw diffraction patterns will be aligned on a per-scan basis.
+            If True (default), raw diffraction patterns will be aligned using the masked normalized
+            cross-correlation approach. See `skued.align` for more information.
         normalize : bool, optional
             If True (default), equivalent diffraction pictures (e.g. same time-delay, different scans) 
             are normalized to the same diffracted intensity.
@@ -227,8 +228,16 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
                   'invalid_mask' : mask,
                   'dtype'        : dtype}
 
-        yield from pmap(_raw_combine, self.time_points, kwargs = kwargs,
+        combined = pmap(_raw_combine, self.time_points, kwargs = kwargs,
                         processes = processes, ntotal = len(self.time_points))
+        
+        # Each image at the same time-delay are aligned to each other. This means that
+        # the reference image is different for each time-delay. We align the reduced images
+        # to each other as well.
+        if align:
+            yield from ialign(combined, mask = mask)
+        else:
+            yield from combined
 
 # For multiprocessing, the function to be mapped must be 
 # global, hence defined outside of the class method
