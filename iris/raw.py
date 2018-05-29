@@ -112,7 +112,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
 
     def iterscan(self, scan, **kwargs):
         """
-        Generator function of images as part of a scan, in 
+        Generator function of diffraction patterns as part of a scan, in 
         time-delay order.
 
         Parameters
@@ -125,11 +125,47 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         Yields
         ------
         data : `~numpy.ndarray`, ndim 2
+
+        See Also
+        --------
+        itertime : generator of diffraction patterns for a single time-delay, in scan order
         """
         if scan not in set(self.scans):
             raise ValueError('There is no scan {} in available scans'.format(scan))
         
         for timedelay in self.time_points:
+            yield self.raw_data(timedelay = timedelay, scan = scan, **kwargs)
+    
+    def itertime(self, timedelay, exclude_scans = None, **kwargs):
+        """
+        Generator function of diffraction patterns of the same time-delay, in 
+        scan order.
+
+        Parameters
+        ----------
+            timedelay : float
+            Scan from which to yield the data.
+        exclude_scans : iterable or None, optional
+            These scans will be skipped.
+        kwargs
+            Keyword-arguments are passed to ``raw_data`` method.
+        
+        Yields
+        ------
+        data : `~numpy.ndarray`, ndim 2
+
+        See Also
+        --------
+        iterscan : generator of diffraction patterns for a single scan, in time-delay order
+        """
+        if not exclude_scans:
+            exclude_scans = set([])
+
+        if timedelay not in set(self.time_points):
+            raise ValueError('There is no scan {} in available scans'.format(scan))
+        
+        valid_scans = sorted(set(self.scans) - exclude_scans)
+        for scan in valid_scans:
             yield self.raw_data(timedelay = timedelay, scan = scan, **kwargs)
     
     @abstractmethod
@@ -169,7 +205,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         exclude_scans : iterable or None, optional
             These scans will be skipped when reducing the dataset.
         align : bool, optional
-            If True (default), raw images will be aligned on a per-scan basis.
+            If True (default), raw diffraction patterns will be aligned on a per-scan basis.
         normalize : bool, optional
             If True (default), equivalent diffraction pictures (e.g. same time-delay, different scans) 
             are normalized to the same diffracted intensity.
@@ -184,26 +220,21 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         ------
         pattern : `~numpy.ndarray`, ndim 2
         """
-        if not exclude_scans:
-            exclude_scans = set([])
-        
-        valid_scans = list(sorted(set(self.scans) - set(exclude_scans)))
-
-        kwargs = {'raw'         : self,
-                  'valid_scans' : list(sorted(set(self.scans) - set(exclude_scans))),
-                  'align'       : align,
-                  'normalize'   : normalize,
-                  'invalid_mask': mask,
-                  'dtype'       : dtype}
+        kwargs = {'raw'          : self,
+                  'exclude_scans': exclude_scans,
+                  'align'        : align,
+                  'normalize'    : normalize,
+                  'invalid_mask' : mask,
+                  'dtype'        : dtype}
 
         yield from pmap(_raw_combine, self.time_points, kwargs = kwargs,
                         processes = processes, ntotal = len(self.time_points))
 
 # For multiprocessing, the function to be mapped must be 
 # global, hence defined outside of the class method
-def _raw_combine(timedelay, raw, valid_scans, normalize, align, invalid_mask, dtype):
+def _raw_combine(timedelay, raw, exclude_scans, normalize, align, invalid_mask, dtype):
 
-    images = map(partial(raw.raw_data, timedelay), valid_scans)
+    images = raw.itertime(timedelay, exclude_scans = exclude_scans)
 
     if align:
         images = ialign(images, mask = invalid_mask)
