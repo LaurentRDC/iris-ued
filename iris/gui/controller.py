@@ -253,6 +253,8 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.worker = WorkThread(function = symmetrize, kwargs = kwargs)
         self.worker.results_signal.connect(self.load_dataset)
         self.worker.in_progress_signal.connect(self.operation_in_progress)
+        self.worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
+        self.processing_progress_signal.emit(0)
         self.worker.start()
 
     @QtCore.pyqtSlot(dict)
