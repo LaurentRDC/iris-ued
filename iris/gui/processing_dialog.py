@@ -289,6 +289,16 @@ class ProcessingDialog(QtWidgets.QDialog):
     
     @QtCore.pyqtSlot()
     def accept(self):
+        
+        # If there is no mask, most probably the user has forgotten to add the mask
+        if np.all(np.equal(self.mask_widget.composite_mask(), 0)):
+            check_mask_box = QtWidgets.QMessageBox(parent = self)
+            check_mask_box.setText("Pixel masks are used through iris to enhance results. However, no mask was specified. \n\n Are you sure you want to continue?")
+            check_mask_box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            check_mask_box.setDefaultButton(QtWidgets.QMessageBox.Cancel)
+            res = check_mask_box.exec_()
+            if res == QtWidgets.QMessageBox.No:
+                return
 
         filename = self.file_dialog.getSaveFileName(filter = '*.hdf5')[0]
         if filename == '':
