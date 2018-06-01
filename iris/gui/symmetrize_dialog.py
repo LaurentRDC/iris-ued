@@ -41,6 +41,16 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         self.mod_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, 
                                       QtWidgets.QSizePolicy.Maximum)
 
+        self.smoothing_kernel_widget = QtWidgets.QSpinBox(parent = self)
+        self.smoothing_kernel_widget.setRange(0, 100)
+        self.smoothing_kernel_widget.setValue(5)
+        self.smoothing_kernel_widget.setSuffix(' px')
+        self.smoothing_kernel_widget.setEnabled(False)
+        
+        self.enable_smoothing_widget = QtWidgets.QCheckBox('Enable gaussian smoothing')
+        self.enable_smoothing_widget.setChecked(False)
+        self.enable_smoothing_widget.toggled.connect(self.smoothing_kernel_widget.setEnabled)
+
         self.accept_btn = QtWidgets.QPushButton('Symmetrize', self)
         self.accept_btn.clicked.connect(self.accept)
         self.accept_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, 
@@ -61,10 +71,15 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         multiplicity_layout = QtWidgets.QFormLayout()
         multiplicity_layout.addRow('Rotational multiplicity: ', self.mod_widget)
 
+        smoothing_layout = QtWidgets.QFormLayout()
+        smoothing_layout.addRow(self.enable_smoothing_widget)
+        smoothing_layout.addRow('Kernel standard deviation: ', self.smoothing_kernel_widget)
+
         params_layout = QtWidgets.QVBoxLayout()
         params_layout.addWidget(title)
         params_layout.addWidget(description_label)
         params_layout.addLayout(multiplicity_layout)
+        params_layout.addLayout(smoothing_layout)
         params_layout.addLayout(btns)
 
         params_widget = QtWidgets.QFrame(parent = self)
@@ -105,6 +120,9 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         params = {'center': center,
                   'mod'   : int(self.mod_widget.currentText())}
+
+        if self.enable_smoothing_widget.isChecked():
+            params['kernel_size'] = self.smoothing_kernel_widget.value()
         
         self.symmetrize_parameters_signal.emit(filename, params)
         super().accept()
