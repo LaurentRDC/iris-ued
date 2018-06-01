@@ -10,6 +10,7 @@ from warnings import warn
 import h5py
 import numpy as np
 from cached_property import cached_property
+from scipy.ndimage import gaussian_filter
 
 from npstreams import average, itercopy, peek, pmap
 from skued import (azimuthal_average, baseline_dt, combine_masks,
@@ -230,7 +231,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         
         return cls.from_collection(patterns = reduced, **kwargs)
     
-    def symmetrize(self, mod, center, callback = None):
+    # TODO: allow arbitrary operation on each diffraction pattern
+    #       with some sort of 'apply' function
+    def symmetrize(self, mod, center, kernel_size = None, callback = None):
         """
         Symmetrize diffraction images based on n-fold rotational symmetry.
 
@@ -244,6 +247,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         center : array-like, shape (2,) or None
             Coordinates of the center (in pixels). If None, the data is symmetrized around the
             center of the images.
+        kernel_size : float or None, optional
+            If not None, every diffraction pattern will be smoothed with a gaussian kernel. 
+            `kernel_size` is the standard deviation of the gaussian kernel in units of pixels.
         callback : callable or None, optional
             Callable that takes an int between 0 and 99. This can be used for progress update.
         
@@ -256,14 +262,20 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         
         fold = partial(nfold, mod = mod, center = center, mask = self.invalid_mask)
 
+        if kernel_size is not None:
+            smoothing = partial(gaussian_filter, order = 0, sigma = kernel_size, mode = 'nearest')
+            apply = lambda arr: smoothing(fold(arr))
+        else:
+            apply = fold
+
         ntimes = len(self.time_points)
         dset = self.diffraction_group['intensity']
         for index, time_point in enumerate(self.time_points):
-            dset[:,:, index] = fold(dset[:,:, index])
+            dset[:,:, index] = apply(dset[:,:, index])
             callback( int(100 * index / ntimes) )
         
         self.diff_eq.cache_clear()
-        
+
     @property
     def metadata(self):
         """ Dictionary of the dataset's metadata. Dictionary is sorted alphabetically by keys."""
@@ -739,16 +751,16 @@ class PowderDiffractionDataset(DiffractionDataset):
     
     def compute_baseline(self, first_stage, wavelet, max_iter = 50, level = None, **kwargs):
         """
-        Compute and save the baseline computed from the dualtree package. All keyword arguments are
-        passed to scikit-ued's `baseline_dt` function.
+        Compute and save the baseline computed based on the dual-tree complex wavelet transform. 
+        All keyword arguments are passed to scikit-ued's `baseline_dt` function.
 
         Parameters
         ----------
         first_stage : str, optional
-            Wavelet to use for the first stage. See dualtree.ALL_FIRST_STAGE for a list of suitable arguments
+            Wavelet to use for the first stage. See :func:`skued.available_first_stage_filters` for a list of suitable arguments
         wavelet : str, optional
             Wavelet to use in stages > 1. Must be appropriate for the dual-tree complex wavelet transform.
-            See dualtree.ALL_COMPLEX_WAV for possible
+            See :func:`skued.available_dt_filters` for possible values.
         max_iter : int, optional
 
         level : int or None, optional
