@@ -7,7 +7,7 @@ from collections import Iterable
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pywt import Modes
 
-from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
+from skued import available_dt_filters, available_first_stage_filters
 
 
 class ControlBar(QtWidgets.QWidget):
@@ -308,13 +308,13 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
         ######################
         # baseline computation
         self.first_stage_cb = QtWidgets.QComboBox()
-        self.first_stage_cb.addItems(ALL_FIRST_STAGE)
-        if 'sym6' in ALL_FIRST_STAGE:
+        self.first_stage_cb.addItems(available_first_stage_filters())
+        if 'sym6' in available_first_stage_filters():
             self.first_stage_cb.setCurrentText('sym6')
 
         self.wavelet_cb = QtWidgets.QComboBox()
-        self.wavelet_cb.addItems(ALL_COMPLEX_WAV)
-        if 'qshift3' in ALL_COMPLEX_WAV:
+        self.wavelet_cb.addItems(available_dt_filters())
+        if 'qshift3' in available_dt_filters():
             self.wavelet_cb.setCurrentText('qshift3')
 
         self.mode_cb = QtWidgets.QComboBox()
