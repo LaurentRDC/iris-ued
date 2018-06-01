@@ -12,8 +12,8 @@ try:
     from skued import available_dt_filters, available_first_stage_filters
 except ImportError:
     # scikit-ued v0.5.9
-    from skued.baseline import ALL_COMPLEX_WAVE, ALL_FIRST_STAGE
-    available_dt_filters = lambda : ALL_COMPLEX_WAVE
+    from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
+    available_dt_filters = lambda : ALL_COMPLEX_WAV
     available_first_stage_filters = lambda : ALL_FIRST_STAGE
 
 
