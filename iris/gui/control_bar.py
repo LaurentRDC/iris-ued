@@ -7,14 +7,7 @@ from collections import Iterable
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pywt import Modes
 
-try:
-    # scikit-ued v 1.0.0
-    from skued import available_dt_filters, available_first_stage_filters
-except ImportError:
-    # scikit-ued v0.5.9
-    from skued.baseline import ALL_COMPLEX_WAV, ALL_FIRST_STAGE
-    available_dt_filters = lambda : ALL_COMPLEX_WAV
-    available_first_stage_filters = lambda : ALL_FIRST_STAGE
+from skued import available_dt_filters, available_first_stage_filters
 
 
 class ControlBar(QtWidgets.QWidget):
