@@ -54,8 +54,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
         self.controls.averaged_data_request.connect(self.controller.display_averaged_data)
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
-        self.controls.baseline_removed.connect(self.controller.powder_background_subtracted)
-        self.controls.relative_powder.connect(self.controller.enable_powder_relative)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controls.time_zero_shift.connect(self.controller.set_time_zero_shift)
         self.controls.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.MinimumExpanding)
@@ -205,10 +203,19 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.show_diff_relative_action.toggled.connect(self.controller.enable_averaged_relative)
         self.controller.processed_dataset_loaded_signal.connect(self.show_diff_relative_action.setEnabled)
 
+        self.show_powder_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
+        self.show_powder_relative_action.setCheckable(True)
+        self.show_powder_relative_action.toggled.connect(self.controller.enable_powder_relative)
+        self.controller.powder_dataset_loaded_signal.connect(self.show_powder_relative_action.setEnabled)
+
+        self.toggle_powder_background_action = QtWidgets.QAction('& Remove baseline', self)
+        self.toggle_powder_background_action.setCheckable(True)
+        self.toggle_powder_background_action.toggled.connect(self.controller.powder_background_subtracted)
+        self.controller.powder_dataset_loaded_signal.connect(self.toggle_powder_background_action.setEnabled)
+
         self.update_metadata_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'save.png')), '& Update dataset metadata', self)
         self.update_metadata_action.triggered.connect(self.launch_metadata_edit_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
-        self.controller.powder_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
 
         self.recompute_angular_averages = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '& Recompute angular average', self)
         self.recompute_angular_averages.triggered.connect(self.launch_recompute_angular_average_dialog)
@@ -221,15 +228,28 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.diffraction_dataset_menu = self.menu_bar.addMenu('&Dataset')
         self.diffraction_dataset_menu.addAction(self.processing_action)
         self.diffraction_dataset_menu.addAction(self.symmetrize_action)
-        self.diffraction_dataset_menu.addSeparator()
-        self.diffraction_dataset_menu.addAction(self.show_diff_peak_dynamics_action)
-        self.diffraction_dataset_menu.addAction(self.show_diff_relative_action)
-        self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.promote_to_powder_action)
+        self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
         self.diffraction_dataset_menu.addAction(self.update_metadata_action)
         self.diffraction_dataset_menu.addSeparator()
-        self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
+
+        # Display options
+        self.diffraction_dataset_display_options_menu = self.diffraction_dataset_menu.addMenu('& Diffraction display options')
+        self.controller.processed_dataset_loaded_signal.connect(self.diffraction_dataset_display_options_menu.setEnabled)
+
+        self.powder_dataset_display_options_menu = self.diffraction_dataset_menu.addMenu('& Powder display options')
+        self.controller.powder_dataset_loaded_signal.connect(self.powder_dataset_display_options_menu.setEnabled)
+
+        # Others
+        self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.calibrate_scattvector_action)
+
+        # Assemble submenus
+        self.diffraction_dataset_display_options_menu.addAction(self.show_diff_peak_dynamics_action)
+        self.diffraction_dataset_display_options_menu.addAction(self.show_diff_relative_action)
+
+        self.powder_dataset_display_options_menu.addAction(self.show_powder_relative_action)
+        self.powder_dataset_display_options_menu.addAction(self.toggle_powder_background_action)
 
         ###################
         # Helps and misc operations
