@@ -15,8 +15,6 @@ class ControlBar(QtWidgets.QWidget):
     raw_data_request                = QtCore.pyqtSignal(int, int)  # timedelay index, scan
     averaged_data_request           = QtCore.pyqtSignal(int)  # timedelay index
 
-    baseline_removed                = QtCore.pyqtSignal(bool)
-    relative_powder                 = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
     time_zero_shift                 = QtCore.pyqtSignal(float)
     notes_updated                   = QtCore.pyqtSignal(str)
@@ -38,8 +36,6 @@ class ControlBar(QtWidgets.QWidget):
 
         self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent = self)
         self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
-        self.powder_diffraction_dataset_controls.baseline_removed_btn.toggled.connect(self.baseline_removed)
-        self.powder_diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_powder)
 #        self.powder_diffraction_dataset_controls.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
         self.metadata_widget = MetadataWidget(parent = self)
@@ -307,17 +303,6 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
         self.compute_baseline_btn = QtWidgets.QPushButton('Compute baseline', parent = self)
         self.compute_baseline_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
-        self.baseline_removed_btn = QtWidgets.QPushButton('Show baseline-removed', parent = self)
-        self.baseline_removed_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
-        self.baseline_removed_btn.setCheckable(True)
-        self.baseline_removed_btn.setChecked(False)
-
-        self.relative_btn = QtWidgets.QPushButton('Show relative', parent = self)
-        self.relative_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
-        self.relative_btn.setToolTip('Subtract pre-time-zero average from the data.')
-        self.relative_btn.setCheckable(True)
-        self.relative_btn.setChecked(False)
-
         baseline_controls = QtWidgets.QFormLayout()
         baseline_controls.addRow('First stage wavelet: ', self.first_stage_cb)
         baseline_controls.addRow('Dual-tree wavelet: ', self.wavelet_cb)
@@ -328,12 +313,6 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
         baseline_computation = QtWidgets.QGroupBox(title = 'Baseline parameters', parent = self)
         baseline_computation.setLayout(baseline_controls)
 
-        display_controls = QtWidgets.QGroupBox(title = 'Display options', parent = self)
-        display_controls_layout = QtWidgets.QHBoxLayout()
-        display_controls_layout.addWidget(self.baseline_removed_btn)
-        display_controls_layout.addWidget(self.relative_btn)
-        display_controls.setLayout(display_controls_layout)
-
         # TODO: add callback and progressbar for computing the baseline?
 
         title = QtWidgets.QLabel('<h2>Powder dataset controls<\h2>')
@@ -343,7 +322,6 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(title)
         layout.addWidget(baseline_computation)
-        layout.addWidget(display_controls)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
