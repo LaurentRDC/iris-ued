@@ -15,10 +15,8 @@ class ControlBar(QtWidgets.QWidget):
     raw_data_request                = QtCore.pyqtSignal(int, int)  # timedelay index, scan
     averaged_data_request           = QtCore.pyqtSignal(int)  # timedelay index
 
-    enable_peak_dynamics            = QtCore.pyqtSignal(bool)
     baseline_removed                = QtCore.pyqtSignal(bool)
     relative_powder                 = QtCore.pyqtSignal(bool)
-    relative_averaged               = QtCore.pyqtSignal(bool)
     baseline_computation_parameters = QtCore.pyqtSignal(dict)
     time_zero_shift                 = QtCore.pyqtSignal(float)
     notes_updated                   = QtCore.pyqtSignal(str)
@@ -34,8 +32,6 @@ class ControlBar(QtWidgets.QWidget):
 
         self.diffraction_dataset_controls = DiffractionDatasetControl(parent = self)
         self.diffraction_dataset_controls.timedelay_widget.valueChanged.connect(self.averaged_data_request)
-        self.diffraction_dataset_controls.show_pd_btn.toggled.connect(self.enable_peak_dynamics)
-        self.diffraction_dataset_controls.relative_btn.toggled.connect(self.relative_averaged)
         self.diffraction_dataset_controls.time_zero_shift_widget.editingFinished.connect(self.shift_time_zero)
         self.diffraction_dataset_controls.clear_time_zero_shift_btn.clicked.connect(lambda _: self.time_zero_shift.emit(0))
 #        self.diffraction_dataset_controls.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -243,23 +239,6 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         sliders.addWidget(prev_btn)
         sliders.addWidget(next_btn)
 
-        self.show_pd_btn = QtWidgets.QPushButton('Show/hide peak dynamics', parent = self)
-        self.show_pd_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
-        self.show_pd_btn.setCheckable(True)
-        self.show_pd_btn.setChecked(False)
-
-        self.relative_btn = QtWidgets.QPushButton('show relative data (?)', parent = self)
-        self.relative_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
-        self.relative_btn.setToolTip('Subtract pre-time-zero average from the data.')
-        self.relative_btn.setCheckable(True)
-        self.relative_btn.setChecked(False)
-
-        display_controls = QtWidgets.QGroupBox(title = 'Display options', parent = self)
-        display_controls_layout = QtWidgets.QHBoxLayout()
-        display_controls_layout.addWidget(self.show_pd_btn)
-        display_controls_layout.addWidget(self.relative_btn)
-        display_controls.setLayout(display_controls_layout)
-
         time_zero_shift_layout = QtWidgets.QHBoxLayout()
         time_zero_shift_layout.addWidget(QtWidgets.QLabel('Time-zero shift: ', parent = self))
         time_zero_shift_layout.addWidget(self.time_zero_shift_widget)
@@ -273,7 +252,6 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         layout.addWidget(title)
         layout.addLayout(sliders)
         layout.addLayout(time_zero_shift_layout)
-        layout.addWidget(display_controls)
         self.setLayout(layout)
         self.resize(self.minimumSize())
     
