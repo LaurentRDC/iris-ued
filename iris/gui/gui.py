@@ -56,7 +56,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
         self.controls.baseline_removed.connect(self.controller.powder_background_subtracted)
         self.controls.relative_powder.connect(self.controller.enable_powder_relative)
-        self.controls.relative_averaged.connect(self.controller.enable_averaged_relative)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controls.time_zero_shift.connect(self.controller.set_time_zero_shift)
         self.controls.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.MinimumExpanding)
@@ -106,7 +105,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.processed_viewer.peak_dynamics_roi_signal.connect(self.controller.time_series)
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
         self.controller.time_series_signal.connect(self.processed_viewer.display_peak_dynamics)
-        self.controls.enable_peak_dynamics.connect(self.processed_viewer.toggle_peak_dynamics)
 
         self.powder_viewer = PowderViewer(parent = self)
         self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
@@ -197,6 +195,16 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.promote_to_powder_action.triggered.connect(self.launch_promote_to_powder_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.promote_to_powder_action.setEnabled)
 
+        self.show_diff_peak_dynamics_action = QtWidgets.QAction('& Show/hide peak dynamics', self)
+        self.show_diff_peak_dynamics_action.setCheckable(True)
+        self.show_diff_peak_dynamics_action.toggled.connect(self.processed_viewer.toggle_peak_dynamics)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_peak_dynamics_action.setEnabled)
+
+        self.show_diff_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
+        self.show_diff_relative_action.setCheckable(True)
+        self.show_diff_relative_action.toggled.connect(self.controller.enable_averaged_relative)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_relative_action.setEnabled)
+
         self.update_metadata_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'save.png')), '& Update dataset metadata', self)
         self.update_metadata_action.triggered.connect(self.launch_metadata_edit_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
@@ -213,6 +221,9 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.diffraction_dataset_menu = self.menu_bar.addMenu('&Dataset')
         self.diffraction_dataset_menu.addAction(self.processing_action)
         self.diffraction_dataset_menu.addAction(self.symmetrize_action)
+        self.diffraction_dataset_menu.addSeparator()
+        self.diffraction_dataset_menu.addAction(self.show_diff_peak_dynamics_action)
+        self.diffraction_dataset_menu.addAction(self.show_diff_relative_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.promote_to_powder_action)
         self.diffraction_dataset_menu.addAction(self.update_metadata_action)
