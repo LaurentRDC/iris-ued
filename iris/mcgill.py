@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Siwick Research Group RawDataset class as an example use
+Siwick Research Group Raw dataset class as an example use
 of AbstractRawDataset
 """
 from configparser import ConfigParser
@@ -11,8 +11,6 @@ from os.path import isdir, isfile, join
 from re import search, sub
 
 import numpy as np
-from cached_property import cached_property
-
 from npstreams import average
 from skued import diffread
 

@@ -9,10 +9,8 @@ from warnings import warn
 
 import h5py
 import numpy as np
-from cached_property import cached_property
-from scipy.ndimage import gaussian_filter
-
 from npstreams import average, itercopy, peek, pmap
+from scipy.ndimage import gaussian_filter
 from skued import (azimuthal_average, baseline_dt, combine_masks,
                    electron_wavelength, ialign, mask_from_collection, nfold,
                    powder_calq)
@@ -288,12 +286,12 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         return OrderedDict(sorted(meta.items(), 
                            key = lambda t: t[0]))
     
-    @cached_property
+    @property
     def valid_mask(self):
         """ Array that evaluates to True on valid pixels (i.e. not on beam-block, not hot pixels, etc.) """
         return np.array(self.experimental_parameters_group['valid_mask'])
     
-    @cached_property
+    @property
     def invalid_mask(self):
         """ Array that evaluates to True on invalid pixels (i.e. on beam-block, hot pixels, etc.) """
         return np.logical_not(self.valid_mask)
@@ -458,7 +456,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     def diffraction_group(self):
         return self.require_group(name = self._diffraction_group_name)
     
-    @cached_property
+    @property
     def compression_params(self):
         """ Compression options in the form of a dictionary """
         dataset = self.diffraction_group['intensity']
