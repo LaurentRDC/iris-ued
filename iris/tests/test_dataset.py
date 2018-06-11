@@ -9,7 +9,8 @@ from numpy.random import random
 
 from skued import Crystal
 
-from .. import DiffractionDataset, LegacyMcGillRawDataset, PowderDiffractionDataset
+from .. import DiffractionDataset, PowderDiffractionDataset
+from . import TestRawDataset
 
 np.random.seed(23)
 
@@ -20,24 +21,24 @@ class TestDiffractionDatasetCreation(unittest.TestCase):
     
     def test_from_raw_default(self):
         """ Test that DiffractionDataset.from_raw() works with default settigns """
-        raw = LegacyMcGillRawDataset(os.path.join(os.path.dirname(__file__), 'legacy_raw_dataset_test'))
+        raw = TestRawDataset()
 
         with DiffractionDataset.from_raw(raw, filename = self.fname, mode = 'w') as dataset:
-            self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
+            self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, raw.resolution + (len(raw.time_points),))
     
     def test_from_raw_alignment(self):
         """ Test that DiffractionDataset.from_raw(..., align = True) does not throw any errors """
-        raw = LegacyMcGillRawDataset(os.path.join(os.path.dirname(__file__), 'legacy_raw_dataset_test'))
+        raw = TestRawDataset()
 
         with DiffractionDataset.from_raw(raw, filename = self.fname, align = True, mode = 'w') as dataset:
-            self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
+            self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, raw.resolution + (len(raw.time_points),))
     
     def test_from_raw_multiprocess(self):
         """ Test that DiffractionDataset.from_raw(..., processes = 2) does not throw any errors """
-        raw = LegacyMcGillRawDataset(os.path.join(os.path.dirname(__file__), 'legacy_raw_dataset_test'))
+        raw = TestRawDataset()
 
         with DiffractionDataset.from_raw(raw, filename = self.fname, align = False, processes = 2, mode = 'w') as dataset:
-            self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, (2048, 2048, 2))
+            self.assertSequenceEqual(dataset.diffraction_group['intensity'].shape, raw.resolution + (len(raw.time_points),))
     
     def test_from_collection(self):
         """ Test the creation of a DiffractionDataset from a collection of patterns """
