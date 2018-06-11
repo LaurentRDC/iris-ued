@@ -9,8 +9,8 @@ from numpy.random import random
 
 from skued import Crystal
 
-from .. import DiffractionDataset, PowderDiffractionDataset
 from . import TestRawDataset
+from .. import DiffractionDataset, PowderDiffractionDataset
 
 np.random.seed(23)
 
