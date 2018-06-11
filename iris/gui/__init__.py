@@ -5,7 +5,13 @@ import platform
 import sys
 from contextlib import contextmanager
 from os.path import join
-from subprocess import CREATE_NEW_PROCESS_GROUP, Popen
+from subprocess import Popen
+
+try:
+    from subprocess import CREATE_NEW_PROCESS_GROUP
+    WINDOWS = True
+except ImportError:
+    WINDOWS = False 
 
 from PyQt5 import QtGui
 
@@ -39,4 +45,7 @@ def restart(application):
     """ Restart an application in a separate process. A new python interpreter is used, which
     means that plug-ins are reloaded. """
     application.quit()
-    return Popen(['pythonw', '-m', 'iris'], creationflags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+    flags = DETACHED_PROCESS
+    if WINDOWS:
+        flags = flags | CREATE_NEW_PROCESS_GROUP
+    return Popen(['pythonw', '-m', 'iris'], creationflags = flags)
