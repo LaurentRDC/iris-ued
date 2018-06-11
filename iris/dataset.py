@@ -3,6 +3,7 @@
 Diffraction dataset types
 """
 from collections import OrderedDict
+from collections.abc import Callable
 from functools import lru_cache, partial
 from math import sqrt
 from warnings import warn
@@ -229,8 +230,48 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         
         return cls.from_collection(patterns = reduced, **kwargs)
     
-    # TODO: allow arbitrary operation on each diffraction pattern
-    #       with some sort of 'apply' function
+    def diff_apply(self, func, callback = None):
+        """
+        Apply a function to each diffraction pattern one-by-one. The diffraction patterns
+        will be modified in-place.
+
+        .. warning::
+            This is an irreversible in-place operation.
+        
+        .. versionadded:: 5.0.3
+
+        Parameters
+        ----------
+        func : callable
+            Function that takes in an array (diffraction pattern) and returns an
+            array of the exact same shape, with the same data-type.
+        callback : callable or None, optional
+            Callable that takes an int between 0 and 99. This can be used for progress update.
+        
+        Raises
+        ------
+        TypeError : if `func` is not a proper callable
+        """
+        if not callable(func):
+            raise TypeError('Expected a callable argument, but received {}'.format(type(func)))
+
+        if callback is None: 
+            callback = lambda _: None
+        
+        ntimes = len(self.time_points)
+        dset = self.diffraction_group['intensity']
+
+        # Create a placeholder numpy array where to load and store the results
+        placeholder = np.empty(shape = self.resolution, dtype = dset.dtype, order = 'C')
+
+        for index, time_point in enumerate(self.time_points):
+            dset.read_direct(placeholder, source_sel = np.s_[:,:,index], dest_sel = np.s_[:,:])
+            placeholder[:] = func(placeholder)
+            dset.write_direct(placeholder, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
+            callback( int(100 * index / ntimes) )
+        
+        self.diff_eq.cache_clear()
+
     def symmetrize(self, mod, center, kernel_size = None, callback = None):
         """
         Symmetrize diffraction images based on n-fold rotational symmetry.
@@ -254,10 +295,11 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         Raises
         ------
         ValueError: if ``mod`` is not a divisor of 360.
-        """
-        if callback is None: 
-            callback = lambda _: None
-        
+    
+        See Also
+        --------
+        diff_apply : apply an operation to each diffraction pattern one-by-one
+        """        
         fold = partial(nfold, mod = mod, center = center, mask = self.invalid_mask)
 
         if kernel_size is not None:
@@ -266,13 +308,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         else:
             apply = fold
 
-        ntimes = len(self.time_points)
-        dset = self.diffraction_group['intensity']
-        for index, time_point in enumerate(self.time_points):
-            dset[:,:, index] = apply(dset[:,:, index])
-            callback( int(100 * index / ntimes) )
-        
-        self.diff_eq.cache_clear()
+        return self.diff_apply(apply, callback = callback)
 
     @property
     def metadata(self):

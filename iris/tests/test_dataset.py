@@ -7,7 +7,7 @@ from itertools import repeat
 import numpy as np
 from numpy.random import random
 
-from skued import Crystal
+from skued import Crystal, nfold
 
 from . import TestRawDataset
 from .. import DiffractionDataset, PowderDiffractionDataset
@@ -86,11 +86,35 @@ class TestDiffractionDataset(unittest.TestCase):
         self.dataset.notes = 'different notes'
         self.assertEqual(self.dataset.notes, 'different notes')
     
+    def test_diff_apply(self):
+        """ Test that the diff_apply method works as expected """
+        with self.subTest('Applying an operation'):
+            before = np.array(self.dataset.diffraction_group['intensity'])
+            self.dataset.diff_apply(lambda arr: arr*2)
+            after = np.array(self.dataset.diffraction_group['intensity'])
+            self.assertTrue(np.allclose(2*before, after))
+        
+        with self.subTest('Checking for callable'):
+            with self.assertRaises(TypeError):
+                self.dataset.diff_apply(None)
+    
     def test_resolution(self):
         """ Test that dataset resolution is correct """
         self.assertSequenceEqual(self.patterns[0].shape, self.dataset.resolution)
-
+    
     def test_symmetrization(self):
+        """ Test correctness of symmetrization operation """
+        before = np.array(self.dataset.diffraction_group['intensity'])
+        symmetrized = np.array(before, copy = True)
+        for index, _ in enumerate(self.dataset.time_points):
+            symmetrized[:,:,index] = nfold(before[:,:,index], mod = 3, center = (63, 65))
+        
+        self.dataset.symmetrize(mod = 3, center = (63, 65))
+        after = np.array(self.dataset.diffraction_group['intensity'])
+
+        self.assertTrue(np.allclose(symmetrized, after))
+
+    def test_symmetrization_shape(self):
         """ Test that dataset symmetrization raises no errors """
         with self.subTest('No smoothing'):
             self.dataset.symmetrize(mod = 2, center = (128,128))
