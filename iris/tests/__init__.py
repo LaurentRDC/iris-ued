@@ -4,7 +4,7 @@ from ..meta import ExperimentalParameter
 import numpy as np
 
 class TestRawDataset(AbstractRawDataset):
-    """ Class for using raw datasets in tests
+    """ Class for using raw datasets in tests """
 
     test        = ExperimentalParameter('test', int, default = 0)
     resolution  = ExperimentalParameter('resolution', tuple, (16,16))
