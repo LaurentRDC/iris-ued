@@ -5,6 +5,7 @@ of AbstractRawDataset
 """
 from configparser import ConfigParser
 from contextlib import suppress
+from functools import lru_cache
 from glob import iglob
 from os import listdir
 from os.path import isdir, isfile, join
@@ -157,7 +158,8 @@ class LegacyMcGillRawDataset(AbstractRawDataset):
                 metadata[key.lower()] = value
         return metadata
 
-    @cached_property
+    @property
+    @lru_cache(maxsize = 1)
     def background(self):
         """ Laser background """
         backgrounds = map(diffread, iglob(join(self.source, 'background.*.pumpon.tif')))

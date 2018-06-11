@@ -4,5 +4,4 @@ h5py >= 2.6.0
 PyQt5
 scikit-ued >= 1.0.0.0
 pyqtgraph >= 0.10
-qdarkstyle >= 2.5.4
 npstreams >= 1.5.2
