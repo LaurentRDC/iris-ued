@@ -14,8 +14,8 @@ environment:
                         # to the matrix section.
       TEST_CMD: "python -m unittest discover --verbose"
 
-      CONDA_DEPENDENCIES: "numpy scipy scikit-image pyqt h5py"
-      PIP_DEPENDENCIES: "scikit-ued pyqtgraph qdarkstyle npstreams cached_property"
+      CONDA_DEPENDENCIES: "numpy scipy scikit-image pyqt h5py scikit-ued"
+      PIP_DEPENDENCIES: "pyqtgraph npstreams"
 
   matrix:
 
