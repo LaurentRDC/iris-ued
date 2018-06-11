@@ -8,8 +8,8 @@ from os.path import join
 from subprocess import CREATE_NEW_PROCESS_GROUP, Popen
 
 from PyQt5 import QtGui
-from qdarkstyle import load_stylesheet_from_environment
 
+from .qdarkstyle import load_stylesheet_from_environment
 from .gui import Iris, image_folder
 
 DETACHED_PROCESS = 0x00000008          # 0x8 | 0x200 == 0x208
