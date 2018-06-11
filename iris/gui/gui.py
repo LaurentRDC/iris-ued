@@ -388,18 +388,9 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     
     @QtCore.pyqtSlot()
     def load_single_picture(self):
-        # Distinguish between skued 1.0.1.0 and skued 1.0.0.0
-        # TODO: once minimum version is skued 1.0.1.0, change this
-        try:
-            from skued import dmread
-        except ImportError:
-            formats = 'Images (*.tif *.tiff *.mib)'
-        else:
-            formats = 'Images (*.tif *.tiff *.mib *.dm3 *.dm4)'
-
         path = self.file_dialog.getOpenFileName(parent = self, 
                                                 caption = 'Load diffraction picture', 
-                                                filter = formats)[0]
+                                                filter = 'Images (*.tif *.tiff *.mib *.dm3 *.dm4)')[0]
         if not path:
             return
 
