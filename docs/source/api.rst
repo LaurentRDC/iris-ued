@@ -8,6 +8,19 @@ Reference/API
 
 .. currentmodule:: iris
 
+Raw Dataset Classes
+===================
+
+.. autosummary::
+    :toctree: functions/
+
+    open_raw
+
+.. autosummary::
+    :toctree: classes/
+
+    AbstractRawDataset
+
 Diffraction Dataset Classes
 ===========================
 
@@ -16,12 +29,3 @@ Diffraction Dataset Classes
 
     DiffractionDataset
     PowderDiffractionDataset
-
-
-Abstract Base Classes
-=====================
-
-.. autosummary::
-    :toctree: classes/
-
-    AbstractRawDataset
