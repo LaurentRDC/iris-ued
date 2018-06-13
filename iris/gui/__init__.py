@@ -52,7 +52,7 @@ def run(path = None, **kwargs):
         if path:
             path = Path(path)
             if path.suffix in {'.h5', '.hdf5'}:
-                gui.dataset_path_signal.emit(path)
+                gui.dataset_path_signal.emit(str(path)) # signal has signature [str]
             else:
                 # For raw datasets, we need to guess the AbstractRawDataset subclass
                 try:
