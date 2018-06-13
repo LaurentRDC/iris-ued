@@ -227,22 +227,22 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
 
         self.diffraction_dataset_menu = self.menu_bar.addMenu('&Dataset')
         self.diffraction_dataset_menu.addAction(self.processing_action)
+        self.diffraction_dataset_menu.addSeparator()
+        self.diffraction_dataset_menu.addAction(self.update_metadata_action)
         self.diffraction_dataset_menu.addAction(self.symmetrize_action)
         self.diffraction_dataset_menu.addAction(self.promote_to_powder_action)
-        self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
-        self.diffraction_dataset_menu.addAction(self.update_metadata_action)
         self.diffraction_dataset_menu.addSeparator()
+        self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
+        self.diffraction_dataset_menu.addAction(self.calibrate_scattvector_action)
 
         # Display options
-        self.diffraction_dataset_display_options_menu = self.diffraction_dataset_menu.addMenu('& Diffraction display options')
+
+        self.display_options_menu = self.menu_bar.addMenu('&Display')
+        self.diffraction_dataset_display_options_menu = self.display_options_menu.addMenu('& Diffraction display options')
         self.controller.processed_dataset_loaded_signal.connect(self.diffraction_dataset_display_options_menu.setEnabled)
 
-        self.powder_dataset_display_options_menu = self.diffraction_dataset_menu.addMenu('& Powder display options')
+        self.powder_dataset_display_options_menu = self.display_options_menu.addMenu('& Powder display options')
         self.controller.powder_dataset_loaded_signal.connect(self.powder_dataset_display_options_menu.setEnabled)
-
-        # Others
-        self.diffraction_dataset_menu.addSeparator()
-        self.diffraction_dataset_menu.addAction(self.calibrate_scattvector_action)
 
         # Assemble submenus
         self.diffraction_dataset_display_options_menu.addAction(self.show_diff_peak_dynamics_action)
