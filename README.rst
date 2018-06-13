@@ -11,6 +11,9 @@ Iris
     :target: https://pypi.python.org/pypi/iris-ued
     :alt: PyPI Version
 
+.. image:: gui_screen.png
+    :align: center
+
 
 Iris is both a library for interacting with ultrafast electron diffraction data, as well as a GUI frontend
 for interactively exploring this data.
