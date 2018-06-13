@@ -15,6 +15,37 @@ from skued import ialign
 
 from .meta import ExperimentalParameter, MetaRawDataset
 
+def open_raw(path):
+    """
+    Open a raw data item, guessing the AbstractRawDataset instance that 
+    should be used based on available plug-ins.
+
+    This function can also be used as a context manager::
+
+        with open_raw('.') as dset:
+            ...
+    
+    Parameters
+    ----------
+    path : path-like
+        Path to the file/folder containing the raw data.
+    
+    Returns
+    -------
+    raw : AbstractRawDataset instance
+        The raw dataset. If no format could be guessed, an RuntimeError is raised.
+    
+    Raises
+    ------
+    RuntimeError : if the data format could not be guessed.
+    """
+    for dataformat in AbstractRawDataset.implementations:
+        try:
+            return dataformat(path)
+        except:
+            pass
+    
+    raise RuntimeError('No data format could be guessed for item located at: \n {}'.format(path))
 
 class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
     """

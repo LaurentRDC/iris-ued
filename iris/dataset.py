@@ -163,7 +163,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
 
         Parameters
         ----------
-        raw : RawDataset
+        raw : AbstractRawDataset instance
             Raw dataset instance.
         filename : str or path-like
             Path to the assembled DiffractionDataset.
@@ -193,6 +193,10 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         Returns
         -------
         dataset : DiffractionDataset
+
+        See Also
+        --------
+        open_raw : open raw datasets by guessing the appropriate format based on available plug-ins.
 
         Raises
         ------
