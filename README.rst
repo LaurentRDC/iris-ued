@@ -16,8 +16,19 @@ for interactively exploring this data.
 
 Iris also includes a plug-in manager so that you can explore your data.
 
-.. image:: gui_screen.png
+.. figure:: iris_screen_single.png
+    :alt: Data exploration of single-crystals
     :align: center
+    :width: 85%
+
+    Ultrafast electron diffraction of photoexcited single crystal.
+
+.. figure:: iris_screen_poly.png
+    :alt: Data exploration of polycrystals
+    :align: center
+    :width: 85%
+
+    Ultrafast electron diffraction of photoexcited polycrystal.
 
 Installation
 ------------
