@@ -72,7 +72,7 @@ Specializing a :class:`DiffractionDataset` object into a :class:`PowderDiffracti
         # Do computation
 
 Important Methods for the :class:`PowderDiffractionDataset`
-----------------------------------------------------------
+-----------------------------------------------------------
 
 The following methods are specific to polycrystalline diffraction data. See the API section
 for a complete description.
@@ -85,3 +85,13 @@ for a complete description.
     :noindex:
 .. automethod:: PowderDiffractionDataset.compute_baseline
     :noindex:
+
+HDF5 layout
+============
+
+:class:`DiffractionDataset` instances (and by extension, :class:`PowderDiffractionDataset` instances) are a specialization of HDF5 files.
+Therefore, it is possible to inspect and manipulate instances with any other tool that has bindings to the HDF5 libraries. The 
+HDF5 layout is presented below.
+
+.. image:: datastructure.png
+    :align: center
