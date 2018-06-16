@@ -30,6 +30,11 @@ Install iris
 
     python -m pip install iris-ued
 
+Iris is also available on the conda-forge channel:
+
+    conda config --add channels conda-forge
+    conda install iris-ued
+
 You can install the latest developer version of :mod:`iris` by cloning the git
 repository::
 
