@@ -10,36 +10,39 @@ Iris
 .. image:: https://img.shields.io/pypi/v/iris-ued.svg
     :target: https://pypi.python.org/pypi/iris-ued
     :alt: PyPI Version
+.. image:: https://img.shields.io/conda/vn/conda-forge/iris-ued.svg
+    :target: https://anaconda.org/conda-forge/iris-ued
+    :alt: Conda-forge Version
+.. image:: https://img.shields.io/pypi/pyversions/iris-ued.svg
+    :alt: Supported Python Versions
 
 Iris is both a library for interacting with ultrafast electron diffraction data, as well as a GUI frontend
 for interactively exploring this data.
 
 Iris also includes a plug-in manager so that you can explore your data.
 
-.. figure:: iris_screen_single.png
-    :alt: Data exploration of single-crystals
+.. figure:: iris_screen.png
+    :alt: Data exploration of single-crystals and polycrystals alike.
     :align: center
     :width: 85%
 
-    Ultrafast electron diffraction of photoexcited single crystal.
-
-.. figure:: iris_screen_poly.png
-    :alt: Data exploration of polycrystals
-    :align: center
-    :width: 85%
-
-    Ultrafast electron diffraction of photoexcited polycrystal.
+    Two instances of the iris GUI showing data exploration for ultrafast electron diffraction of single crystals and polycrystals.
 
 Installation
 ------------
 
-To install the latest development version from `Github <https://github.com/LaurentRDC/iris-ued>`_::
-
-    python -m pip install git+git://github.com/LaurentRDC/iris-ued.git
-
 Iris is available on PyPI; it can be installed with `pip <https://pip.pypa.io>`_.::
 
     python -m pip install iris-ued
+
+Iris is also available on the conda-forge channel:
+
+    conda config --add channels conda-forge
+    conda install iris-ued
+
+To install the latest development version from `Github <https://github.com/LaurentRDC/iris-ued>`_::
+
+    python -m pip install git+git://github.com/LaurentRDC/iris-ued.git
 
 Each version is tested against Python 3.6. If you are using a different version, tests can be run
 using the standard library's `unittest` module.
