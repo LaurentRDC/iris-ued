@@ -1,4 +1,4 @@
-include README.rst CHANGELOG.rst LICENSE.txt requirements.txt iris_screen_single.png iris_screen_poly.png
+include README.rst CHANGELOG.rst LICENSE.txt requirements.txt iris_screen.png
 recursive-exclude tests *
 recursive-include docs *
 recursive-exclude docs/_build *
