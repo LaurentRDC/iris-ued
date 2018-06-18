@@ -35,7 +35,7 @@ Iris is available on PyPI; it can be installed with `pip <https://pip.pypa.io>`_
 
     python -m pip install iris-ued
 
-Iris is also available on the conda-forge channel:
+Iris is also available on the conda-forge channel::
 
     conda config --add channels conda-forge
     conda install iris-ued
