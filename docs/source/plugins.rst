@@ -29,6 +29,11 @@ To install a plug-in that you have written in a file named :file:`~/myplugin.py`
 
 Installing a plug-in in the above makes it immediately available.
 
+.. autosummary::
+  :toctree: functions/
+
+  install_plugin
+
 ******************************
 Subclassing AbstractRawDataset
 ******************************
