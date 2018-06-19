@@ -27,6 +27,8 @@ To install a plug-in that you have written in a file named :file:`~/myplugin.py`
   import iris
   iris.install_plugin('~/myplugin.py')
 
+Installing a plug-in in the above makes it immediately available.
+
 ******************************
 Subclassing AbstractRawDataset
 ******************************
