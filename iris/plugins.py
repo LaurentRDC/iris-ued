@@ -26,6 +26,8 @@ for fname in PLUGIN_DIR.rglob('*.py'):
 def install_plugin(path):
     """ 
     Install and load an iris plug-in.
+
+    .. versionadded:: 5.0.4
     
     Parameters
     ----------
