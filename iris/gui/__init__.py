@@ -16,7 +16,7 @@ except ImportError:
 
 from PyQt5 import QtGui
 
-from .qdarkstyle import load_stylesheet_from_environment
+from .qdarkstyle import load_stylesheet_pyqt5
 from .gui import Iris, image_folder
 from ..raw import open_raw
 
@@ -44,7 +44,7 @@ def run(path = None, **kwargs):
 
     with pyqt5_environment():
         app = QtGui.QApplication(sys.argv)
-        app.setStyleSheet(load_stylesheet_from_environment(is_pyqtgraph = True))
+        app.setStyleSheet(load_stylesheet_pyqt5())
         app.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
         gui = Iris()
 
