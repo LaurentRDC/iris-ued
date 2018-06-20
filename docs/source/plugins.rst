@@ -19,6 +19,21 @@ Installed plug-ins can be imported from :mod:`iris.plugins`::
 
 which would work if the :class:`DatasetSubclass` is defined in the file :file:`~/iris_plugins/<anything>.py`. Example plug-ins is available `here <https://github.com/LaurentRDC/iris-ued/tree/master/example_plugins>`_
 
+Installing a plug-in
+--------------------
+
+To install a plug-in that you have written in a file named :file:`~/myplugin.py`::
+
+  import iris
+  iris.install_plugin('~/myplugin.py')
+
+Installing a plug-in in the above makes it immediately available.
+
+.. autosummary::
+  :toctree: functions/
+
+  install_plugin
+
 ******************************
 Subclassing AbstractRawDataset
 ******************************
