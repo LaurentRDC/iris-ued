@@ -29,6 +29,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
 
     # Subclasses can add more experimental parameters like those below
     # The types must be representable by h5py
+    acquisition_date= HDF5ExperimentalParameter('acquisition_date',str,   default = '')       # Acquisition date, no specific format
     energy          = HDF5ExperimentalParameter('energy',          float, default = 90)       # keV
     pump_wavelength = HDF5ExperimentalParameter('pump_wavelength', int,   default = 800)      # nanometers
     fluence         = HDF5ExperimentalParameter('fluence',         float, default = 0)        # milliJoules / centimeters ^ 2
