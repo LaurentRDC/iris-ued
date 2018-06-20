@@ -5,7 +5,6 @@ Main GUI for iris
 
 from os.path import dirname, join
 from pathlib import Path
-from shutil import copy2
 
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -15,7 +14,7 @@ from skued import diffread
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
 from .. import AbstractRawDataset, __version__, __author__, __license__
-from ..plugins import PLUGIN_DIR
+from ..plugins import PLUGIN_DIR, install_plugin
 from .angular_average_dialog import AngularAverageDialog
 from .calibrate_q_dialog import QCalibratorDialog
 from .control_bar import ControlBar
@@ -28,6 +27,13 @@ from .qbusyindicator import QBusyIndicator
 from .symmetrize_dialog import SymmetrizeDialog
 
 image_folder = join(dirname(__file__), 'images')
+
+LOAD_PLUGIN_HELP = """You will be prompted to select a plug-in file. This file will be COPIED into:
+
+{dir}
+
+Once this is done, iris will have to restart. 
+The plug-in will remain installed as long as it can be found in the above directory"""
 
 class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     
@@ -418,12 +424,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     @QtCore.pyqtSlot()
     def load_plugin(self):
         """ Load plug-in and restart application. """
-        explanation = """You will be prompted to select a plug-in file. This file will be COPIED into:
-
-        {dir}
-
-        Once this is done, iris will have to restart. The plug-in will remain installed as long as it can be found 
-        in the above directory""".format(dir = PLUGIN_DIR)
+        explanation = LOAD_PLUGIN_HELP.format(dir = PLUGIN_DIR)
 
         QtWidgets.QMessageBox.information(self, 'Loading a plug-in', explanation)
 
@@ -431,9 +432,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         if not path:
             return
         
-        path = Path(path)
-        
-        copy2(path, PLUGIN_DIR / path.name)
+        install_plugin(path)
 
         self.controller.close_dataset()
         self.controller.close_raw_dataset()
