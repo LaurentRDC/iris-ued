@@ -10,8 +10,9 @@ from warnings import warn
 
 import h5py
 import numpy as np
-from npstreams import average, itercopy, peek, pmap
 from scipy.ndimage import gaussian_filter
+
+from npstreams import average, itercopy, peek, pmap
 from skued import (azimuthal_average, baseline_dt, combine_masks,
                    electron_wavelength, ialign, mask_from_collection, nfold,
                    powder_calq)
@@ -95,7 +96,7 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             kwargs['libver'] = 'latest'
 
         # H5py will raise an exception if arrays are not contiguous
-        patterns = map(np.ascontiguousarray, iter(patterns))
+        # patterns = map(np.ascontiguousarray, iter(patterns))
 
         if callback is None: 
             callback = lambda _: None

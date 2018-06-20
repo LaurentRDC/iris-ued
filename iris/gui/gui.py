@@ -69,7 +69,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
 
         self.controller.processed_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.processed_viewer))
         self.controller.processed_dataset_loaded_signal.connect(self.controls.diffraction_dataset_controls.setVisible)
-        self.controller.processed_dataset_loaded_signal.connect(self.controls.stack.setVisible)
+        self.controller.processed_dataset_loaded_signal.connect(self.controls.metadata_and_notes_widget.setVisible)
 
         self.controller.powder_dataset_loaded_signal.connect(lambda b: self.viewer_stack.setCurrentWidget(self.powder_viewer))
         self.controller.powder_dataset_loaded_signal.connect(self.controls.powder_diffraction_dataset_controls.setVisible)
