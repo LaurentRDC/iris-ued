@@ -46,7 +46,7 @@ class McGillRawDataset(AbstractRawDataset):
         
         # Translation is required between metadata formats
         metadata['energy']          = exp_params['electron energy']
-        metadata['date']            = exp_params['acquisition date']
+        metadata['acquisition_date']= exp_params['acquisition date']
         metadata['fluence']         = exp_params['fluence']
         metadata['temperature']     = exp_params['temperature']
         metadata['exposure']        = exp_params['exposure']
