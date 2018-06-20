@@ -274,7 +274,7 @@ def load_stylesheet_pyqt5():
         PendingDeprecationWarning
     )
     # Smart import of the rc file
-    import qdarkstyle.pyqt5_style_rc
+    from . import pyqt5_style_rc
 
     # Load the stylesheet content from resources
     from PyQt5.QtCore import QFile, QTextStream
