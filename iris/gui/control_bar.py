@@ -43,20 +43,22 @@ class ControlBar(QtWidgets.QWidget):
         self.notes_editor = NotesEditor(parent = self)
         self.notes_editor.notes_updated.connect(self.notes_updated)
 
-        self.stack = QtWidgets.QTabWidget(parent = self)
-        self.stack.addTab(self.metadata_widget, 'Dataset metadata')
-        self.stack.addTab(self.notes_editor, 'Dataset notes')
-        #self.stack.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        self.metadata_and_notes_widget = QtWidgets.QFrame(parent = self)
+        _layout = QtWidgets.QVBoxLayout()
+        _layout.addWidget(self.metadata_widget)
+        _layout.addWidget(self.notes_editor)
+        self.metadata_and_notes_widget.setLayout(_layout)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.raw_dataset_controls)
         layout.addWidget(self.diffraction_dataset_controls)
         layout.addWidget(self.powder_diffraction_dataset_controls)
-        layout.addWidget(self.stack)
+        layout.addWidget(self.metadata_and_notes_widget)
         layout.addStretch()
         self.setLayout(layout)
 
-        for frame in (self.raw_dataset_controls, self.diffraction_dataset_controls, self.powder_diffraction_dataset_controls):
+        for frame in (self.raw_dataset_controls, self.diffraction_dataset_controls, 
+                      self.powder_diffraction_dataset_controls, self.metadata_and_notes_widget):
             frame.setFrameShadow(QtWidgets.QFrame.Sunken)
             frame.setFrameShape(QtWidgets.QFrame.Panel)
 
@@ -364,9 +366,18 @@ class MetadataWidget(QtWidgets.QWidget):
                 if len(value) > 4:
                     key += ' (length)'
                     value = len(tuple(value))
+            
+            value = str(value)
+            # We show tool tip on hover because
+            # some values are long (e.g. filenames)
+            key_item = QtWidgets.QTableWidgetItem(key)
+            key_item.setToolTip(key)
 
-            self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(key))
-            self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(value)))
+            value_item = QtWidgets.QTableWidgetItem(value)
+            value_item.setToolTip(value)    
+
+            self.table.setItem(row, 0, key_item)
+            self.table.setItem(row, 1, value_item)
         
         self.table.resizeColumnsToContents()
         self.table.horizontalHeader().setStretchLastSection(True)
