@@ -3,17 +3,49 @@
 .. _workflow:
 
 *******************************
-Using the GUI: typical workflow
+Using iris: typical workflow
 *******************************
 
 Startup
 -------
 
+.. highlight :: none
+
 To start the GUI from the command line::
 
-    python -m iris
+    > python -m iris
 
-The first screen is shown below.
+Note that the command-line interface has some useful options:
+
+.. code:: 
+
+    > python -m iris --help
+
+    usage: iris [-h] [-v] [path]
+
+    Iris is both a library for interacting with ultrafast electron diffraction
+    data, as well as a GUI frontend for interactively exploring this data.
+
+    positional arguments:
+    path           Raw or reduced dataset to open, if any. The type of dataset
+                    will be guessed based on currently-installed plugins.
+
+    optional arguments:
+    -h, --help     show this help message and exit
+    -v, --version  show program's version number and exit
+
+    Documentation is available here: https://iris-ued.readthedocs.io/
+
+Most importantly, you can programatically start the GUI with opening a dataset::
+
+    > python -m iris ~/dataset.hdf5
+
+The path can lead to a reduced HDF5 file or to a raw dataset. The dataset format will be guessed with
+the same rules as :func:`iris.open_raw`.
+
+.. highlight :: python
+
+The first blank screen is shown below.
 
 .. image:: images/startup.png
 
