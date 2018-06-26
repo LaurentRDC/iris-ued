@@ -13,7 +13,7 @@ from skued import diffread
 
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
-from .. import AbstractRawDataset, __version__, __author__, __license__
+from .. import AbstractRawDataset, __author__, __license__, __version__
 from ..plugins import PLUGIN_DIR, install_plugin
 from .angular_average_dialog import AngularAverageDialog
 from .calibrate_q_dialog import QCalibratorDialog
@@ -25,6 +25,7 @@ from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .qbusyindicator import QBusyIndicator
 from .symmetrize_dialog import SymmetrizeDialog
+from .update import update_available, update_in_background
 
 image_folder = join(dirname(__file__), 'images')
 
@@ -272,12 +273,18 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.report_issue_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'revert.png')), '& Report issue', self)
         self.report_issue_action.triggered.connect(lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/issues/new")))
 
+        self.update_action = QtWidgets.QAction('& Update to latest version', self)
+        self.update_action.triggered.connect(self.update_iris)
+        self.update_action.setEnabled(self.update_available()[0])
+
         self.help_menu = self.menu_bar.addMenu('&Help')
         self.help_menu.addAction(self.about_action)
         self.help_menu.addSeparator()
         self.help_menu.addAction(self.launch_documentation_action)
         self.help_menu.addAction(self.goto_repository_action)
         self.help_menu.addAction(self.report_issue_action)
+        self.help_menu.addSeparator()
+        self.help_menu.addAction(self.update_action)
 
         ###################
         # Layout
@@ -439,6 +446,28 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.restart_signal.emit()
     
     @QtCore.pyqtSlot()
+    def update_iris(self):
+        """ Update iris-ued package in the background then restart """
+        explanation = "You are about to update iris. All datasets will be closed, and iris will restart. "
+        _, latest_version = update_available()
+        QtWidgets.QMessageBox.information(self, 'Updating iris', explanation)
+
+        update_in_background()
+
+        self.controller.close_dataset()
+        self.controller.close_raw_dataset()
+        self.restart_signal.emit()
+
+    @staticmethod
+    def update_available():
+        """ Check if iris-ued is outdated. In case of 
+        connection error, pretend iris-ued is latest version """
+        try:
+            return update_available()
+        except ConnectionError:
+            return False, __version__
+    
+    @QtCore.pyqtSlot()
     def show_about(self):
         """ Show the About information """
         import h5py
@@ -464,3 +493,4 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         <h3>Installed plug-ins</h3>
         {'<br>'.join(cls.__name__ for cls in AbstractRawDataset.implementations)} """
         return QtWidgets.QMessageBox.about(self, 'About Iris', about)
+
