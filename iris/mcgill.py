@@ -28,8 +28,7 @@ class McGillRawDataset(AbstractRawDataset):
         metadata_dict = self.parse_metadata(join(source, 'metadata.cfg'))
         super().__init__(source, metadata_dict)
 
-    @staticmethod
-    def parse_metadata(fname):
+    def parse_metadata(self, fname):
         """ 
         Translate metadata from experiment into Iris's metadata format. 
         
