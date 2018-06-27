@@ -69,7 +69,7 @@ def update_in_background():
     if WINDOWS:
         flags = flags | CREATE_NEW_PROCESS_GROUP
     
-    if conda:
+    if update_with_conda:
         Popen(['conda', 'update', 'iris-ued', '--yes'], creationflags = flags)
     else:
         Popen(['pip', 'install', '--upgrade', 'iris-ued', '-y'], creationflags = flags)
