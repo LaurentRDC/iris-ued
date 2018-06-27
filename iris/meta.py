@@ -5,6 +5,12 @@ Meta tools for raw datasets
 from abc import ABCMeta
 from contextlib import suppress
 
+def subclasses(cls):
+    """ Return a set of subclasses of ``cls``, including sub-subclasses and so on. """
+    direct_subclasses = set(cls.__subclasses__())
+    return direct_subclasses.union(
+        {s for c in direct_subclasses for s in subclasses(c)}
+    )
 
 class MetaRawDataset(ABCMeta):
     """
@@ -38,7 +44,7 @@ class MetaRawDataset(ABCMeta):
     @property
     def implementations(self):
         """ Iterable of concrete implementations. """
-        return self.__subclasses__()
+        return subclasses(self)
 
 class MetaHDF5Dataset(ABCMeta):
     """
