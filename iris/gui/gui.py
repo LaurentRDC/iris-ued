@@ -141,7 +141,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         # Dynamically add an option for each implementation of AbstractRawDataset
         # Note : because of dynamical nature of these bindings,
         # it must be done in a separate method
-        for cls in AbstractRawDataset.implementations:
+        for cls in sorted(AbstractRawDataset.implementations, key = lambda cls: cls.__name__):
             self._create_load_raw(cls, load_raw_submenu)
 
         self.load_dataset_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'locator.png')), '& Load dataset', self)
@@ -499,6 +499,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         <b>HDF5 version</b>: {h5py.version.hdf5_version} <br>
 
         <h3>Installed plug-ins</h3>
-        {'<br>'.join(cls.__name__ for cls in AbstractRawDataset.implementations)} """
+        {'<br>'.join(cls.__name__ for cls in sorted(AbstractRawDataset.implementations,  key = lambda cls: cls.__name__))} """
         return QtWidgets.QMessageBox.about(self, 'About Iris', about)
 
