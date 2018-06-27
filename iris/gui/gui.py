@@ -448,9 +448,14 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     @QtCore.pyqtSlot()
     def update_iris(self):
         """ Update iris-ued package in the background then restart """
-        explanation = "You are about to update iris. All datasets will be closed, and iris will restart. "
+        explanation = "You are about to update iris. All datasets will be closed, and iris will restart.\n\nAre you sure you want to do this?"
         _, latest_version = update_available()
-        QtWidgets.QMessageBox.information(self, 'Updating iris', explanation)
+        answer = QtWidgets.QMessageBox.warning(self, 'Updating iris', explanation,
+                                               QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.No)
+
+        if answer == QtWidgets.QMessageBox.No:
+            return
 
         update_in_background()
 
