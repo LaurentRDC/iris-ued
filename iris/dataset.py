@@ -153,6 +153,8 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
                 callback(round(100 * index / np.size(time_points)))
 
         callback(100)
+        
+        # Now that the file exists, we can switch to read/write mode
         kwargs['mode'] = 'r+'
         return cls(filename, **kwargs)
 
