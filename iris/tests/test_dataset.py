@@ -3,6 +3,7 @@ import os.path
 import unittest
 from contextlib import suppress
 from itertools import repeat
+from tempfile import gettempdir
 
 import numpy as np
 from numpy.random import random
@@ -17,7 +18,7 @@ np.random.seed(23)
 class TestDiffractionDatasetCreation(unittest.TestCase):
 
     def setUp(self):
-        self.fname = 'test.hdf5'
+        self.fname = os.path.join(gettempdir(), 'test.hdf5')
     
     def test_from_raw_default(self):
         """ Test that DiffractionDataset.from_raw() works with default settigns """
@@ -67,10 +68,33 @@ class TestDiffractionDataset(unittest.TestCase):
         self.patterns = list(repeat(random(size = (256, 256)), 5))
         self.metadata = {'fluence': 10, 'energy': 90}
         self.dataset = DiffractionDataset.from_collection(self.patterns, 
-                                                          filename = 'test.hdf5', 
+                                                          filename = os.path.join(gettempdir(), 'test.hdf5'), 
                                                           time_points = range(5), 
                                                           metadata = self.metadata,
                                                           mode = 'w')
+    
+    def test_file_modes(self):
+        """ Successively open and close the same dataset with different file modes. """
+        fname = self.dataset.filename
+        metadata = self.dataset.metadata
+        self.dataset.close()
+
+        with self.subTest('Read-only mode'):
+            with DiffractionDataset(fname, mode = 'r') as dset:
+                self.assertEqual(metadata, dset.metadata)
+                self.assertEqual(dset.mode, 'r')
+
+        with self.subTest('Read/write modes'):
+            for mode in ('r+', 'a'):
+                with DiffractionDataset(fname, mode = mode) as dset:
+                    self.assertEqual(metadata, dset.metadata)
+                    self.assertEqual(dset.mode, 'r+')
+        
+            with self.assertRaises(OSError):
+                DiffractionDataset(fname, mode = 'x')
+        
+        # Reopen dataset so it can be deleted
+        self.dataset = DiffractionDataset(fname, mode = 'r')
     
     def test_dataset_metadata(self):
         """ Test that the property 'metadata' is working correctly"""
@@ -159,10 +183,11 @@ class TestDiffractionDataset(unittest.TestCase):
         self.assertTrue(np.allclose(self.dataset.time_series([r1,r2,c1,c2]), ts))
 
     def tearDown(self):
+        fname = self.dataset.filename
         self.dataset.close()
         del self.dataset
         with suppress(OSError):
-            os.remove('test.hdf5')
+            os.remove(fname)
 
 class TestPowderDiffractionDataset(unittest.TestCase):
 
@@ -250,7 +275,8 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             self.assertTrue(np.allclose(eq, np.zeros_like(eq)))
 
     def tearDown(self):
+        fname = self.dataset.filename
         self.dataset.close()
         del self.dataset
         with suppress(OSError):
-            os.remove('test.hdf5')
+            os.remove(fname)
