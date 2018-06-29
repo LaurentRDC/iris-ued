@@ -333,8 +333,7 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
                 'wavelet': self.wavelet_cb.currentText(),
                 'mode': self.mode_cb.currentText(),
                 'max_iter': self.max_iter_widget.value(),
-                'level': None,
-                'callback': lambda : self.baseline_removed_btn.setChecked(True)}
+                'level': None}
 
 class MetadataWidget(QtWidgets.QWidget):
 
