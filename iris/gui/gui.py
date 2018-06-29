@@ -208,16 +208,19 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
 
         self.show_diff_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
         self.show_diff_relative_action.setCheckable(True)
+        self.controller.relative_averaged_enable_signal.connect(self.show_diff_relative_action.setChecked)
         self.show_diff_relative_action.toggled.connect(self.controller.enable_averaged_relative)
         self.controller.processed_dataset_loaded_signal.connect(self.show_diff_relative_action.setEnabled)
 
         self.show_powder_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
         self.show_powder_relative_action.setCheckable(True)
+        self.controller.relative_powder_enable_signal.connect(self.show_powder_relative_action.setChecked)
         self.show_powder_relative_action.toggled.connect(self.controller.enable_powder_relative)
         self.controller.powder_dataset_loaded_signal.connect(self.show_powder_relative_action.setEnabled)
 
         self.toggle_powder_background_action = QtWidgets.QAction('& Remove baseline', self)
         self.toggle_powder_background_action.setCheckable(True)
+        self.controller.powder_bgr_enable_signal.connect(self.toggle_powder_background_action.setChecked)
         self.toggle_powder_background_action.toggled.connect(self.controller.powder_background_subtracted)
         self.controller.powder_dataset_loaded_signal.connect(self.toggle_powder_background_action.setEnabled)
 
