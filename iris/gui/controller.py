@@ -391,12 +391,17 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
         self.dataset = cls(path, mode = 'r')
         self.dataset_metadata.emit(self.dataset.metadata)
-        self.processed_dataset_loaded_signal.emit(True)
-        self.powder_dataset_loaded_signal.emit(is_powder)
 
-        self.display_averaged_data(timedelay_index = 0)
+        # The order of the following two lines is important
+        # powder_dataset_loaded_signal -> False turns off a few things
+        # that processed_dataset_loaded_signal -> True will turn on
+        self.powder_dataset_loaded_signal.emit(is_powder)
+        self.processed_dataset_loaded_signal.emit(True)
+
         if is_powder:
             self.display_powder_data()
+
+        self.display_averaged_data(timedelay_index = 0)
         
         self.status_message_signal.emit(path + ' loaded.')
     
