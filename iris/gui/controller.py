@@ -68,9 +68,22 @@ def symmetrize(dataset, destination, **kwargs):
     """
     copy2(dataset, destination)
 
-    with DiffractionDataset(destination, 'r+') as dset:
+    with DiffractionDataset(destination, mode = 'r+') as dset:
         dset.symmetrize(**kwargs)
         fname = dset.filename
+    return fname
+
+def compute_powder_baseline(fname, **kwargs):
+    """ 
+    Compute a powder baseline. Keyword arguments are passed to 
+    `PowderDiffractionDataset.compute_baseline` 
+    
+    Parameters
+    ----------
+    dataset : path-like
+    """
+    with PowderDiffractionDataset(fname, mode = 'r+') as dset:
+        dset.compute_baseline(**kwargs)
     return fname
 
 def process(**kwargs):
@@ -114,6 +127,10 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
     time_series_signal              = QtCore.pyqtSignal(object, object)
     powder_time_series_signal       = QtCore.pyqtSignal(object, object)
+
+    relative_powder_enable_signal   = QtCore.pyqtSignal(bool)
+    relative_averaged_enable_signal = QtCore.pyqtSignal(bool)
+    powder_bgr_enable_signal        = QtCore.pyqtSignal(bool)
 
     processing_progress_signal      = QtCore.pyqtSignal(int)
     powder_promotion_progress       = QtCore.pyqtSignal(int)
@@ -205,6 +222,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         enable : bool
         """
         self._bgr_powder = enable
+        self.powder_bgr_enable_signal.emit(enable)
         self.display_powder_data()
     
     @QtCore.pyqtSlot(bool)
@@ -217,6 +235,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         enable : bool
         """
         self._relative_powder = enable
+        self.relative_powder_enable_signal.emit(enable)
         self.display_powder_data()
     
     @QtCore.pyqtSlot(bool)
@@ -229,6 +248,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         enable : bool
         """
         self._relative_averaged = enable
+        self.relative_averaged_enable_signal.emit(enable)
         self.display_averaged_data(self._timedelay_index)
     
     @QtCore.pyqtSlot(str, dict)
@@ -305,11 +325,29 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         params : dict
             Parameters are passed to ``PowderDiffractionDataset.compute_angular_averages``. 
         """
-        params.update({'filename':self.dataset.filename, 'callback':self.powder_promotion_progress.emit})
+        params.update({'filename':self.dataset.filename, 
+                       'callback':self.powder_promotion_progress.emit})
         self.worker = WorkThread(function = recompute_angular_average, kwargs = params)
         self.dataset.close()
         self.dataset = None
         self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
+        self.worker.start()
+
+
+    @QtCore.pyqtSlot(dict)
+    def compute_baseline(self, params):
+        """ Compute the powder baseline. The dictionary `params` is passed to 
+        PowderDiffractionDataset.compute_baseline(), except its key 'callback'. The callable 'callback' 
+        is called (no argument) when computation is done. """
+        params.update({'fname': self.dataset.filename})
+
+        self.worker = WorkThread(function = compute_powder_baseline, kwargs = params)
+        self.dataset.close()
+        self.dataset = None
+
+        self.worker.results_signal.connect(self.load_dataset)
+        self.worker.done_signal.connect(lambda _: self.powder_background_subtracted(True))
         self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.start()
 
@@ -361,19 +399,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.dataset.powder_calq(**params)
         self.display_powder_data()
         self.status_message_signal.emit('Scattering vector range calibrated.')
-
-    @QtCore.pyqtSlot(dict)
-    def compute_baseline(self, params):
-        """ Compute the powder baseline. The dictionary `params` is passed to 
-        PowderDiffractionDataset.compute_baseline(), except its key 'callback'. The callable 'callback' 
-        is called (no argument) when computation is done. """
-        callback = params.pop('callback')
-        self.worker = WorkThread(function = self.dataset.compute_baseline, kwargs = params)
-        self.worker.done_signal.connect(lambda b: callback())
-        self.worker.done_signal.connect(lambda b: self.dataset_metadata.emit(self.dataset.metadata))
-        self.worker.done_signal.connect(lambda b: self.display_powder_data())
-        self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.start()
     
     @QtCore.pyqtSlot(dict)
     def update_metadata(self, metadata):
@@ -388,10 +413,20 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         if self.dataset is None:
             return
 
-        for key, val in metadata.items():
-            setattr(self.dataset, key, val)
+        # dataset is read-only at this point
+        # We close and reopen with write intentions
+        fname = self.dataset.filename
+        cls = type(self.dataset)
+        self.dataset.close()
+
+        with cls(fname, mode = 'r+') as dset:
+            for key, val in metadata.items():
+                if key in dset.valid_metadata:
+                    setattr(dset, key, val)
         
-        self.load_dataset(self.dataset.filename)
+        self.dataset = cls(fname, mode = 'r')
+        self.dataset_metadata.emit(self.dataset.metadata)
+        
         self.status_message_signal.emit('Metadata updated.')
 
     @QtCore.pyqtSlot(str)
@@ -403,7 +438,9 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         ----------
         notes : str
         """
-        self.dataset.notes = notes
+        metadata = self.dataset.metadata
+        metadata['notes'] = notes
+        self.update_metadata(metadata)
     
     @QtCore.pyqtSlot(float)
     def set_time_zero_shift(self, shift):
@@ -418,7 +455,17 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         if shift == self.dataset.time_zero_shift:
             return
 
-        self.dataset.shift_time_zero(shift)
+        # dataset is read-only at this point
+        # We close and reopen with write intentions
+        # Note : no need to open as a PowderDiffractionDataset for this operations
+        fname = self.dataset.filename
+        cls = type(self.dataset)
+        self.dataset.close()
+
+        with DiffractionDataset(fname, mode = 'r+') as dset:
+            dset.shift_time_zero(shift)
+
+        self.dataset = cls(fname, mode = 'r')
         self.dataset_metadata.emit(self.dataset.metadata)
 
         # In case of a time-zero shift, diffraction time-series will
@@ -491,14 +538,16 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             if PowderDiffractionDataset._powder_group_name in d:
                 cls = PowderDiffractionDataset
         
-        self.dataset = cls(path, mode = 'r+')
+        is_powder = cls == PowderDiffractionDataset
+
+        self.dataset = cls(path, mode = 'r')
         self.dataset_metadata.emit(self.dataset.metadata)
         self.processed_dataset_loaded_signal.emit(True)
-        self.display_averaged_data(timedelay_index = 0)
+        self.powder_dataset_loaded_signal.emit(is_powder)
 
-        if isinstance(self.dataset, PowderDiffractionDataset):
+        self.display_averaged_data(timedelay_index = 0)
+        if is_powder:
             self.display_powder_data()
-            self.powder_dataset_loaded_signal.emit(True)
         
         self.status_message_signal.emit(path + ' loaded.')
     
@@ -567,5 +616,5 @@ class WorkThread(QtCore.QThread):
     def run(self):
         self.in_progress_signal.emit(True)
         result = self.function(*self.args, **self.kwargs)   
-        self.done_signal.emit(True)  
         self.results_signal.emit(result)
+        self.done_signal.emit(True)  
