@@ -482,27 +482,59 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
     @QtCore.pyqtSlot()
     def show_about(self):
         """ Show the About information """
-        import h5py
-        import sys
-        import skued
-        import pyqtgraph
 
-        about = f"""<h2>About Iris</h2>
-        Iris is both a Python library and a GUI program for the exploration of ultrafast electron diffraction data. <br>
-        <b>License</b>: {__license__}                    <br>
-        <b>Author</b>: {__author__}                      <br>
-        <b>Install location</b>: {Path(__file__).parent} <br> 
+        return QtWidgets.QMessageBox.about(self, 'About Iris', make_about_string())
 
-        <h3>Versions</h3>                                <br>
-        <b>Python version</b>: {sys.version}             <br>
-        <b>iris version</b>: {__version__}               <br>
-        <b>Qt version</b>: {QtCore.qVersion()}           <br>
-        <b>PyQtGraph version</b>: {pyqtgraph.__version__}<br>
-        <b>scikit-ued version</b>: {skued.__version__}   <br>
-        <b>h5py version</b>: {h5py.version.version}      <br>
-        <b>HDF5 version</b>: {h5py.version.hdf5_version} <br>
+def make_about_string():
+    import h5py
+    import sys
+    import skued
+    import pyqtgraph
+    import npstreams
 
-        <h3>Installed plug-ins</h3>
-        {'<br>'.join(cls.__name__ for cls in sorted(AbstractRawDataset.implementations,  key = lambda cls: cls.__name__))} """
-        return QtWidgets.QMessageBox.about(self, 'About Iris', about)
+    python_version = '{}.{}.{}'.format(*sys.version_info[:3])
 
+    return f"""<h2>About Iris</h2>
+    Iris is both a Python library and a GUI program for the exploration of ultrafast electron diffraction data. <br>
+    <b>License</b>: {__license__}                    <br>
+    <b>Author</b>: {__author__}                      <br>
+    <b>Install location</b>: {Path(__file__).parent} <br> 
+
+    <h3>Versions</h3>
+    <table style="width:100%">
+        <tr>
+            <td style="padding-right:75">Python</td>
+            <td align="right">{python_version}</td>
+        </tr>
+        <tr>
+            <td style="padding-right:75">Iris</td>
+            <td align="right">{__version__}</td>
+        </tr>
+        <tr>
+            <td style="padding-right:75">Qt</td>
+            <td align="right">{QtCore.qVersion()}</td>
+        </tr>
+        <tr>
+            <td style="padding-right:75">PyQtGraph</td>
+            <td align="right">{pyqtgraph.__version__}</td>
+        </tr>
+        <tr>
+            <td style="padding-right:75">scikit-ued</td>
+            <td align="right">{skued.__version__}</td>
+        </tr>
+        <tr>
+            <td style="padding-right:75">npstreams</td>
+            <td align="right">{npstreams.__version__}</td>
+        </tr>
+        <tr>
+            <td style="padding-right:75">HDF5</td>
+            <td align="right">{h5py.version.hdf5_version}</td>
+        </tr>
+        <tr>
+            <td style="padding-right:75">h5py</td>
+            <td align="right">{h5py.version.version}</td>
+        </tr>
+    </table>
+
+    <h3>Installed plug-ins</h3>
+    {'<br>'.join(cls.__name__ for cls in sorted(AbstractRawDataset.implementations,  key = lambda cls: cls.__name__))} """
