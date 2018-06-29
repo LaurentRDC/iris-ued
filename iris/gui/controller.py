@@ -42,56 +42,6 @@ class ErrorAware(type(QtCore.QObject)):
         
         return super().__new__(meta, classname, bases, new_class_dict)
 
-def promote_to_powder(**kwargs):
-    """ Create a PowderDiffractionDataset from a DiffractionDataset """
-    filename = kwargs.pop('filename')
-    with PowderDiffractionDataset.from_dataset(DiffractionDataset(filename), **kwargs):
-        pass
-    return filename
-
-def recompute_angular_average(**kwargs):
-    """ Re-compute the angular average of a PowderDiffractionDataset """
-    filename = kwargs.pop('filename')
-    with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
-        dataset.compute_angular_averages(**kwargs)
-    return filename
-
-def symmetrize(dataset, destination, **kwargs):
-    """ 
-    Copies a dataset and symmetrize it. Keyword arguments
-    are passed to `DiffractionDataset.symmetrize`.
-    
-    Parameters
-    ----------
-    dataset : path-like
-    destination : path-like
-    """
-    copy2(dataset, destination)
-
-    with DiffractionDataset(destination, mode = 'r+') as dset:
-        dset.symmetrize(**kwargs)
-        fname = dset.filename
-    return fname
-
-def compute_powder_baseline(fname, **kwargs):
-    """ 
-    Compute a powder baseline. Keyword arguments are passed to 
-    `PowderDiffractionDataset.compute_baseline` 
-    
-    Parameters
-    ----------
-    dataset : path-like
-    """
-    with PowderDiffractionDataset(fname, mode = 'r+') as dset:
-        dset.compute_baseline(**kwargs)
-    return fname
-
-def process(**kwargs):
-    """ Process a RawDataset into a DiffractionDataset """
-    with DiffractionDataset.from_raw(**kwargs) as dset:
-        fname = dset.filename
-    return fname
-
 def indicate_in_progress(method):
     """ Decorator for IrisController methods that should
     emit the ``operation_in_progress`` signal and automatically
@@ -250,106 +200,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self._relative_averaged = enable
         self.relative_averaged_enable_signal.emit(enable)
         self.display_averaged_data(self._timedelay_index)
-    
-    @QtCore.pyqtSlot(str, dict)
-    def symmetrize(self, destination, params):
-        """ 
-        Launches a background thread that copies the currently-loaded dataset, 
-        symmetrize the copy, and load the copy. 
-        
-        Parameters
-        ----------
-        destination : str or path-like
-            Destination of the symmetrized dataset.
-        params : dict
-            Symmetrization parameters are passed to ``DiffractionDataset.symmetrize``.
-        """
-        kwargs = {'dataset'    : self.dataset.filename,
-                  'destination': destination,
-                  'callback': self.processing_progress_signal.emit}
-        kwargs.update(params)
-        self.dataset.close()
-
-        self.worker = WorkThread(function = symmetrize, kwargs = kwargs)
-        self.worker.results_signal.connect(self.load_dataset)
-        self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
-        self.processing_progress_signal.emit(0)
-        self.worker.start()
-
-    @QtCore.pyqtSlot(dict)
-    def process_raw_dataset(self, info_dict):
-        """
-        Launch a background thread that reduces raw data.
-
-        Parameters
-        ----------
-        info_dict : dict
-            Data reduction parameters are passed to ``DiffractionDataset.from_raw``
-        """
-        info_dict.update({'callback': self.processing_progress_signal.emit, 
-                          'raw': self.raw_dataset})
-
-        self.worker = WorkThread(function = process, kwargs = info_dict)
-        self.worker.results_signal.connect(self.load_dataset)
-        self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.done_signal.connect(lambda boolean: self.processing_progress_signal.emit(100))
-        self.processing_progress_signal.emit(0)
-        self.worker.start()
-    
-    @QtCore.pyqtSlot(dict)
-    def promote_to_powder(self, params):
-        """ 
-        Promote a DiffractionDataset to a PowderDiffractionDataset 
-        
-        Parameters
-        ----------
-        params : dict
-            Parameters are passed to ``PowderDiffractionDataset.from_dataset``.
-        """
-        params.update({'filename':self.dataset.filename, 'callback':self.powder_promotion_progress.emit})
-        self.worker = WorkThread(function = promote_to_powder, kwargs = params)
-        self.dataset.close()
-        self.dataset = None
-        self.worker.results_signal.connect(self.load_dataset)
-        self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.start()
-    
-    @QtCore.pyqtSlot(dict)
-    def recompute_angular_average(self, params):
-        """ 
-        Compute the angular average of a PowderDiffractionDataset again.
-        
-        Parameters
-        ----------
-        params : dict
-            Parameters are passed to ``PowderDiffractionDataset.compute_angular_averages``. 
-        """
-        params.update({'filename':self.dataset.filename, 
-                       'callback':self.powder_promotion_progress.emit})
-        self.worker = WorkThread(function = recompute_angular_average, kwargs = params)
-        self.dataset.close()
-        self.dataset = None
-        self.worker.results_signal.connect(self.load_dataset)
-        self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.start()
-
-
-    @QtCore.pyqtSlot(dict)
-    def compute_baseline(self, params):
-        """ Compute the powder baseline. The dictionary `params` is passed to 
-        PowderDiffractionDataset.compute_baseline(), except its key 'callback'. The callable 'callback' 
-        is called (no argument) when computation is done. """
-        params.update({'fname': self.dataset.filename})
-
-        self.worker = WorkThread(function = compute_powder_baseline, kwargs = params)
-        self.dataset.close()
-        self.dataset = None
-
-        self.worker.results_signal.connect(self.load_dataset)
-        self.worker.done_signal.connect(lambda _: self.powder_background_subtracted(True))
-        self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.start()
 
     @QtCore.pyqtSlot(float, float)
     def powder_time_series(self, qmin, qmax):
@@ -515,8 +365,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.raw_data_signal.emit(None)
 
         self.status_message_signal.emit('Raw dataset closed.')
-        
-    @QtCore.pyqtSlot(object) # Due to worker.results_signal emitting an object
+
     @QtCore.pyqtSlot(str)
     @indicate_in_progress
     def load_dataset(self, path):
@@ -566,9 +415,111 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
         self.status_message_signal.emit('Dataset closed.')
 
+    @QtCore.pyqtSlot(str, dict)
+    def symmetrize(self, destination, params):
+        """ 
+        Launches a background thread that copies the currently-loaded dataset, 
+        symmetrize the copy, and load the copy. 
+        
+        Parameters
+        ----------
+        destination : str or path-like
+            Destination of the symmetrized dataset.
+        params : dict
+            Symmetrization parameters are passed to ``DiffractionDataset.symmetrize``.
+        """
+        kwargs = {'dataset'    : self.dataset.filename,
+                  'destination': destination,
+                  'callback': self.processing_progress_signal.emit}
+        kwargs.update(params)
+        self.dataset.close()
+
+        self.worker = WorkThread(function = symmetrize, kwargs = kwargs)
+        self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
+        self.worker.done_signal.connect(lambda : self.processing_progress_signal.emit(100))
+        self.processing_progress_signal.emit(0)
+        self.worker.start()
+
+    @QtCore.pyqtSlot(dict)
+    def process_raw_dataset(self, info_dict):
+        """
+        Launch a background thread that reduces raw data.
+
+        Parameters
+        ----------
+        info_dict : dict
+            Data reduction parameters are passed to ``DiffractionDataset.from_raw``
+        """
+        info_dict.update({'callback': self.processing_progress_signal.emit, 
+                          'raw': self.raw_dataset})
+
+        self.worker = WorkThread(function = process, kwargs = info_dict)
+        self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
+        self.worker.done_signal.connect(lambda : self.processing_progress_signal.emit(100))
+        self.processing_progress_signal.emit(0)
+        self.worker.start()
+    
+    @QtCore.pyqtSlot(dict)
+    def promote_to_powder(self, params):
+        """ 
+        Promote a DiffractionDataset to a PowderDiffractionDataset 
+        
+        Parameters
+        ----------
+        params : dict
+            Parameters are passed to ``PowderDiffractionDataset.from_dataset``.
+        """
+        params.update({'filename':self.dataset.filename, 'callback':self.powder_promotion_progress.emit})
+        self.worker = WorkThread(function = promote_to_powder, kwargs = params)
+        self.dataset.close()
+        self.dataset = None
+        self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
+        self.worker.start()
+    
+    @QtCore.pyqtSlot(dict)
+    def recompute_angular_average(self, params):
+        """ 
+        Compute the angular average of a PowderDiffractionDataset again.
+        
+        Parameters
+        ----------
+        params : dict
+            Parameters are passed to ``PowderDiffractionDataset.compute_angular_averages``. 
+        """
+        params.update({'filename':self.dataset.filename, 
+                       'callback':self.powder_promotion_progress.emit})
+        self.worker = WorkThread(function = recompute_angular_average, kwargs = params)
+        self.dataset.close()
+        self.dataset = None
+        self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
+        self.worker.start()
+
+
+    @QtCore.pyqtSlot(dict)
+    def compute_baseline(self, params):
+        """ Compute the powder baseline. The dictionary `params` is passed to 
+        PowderDiffractionDataset.compute_baseline(), except its key 'callback'. The callable 'callback' 
+        is called (no argument) when computation is done. """
+        params.update({'fname': self.dataset.filename})
+
+        self.worker = WorkThread(function = compute_powder_baseline, kwargs = params)
+        self.dataset.close()
+        self.dataset = None
+
+        self.worker.results_signal.connect(self.load_dataset)
+        self.worker.done_signal.connect(lambda : self.powder_background_subtracted(True))
+        self.worker.in_progress_signal.connect(self.operation_in_progress)
+        self.worker.start()
+
 class WorkThread(QtCore.QThread):
     """
-    Object taking care of threading computations.
+    Object taking care of threading computations. These computations are very specific:
+    a function takes in a filename (pointing to a DiffractionDataset), parameters, 
+    and returns a filename again.
     
     Signals
     -------
@@ -579,28 +530,9 @@ class WorkThread(QtCore.QThread):
     results_signal
         Emitted when the function evaluation is over. Carries the results
         of the computation.
-        
-    Attributes
-    ----------
-    function : callable
-        Function to be called
-    args : tuple
-        Positional arguments of function
-    kwargs : dict
-        Keyword arguments of function
-    results : object
-        Results of the computation
-    
-    Examples
-    --------
-    >>> function = lambda x : x ** 10
-    >>> result_function = lambda x: print(x)
-    >>> worker = WorkThread(function, 2)  # 2 ** 10
-    >>> worker.results_signal.connect(result_function)
-    >>> worker.start()      # Computation starts only when this method is called
     """
     results_signal = QtCore.pyqtSignal(str)
-    done_signal = QtCore.pyqtSignal(bool)
+    done_signal = QtCore.pyqtSignal()
     in_progress_signal = QtCore.pyqtSignal(bool)
 
     def __init__(self, function, args = tuple(), kwargs = dict()):
@@ -617,4 +549,55 @@ class WorkThread(QtCore.QThread):
         self.in_progress_signal.emit(True)
         result = self.function(*self.args, **self.kwargs)   
         self.results_signal.emit(result)
-        self.done_signal.emit(True)  
+        self.done_signal.emit()  
+
+
+def promote_to_powder(**kwargs):
+    """ Create a PowderDiffractionDataset from a DiffractionDataset """
+    filename = kwargs.pop('filename')
+    with PowderDiffractionDataset.from_dataset(DiffractionDataset(filename), **kwargs):
+        pass
+    return filename
+
+def recompute_angular_average(**kwargs):
+    """ Re-compute the angular average of a PowderDiffractionDataset """
+    filename = kwargs.pop('filename')
+    with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
+        dataset.compute_angular_averages(**kwargs)
+    return filename
+
+def symmetrize(dataset, destination, **kwargs):
+    """ 
+    Copies a dataset and symmetrize it. Keyword arguments
+    are passed to `DiffractionDataset.symmetrize`.
+    
+    Parameters
+    ----------
+    dataset : path-like
+    destination : path-like
+    """
+    copy2(dataset, destination)
+
+    with DiffractionDataset(destination, mode = 'r+') as dset:
+        dset.symmetrize(**kwargs)
+        fname = dset.filename
+    return fname
+
+def compute_powder_baseline(fname, **kwargs):
+    """ 
+    Compute a powder baseline. Keyword arguments are passed to 
+    `PowderDiffractionDataset.compute_baseline` 
+    
+    Parameters
+    ----------
+    dataset : path-like
+    """
+    with PowderDiffractionDataset(fname, mode = 'r+') as dset:
+        dset.compute_baseline(**kwargs)
+    return fname
+
+def process(**kwargs):
+    """ Process a RawDataset into a DiffractionDataset """
+    with DiffractionDataset.from_raw(**kwargs) as dset:
+        fname = dset.filename
+    return fname
