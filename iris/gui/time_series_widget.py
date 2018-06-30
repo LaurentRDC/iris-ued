@@ -134,7 +134,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         initial_guesses = (0, intensity.max(), 1, intensity.min())
 
         try:
-            params, _ = curve_fit(exponential_decay, times, intensity, p0 = initial_guesses, bounds = bounds)
+            params, _ = curve_fit(exponential_decay, times, intensity, p0 = initial_guesses)
         except RuntimeError:
             return 
 
