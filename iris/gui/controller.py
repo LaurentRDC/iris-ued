@@ -386,22 +386,19 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         with DiffractionDataset(path, mode = 'r') as d:
             if PowderDiffractionDataset._powder_group_name in d:
                 cls = PowderDiffractionDataset
-        
-        is_powder = cls == PowderDiffractionDataset
+                is_powder = True
+            else:
+                is_powder = False
 
         self.dataset = cls(path, mode = 'r')
         self.dataset_metadata.emit(self.dataset.metadata)
-
-        # The order of the following two lines is important
-        # powder_dataset_loaded_signal -> False turns off a few things
-        # that processed_dataset_loaded_signal -> True will turn on
-        self.powder_dataset_loaded_signal.emit(is_powder)
+        
         self.processed_dataset_loaded_signal.emit(True)
-
-        if is_powder:
-            self.display_powder_data()
+        self.powder_dataset_loaded_signal.emit(is_powder)
 
         self.display_averaged_data(timedelay_index = 0)
+        if is_powder:
+            self.display_powder_data()
         
         self.status_message_signal.emit(path + ' loaded.')
     
