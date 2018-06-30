@@ -7,9 +7,9 @@ from functools import lru_cache
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
-from pyqtgraph import PlotWidget, mkBrush, mkPen
+from pyqtgraph import PlotWidget, mkBrush, mkPen, TextItem
 
-from skued import spectrum_colors, exponential_decay, biexponential_decay
+from skued import spectrum_colors, exponential_decay
 
 from scipy.optimize import curve_fit
 
@@ -77,6 +77,8 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.exponential_fit_widget = QtWidgets.QPushButton('Calculate exponential decay', self)
         self.exponential_fit_widget.clicked.connect(self.fit_exponential_decay)
 
+        self.fit_constants_label = QtWidgets.QLabel(self)
+
         self.controls = QtWidgets.QHBoxLayout()
         self.controls.addWidget(self.horz_grid_widget)
         self.controls.addWidget(self.vert_grid_widget)
@@ -85,6 +87,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.controls.addWidget(self.connect_widget)
         self.controls.addWidget(self.symbol_size_widget)
         self.controls.addWidget(self.exponential_fit_widget)
+        self.controls.addWidget(self.fit_constants_label)
         self.controls.addStretch(1)
 
         layout = QtWidgets.QVBoxLayout()
@@ -117,6 +120,9 @@ class TimeSeriesWidget(QtWidgets.QWidget):
                               symbol = 'o', symbolPen = pens, 
                               symbolBrush = brushes, symbolSize = self._symbol_size, 
                               clear = True, **connect_kwargs)
+        
+        # Don't forget to clear the fit constants 
+        self.fit_constants_label.clear()
 
     @QtCore.pyqtSlot()
     def fit_exponential_decay(self):
@@ -128,12 +134,15 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         initial_guesses = (0, intensity.max(), 1, intensity.min())
 
         try:
-            params, _ = curve_fit(exponential_decay, times, intensity, p0 = initial_guesses)
+            params, _ = curve_fit(exponential_decay, times, intensity, p0 = initial_guesses, bounds = bounds)
         except RuntimeError:
             return 
 
         fit = exponential_decay(times, *params)
         self.plot_widget.plot(x = times, y = fit, symbol = None, clear = False)
+
+        # Write fit parameters to text items
+        self.fit_constants_label.setText('Time-constant: {:.3f} ps, Time-zero: {:.3f} ps'.format(params[2], params[0]))
     
     @QtCore.pyqtSlot()
     def refresh(self):
