@@ -45,10 +45,12 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
         # Add text to show rect bounds
         # If coordinate is negative, return 0
-        x1 = round(max(0, rect.topLeft().x() ))
-        x2 = round(max(0, rect.x() + rect.width() ))
-        y1 = round(max(0, rect.topLeft().y() ))
-        y2 = round(max(0, rect.y() + rect.height() ))
+        # Note that in case pg.getConfigOption('imageAxisOrder') is not row-major,
+        # The following bounds will not work
+        x1 = round(max(0, rect.topLeft().y() ))
+        x2 = round(max(0, rect.y() + rect.height() ))
+        y1 = round(max(0, rect.topLeft().x() ))
+        y2 = round(max(0, rect.x() + rect.width() ))
 
         self.peak_dynamics_roi_signal.emit((x1, x2, y1, y2))
 
