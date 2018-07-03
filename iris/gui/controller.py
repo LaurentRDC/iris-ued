@@ -108,6 +108,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         # out parameter
         # TODO: is it worth it?
         self._averaged_data_container = None
+        self._average_time_series_container = None
 
     @QtCore.pyqtSlot(int, int)
     def display_raw_data(self, timedelay_index, scan):
@@ -142,17 +143,14 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         """
         # Preallocation of full images is important because the whole block cannot be
         # loaded into memory, contrary to powder data
-        # Source of 'cache miss' could be that _average_data_container is None,
-        # new dataset loaded has different shape than before, etc.
+        # Note that the containers have been initialized when the dataset was loaded
+        # Therefore, no error checking required.
         self._timedelay_index = timedelay_index
         timedelay = self.dataset.time_points[timedelay_index]
-        try:
-            self._averaged_data_container[:] = self.dataset.diff_data(timedelay, relative = self._relative_averaged)
-        except:
-            self._averaged_data_container = self.dataset.diff_data(timedelay, relative = self._relative_averaged)
+        self._averaged_data_container[:] = self.dataset.diff_data(timedelay, relative = self._relative_averaged, out = self._averaged_data_container)
+        
         self.averaged_data_signal.emit(self._averaged_data_container)
         self.status_message_signal.emit('Displaying data at {:.3f}ps.'.format(timedelay))
-        return self._averaged_data_container
     
     @QtCore.pyqtSlot()
     def display_powder_data(self):
@@ -226,8 +224,11 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         """
         # Remember for updates
         self._rect = rect
-        integrated = self.dataset.time_series( rect )
-        self.time_series_signal.emit(self.dataset.time_points, integrated)
+
+        # Note that the containers have been initialized when the dataset was loaded
+        # Therefore, no error checking required.
+        integrated = self.dataset.time_series( rect, out = self._average_time_series_container )
+        self.time_series_signal.emit(self.dataset.time_points, self._average_time_series_container)
     
     @QtCore.pyqtSlot(dict)
     def powder_calq(self, params):
@@ -385,6 +386,12 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
         self.dataset = cls(path, mode = 'r')
         self.dataset_metadata.emit(self.dataset.metadata)
+
+        # Initialize containers
+        # This *must* be done before data is displayed
+        self._averaged_data_container = np.empty(shape = self.dataset.resolution, 
+                                                 dtype = self.dataset.diffraction_group['intensity'].dtype)
+        self._average_time_series_container = np.empty(shape = self.dataset.time_points.shape, dtype = np.float)
         
         self.processed_dataset_loaded_signal.emit(True)
         self.powder_dataset_loaded_signal.emit(is_powder)
@@ -396,7 +403,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
             # Re-assert that a processed dataset was loaded
             # hence, switch views to the relevant widgets
             self.processed_dataset_loaded_signal.emit(True)
-        
+
         self.status_message_signal.emit(path + ' loaded.')
     
     @QtCore.pyqtSlot()
