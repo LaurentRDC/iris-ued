@@ -12,7 +12,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
     """
     Widget displaying DiffractionDatasets
     """
-    peak_dynamics_roi_signal = QtCore.pyqtSignal(object)
+    peak_dynamics_roi_signal = QtCore.pyqtSignal(tuple)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,6 +25,11 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
+        # Text items for bounds
+        self.topleft_text =  pg.TextItem(text = '', anchor = (1,1))
+        self.bottomright_text = pg.TextItem(text = '', anchor = (0,0))
+        self._roi_bounds_visible = False
+
         self.image_viewer.getView().addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.hide()
         self.time_series_widget.hide()
@@ -36,7 +41,23 @@ class ProcessedDataViewer(QtWidgets.QWidget):
     
     @QtCore.pyqtSlot()
     def update_peak_dynamics(self):
-        self.peak_dynamics_roi_signal.emit(self.peak_dynamics_region.parentBounds().toRect())
+        rect = self.peak_dynamics_region.parentBounds().toRect()
+
+        # Add text to show rect bounds
+        # If coordinate is negative, return 0
+        x1 = round(max(0, rect.topLeft().x() ))
+        x2 = round(max(0, rect.x() + rect.width() ))
+        y1 = round(max(0, rect.topLeft().y() ))
+        y2 = round(max(0, rect.y() + rect.height() ))
+
+        self.peak_dynamics_roi_signal.emit((x1, x2, y1, y2))
+
+        if self._roi_bounds_visible:
+            self.topleft_text.setText(f'({x1}, {y1})')
+            self.topleft_text.setPos(x1, y1)
+
+            self.bottomright_text.setText(f'({x2}, {y2})')
+            self.bottomright_text.setPos(x2, y2)
 
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics(self, toggle):
@@ -46,6 +67,20 @@ class ProcessedDataViewer(QtWidgets.QWidget):
             self.peak_dynamics_region.hide()
         
         self.time_series_widget.setVisible(toggle)
+        self.toggle_roi_bounds_text(toggle)
+    
+    @QtCore.pyqtSlot(bool)
+    def toggle_roi_bounds_text(self, toggle):
+        """ Toggle the ROI text bounds on or off """
+        if toggle:
+            for item in (self.topleft_text, self.bottomright_text):
+                self.image_viewer.addItem(item)
+
+        else:
+            for item in (self.topleft_text, self.bottomright_text):
+                self.image_viewer.removeItem(item)
+        
+        self._roi_bounds_visible = toggle
 
     @QtCore.pyqtSlot(object)
     def display(self, image):
