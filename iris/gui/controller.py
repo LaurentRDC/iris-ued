@@ -214,24 +214,20 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         time_series = self.dataset.powder_time_series(rmin = qmin, rmax = qmax, bgr = self._bgr_powder, units = 'momentum')
         self.powder_time_series_signal.emit(self.dataset.time_points, time_series)
     
-    @QtCore.pyqtSlot(object)
+    @QtCore.pyqtSlot(tuple)
     def time_series(self, rect):
         """" 
         Single-crystal time-series as the integrated diffracted intensity inside a rectangular ROI
 
         Parameters
         ----------
-        rect : pyqtgraph.ROI
-            Rectangle ROI defining integration bounds.
+        rect : 4-tuple
+            Rectangle defining integration bounds: (row1, row2, col1, col2).
         """
         # Remember for updates
         self._rect = rect
 
-        #If coordinate is negative, return 0
-        x1 = round(max(0, rect.topLeft().x() ))
-        x2 = round(max(0, rect.x() + rect.width() ))
-        y1 = round(max(0, rect.topLeft().y() ))
-        y2 = round(max(0, rect.y() + rect.height() ))
+        x1, x2, y1, y2 = rect
 
         integrated = self.dataset.time_series( (x1, x2, y1, y2) )
         self.time_series_signal.emit(self.dataset.time_points, integrated)

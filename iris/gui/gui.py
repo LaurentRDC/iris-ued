@@ -212,6 +212,11 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.show_diff_relative_action.toggled.connect(self.controller.enable_averaged_relative)
         self.controller.processed_dataset_loaded_signal.connect(self.show_diff_relative_action.setEnabled)
 
+        self.show_diff_peak_dynamics_bounds_action = QtWidgets.QAction('& Show/hide peak dynamics bounds', self)
+        self.show_diff_peak_dynamics_bounds_action.setCheckable(True)
+        self.show_diff_peak_dynamics_bounds_action.toggled.connect(self.processed_viewer.toggle_roi_bounds_text)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_peak_dynamics_bounds_action.setEnabled)
+
         self.show_powder_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
         self.show_powder_relative_action.setCheckable(True)
         self.controller.relative_powder_enable_signal.connect(self.show_powder_relative_action.setChecked)
@@ -258,6 +263,7 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         # Assemble submenus
         self.diffraction_dataset_display_options_menu.addAction(self.show_diff_peak_dynamics_action)
         self.diffraction_dataset_display_options_menu.addAction(self.show_diff_relative_action)
+        self.diffraction_dataset_display_options_menu.addAction(self.show_diff_peak_dynamics_bounds_action)
 
         self.powder_dataset_display_options_menu.addAction(self.show_powder_relative_action)
         self.powder_dataset_display_options_menu.addAction(self.toggle_powder_background_action)
