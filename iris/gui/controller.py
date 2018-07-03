@@ -399,6 +399,10 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.display_averaged_data(timedelay_index = 0)
         if is_powder:
             self.display_powder_data()
+        else:
+            # Re-assert that a processed dataset was loaded
+            # hence, switch views to the relevant widgets
+            self.processed_dataset_loaded_signal.emit(True)
         
         self.status_message_signal.emit(path + ' loaded.')
     
