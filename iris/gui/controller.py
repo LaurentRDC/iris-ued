@@ -221,15 +221,12 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
 
         Parameters
         ----------
-        rect : 4-tuple
-            Rectangle defining integration bounds: (row1, row2, col1, col2).
+        rect : pyqtgraph.ROI
+            Rectangle ROI defining integration bounds.
         """
         # Remember for updates
         self._rect = rect
-
-        x1, x2, y1, y2 = rect
-
-        integrated = self.dataset.time_series( (x1, x2, y1, y2) )
+        integrated = self.dataset.time_series( rect )
         self.time_series_signal.emit(self.dataset.time_points, integrated)
     
     @QtCore.pyqtSlot(dict)
