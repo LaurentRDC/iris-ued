@@ -15,6 +15,7 @@ except ImportError:
     WINDOWS = False 
 
 from PyQt5 import QtGui
+import pyqtgraph as pg
 
 from .qdarkstyle import load_stylesheet_pyqt5
 from .gui import Iris, image_folder
@@ -23,12 +24,22 @@ from ..raw import open_raw
 DETACHED_PROCESS = 0x00000008          # 0x8 | 0x200 == 0x208
 
 @contextmanager
-def pyqt5_environment():
-    """ Set the PyQtGraph QT library to PyQt5 while Iris GUI is running. Revert back when done. """
+def gui_environment():
+    """ 
+    Prepare the environment in which iris GUI will run. This includes the following:
+
+        * Set the PyQtGraph QT library to PyQt5 while Iris GUI is running. Revert back when done.
+        * Set the image-axis order to row-major. Revert back when done. 
+    """
     old_qt_lib = os.environ.get('PYQTGRAPH_QT_LIB', 'PyQt5')    # environment variable might not exist
     os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
+
+    old_image_axis_order = pg.getConfigOption('imageAxisOrder')
+    pg.setConfigOptions(imageAxisOrder = 'row-major')
+
     yield
     os.environ['PYQTGRAPH_QT_LIB'] = old_qt_lib
+    pg.setConfigOptions(imageAxisOrder = old_image_axis_order)
 
 def run(path = None, **kwargs):
     """ 
@@ -42,7 +53,7 @@ def run(path = None, **kwargs):
         Raw dataset formats will be guessed.
     """
 
-    with pyqt5_environment():
+    with gui_environment():
         app = QtGui.QApplication(sys.argv)
         app.setStyleSheet(load_stylesheet_pyqt5())
         app.setWindowIcon(QtGui.QIcon(join(image_folder, 'eye.png')))
