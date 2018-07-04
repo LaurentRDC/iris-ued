@@ -9,7 +9,11 @@ import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pyqtgraph import PlotWidget, mkBrush, mkPen, TextItem
 
-from skued import spectrum_colors, exponential_decay
+from skued import spectrum_colors
+try:
+    from skued import exponential_decay
+except ImportError:
+    from skued import exponential as exponential_decay
 
 from scipy.optimize import curve_fit
 
@@ -66,14 +70,6 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.symbol_size_widget.setPrefix('Symbol size: ')
         self.symbol_size_widget.valueChanged.connect(self.set_symbol_size)
 
-        self.horz_log_widget = QtWidgets.QCheckBox('Horizontal log mode', self)
-        self.horz_log_widget.toggled.connect(
-            lambda toggle: self.plot_widget.getPlotItem().setLogMode(x = toggle))
-        
-        self.vert_log_widget = QtWidgets.QCheckBox('Vertical log mode', self)
-        self.vert_log_widget.toggled.connect(
-            lambda toggle: self.plot_widget.getPlotItem().setLogMode(y = toggle))
-
         self.exponential_fit_widget = QtWidgets.QPushButton('Calculate exponential decay', self)
         self.exponential_fit_widget.clicked.connect(self.fit_exponential_decay)
 
@@ -82,8 +78,6 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.controls = QtWidgets.QHBoxLayout()
         self.controls.addWidget(self.horz_grid_widget)
         self.controls.addWidget(self.vert_grid_widget)
-        self.controls.addWidget(self.horz_log_widget)
-        self.controls.addWidget(self.vert_log_widget)
         self.controls.addWidget(self.connect_widget)
         self.controls.addWidget(self.symbol_size_widget)
         self.controls.addWidget(self.exponential_fit_widget)
@@ -134,7 +128,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         initial_guesses = (0, intensity.max(), 1, intensity.min())
 
         try:
-            params, _ = curve_fit(exponential_decay, times, intensity, p0 = initial_guesses)
+            params, pcov = curve_fit(exponential_decay, times, intensity, p0 = initial_guesses)
         except RuntimeError:
             return 
 
@@ -142,7 +136,10 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.plot_widget.plot(x = times, y = fit, symbol = None, clear = False)
 
         # Write fit parameters to text items
-        self.fit_constants_label.setText('Time-constant: {:.3f} ps, Time-zero: {:.3f} ps'.format(params[2], params[0]))
+        tconst, tconsterr = params[2], np.sqrt(pcov[2,2])
+        tzero, tzeroerr = params[0], np.sqrt(pcov[0,0])
+        self.fit_constants_label.setText(
+            'Time-constant: ({:.3f}±{:.3f} ps, Time-zero: ({:.3f}±{:.3f}) ps'.format(tconst, tconsterr, tzero, tzeroerr))
     
     @QtCore.pyqtSlot()
     def refresh(self):
