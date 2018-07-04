@@ -25,6 +25,11 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
+        self.roi_topleft_text = pg.TextItem('', anchor = (1,1))
+        self.roi_bottomright_text = pg.TextItem('', anchor = (0,0))
+        self.image_viewer.addItem(self.roi_topleft_text)
+        self.image_viewer.addItem(self.roi_bottomright_text)
+
         self.image_viewer.getView().addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.hide()
         self.time_series_widget.hide()
@@ -51,12 +56,36 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics(self, toggle):
+        """ Toggle interactive peak dynamics region-of-interest"""
         if toggle: 
             self.peak_dynamics_region.show()
         else: 
             self.peak_dynamics_region.hide()
+            self.roi_topleft_text.setText('')
+            self.roi_bottomright_text.setText('')
         
         self.time_series_widget.setVisible(toggle)
+    
+    @QtCore.pyqtSlot(bool)
+    def toggle_roi_bounds_text(self, enable):
+        """ Toggle showing array indices around the peak dynamics region-of-interest """
+        if enable:
+            self.peak_dynamics_roi_signal.connect(self._update_roi_bounds_text)
+            self.update_peak_dynamics()
+        else:
+            self.roi_topleft_text.setText('')
+            self.roi_bottomright_text.setText('')
+            self.peak_dynamics_roi_signal.disconnect(self._update_roi_bounds_text)
+    
+    @QtCore.pyqtSlot(tuple)
+    def _update_roi_bounds_text(self, rect):
+        """ Update the ROI bounds text based on the bounds in ``rect`` """
+        x1, x2, y1, y2 = rect
+        self.roi_topleft_text.setPos(y1, x1)
+        self.roi_topleft_text.setText(f'({y1},{x1})')
+
+        self.roi_bottomright_text.setPos(y2, x2)
+        self.roi_bottomright_text.setText(f'({y2},{x2})')
 
     @QtCore.pyqtSlot(object)
     def display(self, image):
