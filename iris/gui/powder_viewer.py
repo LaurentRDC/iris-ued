@@ -40,28 +40,13 @@ class PowderViewer(QtWidgets.QWidget):
     def update_peak_dynamics(self):
         """ Update powder peak dynamics settings on demand. """
         qmin, qmax = self.peak_dynamics_region.getRegion()
-        # We always move the text items so that it doesn't mess with the bounds
-        self.roi_left_text.setPos(qmin, self._text_height)
-        self.roi_right_text.setPos(qmax, self._text_height)
 
         self.peak_dynamics_roi_signal.emit(qmin, qmax)
 
-    @QtCore.pyqtSlot(bool)
-    def toggle_roi_bounds_text(self, enable):
-        """ Toggle showing array indices around the peak dynamics region-of-interest """
-        if enable:
-            self.peak_dynamics_roi_signal.connect(self._update_roi_bounds_text)
-            self.update_peak_dynamics()
-        else:
-            self.roi_left_text.setText('')
-            self.roi_right_text.setText('')
-            self.peak_dynamics_roi_signal.disconnect(self._update_roi_bounds_text)
-
-    @QtCore.pyqtSlot(float, float)
-    def _update_roi_bounds_text(self, mi, ma):
-        """ Update the ROI bounds text """
-        self.roi_left_text.setText(f'{mi:.3f}')
-        self.roi_right_text.setText(f'{ma:.3f}')
+        self.roi_left_text.setText(f'{qmin:.3f}')
+        self.roi_right_text.setText(f'{qmax:.3f}')
+        self.roi_left_text.setPos(qmin, self._text_height)
+        self.roi_right_text.setPos(qmax, self._text_height)
         
     @QtCore.pyqtSlot(object, object)
     def display_powder_data(self, scattering_vector, powder_data_block):
