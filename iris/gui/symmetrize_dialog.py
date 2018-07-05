@@ -109,14 +109,9 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         if filename == '':
             return
 
-        corner_x, corner_y = self.center_finder.pos().y(), self.center_finder.pos().x()
+        corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2
-        center = (round(corner_y + radius), round(corner_x + radius)) #Flip output since image viewer plots transpose...
-        
-        # In case the images a row-order, the image will be
-        # transposed with respect to what is expected.
-        if pg.getConfigOption('imageAxisOrder') == 'row-major':
-            center = tuple(reversed(center))
+        center = (round(corner_x + radius), round(corner_y + radius))
 
         params = {'center': center,
                   'mod'   : int(self.mod_widget.currentText())}
