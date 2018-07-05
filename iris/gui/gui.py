@@ -201,34 +201,6 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.promote_to_powder_action.triggered.connect(self.launch_promote_to_powder_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.promote_to_powder_action.setEnabled)
 
-        self.show_diff_peak_dynamics_action = QtWidgets.QAction('& Show/hide peak dynamics', self)
-        self.show_diff_peak_dynamics_action.setCheckable(True)
-        self.show_diff_peak_dynamics_action.toggled.connect(self.processed_viewer.toggle_peak_dynamics)
-        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_peak_dynamics_action.setEnabled)
-
-        self.show_diff_peak_dynamics_bounds_action = QtWidgets.QAction('& Show/hide peak dynamics bounds', self)
-        self.show_diff_peak_dynamics_bounds_action.setCheckable(True)
-        self.show_diff_peak_dynamics_bounds_action.toggled.connect(self.processed_viewer.toggle_roi_bounds_text)
-        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_peak_dynamics_bounds_action.setEnabled)
-
-        self.show_diff_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
-        self.show_diff_relative_action.setCheckable(True)
-        self.controller.relative_averaged_enable_signal.connect(self.show_diff_relative_action.setChecked)
-        self.show_diff_relative_action.toggled.connect(self.controller.enable_averaged_relative)
-        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_relative_action.setEnabled)
-
-        self.show_powder_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
-        self.show_powder_relative_action.setCheckable(True)
-        self.controller.relative_powder_enable_signal.connect(self.show_powder_relative_action.setChecked)
-        self.show_powder_relative_action.toggled.connect(self.controller.enable_powder_relative)
-        self.controller.powder_dataset_loaded_signal.connect(self.show_powder_relative_action.setEnabled)
-
-        self.toggle_powder_background_action = QtWidgets.QAction('& Remove baseline', self)
-        self.toggle_powder_background_action.setCheckable(True)
-        self.controller.powder_bgr_enable_signal.connect(self.toggle_powder_background_action.setChecked)
-        self.toggle_powder_background_action.toggled.connect(self.controller.powder_background_subtracted)
-        self.controller.powder_dataset_loaded_signal.connect(self.toggle_powder_background_action.setEnabled)
-
         self.update_metadata_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'save.png')), '& Update dataset metadata', self)
         self.update_metadata_action.triggered.connect(self.launch_metadata_edit_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
@@ -251,7 +223,40 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
         self.diffraction_dataset_menu.addAction(self.calibrate_scattvector_action)
 
+        ###################
         # Display options
+        self.show_diff_peak_dynamics_action = QtWidgets.QAction('& Show/hide peak dynamics', self)
+        self.show_diff_peak_dynamics_action.setCheckable(True)
+        self.show_diff_peak_dynamics_action.toggled.connect(self.processed_viewer.toggle_peak_dynamics)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_peak_dynamics_action.setEnabled)
+
+        self.show_diff_peak_dynamics_bounds_action = QtWidgets.QAction('& Show/hide peak dynamics bounds', self)
+        self.show_diff_peak_dynamics_bounds_action.setCheckable(True)
+        self.show_diff_peak_dynamics_bounds_action.toggled.connect(self.processed_viewer.toggle_roi_bounds_text)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_peak_dynamics_bounds_action.setEnabled)
+
+        self.show_diff_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
+        self.show_diff_relative_action.setCheckable(True)
+        self.controller.relative_averaged_enable_signal.connect(self.show_diff_relative_action.setChecked)
+        self.show_diff_relative_action.toggled.connect(self.controller.enable_averaged_relative)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_relative_action.setEnabled)
+
+        self.show_powder_peak_dynamics_bounds_action = QtWidgets.QAction('& Show/hide integration bounds', self)
+        self.show_powder_peak_dynamics_bounds_action.setCheckable(True)
+        self.show_powder_peak_dynamics_bounds_action.toggled.connect(self.powder_viewer.toggle_roi_bounds_text)
+        self.controller.powder_dataset_loaded_signal.connect(self.show_powder_peak_dynamics_bounds_action.setEnabled)
+
+        self.show_powder_relative_action = QtWidgets.QAction('& Toggle relative dynamics', self)
+        self.show_powder_relative_action.setCheckable(True)
+        self.controller.relative_powder_enable_signal.connect(self.show_powder_relative_action.setChecked)
+        self.show_powder_relative_action.toggled.connect(self.controller.enable_powder_relative)
+        self.controller.powder_dataset_loaded_signal.connect(self.show_powder_relative_action.setEnabled)
+
+        self.toggle_powder_background_action = QtWidgets.QAction('& Remove baseline', self)
+        self.toggle_powder_background_action.setCheckable(True)
+        self.controller.powder_bgr_enable_signal.connect(self.toggle_powder_background_action.setChecked)
+        self.toggle_powder_background_action.toggled.connect(self.controller.powder_background_subtracted)
+        self.controller.powder_dataset_loaded_signal.connect(self.toggle_powder_background_action.setEnabled)
 
         self.display_options_menu = self.menu_bar.addMenu('&Display')
         self.diffraction_dataset_display_options_menu = self.display_options_menu.addMenu('& Diffraction display options')
@@ -265,12 +270,12 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.diffraction_dataset_display_options_menu.addAction(self.show_diff_peak_dynamics_bounds_action)
         self.diffraction_dataset_display_options_menu.addAction(self.show_diff_relative_action)
 
+        self.powder_dataset_display_options_menu.addAction(self.show_powder_peak_dynamics_bounds_action)
         self.powder_dataset_display_options_menu.addAction(self.show_powder_relative_action)
         self.powder_dataset_display_options_menu.addAction(self.toggle_powder_background_action)
 
         ###################
         # Helps and misc operations
-
         self.about_action = QtWidgets.QAction('& About', self)
         self.about_action.triggered.connect(self.show_about)
 
