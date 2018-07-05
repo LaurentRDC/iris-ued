@@ -26,6 +26,10 @@ class PowderViewer(QtWidgets.QWidget):
         self.peak_dynamics_region = pg.LinearRegionItem(values = (0.2, 0.3))
         self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
 
+        self._text_height = 0
+        self.roi_left_text = pg.TextItem('', anchor = (1,1))
+        self.roi_right_text = pg.TextItem('', anchor = (0,1))
+
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.powder_pattern_viewer)
         layout.addWidget(self.time_series_widget)
@@ -35,7 +39,29 @@ class PowderViewer(QtWidgets.QWidget):
     @QtCore.pyqtSlot()
     def update_peak_dynamics(self):
         """ Update powder peak dynamics settings on demand. """
-        self.peak_dynamics_roi_signal.emit(*self.peak_dynamics_region.getRegion())
+        qmin, qmax = self.peak_dynamics_region.getRegion()
+        # We always move the text items so that it doesn't mess with the bounds
+        self.roi_left_text.setPos(qmin, self._text_height)
+        self.roi_right_text.setPos(qmax, self._text_height)
+
+        self.peak_dynamics_roi_signal.emit(qmin, qmax)
+
+    @QtCore.pyqtSlot(bool)
+    def toggle_roi_bounds_text(self, enable):
+        """ Toggle showing array indices around the peak dynamics region-of-interest """
+        if enable:
+            self.peak_dynamics_roi_signal.connect(self._update_roi_bounds_text)
+            self.update_peak_dynamics()
+        else:
+            self.roi_left_text.setText('')
+            self.roi_right_text.setText('')
+            self.peak_dynamics_roi_signal.disconnect(self._update_roi_bounds_text)
+
+    @QtCore.pyqtSlot(float, float)
+    def _update_roi_bounds_text(self, mi, ma):
+        """ Update the ROI bounds text """
+        self.roi_left_text.setText(f'{mi:.3f}')
+        self.roi_right_text.setText(f'{ma:.3f}')
         
     @QtCore.pyqtSlot(object, object)
     def display_powder_data(self, scattering_vector, powder_data_block):
@@ -67,9 +93,17 @@ class PowderViewer(QtWidgets.QWidget):
         for pen, brush, curve in zip(pens, brushes, powder_data_block):
             self.powder_pattern_viewer.plot(scattering_vector, curve, pen = None, symbol = 'o',
                                             symbolPen = pen, symbolBrush = brush, symbolSize = 3)
+
+        # Calculate the height of the text
+        # so that it never obscures data
+        self._text_height = 1.1 * powder_data_block.max()
+
+        # clearing the powder_pattern_viewer removes all items from the view box
+        self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
+        self.powder_pattern_viewer.addItem(self.roi_left_text)
+        self.powder_pattern_viewer.addItem(self.roi_right_text)
         
         self.peak_dynamics_region.setBounds([scattering_vector.min(), scattering_vector.max()])
-        self.powder_pattern_viewer.addItem(self.peak_dynamics_region)
         self.update_peak_dynamics() #Update peak dynamics plot if background has been changed, for example
     
     @QtCore.pyqtSlot(object, object)
