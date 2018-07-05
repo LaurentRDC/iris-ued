@@ -132,7 +132,8 @@ class MaskCreator(QtWidgets.QWidget):
 
             for circ_mask in self.circ_masks:            
                 radius = circ_mask.size().x()/2
-                corner_x, corner_y = circ_mask.pos().x(), circ_mask.pos().y()
+                # The corner positions are transposed because we have imageAxisOrder = 'row-major'
+                corner_x, corner_y = circ_mask.pos().y(), circ_mask.pos().x()
                 xc, yc = (round(corner_y + radius), round(corner_x + radius)) #Flip output since image viewer plots transpose...
                 rr = np.hypot(xx - xc, yy - yc)
                 mask[rr <= radius] = 1
