@@ -109,7 +109,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         if filename == '':
             return
 
-        corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
+        corner_x, corner_y = self.center_finder.pos().y(), self.center_finder.pos().x()
         radius = self.center_finder.size().x()/2
         center = (round(corner_y + radius), round(corner_x + radius)) #Flip output since image viewer plots transpose...
         
