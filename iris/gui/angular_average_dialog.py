@@ -111,7 +111,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
     
     @QtCore.pyqtSlot()
     def accept(self):
-        corner_x, corner_y = self.center_finder.pos().y(), self.center_finder.pos().x()
+        corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2
         center = (round(corner_y + radius), round(corner_x + radius)) #Flip output since image viewer plots transpose...
         
