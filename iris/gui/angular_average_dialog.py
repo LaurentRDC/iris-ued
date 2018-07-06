@@ -29,7 +29,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
         """
         super().__init__(*args, **kwargs)
         self.setModal(True)
-        self.setWindowTitle('Promote to powder dataset')
+        self.setWindowTitle('Calculate azimuthal averages')
 
         title = QtWidgets.QLabel('<h2>Azimuthal Average Options<\h2>')
         title.setTextFormat(QtCore.Qt.RichText)
@@ -48,7 +48,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.partial_circle_btn = QtWidgets.QCheckBox('Restrict azimuthal angle', self)
         self.partial_circle_btn.setChecked(False)
 
-        self.accept_btn = QtWidgets.QPushButton('Promote', self)
+        self.accept_btn = QtWidgets.QPushButton('Calculate', self)
         self.accept_btn.clicked.connect(self.accept)
 
         self.cancel_btn = QtWidgets.QPushButton('Cancel', self)
