@@ -121,6 +121,18 @@ class TestDiffractionDataset(unittest.TestCase):
         with self.subTest('Checking for callable'):
             with self.assertRaises(TypeError):
                 self.dataset.diff_apply(None)
+
+    def test_diff_apply_parallel(self):
+        """ Test that the diff_apply method works as expected in parallel mode """
+        with self.subTest('Applying an operation'):
+            before = np.array(self.dataset.diffraction_group['intensity'])
+            self.dataset.diff_apply(lambda arr: arr*2, processes = 2)
+            after = np.array(self.dataset.diffraction_group['intensity'])
+            self.assertTrue(np.allclose(2*before, after))
+        
+        with self.subTest('Checking for callable'):
+            with self.assertRaises(TypeError):
+                self.dataset.diff_apply(None)
     
     def test_resolution(self):
         """ Test that dataset resolution is correct """
