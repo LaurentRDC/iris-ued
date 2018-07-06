@@ -108,7 +108,9 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         filename = self.file_dialog.getSaveFileName(filter = '*.hdf5')[0]
         if filename == '':
             return
-
+            
+        # Calculating the center position assumes that PyQtGraph is configured
+        # such that imageAxisOrder == 'row-major'
         corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2
         center = (round(corner_x + radius), round(corner_y + radius))
