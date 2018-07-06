@@ -20,6 +20,12 @@ from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
+SWMR_AVAILABLE = h5py.version.hdf5_version_tuple > (1,10,0)
+
+def _apply_diff(timedelay, fname, func):
+    with DiffractionDataset(fname, mode = 'r', swmr = True) as dset:
+        im = dset.diff_data(timedelay)
+    return func(im)
 
 class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     """
@@ -238,9 +244,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         
         return cls.from_collection(patterns = reduced, **kwargs)
     
-    def diff_apply(self, func, callback = None):
+    def diff_apply(self, func, callback = None, processes = 1):
         """
-        Apply a function to each diffraction pattern one-by-one. The diffraction patterns
+        Apply a function to each diffraction pattern possibly in parallel. The diffraction patterns
         will be modified in-place.
 
         .. warning::
@@ -255,6 +261,11 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             array of the exact same shape, with the same data-type.
         callback : callable or None, optional
             Callable that takes an int between 0 and 99. This can be used for progress update.
+        processes : int or None, optional
+            Number of parallel processes to use. If ``None``, all available processes will be used.
+            In case Single Writer Multiple Reader mode is not available, ``processes`` is ignored.
+
+            .. versionadded:: 5.0.6
         
         Raises
         ------
@@ -265,6 +276,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
 
         if callback is None: 
             callback = lambda _: None
+        
+        if SWMR_AVAILABLE and (processes != 1):
+            return self._diff_apply_parallel(func, callback, processes)
         
         ntimes = len(self.time_points)
         dset = self.diffraction_group['intensity']
@@ -279,8 +293,29 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             callback( int(100 * index / ntimes) )
         
         self.diff_eq.cache_clear()
+    
+    def _diff_apply_parallel(self, func, callback, processes):
+        """
+        Apply a function to each diffraction pattern in parallel. The diffraction patterns
+        will be modified in-place. This method is not supposed to be called directly.
 
-    def symmetrize(self, mod, center, kernel_size = None, callback = None):
+        .. versionadded:: 5.0.6
+        """
+        transformed = pmap(_apply_diff, 
+                           self.time_points,
+                           kwargs = {'fname': self.filename, 
+                                     'func': func})
+
+        ntimes = len(self.time_points)
+        dset = self.diffraction_group['intensity']
+
+        for index, im in enumerate(transformed):
+            dset.write_direct(im, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
+            callback( int(100 * index / ntimes) )
+        
+        self.diff_eq.cache_clear()
+
+    def symmetrize(self, mod, center, kernel_size = None, callback = None, processes = 1):
         """
         Symmetrize diffraction images based on n-fold rotational symmetry.
 
@@ -299,6 +334,11 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
             `kernel_size` is the standard deviation of the gaussian kernel in units of pixels.
         callback : callable or None, optional
             Callable that takes an int between 0 and 99. This can be used for progress update.
+        processes : int or None, optional
+            Number of parallel processes to use. If ``None``, all available processes will be used.
+            In case Single Writer Multiple Reader mode is not available, ``processes`` is ignored.
+
+            .. versionadded:: 5.0.6
         
         Raises
         ------
