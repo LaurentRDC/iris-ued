@@ -2,6 +2,8 @@
 """
 Dialog for symmetrization of DiffractionDataset
 """
+from os import cpu_count
+
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -51,6 +53,10 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         self.enable_smoothing_widget.setChecked(False)
         self.enable_smoothing_widget.toggled.connect(self.smoothing_kernel_widget.setEnabled)
 
+        self.processes_widget = QtWidgets.QSpinBox(parent = self)
+        self.processes_widget.setRange(1, cpu_count() - 1)
+        self.processes_widget.setValue(1)
+
         self.accept_btn = QtWidgets.QPushButton('Symmetrize', self)
         self.accept_btn.clicked.connect(self.accept)
         self.accept_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, 
@@ -70,6 +76,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         multiplicity_layout = QtWidgets.QFormLayout()
         multiplicity_layout.addRow('Rotational multiplicity: ', self.mod_widget)
+        multiplicity_layout.addRow('Number of CPU cores:',      self.processes_widget)
 
         smoothing_layout = QtWidgets.QFormLayout()
         smoothing_layout.addRow(self.enable_smoothing_widget)
@@ -116,7 +123,8 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         center = (round(corner_x + radius), round(corner_y + radius))
 
         params = {'center': center,
-                  'mod'   : int(self.mod_widget.currentText())}
+                  'mod'   : int(self.mod_widget.currentText()),
+                  'processes': self.processes_widget.value()}
 
         if self.enable_smoothing_widget.isChecked():
             params['kernel_size'] = self.smoothing_kernel_widget.value()

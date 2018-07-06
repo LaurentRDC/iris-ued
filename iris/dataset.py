@@ -22,11 +22,6 @@ from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
 SWMR_AVAILABLE = h5py.version.hdf5_version_tuple > (1,10,0)
 
-def _apply_diff(timedelay, fname, func):
-    with DiffractionDataset(fname, mode = 'r', swmr = True) as dset:
-        im = dset.diff_data(timedelay)
-    return func(im)
-
 class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
     """
     Abstraction of an HDF5 file to represent diffraction datasets.
@@ -277,6 +272,9 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         if callback is None: 
             callback = lambda _: None
         
+        # We implement parallel diff apply in a separate method
+        # because single-threaded diff apply can be written with a
+        # placeholder array
         if SWMR_AVAILABLE and (processes != 1):
             return self._diff_apply_parallel(func, callback, processes)
         
@@ -301,18 +299,23 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
 
         .. versionadded:: 5.0.6
         """
+        ntimes = len(self.time_points)
+        dset = self.diffraction_group['intensity']
+
         transformed = pmap(_apply_diff, 
                            self.time_points,
+                           processes = processes,
+                           ntotal = ntimes,
                            kwargs = {'fname': self.filename, 
                                      'func': func})
 
-        ntimes = len(self.time_points)
-        dset = self.diffraction_group['intensity']
+        # We need to switch SWMR mode ON
+        # Note that it cannot be turned OFF
+        self.swmr_mode = True
 
         for index, im in enumerate(transformed):
             dset.write_direct(im, source_sel = np.s_[:,:], dest_sel = np.s_[:,:,index])
             callback( int(100 * index / ntimes) )
-        
         self.diff_eq.cache_clear()
 
     def symmetrize(self, mod, center, kernel_size = None, callback = None, processes = 1):
@@ -348,15 +351,11 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         --------
         diff_apply : apply an operation to each diffraction pattern one-by-one
         """        
-        fold = partial(nfold, mod = mod, center = center, mask = self.invalid_mask)
-
-        if kernel_size is not None:
-            smoothing = partial(gaussian_filter, order = 0, sigma = kernel_size, mode = 'nearest')
-            apply = lambda arr: smoothing(fold(arr))
-        else:
-            apply = fold
-
-        return self.diff_apply(apply, callback = callback)
+        # Due to possibility of parallel operation,
+        # we can't use lambdas or local functions
+        # Therefore, we define _symmetrize below and use it here
+        apply = partial(_symmetrize, mod = mod, center = center, mask = self.invalid_mask, kernel_size = kernel_size)
+        return self.diff_apply(apply, callback = callback, processes = processes)
 
     @property
     def metadata(self):
@@ -552,6 +551,18 @@ class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
         if dataset.compression_opts: #could be None
             ckwargs.update(dataset.compression_opts)
         return ckwargs
+
+# Functions to be passed to pmap must not be local functions
+def _apply_diff(timedelay, fname, func):
+    with DiffractionDataset(fname, mode = 'r', libver = 'latest', swmr = True) as dset:
+        im = dset.diff_data(timedelay)
+    return func(im)
+
+def _symmetrize(im, mod, center, mask, kernel_size):
+    im = nfold(im, mod = mod, center = center, mask = mask)
+    if kernel_size is None:
+        return im
+    return gaussian_filter(im, order = 0, sigma = kernel_size, mode = 'nearest')
 
 class PowderDiffractionDataset(DiffractionDataset):
     """ 
