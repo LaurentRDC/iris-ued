@@ -15,6 +15,9 @@ from .. import DiffractionDataset, PowderDiffractionDataset
 
 np.random.seed(23)
 
+def double(im):
+    return im * 2
+
 class TestDiffractionDatasetCreation(unittest.TestCase):
 
     def setUp(self):
@@ -126,7 +129,7 @@ class TestDiffractionDataset(unittest.TestCase):
         """ Test that the diff_apply method works as expected in parallel mode """
         with self.subTest('Applying an operation'):
             before = np.array(self.dataset.diffraction_group['intensity'])
-            self.dataset.diff_apply(lambda arr: arr*2, processes = 2)
+            self.dataset.diff_apply(double, processes = 2)
             after = np.array(self.dataset.diffraction_group['intensity'])
             self.assertTrue(np.allclose(2*before, after))
         
@@ -146,6 +149,18 @@ class TestDiffractionDataset(unittest.TestCase):
             symmetrized[:,:,index] = nfold(before[:,:,index], mod = 3, center = (63, 65))
         
         self.dataset.symmetrize(mod = 3, center = (63, 65))
+        after = np.array(self.dataset.diffraction_group['intensity'])
+
+        self.assertTrue(np.allclose(symmetrized, after))
+
+    def test_symmetrization_parallel(self):
+        """ Test correctness of symmetrization operation in parallel mode """
+        before = np.array(self.dataset.diffraction_group['intensity'])
+        symmetrized = np.array(before, copy = True)
+        for index, _ in enumerate(self.dataset.time_points):
+            symmetrized[:,:,index] = nfold(before[:,:,index], mod = 3, center = (63, 65))
+        
+        self.dataset.symmetrize(mod = 3, center = (63, 65), processes = 2)
         after = np.array(self.dataset.diffraction_group['intensity'])
 
         self.assertTrue(np.allclose(symmetrized, after))
