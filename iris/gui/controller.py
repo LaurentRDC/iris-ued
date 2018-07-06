@@ -323,7 +323,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.status_message_signal.emit('Time-zero shifted by {:.3f}ps.'.format(shift))
     
     @QtCore.pyqtSlot(str, object)
-    @indicate_in_progress
     def load_raw_dataset(self, path, cls):
         """
         Load a raw dataset according to an AbstractRawDataset.
@@ -351,7 +350,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.status_message_signal.emit(path + ' loaded.')
 
     @QtCore.pyqtSlot()
-    @indicate_in_progress
     def close_raw_dataset(self):
         """ Close raw dataset. """
         self.raw_dataset = None
@@ -361,7 +359,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.status_message_signal.emit('Raw dataset closed.')
 
     @QtCore.pyqtSlot(str)
-    @indicate_in_progress
     def load_dataset(self, path):
         """ 
         Load dataset, distinguishing between PowderDiffractionDataset and DiffractionDataset.
@@ -407,7 +404,6 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.status_message_signal.emit(path + ' loaded.')
     
     @QtCore.pyqtSlot()
-    @indicate_in_progress
     def close_dataset(self):
         """ Close current DiffractionDataset. """
         with suppress(AttributeError):  # in case self.dataset is None
