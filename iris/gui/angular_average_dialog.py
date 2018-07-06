@@ -111,6 +111,8 @@ class AngularAverageDialog(QtWidgets.QDialog):
     
     @QtCore.pyqtSlot()
     def accept(self):
+        # Calculating the center position assumes that PyQtGraph is configured
+        # such that imageAxisOrder == 'row-major'
         corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
         radius = self.center_finder.size().x()/2
         center = (round(corner_x + radius), round(corner_y + radius))

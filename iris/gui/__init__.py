@@ -30,6 +30,9 @@ def gui_environment():
 
         * Set the PyQtGraph QT library to PyQt5 while Iris GUI is running. Revert back when done.
         * Set the image-axis order to row-major. Revert back when done. 
+    
+    Note that interactions with the screen (e.g. mask creation) assumes that the image-axis order is 
+    row-major. 
     """
     old_qt_lib = os.environ.get('PYQTGRAPH_QT_LIB', 'PyQt5')    # environment variable might not exist
     os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'

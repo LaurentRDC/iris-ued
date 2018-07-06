@@ -130,10 +130,12 @@ class MaskCreator(QtWidgets.QWidget):
                                  np.arange(0, mask.shape[1]))
             rr = np.empty_like(xx)
 
+            # Calculating the center position assumes that PyQtGraph is configured
+            # such that imageAxisOrder == 'row-major'
             for circ_mask in self.circ_masks:            
                 radius = circ_mask.size().x()/2
                 corner_x, corner_y = circ_mask.pos().x(), circ_mask.pos().y()
-                xc, yc = (round(corner_y + radius), round(corner_x + radius)) # Corners reversed due to imageAxisOrder = 'row-major'
+                xc, yc = (round(corner_x + radius), round(corner_y + radius))
                 rr = np.hypot(xx - xc, yy - yc)
                 mask[rr <= radius] = 1
 
