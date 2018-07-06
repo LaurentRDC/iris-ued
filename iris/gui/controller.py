@@ -438,7 +438,11 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
                   'destination': destination,
                   'callback': self.processing_progress_signal.emit}
         kwargs.update(params)
-        self.dataset.close()
+
+        # TODO:
+        #   Since symmetrization will first copy the dataset,
+        #   and the dataset is open in read-only mode, do we have to close it?
+        self.close_dataset()
 
         self.worker = WorkThread(function = symmetrize, kwargs = kwargs)
         self.worker.results_signal.connect(self.load_dataset)
@@ -468,7 +472,7 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         self.worker.start()
     
     @QtCore.pyqtSlot(dict)
-    def promote_to_powder(self, params):
+    def calculate_azimuthal_averages(self, params):
         """ 
         Promote a DiffractionDataset to a PowderDiffractionDataset 
         
@@ -477,33 +481,15 @@ class IrisController(QtCore.QObject, metaclass = ErrorAware):
         params : dict
             Parameters are passed to ``PowderDiffractionDataset.from_dataset``.
         """
-        params.update({'filename':self.dataset.filename, 'callback':self.powder_promotion_progress.emit})
-        self.worker = WorkThread(function = promote_to_powder, kwargs = params)
-        self.dataset.close()
-        self.dataset = None
-        self.worker.results_signal.connect(self.load_dataset)
-        self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.start()
-    
-    @QtCore.pyqtSlot(dict)
-    def recompute_angular_average(self, params):
-        """ 
-        Compute the angular average of a PowderDiffractionDataset again.
-        
-        Parameters
-        ----------
-        params : dict
-            Parameters are passed to ``PowderDiffractionDataset.compute_angular_averages``. 
-        """
         params.update({'filename':self.dataset.filename, 
                        'callback':self.powder_promotion_progress.emit})
-        self.worker = WorkThread(function = recompute_angular_average, kwargs = params)
-        self.dataset.close()
-        self.dataset = None
+        self.worker = WorkThread(function = calculate_azimuthal_averages, kwargs = params)
+
+        self.close_dataset()
+
         self.worker.results_signal.connect(self.load_dataset)
         self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.start()
-
 
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
@@ -558,18 +544,26 @@ class WorkThread(QtCore.QThread):
         self.done_signal.emit()  
 
 
-def promote_to_powder(**kwargs):
-    """ Create a PowderDiffractionDataset from a DiffractionDataset """
+def calculate_azimuthal_averages(**kwargs):
+    """ Create a PowderDiffractionDataset from a DiffractionDataset. If azimuthal averages
+    were already calculated, recalculate them. """
     filename = kwargs.pop('filename')
+
+    # Determine if azimuthal averages have already been computed
+    recomputed = False
+    with PowderDiffractionDataset(filename) as d:
+        if PowderDiffractionDataset._powder_group_name in d:
+            # We simply need to recompute the azimuthal averages
+            recomputed = True
+            d.compute_angular_averages(**kwargs)
+    
+    if recomputed:
+        return filename
+
+    # If we are here, the dataset neets promotion
     with PowderDiffractionDataset.from_dataset(DiffractionDataset(filename), **kwargs):
         pass
-    return filename
 
-def recompute_angular_average(**kwargs):
-    """ Re-compute the angular average of a PowderDiffractionDataset """
-    filename = kwargs.pop('filename')
-    with PowderDiffractionDataset(filename, mode = 'r+') as dataset:
-        dataset.compute_angular_averages(**kwargs)
     return filename
 
 def symmetrize(dataset, destination, **kwargs):

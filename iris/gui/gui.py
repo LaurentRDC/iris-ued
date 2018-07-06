@@ -197,17 +197,13 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.symmetrize_action.triggered.connect(self.launch_symmetrize_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.symmetrize_action.setEnabled)
 
-        self.promote_to_powder_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '& Calculate angular average', self)
-        self.promote_to_powder_action.triggered.connect(self.launch_promote_to_powder_dialog)
-        self.controller.processed_dataset_loaded_signal.connect(self.promote_to_powder_action.setEnabled)
+        self.calculate_azimuthal_averages_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '& Calculate azimuthal averages', self)
+        self.calculate_azimuthal_averages_action.triggered.connect(self.launch_calculate_azimuthal_averages_dialog)
+        self.controller.processed_dataset_loaded_signal.connect(self.calculate_azimuthal_averages_action.setEnabled)
 
         self.update_metadata_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'save.png')), '& Update dataset metadata', self)
         self.update_metadata_action.triggered.connect(self.launch_metadata_edit_dialog)
         self.controller.processed_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
-
-        self.recompute_angular_averages = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '& Recompute angular average', self)
-        self.recompute_angular_averages.triggered.connect(self.launch_recompute_angular_average_dialog)
-        self.controller.powder_dataset_loaded_signal.connect(self.recompute_angular_averages.setEnabled)
 
         self.calibrate_scattvector_action = QtWidgets.QAction(QtGui.QIcon(join(image_folder, 'analysis.png')), '& Calibrate scattering vector', self)
         self.calibrate_scattvector_action.triggered.connect(self.launch_calq_dialog)
@@ -218,9 +214,8 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.update_metadata_action)
         self.diffraction_dataset_menu.addAction(self.symmetrize_action)
-        self.diffraction_dataset_menu.addAction(self.promote_to_powder_action)
+        self.diffraction_dataset_menu.addAction(self.calculate_azimuthal_averages_action)
         self.diffraction_dataset_menu.addSeparator()
-        self.diffraction_dataset_menu.addAction(self.recompute_angular_averages)
         self.diffraction_dataset_menu.addAction(self.calibrate_scattvector_action)
 
         ###################
@@ -368,13 +363,13 @@ class Iris(QtWidgets.QMainWindow, metaclass = ErrorAware):
         metadata_dialog.updated_metadata_signal.disconnect(self.controller.update_metadata)
 
     @QtCore.pyqtSlot()
-    def launch_promote_to_powder_dialog(self):
+    def launch_calculate_azimuthal_averages_dialog(self):
         image = self.controller.dataset.diff_data(self.controller.dataset.time_points[0])
         promote_dialog = AngularAverageDialog(image, parent = self)
         promote_dialog.resize(0.75*self.size())
-        promote_dialog.angular_average_signal.connect(self.controller.promote_to_powder)
+        promote_dialog.angular_average_signal.connect(self.controller.calculate_azimuthal_averages)
         promote_dialog.exec_()
-        promote_dialog.angular_average_signal.disconnect(self.controller.promote_to_powder)
+        promote_dialog.angular_average_signal.disconnect(self.controller.calculate_azimuthal_averages)
     
     @QtCore.pyqtSlot()
     def launch_recompute_angular_average_dialog(self):
