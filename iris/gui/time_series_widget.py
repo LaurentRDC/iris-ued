@@ -93,7 +93,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
     @QtCore.pyqtSlot(np.ndarray, np.ndarray)
     def plot(self, time_points, intensity):
         """
-        Plot the a time-series
+        Plot the a time-series. Time-series are normalized to the intensity before photoexcitation.
 
         Parameters
         ----------
@@ -104,7 +104,9 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         """
         self._last_times = np.asarray(time_points)
         self._last_intensities = np.asarray(intensity)
-        self._last_intensities /= self._last_intensities.max()
+
+        # Normalize to intensity before time-zero
+        self._last_intensities /= np.mean(self._last_intensities[self._last_times < 0])
 
         # Only compute the colors if number of time-points changes or first time
         pens, brushes = pens_and_brushes(len(time_points))
