@@ -200,7 +200,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
             yield self.raw_data(timedelay = timedelay, scan = scan, **kwargs)
     
     @abstractmethod
-    def raw_data(self, timedelay, scan = 1, bgr = True, **kwargs):
+    def raw_data(self, timedelay, scan = 1, **kwargs):
         """
         Returns an array of the image at a timedelay and scan.
         
@@ -210,8 +210,8 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
             Acquisition time-delay.
         scan : int, optional
             Scan number. Default is 1.
-        bgr : bool, optional
-            If True (default), laser background is removed before being returned.
+        kwargs
+            Keyword-arguments are ignored.
         
         Returns
         -------
@@ -266,7 +266,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         # the reference image is different for each time-delay. We align the reduced images
         # to each other as well.
         if align:
-            yield from ialign(combined, mask = mask)
+            yield from ialign(combined, mask = mask, fast = align_fast)
         else:
             yield from combined
 
