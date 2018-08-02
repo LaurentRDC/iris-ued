@@ -266,7 +266,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         # the reference image is different for each time-delay. We align the reduced images
         # to each other as well.
         if align:
-            yield from ialign(combined, mask = mask, fast = align_fast)
+            yield from ialign(combined, mask = mask, fast = False)
         else:
             yield from combined
 
