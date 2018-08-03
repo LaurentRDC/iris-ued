@@ -265,6 +265,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass = MetaRawDataset):
         # Each image at the same time-delay are aligned to each other. This means that
         # the reference image is different for each time-delay. We align the reduced images
         # to each other as well.
+        # Note : the fast = False fixes issue #11, where single crystal images were not successfully aligned.
         if align:
             yield from ialign(combined, mask = mask, fast = False)
         else:
@@ -277,7 +278,8 @@ def _raw_combine(timedelay, raw, exclude_scans, normalize, align, invalid_mask, 
     images = raw.itertime(timedelay, exclude_scans = exclude_scans)
 
     if align:
-        images = ialign(images, mask = invalid_mask)
+        # Note : the fast = False fixes issue #11, where single crystal images were not successfully aligned.
+        images = ialign(images, mask = invalid_mask, fast = False)
     
     # Set up normalization
     if normalize:
