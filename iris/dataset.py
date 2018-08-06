@@ -20,6 +20,8 @@ from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
+# Whether or not single-writer multiple-reader (SWMR) mode is available
+# See http://docs.h5py.org/en/latest/swmr.html for more information
 SWMR_AVAILABLE = h5py.version.hdf5_version_tuple > (1,10,0)
 
 class DiffractionDataset(h5py.File, metaclass = MetaHDF5Dataset):
