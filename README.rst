@@ -61,6 +61,14 @@ Documentation
 The `Documentation on readthedocs.io <https://iris-ued.readthedocs.io>`_ provides API-level documentation, as 
 well as tutorials.
 
+Citations
+---------
+
+If you find this software useful, please consider citing the following publication:
+
+.. [#] L. P. René de Cotret, M. R. Otto, M. J. Stern. and B. J. Siwick, *An open-source software ecosystem for the interactive 
+       exploration of ultrafast electron scattering data*, Advanced Structural and Chemical Imaging 4:11 (2018) DOI: 10.1186/s40679-018-0060-y
+
 Support / Report Issues
 -----------------------
 
