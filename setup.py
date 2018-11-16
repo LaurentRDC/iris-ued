@@ -20,8 +20,12 @@ BASE_PACKAGE    = 'iris'
 base_path = os.path.dirname(__file__)
 with open(os.path.join(base_path, BASE_PACKAGE, '__init__.py')) as f:
     module_content = f.read()
-    VERSION = re.compile(r'.*__version__ = \'(.*?)\'', re.S).match(module_content).group(1)
-    LICENSE = re.compile(r'.*__license__ = \'(.*?)\'', re.S).match(module_content).group(1)
+    VERSION = (
+        re.compile(r".*__version__ = \"(.*?)\"", re.S).match(module_content).group(1)
+    )
+    LICENSE = (
+        re.compile(r".*__license__ = \"(.*?)\"", re.S).match(module_content).group(1)
+    )
 
 with open('README.rst') as f:
     README = f.read()
