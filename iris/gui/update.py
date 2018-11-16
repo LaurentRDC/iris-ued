@@ -16,11 +16,13 @@ from .. import __version__
 
 try:
     from subprocess import CREATE_NEW_PROCESS_GROUP
+
     WINDOWS = True
 except ImportError:
-    WINDOWS = False 
+    WINDOWS = False
 
-DETACHED_PROCESS = 0x00000008          # 0x8 | 0x200 == 0x208
+DETACHED_PROCESS = 0x00000008  # 0x8 | 0x200 == 0x208
+
 
 def update_available():
     """
@@ -37,39 +39,41 @@ def update_available():
     ------
     ConnectionError : if connection to PyPI could not be made.
     """
-    url = 'https://pypi.org/pypi/iris-ued/json'
+    url = "https://pypi.org/pypi/iris-ued/json"
 
     try:
-        response = urlopen(url).read().decode('utf-8')
+        response = urlopen(url).read().decode("utf-8")
     except URLError:
-        raise ConnectionError('No connection available.')
+        raise ConnectionError("No connection available.")
 
-    latest_version = parse_version(
-        json.loads(response)['info']['version'])
-    
+    latest_version = parse_version(json.loads(response)["info"]["version"])
+
     is_outdated = latest_version > parse_version(__version__)
     return is_outdated, str(latest_version)
+
 
 def update_in_background():
     """ Update iris in the background. If iris-ued was installed with conda, it will be updated through conda as well;
     otherwise, pip is used. """
     # Determine if conda is installed
     try:
-        conda_installed = run(['conda', '--version']).exitcode == 0
+        conda_installed = run(["conda", "--version"]).exitcode == 0
     except:
         conda_installed = False
 
     # Determine if iris-ued was installed with conda
     # If so, we update it with conda
     if conda_installed:
-        conda_list = json.loads(run(['conda', 'list', '--json', '--no-pip'], stdout = PIPE).stdout)
-        update_with_conda = 'iris-ued' in {item['name'] for item in conda_list}
+        conda_list = json.loads(
+            run(["conda", "list", "--json", "--no-pip"], stdout=PIPE).stdout
+        )
+        update_with_conda = "iris-ued" in {item["name"] for item in conda_list}
 
     flags = DETACHED_PROCESS
     if WINDOWS:
         flags = flags | CREATE_NEW_PROCESS_GROUP
-    
+
     if update_with_conda:
-        Popen(['conda', 'update', 'iris-ued', '--yes'], creationflags = flags)
+        Popen(["conda", "update", "iris-ued", "--yes"], creationflags=flags)
     else:
-        Popen(['pip', 'install', '--upgrade', 'iris-ued', '-y'], creationflags = flags)
+        Popen(["pip", "install", "--upgrade", "iris-ued", "-y"], creationflags=flags)

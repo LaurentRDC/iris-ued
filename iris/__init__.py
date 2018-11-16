@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-__author__  = 'Laurent P. René de Cotret'
-__email__   = 'laurent.renedecotret@mail.mcgill.ca'
-__license__ = 'MIT'
-__version__ = '5.0.6'
+__author__ = "Laurent P. René de Cotret"
+__email__ = "laurent.renedecotret@mail.mcgill.ca"
+__license__ = "MIT"
+__version__ = "5.0.6"
 
 from .raw import AbstractRawDataset, check_raw_bounds, open_raw
 from .mcgill import McGillRawDataset, LegacyMcGillRawDataset
