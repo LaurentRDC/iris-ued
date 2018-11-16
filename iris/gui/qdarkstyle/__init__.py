@@ -50,12 +50,12 @@ import warnings
 
 __version__ = "2.5.4"
 
-PYQTGRAPH_QT_LIB_VALUES = ['PyQt', 'PyQt5', 'PySide', 'PySide2']
-QT_API_VALUES = ['pyqt', 'pyqt5', 'pyside', 'pyside2']
+PYQTGRAPH_QT_LIB_VALUES = ["PyQt", "PyQt5", "PySide", "PySide2"]
+QT_API_VALUES = ["pyqt", "pyqt5", "pyside", "pyside2"]
 
 
 def _logger():
-    return logging.getLogger('qdarkstyle')
+    return logging.getLogger("qdarkstyle")
 
 
 def _qt_wrapper_import(qt_api):
@@ -67,25 +67,29 @@ def _qt_wrapper_import(qt_api):
     :return load function fot given qt_api, otherwise empty string
 
     """
-    qt_wrapper = ''
+    qt_wrapper = ""
     loader = ""
 
     try:
-        if qt_api == 'PyQt' or qt_api == 'pyqt':
+        if qt_api == "PyQt" or qt_api == "pyqt":
             import PyQt4
-            qt_wrapper = 'PyQt4'
+
+            qt_wrapper = "PyQt4"
             loader = load_stylesheet_pyqt()
-        elif qt_api == 'PyQt5' or qt_api == 'pyqt5':
+        elif qt_api == "PyQt5" or qt_api == "pyqt5":
             import PyQt5
-            qt_wrapper = 'PyQt5'
+
+            qt_wrapper = "PyQt5"
             loader = load_stylesheet_pyqt5()
-        elif qt_api == 'PySide' or qt_api == 'pyside':
+        elif qt_api == "PySide" or qt_api == "pyside":
             import PySide
-            qt_wrapper = 'PySide'
+
+            qt_wrapper = "PySide"
             loader = load_stylesheet_pyside()
-        elif qt_api == 'PySide2' or qt_api == 'pyside2':
+        elif qt_api == "PySide2" or qt_api == "pyside2":
             import PySide2
-            qt_wrapper = 'PySide2'
+
+            qt_wrapper = "PySide2"
             loader = load_stylesheet_pyside2()
     except ImportError as err:
         _logger().error("Impossible import Qt wrapper.\n %s", str(err))
@@ -108,21 +112,24 @@ def load_stylesheet_from_environment(is_pyqtgraph=False):
     warnings.warn(
         "load_stylesheet_from_environment() will be deprecated in version 3,"
         "use load_stylesheet()",
-        PendingDeprecationWarning
+        PendingDeprecationWarning,
     )
-    qt_api = ''
-    pyqtgraph_qt_lib = ''
+    qt_api = ""
+    pyqtgraph_qt_lib = ""
 
     loader = ""
 
     # Get values from QT_API
     try:
-        qt_api = os.environ['QT_API']
+        qt_api = os.environ["QT_API"]
     except KeyError as err:
         # Log this error just if using QT_API
         if not is_pyqtgraph:
-            _logger().error("QT_API does not exist, do os.environ['QT_API']= "
-                            "and choose one option from %s", QT_API_VALUES)
+            _logger().error(
+                "QT_API does not exist, do os.environ['QT_API']= "
+                "and choose one option from %s",
+                QT_API_VALUES,
+            )
     else:
         if not is_pyqtgraph:
             if qt_api in QT_API_VALUES:
@@ -130,20 +137,23 @@ def load_stylesheet_from_environment(is_pyqtgraph=False):
                 loader = _qt_wrapper_import(qt_api)
             else:
                 # Raise this error because the function need this key/value
-                raise KeyError("QT_API=%s is unknown, please use a value "
-                               "from %s",
-                               (qt_api, QT_API_VALUES))
+                raise KeyError(
+                    "QT_API=%s is unknown, please use a value " "from %s",
+                    (qt_api, QT_API_VALUES),
+                )
 
     # Get values from PYQTGRAPH_QT_LIB
     try:
-        pyqtgraph_qt_lib = os.environ['PYQTGRAPH_QT_LIB']
+        pyqtgraph_qt_lib = os.environ["PYQTGRAPH_QT_LIB"]
     except KeyError as err:
         # Log this error just if using PYQTGRAPH_QT_LIB
         if is_pyqtgraph:
-            _logger().error("PYQTGRAP_QT_API does not exist, do "
-                            "os.environ['PYQTGRAPH_QT_LIB']= "
-                            "and choose one option from %s",
-                            PYQTGRAPH_QT_LIB_VALUES)
+            _logger().error(
+                "PYQTGRAP_QT_API does not exist, do "
+                "os.environ['PYQTGRAPH_QT_LIB']= "
+                "and choose one option from %s",
+                PYQTGRAPH_QT_LIB_VALUES,
+            )
     else:
         if is_pyqtgraph:
             if pyqtgraph_qt_lib in PYQTGRAPH_QT_LIB_VALUES:
@@ -151,18 +161,21 @@ def load_stylesheet_from_environment(is_pyqtgraph=False):
                 loader = _qt_wrapper_import(pyqtgraph_qt_lib)
             else:
                 # Raise this error because the function need this key/value
-                raise KeyError("PYQTGRAPH_QT_LIB=%s is unknown, please use a "
-                               "value from %s", (
-                                   pyqtgraph_qt_lib,
-                                   PYQTGRAPH_QT_LIB_VALUES))
+                raise KeyError(
+                    "PYQTGRAPH_QT_LIB=%s is unknown, please use a " "value from %s",
+                    (pyqtgraph_qt_lib, PYQTGRAPH_QT_LIB_VALUES),
+                )
 
     # Just a warning if both are set but differs each other
     if qt_api and pyqtgraph_qt_lib:
         if qt_api != pyqtgraph_qt_lib.lower():
-            _logger().warning("Both QT_API=%s and PYQTGRAPH_QT_LIB=%s are set, "
-                              "but with different values, this could cause "
-                              "some issues if using them in the same project!",
-                              qt_api, pyqtgraph_qt_lib)
+            _logger().warning(
+                "Both QT_API=%s and PYQTGRAPH_QT_LIB=%s are set, "
+                "but with different values, this could cause "
+                "some issues if using them in the same project!",
+                qt_api,
+                pyqtgraph_qt_lib,
+            )
 
     return loader
 
@@ -178,7 +191,7 @@ def load_stylesheet(pyside=True):
     warnings.warn(
         "load_stylesheet() will not receive pyside parameter in version 3. "
         "Set QtPy environment variable to specify the Qt binding insteady.",
-        FutureWarning
+        FutureWarning,
     )
     # Smart import of the rc file
     if pyside:
@@ -194,22 +207,21 @@ def load_stylesheet(pyside=True):
 
     f = QFile(":qdarkstyle/style.qss")
     if not f.exists():
-        _logger().error("Unable to load stylesheet, file not found in "
-                        "resources")
+        _logger().error("Unable to load stylesheet, file not found in " "resources")
         return ""
     else:
         f.open(QFile.ReadOnly | QFile.Text)
         ts = QTextStream(f)
         stylesheet = ts.readAll()
-        if platform.system().lower() == 'darwin':  # see issue #12 on github
-            mac_fix = '''
+        if platform.system().lower() == "darwin":  # see issue #12 on github
+            mac_fix = """
             QDockWidget::title
             {
                 background-color: #31363b;
                 text-align: center;
                 height: 12px;
             }
-            '''
+            """
             stylesheet += mac_fix
         return stylesheet
 
@@ -224,7 +236,7 @@ def load_stylesheet_pyside():
         "load_stylesheet_pyside() will be deprecated in version 3,"
         "set QtPy environment variable to specify the Qt binding and "
         "use load_stylesheet()",
-        PendingDeprecationWarning
+        PendingDeprecationWarning,
     )
     return load_stylesheet(pyside=True)
 
@@ -239,7 +251,7 @@ def load_stylesheet_pyside2():
         "load_stylesheet_pyside2() will be deprecated in version 3,"
         "set QtPy environment variable to specify the Qt binding and "
         "use load_stylesheet()",
-        PendingDeprecationWarning
+        PendingDeprecationWarning,
     )
     raise NotImplementedError("PySide 2 is not supported yet.")
 
@@ -254,7 +266,7 @@ def load_stylesheet_pyqt():
         "load_stylesheet_pyqt() will be deprecated in version 3,"
         "set QtPy environment variable to specify the Qt binding and "
         "use load_stylesheet()",
-        PendingDeprecationWarning
+        PendingDeprecationWarning,
     )
     return load_stylesheet(pyside=False)
 
@@ -271,7 +283,7 @@ def load_stylesheet_pyqt5():
         "load_stylesheet_pyqt5() will be deprecated in version 3,"
         "set QtPy environment variable to specify the Qt binding and "
         "use load_stylesheet()",
-        PendingDeprecationWarning
+        PendingDeprecationWarning,
     )
     # Smart import of the rc file
     from . import pyqt5_style_rc
@@ -281,21 +293,20 @@ def load_stylesheet_pyqt5():
 
     f = QFile(":qdarkstyle/style.qss")
     if not f.exists():
-        _logger().error("Unable to load stylesheet, file not found in "
-                        "resources")
+        _logger().error("Unable to load stylesheet, file not found in " "resources")
         return ""
     else:
         f.open(QFile.ReadOnly | QFile.Text)
         ts = QTextStream(f)
         stylesheet = ts.readAll()
-        if platform.system().lower() == 'darwin':  # see issue #12 on github
-            mac_fix = '''
+        if platform.system().lower() == "darwin":  # see issue #12 on github
+            mac_fix = """
             QDockWidget::title
             {
                 background-color: #31363b;
                 text-align: center;
                 height: 12px;
             }
-            '''
+            """
             stylesheet += mac_fix
         return stylesheet
