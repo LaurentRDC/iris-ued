@@ -9,9 +9,9 @@
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-class QBusyIndicator(QtWidgets.QWidget):
 
-    def __init__ (self, **kwargs):
+class QBusyIndicator(QtWidgets.QWidget):
+    def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
 
@@ -38,40 +38,40 @@ class QBusyIndicator(QtWidgets.QWidget):
         else:
             if self.m_timerId != -1:
                 self.killTimer(self.m_timerId)
-                
+
             self.m_timerId = -1
             self.update()
 
     def sizeHint(self):
         return QtCore.QSize(20, 20)
-    
-    def animationDelay (self):
+
+    def animationDelay(self):
         return self.delay
 
-    def isAnimated (self):
-        return (self.m_timerId != -1)
+    def isAnimated(self):
+        return self.m_timerId != -1
 
-    def getColor (self):
+    def getColor(self):
         return self.color
 
-    def setAnimationDelay (self, delay):
+    def setAnimationDelay(self, delay):
         if self.m_timerId != -1:
             self.killTimer(self.m_timerId)
-            
+
         self.m_delay = delay
 
         if self.m_timerId != -1:
             self.m_timerId = self.startTimer(self.m_delay)
 
-    def setColor (self, color):
+    def setColor(self, color):
         self.m_color = color
         self.update()
 
-    def timerEvent (self, event):
+    def timerEvent(self, event):
         self.m_angle = (self.m_angle + 30) % 360
         self.update()
-    
-    def paintEvent (self, event):
+
+    def paintEvent(self, event):
 
         width = min(self.width(), self.height())
 
@@ -82,7 +82,7 @@ class QBusyIndicator(QtWidgets.QWidget):
         innerRadius = (width - 1) * 0.5 * 0.38
 
         capsuleHeight = outerRadius - innerRadius
-        capsuleWidth  = capsuleHeight *.23 if (width > 32) else capsuleHeight *.35
+        capsuleWidth = capsuleHeight * 0.23 if (width > 32) else capsuleHeight * 0.35
         capsuleRadius = capsuleWidth / 2
 
         for i in range(0, 12):
@@ -98,5 +98,12 @@ class QBusyIndicator(QtWidgets.QWidget):
             painter.save()
             painter.translate(self.rect().center())
             painter.rotate(self.m_angle - (i * 30.0))
-            painter.drawRoundedRect(capsuleWidth * -0.5, (innerRadius + capsuleHeight) * -1, capsuleWidth, capsuleHeight, capsuleRadius, capsuleRadius)
+            painter.drawRoundedRect(
+                capsuleWidth * -0.5,
+                (innerRadius + capsuleHeight) * -1,
+                capsuleWidth,
+                capsuleHeight,
+                capsuleRadius,
+                capsuleRadius,
+            )
             painter.restore()
