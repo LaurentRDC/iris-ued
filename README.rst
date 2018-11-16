@@ -15,6 +15,9 @@ Iris
     :alt: Conda-forge Version
 .. image:: https://img.shields.io/pypi/pyversions/iris-ued.svg
     :alt: Supported Python Versions
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :alt: Code formatting style
+    :target: https://github.com/ambv/black
 
 Iris is both a library for interacting with ultrafast electron diffraction data, as well as a GUI frontend
 for interactively exploring this data.

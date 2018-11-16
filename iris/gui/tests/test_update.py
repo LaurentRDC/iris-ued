@@ -16,14 +16,15 @@ def connection_available():
             return True
     return False
 
+
 @unittest.skipUnless(connection_available(), "Internet connection is required.")
 class TestUpdateAvailable(unittest.TestCase):
-
     def test_version(self):
         """ Test that update_available is workign as intended"""
         is_outdated, latest_version = update_available()
         self.assertIsInstance(is_outdated, bool)
         self.assertIsInstance(latest_version, str)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
