@@ -7,6 +7,7 @@ from pathlib import Path
 
 import h5py
 import numpy as np
+from tqdm import tqdm
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset, MetaRawDataset
 from .raw import AbstractRawDataset, open_raw
@@ -25,10 +26,10 @@ def pack(source_fname, packed_fname):
         Location of the resulting packed dataset.
     """
     try:
-        with open_raw(source_fname) as raw_dset:
+        with open_raw(str(source_fname)) as raw_dset:
             CompactRawDataset.pack(raw_dset, packed_fname)
     except RuntimeError:
-        raise RuntimeError('The source format could not be inferred.')
+        raise RuntimeError("The source format could not be inferred.")
 
 
 class CompactMeta(MetaHDF5Dataset, MetaRawDataset):
@@ -109,8 +110,6 @@ class CompactRawDataset(h5py.File, AbstractRawDataset, metaclass=CompactMeta):
         if isinstance(path, Path):
             path = str(path)
 
-        print(repr(source))
-
         metadata = source.metadata
         timedelays = metadata["time_points"]
         scans = source.scans
@@ -150,9 +149,25 @@ class CompactRawDataset(h5py.File, AbstractRawDataset, metaclass=CompactMeta):
             # Each scan is saved in its own dataset
             gp = archive.create_group("Scans")
 
-            for scan in scans:
+            for scan in tqdm(
+                scans,
+                desc="Packing: ",
+                unit=" scans",
+                unit_scale=True,
+                leave=True,
+                ascii=True,
+            ):
 
-                for index, image in enumerate(source.iterscan(scan)):
+                for index, image in enumerate(
+                    tqdm(
+                        source.iterscan(scan),
+                        unit=" time points",
+                        unit_scale=True,
+                        leave=False,
+                        ascii=True,
+                        total=len(timedelays),
+                    )
+                ):
                     scan_buffer[:, :, index] = image
 
                 # TODO: affix time stamps as an attribute on this dataset
