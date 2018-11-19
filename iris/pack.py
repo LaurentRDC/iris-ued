@@ -152,7 +152,7 @@ class CompactRawDataset(h5py.File, AbstractRawDataset, metaclass=CompactMeta):
             for scan in tqdm(
                 scans,
                 desc="Packing: ",
-                unit=" scans",
+                unit=" scan",
                 unit_scale=True,
                 leave=True,
                 ascii=True,
@@ -161,7 +161,7 @@ class CompactRawDataset(h5py.File, AbstractRawDataset, metaclass=CompactMeta):
                 for index, image in enumerate(
                     tqdm(
                         source.iterscan(scan),
-                        unit=" time points",
+                        unit=" time point",
                         unit_scale=True,
                         leave=False,
                         ascii=True,

@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from os.path import join
 from subprocess import Popen
 from pathlib import Path
+from warnings import warn
 
 try:
     from subprocess import CREATE_NEW_PROCESS_GROUP
@@ -21,6 +22,7 @@ import pyqtgraph as pg
 from .qdarkstyle import load_stylesheet_pyqt5
 from .gui import Iris, image_folder
 from ..raw import open_raw
+from ..pack import CompactRawDataset
 
 DETACHED_PROCESS = 0x00000008  # 0x8 | 0x200 == 0x208
 
@@ -49,7 +51,7 @@ def gui_environment():
     pg.setConfigOptions(imageAxisOrder=old_image_axis_order)
 
 
-def run(path=None, **kwargs):
+def run(path=None, dset_type=None, **kwargs):
     """ 
     Run the iris GUI with the correct environment, and open a dataset. Invalid
     datasets are ignored.
@@ -59,6 +61,8 @@ def run(path=None, **kwargs):
     path : path-like or None, optional
         Path to either a raw dataset or a processed datasets. 
         Raw dataset formats will be guessed.
+    dset_type : {'raw', 'compact', 'reduced', None}, optional
+        Dataset type.
     """
 
     with gui_environment():
@@ -67,13 +71,11 @@ def run(path=None, **kwargs):
         app.setWindowIcon(QtGui.QIcon(join(image_folder, "eye.png")))
         gui = Iris()
 
-        # If a path is provided, we try to load
+
         if path:
             path = Path(path)
-            if path.suffix in {".h5", ".hdf5"}:
-                gui.dataset_path_signal.emit(str(path))  # signal has signature [str]
-            else:
-                # For raw datasets, we need to guess the AbstractRawDataset subclass
+            if dset_type == 'raw':
+                # Determine the class
                 try:
                     with open_raw(path) as dset:
                         dataformat = dset.__class__
@@ -83,6 +85,12 @@ def run(path=None, **kwargs):
                     # No errors, valid dataset
                     # note : signal has signature [str, object]
                     gui.raw_dataset_path_signal.emit(str(path), dataformat)
+            elif dset_type == "compact":
+                gui.raw_dataset_path_signal.emit(str(path), CompactRawDataset)
+            elif dset_type == 'reduced':
+                gui.dataset_path_signal.emit(str(path))  # signal has signature [str]
+            else:
+                warn(f'dset_type invalid value: {dset_type}. Ignoring path.')
 
         # Possibility to restart. A complete new interpreter must
         # be used so that new plug-ins are loaded correctly.

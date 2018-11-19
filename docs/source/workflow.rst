@@ -20,28 +20,54 @@ Note that the command-line interface has some useful options:
 .. code:: 
 
     > python -m iris --help
-
-    usage: iris [-h] [-v] [path]
+    usage: iris [-h] [-v] {open,pack,docs} ...
 
     Iris is both a library for interacting with ultrafast electron diffraction
-    data, as well as a GUI frontend for interactively exploring this data.
-
-    positional arguments:
-    path           Raw or reduced dataset to open, if any. The type of dataset
-                    will be guessed based on currently-installed plugins.
+    data, as well as a GUI frontend for interactively exploring this data. Below
+    are some helpful commands.
 
     optional arguments:
-    -h, --help     show this help message and exit
-    -v, --version  show program's version number and exit
+    -h, --help        show this help message and exit
+    -v, --version     show program's version number and exit
 
-    Documentation is available here: https://iris-ued.readthedocs.io/
+    Subcommands:
+    {open,pack,docs}  Available sub-commands
+        open            Dataset to open with iris start-up.
+        pack            Pack a raw dataset into a compressed HDF5 archive,
+                        resulting in space savings of up to 4x. Archives can be
+                        loaded into iris.
+        docs            Open online documentation in your default web browser.
+
+    Running this command without any parameters will launch the graphical user
+    interface. Documentation is available here: https://iris-ued.readthedocs.io/
+    PS C:\Users\Laurent\OneDrive\McGill\Code\iris-ued> python -m iris --help
+    usage: iris [-h] [-v] {open,pack,docs} ...
+
+    Iris is both a library for interacting with ultrafast electron diffraction
+    data, as well as a GUI frontend for interactively exploring this data. Below
+    are some helpful commands.
+
+    optional arguments:
+    -h, --help        show this help message and exit
+    -v, --version     show program's version number and exit
+
+    Subcommands:
+    {open,pack,docs}  Available sub-commands
+        open            Dataset to open with iris start-up.
+        pack            Pack a raw dataset into a compressed HDF5 archive,
+                        resulting in space savings of up to 4x. Archives can be
+                        loaded into iris.
+        docs            Open online documentation in your default web browser.
+
+    Running this command without any parameters will launch the graphical user
+    interface.
 
 Most importantly, you can programatically start the GUI with opening a dataset::
 
-    > python -m iris ~/dataset.hdf5
+    > python -m iris open --reduced ~/dataset.hdf5
 
-The path can lead to a reduced HDF5 file or to a raw dataset. The dataset format will be guessed with
-the same rules as :func:`iris.open_raw`.
+The path can lead to a reduced HDF5 file (flag `--reduced`), a raw dataset (flag `--raw`), or a compact archive (`--compact`). 
+In case of a raw dataset, the dataset format will be guessed with the same rules as :func:`iris.open_raw`.
 
 .. highlight :: python
 
