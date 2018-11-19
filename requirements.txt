@@ -1,6 +1,7 @@
 numpy >= 1.12
 scipy >= 1.0.0
 h5py >= 2.6.0
+tqdm >= 4
 PyQt5
 scikit-ued >= 1.0.1.1
 pyqtgraph >= 0.10

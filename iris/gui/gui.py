@@ -13,8 +13,13 @@ from skued import diffread
 
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
-from .. import (AbstractRawDataset, CompactRawDataset, __author__, __license__,
-                __version__)
+from .. import (
+    AbstractRawDataset,
+    CompactRawDataset,
+    __author__,
+    __license__,
+    __version__,
+)
 from ..plugins import PLUGIN_DIR, install_plugin
 from .angular_average_dialog import AngularAverageDialog
 from .calibrate_q_dialog import QCalibratorDialog
@@ -193,9 +198,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             AbstractRawDataset.implementations, key=lambda cls: cls.__name__
         ):
             self._create_load_raw(cls, load_raw_submenu)
-        
 
-        
         self.load_archive_action = QtWidgets.QAction(
             QtGui.QIcon(join(image_folder, "locator.png")), "&Load archive", self
         )
@@ -631,7 +634,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         if not path:
             return
         self.raw_dataset_path_signal.emit(path, cls)
-    
+
     @QtCore.pyqtSlot()
     def load_archive_dataset(self):
         # This action is presented separately from "load_raw_dataset"

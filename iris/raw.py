@@ -40,7 +40,8 @@ def open_raw(path):
     ------
     RuntimeError : if the data format could not be guessed.
     """
-    for dataformat in AbstractRawDataset.implementations:
+    # For easier debugging, data formats are checked in deterministic order
+    for dataformat in sorted(AbstractRawDataset.implementations, key=str):
         try:
             return dataformat(path)
         except:
