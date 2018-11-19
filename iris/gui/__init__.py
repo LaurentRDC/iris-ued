@@ -71,10 +71,9 @@ def run(path=None, dset_type=None, **kwargs):
         app.setWindowIcon(QtGui.QIcon(join(image_folder, "eye.png")))
         gui = Iris()
 
-
         if path:
             path = Path(path)
-            if dset_type == 'raw':
+            if dset_type == "raw":
                 # Determine the class
                 try:
                     with open_raw(path) as dset:
@@ -87,10 +86,10 @@ def run(path=None, dset_type=None, **kwargs):
                     gui.raw_dataset_path_signal.emit(str(path), dataformat)
             elif dset_type == "compact":
                 gui.raw_dataset_path_signal.emit(str(path), CompactRawDataset)
-            elif dset_type == 'reduced':
+            elif dset_type == "reduced":
                 gui.dataset_path_signal.emit(str(path))  # signal has signature [str]
             else:
-                warn(f'dset_type invalid value: {dset_type}. Ignoring path.')
+                warn(f"dset_type invalid value: {dset_type}. Ignoring path.")
 
         # Possibility to restart. A complete new interpreter must
         # be used so that new plug-ins are loaded correctly.
