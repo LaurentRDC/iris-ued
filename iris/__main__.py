@@ -36,7 +36,9 @@ subparsers = parser.add_subparsers(
 # To facilitate format determination, we need flags specifying whether the
 # path points to a raw, compact, or reduced dataset
 open_parser = subparsers.add_parser("open", help=OPEN_HELP)
-open_parser.add_argument("path", help="Path to the dataset", type=Path, nargs="?", default=None)
+open_parser.add_argument(
+    "path", help="Path to the dataset", type=Path, nargs="?", default=None
+)
 dset_modes = open_parser.add_mutually_exclusive_group(required=True)
 dset_modes.add_argument(
     "--compact",
@@ -77,15 +79,15 @@ if __name__ == "__main__":
             print(f"Dataset {args.src} has been successfully packed into {args.dst}")
             sys.exit(0)
 
-    elif (args.subcmd == "open"):
+    elif args.subcmd == "open":
 
         # Otherwise, default behavior
         sys.exit(run(path=args.path))
-    
+
     elif args.subcmd == "docs":
         webbrowser.open("https://iris-ued.readthedocs.io")
         sys.exit(0)
-    
+
     # Default behavior : open gui without loading any data
     else:
         sys.exit(run(path=None))
