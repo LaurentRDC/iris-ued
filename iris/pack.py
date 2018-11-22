@@ -13,7 +13,7 @@ from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset, MetaRawDataset
 from .raw import AbstractRawDataset, open_raw
 
 
-def pack(source_fname, packed_fname):
+def pack(source_fname):
     """
     Pack a raw dataset into a compressed HDF5 archive.
 
@@ -22,14 +22,31 @@ def pack(source_fname, packed_fname):
     source_fname : path-like
         Path to the original RawDataset instance. Its type will be inferred
         based on the available plugins, as determined by ``open_raw``.
-    packed_fname : path-like
-        Location of the resulting packed dataset.
+    
+    Returns
+    -------
+    packed_fname : pathlib.Path
+        Path to the archive
+    
+    Raises
+    ------
+    IOError : source_fname does not point to a file/directory.
+    RuntimeError : raw format could not be inferred.
     """
-    try:
-        with open_raw(str(source_fname)) as raw_dset:
-            CompactRawDataset.pack(raw_dset, packed_fname)
-    except RuntimeError:
-        raise RuntimeError("The source format could not be inferred.")
+    source_fname = Path(source_fname)
+
+    # If source filename is neither a file nor a directory, raise an IOError
+    if source_fname.is_dir():
+        packed_fname = Path(source_fname + ".hdf5")
+    elif source_fname.is_file():
+        packed_fname = Path("archive_" + source_fname.stem + ".hdf5")
+    else:
+        raise IOError(f"{source_fname} is not pointing to a file or directory.")
+
+    with open_raw(source_fname) as raw_dset:
+        CompactRawDataset.pack(raw_dset, packed_fname)
+
+    return packed_fname
 
 
 class CompactMeta(MetaHDF5Dataset, MetaRawDataset):
