@@ -58,8 +58,7 @@ dset_modes.add_argument(
 
 # Parser for pack command
 pack_parser = subparsers.add_parser("pack", help=PACK_HELP)
-pack_parser.add_argument("--src", type=Path, required=True)
-pack_parser.add_argument("--dst", type=Path, required=True)
+pack_parser.add_argument("--src", type=Path, required=False)
 
 # Parser to reach documentation
 docs_parser = subparsers.add_parser("docs", help=DOCS_HELP)
@@ -71,12 +70,14 @@ if __name__ == "__main__":
     # want to pack
     if args.subcmd == "pack":
         try:
-            pack(args.src, args.dst)
+            packed_fname = pack(args.src)
         except RuntimeError as e:
             print("[iris pack] the following fatal error occured: ", str(e))
             sys.exit(1)
         else:
-            print(f"Dataset {args.src} has been successfully packed into {args.dst}")
+            print(
+                f"Dataset {args.src} has been successfully packed into {packed_fname}"
+            )
             sys.exit(0)
 
     elif args.subcmd == "open":
