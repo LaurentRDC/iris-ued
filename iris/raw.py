@@ -6,7 +6,8 @@ Raw dataset classes
 from abc import abstractmethod
 from collections import OrderedDict
 from contextlib import AbstractContextManager
-from functools import partial, wraps
+from functools import wraps
+from pathlib import Path
 
 import numpy as np
 
@@ -40,6 +41,9 @@ def open_raw(path):
     ------
     RuntimeError : if the data format could not be guessed.
     """
+    if isinstance(path, Path):
+        path = str(path)
+
     # For easier debugging, data formats are checked in deterministic order
     for dataformat in sorted(AbstractRawDataset.implementations, key=str):
         try:
