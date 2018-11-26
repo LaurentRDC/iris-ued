@@ -5,12 +5,6 @@
 
 $MINICONDA_URL = "https://repo.continuum.io/miniconda/"
 
-# We pin the version for conda as it's not the most stable package from
-# release to release. Add note here if version is pinned due to a bug upstream.
-if (! $env:CONDA_VERSION) {
-   $env:CONDA_VERSION = "4.3.6"
-}
-
 function DownloadMiniconda ($version, $platform_suffix) {
     $webclient = New-Object System.Net.WebClient
     $filename = "Miniconda3-" + $version + "-Windows-" + $platform_suffix + ".exe"
@@ -83,6 +77,7 @@ $env:PATH = "${env:PYTHON};${env:PYTHON}\Scripts;" + $env:PATH
 # Conda config
 conda config --set always_yes true
 conda config --add channels defaults
+conda config --add channels conda-forge
 
 if ($env:CONDA_CHANNELS) {
    $CONDA_CHANNELS=$env:CONDA_CHANNELS.split(" ")
@@ -94,7 +89,7 @@ if ($env:CONDA_CHANNELS) {
 }
 
 # Install the build and runtime dependencies of the project.
-conda install -q conda=$env:CONDA_VERSION
+conda install -q conda
 
 if (! $env:CONDA_CHANNEL_PRIORITY) {
    $CONDA_CHANNEL_PRIORITY="false"
