@@ -77,7 +77,6 @@ $env:PATH = "${env:PYTHON};${env:PYTHON}\Scripts;" + $env:PATH
 # Conda config
 conda config --set always_yes true
 conda config --add channels defaults
-conda config --add channels conda-forge
 
 if ($env:CONDA_CHANNELS) {
    $CONDA_CHANNELS=$env:CONDA_CHANNELS.split(" ")
