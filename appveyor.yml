@@ -13,6 +13,9 @@ environment:
                         # of 32 bit and 64 bit builds are needed, move this
                         # to the matrix section.
       TEST_CMD: "python -m unittest discover --verbose"
+      
+      # Conda channels to use, separated by spaces
+      CONDA_CHANNELS: "conda-forge"
 
       CONDA_DEPENDENCIES: "numpy scipy scikit-image pyqt h5py tqdm npstreams scikit-ued pyqtgraph"
       PIP_DEPENDENCIES: "black"
