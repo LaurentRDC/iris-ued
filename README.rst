@@ -1,5 +1,5 @@
-Iris
-====
+Iris - Ultrafast Electron Diffraction Data Exploration
+======================================================
 
 .. image:: https://img.shields.io/appveyor/ci/LaurentRDC/iris-ued/master.svg
     :target: https://ci.appveyor.com/project/LaurentRDC/iris-ued
@@ -16,8 +16,8 @@ Iris
 .. image:: https://img.shields.io/pypi/pyversions/iris-ued.svg
     :alt: Supported Python Versions
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :alt: Code formatting style
     :target: https://github.com/ambv/black
+    :alt: Code formatting style
 
 Iris is both a library for interacting with ultrafast electron diffraction data, as well as a GUI frontend
 for interactively exploring this data.

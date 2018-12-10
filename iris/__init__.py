@@ -9,6 +9,5 @@ from .mcgill import McGillRawDataset, LegacyMcGillRawDataset
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .meta import ExperimentalParameter
 from .plugins import install_plugin
-from .pack import CompactRawDataset, pack
 
 from . import plugins
