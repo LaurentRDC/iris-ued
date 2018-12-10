@@ -8,7 +8,6 @@ from pathlib import Path
 from iris.gui import run
 
 from . import __version__
-from .pack import pack
 
 DESCRIPTION = """Iris is both a library for interacting with ultrafast electron 
 diffraction data, as well as a GUI frontend for interactively exploring this data.
@@ -19,9 +18,6 @@ EPILOG = """Running this command without any parameters will
 launch the graphical user interface."""
 
 OPEN_HELP = """Dataset to open with iris start-up. """
-
-PACK_HELP = """Pack a raw dataset into a compressed HDF5 archive, resulting in space 
-savings of up to 4x. Archives can be loaded into iris. """
 
 DOCS_HELP = """Open online documentation in your default web browser."""
 
@@ -41,11 +37,6 @@ open_parser.add_argument(
 )
 dset_modes = open_parser.add_mutually_exclusive_group(required=True)
 dset_modes.add_argument(
-    "--compact",
-    action="store_true",
-    help="This flag indicates that the path should be considered an compact raw dataset",
-)
-dset_modes.add_argument(
     "--raw",
     action="store_true",
     help="This flag indicates that the path should be considered a raw dataset. Raw dataset format will be inferred from the installed plugins",
@@ -56,31 +47,13 @@ dset_modes.add_argument(
     help="This flag indicates that the path should be considered a reduced dataset.",
 )
 
-# Parser for pack command
-pack_parser = subparsers.add_parser("pack", help=PACK_HELP)
-pack_parser.add_argument("--src", type=Path, required=False)
-
 # Parser to reach documentation
 docs_parser = subparsers.add_parser("docs", help=DOCS_HELP)
 
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    # If source and destination paths are provided, this is because we
-    # want to pack
-    if args.subcmd == "pack":
-        try:
-            packed_fname = pack(args.src)
-        except RuntimeError as e:
-            print("[iris pack] the following fatal error occured: ", str(e))
-            sys.exit(1)
-        else:
-            print(
-                f"Dataset {args.src} has been successfully packed into {packed_fname}"
-            )
-            sys.exit(0)
-
-    elif args.subcmd == "open":
+    if args.subcmd == "open":
 
         # Otherwise, default behavior
         sys.exit(run(path=args.path))

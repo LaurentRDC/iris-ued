@@ -22,7 +22,6 @@ import pyqtgraph as pg
 from .qdarkstyle import load_stylesheet_pyqt5
 from .gui import Iris, image_folder
 from ..raw import open_raw
-from ..pack import CompactRawDataset
 
 DETACHED_PROCESS = 0x00000008  # 0x8 | 0x200 == 0x208
 
@@ -61,7 +60,7 @@ def run(path=None, dset_type=None, **kwargs):
     path : path-like or None, optional
         Path to either a raw dataset or a processed datasets. 
         Raw dataset formats will be guessed.
-    dset_type : {'raw', 'compact', 'reduced', None}, optional
+    dset_type : {'raw', 'reduced', None}, optional
         Dataset type.
     """
 
@@ -84,9 +83,7 @@ def run(path=None, dset_type=None, **kwargs):
                     # No errors, valid dataset
                     # note : signal has signature [str, object]
                     gui.raw_dataset_path_signal.emit(str(path), dataformat)
-            elif dset_type == "compact":
-                gui.raw_dataset_path_signal.emit(str(path), CompactRawDataset)
-            elif dset_type == "reduced":
+            if dset_type == "reduced":
                 gui.dataset_path_signal.emit(str(path))  # signal has signature [str]
             else:
                 warn(f"dset_type invalid value: {dset_type}. Ignoring path.")
