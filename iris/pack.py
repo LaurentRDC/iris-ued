@@ -13,7 +13,7 @@ from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset, MetaRawDataset
 from .raw import AbstractRawDataset, open_raw
 
 
-def pack(source_fname):
+def pack(source_fname, dest_fname=None, callback=None):
     """
     Pack a raw dataset into a compressed HDF5 archive.
 
@@ -22,6 +22,11 @@ def pack(source_fname):
     source_fname : path-like
         Path to the original RawDataset instance. Its type will be inferred
         based on the available plugins, as determined by ``open_raw``.
+    dest_fname : path-like, optional
+        Filename of the packed archive. If not provided, the archive will be created 
+        in the same location as `source_fname`.
+    callback : callable or None, optional
+        Callback that takes a float between 0 and 100. Used for progress tracking.
     
     Returns
     -------
@@ -35,18 +40,21 @@ def pack(source_fname):
     """
     source_fname = Path(source_fname)
 
-    # If source filename is neither a file nor a directory, raise an IOError
-    if source_fname.is_dir():
-        packed_fname = Path(source_fname + ".hdf5")
-    elif source_fname.is_file():
-        packed_fname = Path("archive_" + source_fname.stem + ".hdf5")
+    if not dest_fname:
+        # If source filename is neither a file nor a directory, raise an IOError
+        if source_fname.is_dir():
+            dest_fname = Path(source_fname + ".hdf5")
+        elif source_fname.is_file():
+            dest_fname = Path("archive_" + source_fname.stem + ".hdf5")
+        else:
+            raise IOError(f"{source_fname} is not pointing to a file or directory.")
     else:
-        raise IOError(f"{source_fname} is not pointing to a file or directory.")
+        dest_fname = Path(dest_fname)
 
     with open_raw(source_fname) as raw_dset:
-        CompactRawDataset.pack(raw_dset, packed_fname)
+        CompactRawDataset.pack(raw_dset, dest_fname, callback=callback)
 
-    return packed_fname
+    return dest_fname
 
 
 class CompactMeta(MetaHDF5Dataset, MetaRawDataset):
@@ -113,7 +121,7 @@ class CompactRawDataset(h5py.File, AbstractRawDataset, metaclass=CompactMeta):
         return self.require_group(name="/")
 
     @classmethod
-    def pack(cls, source, path, **kwargs):
+    def pack(cls, source, path, callback=None, **kwargs):
         """ 
         Create a compact raw dataset from some other raw dataset.
         
@@ -123,9 +131,14 @@ class CompactRawDataset(h5py.File, AbstractRawDataset, metaclass=CompactMeta):
             Any instance of ``AbstractRawDataset``.
         fname : path-like
             Path to the resulting HDF5 file.
+        callback : callable or None, optional
+            Callback that takes a float between 0 and 100. Used for progress tracking.
         """
         if isinstance(path, Path):
             path = str(path)
+
+        if callback is None:
+            callback = lambda x: x
 
         metadata = source.metadata
         timedelays = metadata["time_points"]
@@ -166,26 +179,14 @@ class CompactRawDataset(h5py.File, AbstractRawDataset, metaclass=CompactMeta):
             # Each scan is saved in its own dataset
             gp = archive.create_group("Scans")
 
-            for scan in tqdm(
-                scans,
-                desc="Packing: ",
-                unit=" scan",
-                unit_scale=True,
-                leave=True,
-                ascii=True,
-            ):
-
-                for index, image in enumerate(
-                    tqdm(
-                        source.iterscan(scan),
-                        unit=" time point",
-                        unit_scale=True,
-                        leave=False,
-                        ascii=True,
-                        total=len(timedelays),
-                    )
-                ):
+            total_items = len(scans) * len(timedelays)
+            total = 0
+            for scan in scans:
+                for index, image in enumerate(source.iterscan(scan)):
                     scan_buffer[:, :, index] = image
+
+                    total += 1
+                    callback(total * 100 / total_items)
 
                 # TODO: affix time stamps as an attribute on this dataset
                 dset = gp.create_dataset(
