@@ -15,7 +15,6 @@ from skued import diffread
 # to build a loading menu
 from .. import (
     AbstractRawDataset,
-    CompactRawDataset,
     __author__,
     __license__,
     __version__,
@@ -198,13 +197,6 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             AbstractRawDataset.implementations, key=lambda cls: cls.__name__
         ):
             self._create_load_raw(cls, load_raw_submenu)
-
-        self.load_archive_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "locator.png")), "&Load archive", self
-        )
-        self.load_archive_action.triggered.connect(self.load_archive_dataset)
-
-        load_raw_submenu.addAction(self.load_archive_action)
 
         self.load_dataset_action = QtWidgets.QAction(
             QtGui.QIcon(join(image_folder, "locator.png")), "& Load dataset", self
@@ -634,17 +626,6 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         if not path:
             return
         self.raw_dataset_path_signal.emit(path, cls)
-
-    @QtCore.pyqtSlot()
-    def load_archive_dataset(self):
-        # This action is presented separately from "load_raw_dataset"
-        # because file dialog can either look for folder OR files, but not both
-        path = self.file_dialog.getOpenFileName(
-            parent=self, caption="Load archive", filter="*.hdf5"
-        )[0]
-        if not path:
-            return
-        self.raw_dataset_path_signal.emit(path, CompactRawDataset)
 
     @QtCore.pyqtSlot()
     def load_dataset(self):
