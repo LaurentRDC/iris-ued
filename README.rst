@@ -58,6 +58,12 @@ Once installed, the package can be imported as :code:`iris`.
 The GUI component can be launched from a command line interpreter as :code:`python -m iris`
 or :code:`pythonw -m iris` (no console window).
 
+Test Data
+---------
+
+Test datasets are made available on the Siwick research group public data server, which can be 
+`accessed anonymously here <http://www.physics.mcgill.ca/siwicklab/publications.html>`.
+
 Documentation
 -------------
 
@@ -67,10 +73,13 @@ well as tutorials.
 Citations
 ---------
 
-If you find this software useful, please consider citing the following publication:
+If you find this software useful, please consider citing the following publications:
 
 .. [#] L. P. René de Cotret, M. R. Otto, M. J. Stern. and B. J. Siwick, *An open-source software ecosystem for the interactive 
        exploration of ultrafast electron scattering data*, Advanced Structural and Chemical Imaging 4:11 (2018) DOI: 10.1186/s40679-018-0060-y
+
+.. [#] L. P. René de Cotret and B. J. Siwick, *A general method for baseline-removal in ultrafast 
+       electron powder diffraction data using the dual-tree complex wavelet transform*, Struct. Dyn. 4 (2017) DOI: 10.1063/1.4972518.
 
 Support / Report Issues
 -----------------------
