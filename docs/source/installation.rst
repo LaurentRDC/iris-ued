@@ -23,8 +23,8 @@ GUI Libraries
 The GUI frontend of :mod:`iris` requires PyQt5. This requirement cannot, at this
 time, be substituted with Pyside.
 
-Install iris
-============
+Installing iris
+===============
 
 :mod:`iris` is available on PyPI as **iris-ued**::
 
@@ -48,6 +48,12 @@ repository::
 In Python code, :mod:`iris` can be imported as follows ::
 
     import iris
+
+Test data
+=========
+
+Test reduced datasets are made available by the Siwick research group. The data can be accessed on the 
+`public data repository <http://www.physics.mcgill.ca/siwicklab/publications.html>`_
 
 Testing
 =======
