@@ -6,6 +6,14 @@
 Using iris: typical workflow
 *******************************
 
+
+Before you start
+----------------
+
+You might want to download test datasets before you start to play around. Test reduced datasets are 
+made available by the Siwick research group. The data can be accessed on the 
+`public data repository <http://www.physics.mcgill.ca/siwicklab/publications.html>`_
+
 Startup
 -------
 

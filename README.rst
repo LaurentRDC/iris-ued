@@ -62,7 +62,7 @@ Test Data
 ---------
 
 Test datasets are made available on the Siwick research group public data server, which can be 
-`accessed anonymously here <http://www.physics.mcgill.ca/siwicklab/publications.html>`.
+`accessed anonymously here <http://www.physics.mcgill.ca/siwicklab/publications.html>`_.
 
 Documentation
 -------------
