@@ -174,6 +174,7 @@ class TestDiffractionDataset(unittest.TestCase):
         after = np.array(self.dataset.diffraction_group["intensity"])
 
         self.assertTrue(np.allclose(symmetrized, after))
+        self.assertEqual(self.dataset.center, (63, 65), "Diffraction center was not properly set after symmetrization")
 
     def test_symmetrization_parallel(self):
         """ Test correctness of symmetrization operation in parallel mode """
