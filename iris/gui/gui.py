@@ -13,12 +13,7 @@ from skued import diffread
 
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
-from .. import (
-    AbstractRawDataset,
-    __author__,
-    __license__,
-    __version__,
-)
+from .. import AbstractRawDataset, __author__, __license__, __version__
 from ..plugins import PLUGIN_DIR, install_plugin
 from .angular_average_dialog import AngularAverageDialog
 from .calibrate_q_dialog import QCalibratorDialog

@@ -67,40 +67,8 @@ class MaskCreator(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.MinimumExpanding,
         )
 
-        add_rect_mask_btn = QtWidgets.QPushButton("Add rectangular mask", self)
-        add_rect_mask_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
-        add_rect_mask_btn.clicked.connect(self.add_rect_mask)
-
-        add_circ_mask_btn = QtWidgets.QPushButton("Add circular mask", self)
-        add_circ_mask_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
-        add_circ_mask_btn.clicked.connect(self.add_circ_mask)
-
-        preview_mask_btn = QtWidgets.QPushButton("Preview mask", self)
-        preview_mask_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
-        preview_mask_btn.clicked.connect(self.show_preview_mask)
-
-        clear_masks_btn = QtWidgets.QPushButton("Clear all masks", self)
-        clear_masks_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
-        clear_masks_btn.clicked.connect(self.clear_masks)
-
-        btns = QtWidgets.QHBoxLayout()
-        btns.addWidget(add_circ_mask_btn)
-        btns.addWidget(add_rect_mask_btn)
-        btns.addWidget(preview_mask_btn)
-        btns.addWidget(clear_masks_btn)
-        btns.addStretch()
-
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.viewer)
-        layout.addLayout(btns)
         self.setLayout(layout)
 
     @QtCore.pyqtSlot()
@@ -262,6 +230,41 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.gzip_btn.toggled.connect(self.gzip_level_widget.setEnabled)
         self.gzip_level_widget.setEnabled(False)
 
+        # mask controls
+        self.add_rect_mask_btn = QtWidgets.QPushButton("Add rectangular mask", self)
+        self.add_rect_mask_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        self.add_rect_mask_btn.clicked.connect(self.mask_widget.add_rect_mask)
+
+        self.add_circ_mask_btn = QtWidgets.QPushButton("Add circular mask", self)
+        self.add_circ_mask_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        self.add_circ_mask_btn.clicked.connect(self.mask_widget.add_circ_mask)
+
+        self.preview_mask_btn = QtWidgets.QPushButton("Preview mask", self)
+        self.preview_mask_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        self.preview_mask_btn.clicked.connect(self.mask_widget.show_preview_mask)
+
+        self.clear_masks_btn = QtWidgets.QPushButton("Clear all masks", self)
+        self.clear_masks_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        self.clear_masks_btn.clicked.connect(self.mask_widget.clear_masks)
+
+        mask_btns = QtWidgets.QGridLayout()
+        mask_btns.addWidget(self.add_circ_mask_btn, 0, 0)
+        mask_btns.addWidget(self.add_rect_mask_btn, 0, 1)
+        mask_btns.addWidget(self.preview_mask_btn, 1, 0)
+        mask_btns.addWidget(self.clear_masks_btn, 1, 1)
+
+        self.mask_controls = QtWidgets.QGroupBox("Mask controls", parent=self)
+        self.mask_controls.setLayout(mask_btns)
+        self.mask_controls.setFlat(True)
+
         save_btn = QtWidgets.QPushButton("Launch", self)
         save_btn.clicked.connect(self.accept)
 
@@ -276,6 +279,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         processing_options.addRow("Number of CPU cores:", self.processes_widget)
         processing_options.addRow("Scans to exclude: ", self.exclude_scans_widget)
         processing_options.addRow("Final data type: ", self.dtype_widget)
+        processing_options.addRow(self.mask_controls)
         processing_options.addRow(self.alignment_tf_widget)
         processing_options.addRow(self.normalization_tf_widget)
         processing_options.addRow(self.fletcher32_widget)
