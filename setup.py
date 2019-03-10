@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*
 from glob import glob
-from itertools import chain
 import os
 import re
 from setuptools import setup, find_packages
@@ -80,6 +79,7 @@ if __name__ == "__main__":
             "Operating System :: OS Independent",
             "Programming Language :: Python",
             "Programming Language :: Python :: 3.6",
+            "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: Implementation :: CPython",
         ],
     )
