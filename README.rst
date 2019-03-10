@@ -47,7 +47,7 @@ To install the latest development version from `Github <https://github.com/Laure
 
     python -m pip install git+git://github.com/LaurentRDC/iris-ued.git
 
-Each version is tested against Python 3.6. If you are using a different version, tests can be run
+Each version is tested against Python 3.6+. If you are using a different version, tests can be run
 using the standard library's `unittest` module.
 
 Usage
