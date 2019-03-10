@@ -42,6 +42,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     # Subclasses can add more experimental parameters like those below
     # The types must be representable by h5py
+    center = HDF5ExperimentalParameter("center", tuple, default=(0, 0))
     acquisition_date = HDF5ExperimentalParameter(
         "acquisition_date", str, default=""
     )  # Acquisition date, no specific format
@@ -425,7 +426,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             mask=self.invalid_mask,
             kernel_size=kernel_size,
         )
-        return self.diff_apply(apply, callback=callback, processes=processes)
+        self.diff_apply(apply, callback=callback, processes=processes)
+        self.center = center
 
     @property
     def metadata(self):
@@ -651,7 +653,6 @@ class PowderDiffractionDataset(DiffractionDataset):
 
     _powder_group_name = "/powder"
 
-    center = HDF5ExperimentalParameter("center", tuple, default=(0, 0))
     angular_bounds = HDF5ExperimentalParameter(
         "angular_bounds", tuple, default=(0, 360)
     )
