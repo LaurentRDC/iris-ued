@@ -1,4 +1,4 @@
-Iris - Ultrafast Electron Diffraction Data Exploration
+Iris - Ultrafast Electron Scattering Data Exploration
 ======================================================
 
 .. image:: https://img.shields.io/appveyor/ci/LaurentRDC/iris-ued/master.svg
