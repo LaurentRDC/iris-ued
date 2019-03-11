@@ -34,11 +34,16 @@ Iris also includes a plug-in manager so that you can explore your data.
 Installation
 ------------
 
-Iris is available on PyPI; it can be installed with `pip <https://pip.pypa.io>`_.::
+**Starting with iris 5.1.0, Windows standalone installers are now available!**. This will install `iris` as a standalone program, 
+completely independent from other Python installations on your system. This way should be preferred for those who do not need to interact
+with data outside of `iris`. Standalone installers are available on the `releases <https://github.com/LaurentRDC/iris-ued/releases/>`_ page.
+
+To interact with `iris` datasets from a Python environment, the `iris-ued` package must be installed. `iris` is available on PyPI; 
+it can be installed with `pip <https://pip.pypa.io>`_.::
 
     python -m pip install iris-ued
 
-Iris is also available on the conda-forge channel::
+`iris` is also available on the conda-forge channel::
 
     conda config --add channels conda-forge
     conda install iris-ued
