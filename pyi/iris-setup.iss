@@ -36,12 +36,12 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 
 [Files]
 Source: ".\dist\iris.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
 Name: "{commonprograms}\{#AppName}"; Filename: "{app}\{#AppEXEName}"
 Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppEXEName}"; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#AppName}"; Filename: "{app}\{#AppEXEName}"; Tasks: quicklaunchicon
 
 [Run]
 Filename: "{app}\{#AppEXEName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
