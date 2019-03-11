@@ -8,4 +8,4 @@ if ($ENV:PROCESSOR_ARCHITECTURE -eq "AMD64"){
 else {
     $iscc = get-item "C:\Program Files\Inno Setup 5\ISCC.exe"
 }
-& $iscc setup_axis_scip.iss #*> iscc.out
+& $iscc "iris-setup.iss" #*> iscc.out
