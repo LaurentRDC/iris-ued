@@ -5,9 +5,10 @@ import sys
 import webbrowser
 from pathlib import Path
 
+# We explicitly import __version__ because
+# PyInstaller has trouble with relative import from __init__
+from iris import __version__
 from iris.gui import run
-
-from . import __version__
 
 DESCRIPTION = """Iris is both a library for interacting with ultrafast electron 
 diffraction data, as well as a GUI frontend for interactively exploring this data.
