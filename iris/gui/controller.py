@@ -586,9 +586,13 @@ class WorkThread(QtCore.QThread):
 
     def run(self):
         self.in_progress_signal.emit(True)
+
+        # This is potentially a very-long-running calculation
         result = self.function(*self.args, **self.kwargs)
+
         self.results_signal.emit(result)
         self.done_signal.emit()
+        self.in_progress_signal.emit(False)
 
 
 def calculate_azimuthal_averages(**kwargs):
