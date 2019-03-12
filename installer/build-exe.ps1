@@ -1,5 +1,5 @@
 "Building .exe pyinstaller"
-pyinstaller --clean --distpath=dist iris.exe.spec
+python -OO -m PyInstaller --clean --distpath=dist iris.exe.spec
 
 "Building setup using ISCC"
 if ($ENV:PROCESSOR_ARCHITECTURE -eq "AMD64"){
