@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.1.1
+-----
+
+* Removed the auto-update mechanism. Update checks will run in the background only;
+
 5.1.0
 -----
 
