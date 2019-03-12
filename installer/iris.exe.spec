@@ -36,3 +36,15 @@ exe = EXE(pyz,
           upx=True,
           console=False,
           icon="iris.ico")
+
+# We prevent the creation of a one-file executable
+# because one-file executables are slow
+#   https://stackoverflow.com/questions/5971038/pyinstaller-creates-slow-executable
+if False:
+    coll = COLLECT(exe,
+                   a.binaries,
+                   a.zipfiles,
+                   a.datas,
+                   strip=False,
+                   upx=True,
+                   name='iris')

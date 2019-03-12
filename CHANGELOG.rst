@@ -4,7 +4,9 @@ Changelog
 5.1.1
 -----
 
+* Fixed an issue where data reduction would freeze when using more than one CPU;
 * Removed the auto-update mechanism. Update checks will run in the background only;
+* Fixed an issue where the in-progress indicator would freeze;
 
 5.1.0
 -----
