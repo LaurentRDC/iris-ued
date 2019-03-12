@@ -6,8 +6,19 @@
 Installation
 ************
 
-Requirements
-============
+Standalone Installation
+=======================
+
+Starting with `iris` 5.1.0, **standalone Windows installers and executables are available**. You can find them on
+the `GitHub release page <https://github.com/LaurentRDC/iris-ued/releases/latest/>`.
+
+The standalone installers and executables make the installation of `iris` completely separate from any other 
+Python installation. This method should be preferred, unless Python scripting using the `iris` library is required.
+
+Installing the Python Package
+=============================
+
+If you want to script using `iris` data structures and algorithms, you need to install the `iris-ued` package.
 
 .. note::
 
@@ -15,22 +26,11 @@ Requirements
     excellent `Intel Distribution for Python <https://software.intel.com/en-us/intel-distribution-for-python>`_
     which provides easy access to all of the above dependencies and more.
 
-:mod:`iris` works on Linux, Mac OS X and Windows. It requires Python 3.6+.
-
-GUI Libraries
-=============
-
-The GUI frontend of :mod:`iris` requires PyQt5. This requirement cannot, at this
-time, be substituted with Pyside.
-
-Installing iris
-===============
-
 :mod:`iris` is available on PyPI as **iris-ued**::
 
     python -m pip install iris-ued
 
-Iris is also available on the conda-forge channel::
+:mod:`iris` is also available on the conda-forge channel::
 
     conda config --add channels conda-forge
     conda install iris-ued
