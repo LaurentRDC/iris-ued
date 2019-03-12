@@ -25,7 +25,7 @@ from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .qbusyindicator import QBusyIndicator
 from .symmetrize_dialog import SymmetrizeDialog
-from .update import update_available, update_in_background
+from .update import UpdateChecker
 
 image_folder = join(dirname(__file__), "images")
 
@@ -471,9 +471,13 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             )
         )
 
-        self.update_action = QtWidgets.QAction("& Update to latest version", self)
-        self.update_action.triggered.connect(self.update_iris)
-        self.update_action.setEnabled(self.update_available()[0])
+        self.update_action = QtWidgets.QAction("& Download the latest version", self)
+        self.update_action.triggered.connect(
+            lambda: QtGui.QDesktopServices.openUrl(
+                QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/releases/latest")
+            )
+        )
+        self.update_action.setEnabled(False) # Signal to update this will be done in background
 
         self.help_menu = self.menu_bar.addMenu("&Help")
         self.help_menu.addAction(self.about_action)
@@ -515,6 +519,12 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.setWindowTitle("Iris - UED data exploration")
         self.center_window()
         self.showMaximized()
+
+        # At the end, we start the check for an update
+        # This is done in a separate thread to prevent slow startups
+        self.update_checker = UpdateChecker(parent=self)
+        self.update_checker.update_available_signal.connect(self.update_action.setEnabled)
+        self.update_checker.start()
 
     def _create_load_raw(self, cls, submenu):
         # Note : because of dynamical nature of these bindings,
@@ -680,43 +690,6 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.controller.close_dataset()
         self.controller.close_raw_dataset()
         self.restart_signal.emit()
-
-    @QtCore.pyqtSlot()
-    def update_iris(self):
-        """ Update iris-ued package in the background then restart """
-        # This method cannot be reached unless an update is available
-        # Therefore, we only check for the latest version.
-        _, latest_version = update_available()
-
-        explanation = "You are about to update iris to version {v}. All datasets will be closed, and iris will restart.\n\nAre you sure you want to do this?".format(
-            latest_version
-        )
-
-        answer = QtWidgets.QMessageBox.warning(
-            self,
-            "Updating iris",
-            explanation,
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No,
-        )
-
-        if answer == QtWidgets.QMessageBox.No:
-            return
-
-        update_in_background()
-
-        self.controller.close_dataset()
-        self.controller.close_raw_dataset()
-        self.restart_signal.emit()
-
-    @staticmethod
-    def update_available():
-        """ Check if iris-ued is outdated. In case of 
-        connection error, pretend iris-ued is latest version """
-        try:
-            return update_available()
-        except ConnectionError:
-            return False, __version__
 
     @QtCore.pyqtSlot()
     def show_about(self):
