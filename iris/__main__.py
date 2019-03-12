@@ -4,6 +4,7 @@ import argparse
 import sys
 import webbrowser
 from pathlib import Path
+from multiprocessing import freeze_support
 
 # We explicitly import __version__ because
 # PyInstaller has trouble with relative import from __init__
@@ -52,6 +53,11 @@ dset_modes.add_argument(
 docs_parser = subparsers.add_parser("docs", help=DOCS_HELP)
 
 if __name__ == "__main__":
+    # This is to support the PyInstaller-built executables
+    # as described here:
+    #   https://docs.python.org/3/library/multiprocessing.html#multiprocessing.freeze_support
+    freeze_support()
+
     args = parser.parse_args()
 
     if args.subcmd == "open":
