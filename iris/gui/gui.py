@@ -477,7 +477,9 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
                 QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/releases/latest")
             )
         )
-        self.update_action.setEnabled(False) # Signal to update this will be done in background
+        self.update_action.setEnabled(
+            False
+        )  # Signal to update this will be done in background
 
         self.help_menu = self.menu_bar.addMenu("&Help")
         self.help_menu.addAction(self.about_action)
@@ -523,7 +525,9 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # At the end, we start the check for an update
         # This is done in a separate thread to prevent slow startups
         self.update_checker = UpdateChecker(parent=self)
-        self.update_checker.update_available_signal.connect(self.update_action.setEnabled)
+        self.update_checker.update_available_signal.connect(
+            self.update_action.setEnabled
+        )
         self.update_checker.start()
 
     def _create_load_raw(self, cls, submenu):

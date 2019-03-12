@@ -6,12 +6,7 @@ from PyInstaller import log as logging
 
 logger = logging.getLogger(__name__)
 
-PY_DYLIB_PATTERNS = [
-    '*.pyd',
-    '*.dll',
-    '*.dylib',
-    'lib*.so',
-]
+PY_DYLIB_PATTERNS = ["*.pyd", "*.dll", "*.dylib", "lib*.so"]
 
 # The default function from PyInstaller
 # does not collect *.pyd libraries!
@@ -32,7 +27,7 @@ def collect_dynamic_libs(package, destdir=None):
     if not isinstance(package, string_types):
         raise ValueError
 
-    logger.debug('Collecting dynamic libraries for %s' % package)
+    logger.debug("Collecting dynamic libraries for %s" % package)
     pkg_base, pkg_dir = get_package_paths(package)
     # Walk through all file in the given package, looking for dynamic libraries.
     dylibs = []
@@ -50,9 +45,10 @@ def collect_dynamic_libs(package, destdir=None):
                 else:
                     # The directory hierarchy is preserved as in the original package.
                     dest = remove_prefix(dirpath, os.path.dirname(pkg_base) + os.sep)
-                logger.debug(' %s, %s' % (source, dest))
+                logger.debug(" %s, %s" % (source, dest))
                 dylibs.append((source, dest))
     return dylibs
+
 
 binaries = []
 binaries += collect_dynamic_libs("pywt")

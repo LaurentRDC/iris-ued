@@ -42,20 +42,22 @@ def update_available():
     is_outdated = latest_version > parse_version(__version__)
     return is_outdated, str(latest_version)
 
+
 class UpdateChecker(QtCore.QThread):
     """
     Worker that checks for iris-ued updates in a separate thread. Using a separate QThread
     prevents long start times.
     """
+
     update_available_signal = QtCore.pyqtSignal(bool)
 
     def __init__(self, *args, **kwargs):
         QtCore.QThread.__init__(self)
-    
+
     def run(self):
         try:
             outdated, _ = update_available()
         except ConnectionError:
             outdated = False
-        
+
         self.update_available_signal.emit(outdated)
