@@ -10,6 +10,8 @@ import os, sys
 basepath = os.path.realpath('..')
 builddir = os.path.realpath('.')
 
+images = [os.path.join(basepath, 'iris/gui/images/*')]
+
 a = Analysis([os.path.join(basepath, 'iris/__main__.py'), ],
              pathex=[basepath, ],
              binaries=[],
@@ -33,18 +35,14 @@ exe = EXE(pyz,
           name='iris',
           debug=False,
           strip=False,
-          upx=True,
+          upx=False,
           console=False,
           icon="iris.ico")
 
-# We prevent the creation of a one-file executable
-# because one-file executables are slow
-#   https://stackoverflow.com/questions/5971038/pyinstaller-creates-slow-executable
-if False:
-    coll = COLLECT(exe,
-                   a.binaries,
-                   a.zipfiles,
-                   a.datas,
-                   strip=False,
-                   upx=True,
-                   name='iris')
+coll = COLLECT(exe,
+               a.binaries,
+               a.zipfiles,
+               a.datas,
+               strip=False,
+               upx=False,
+               name='iris')
