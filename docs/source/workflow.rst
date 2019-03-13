@@ -45,25 +45,7 @@ Note that the command-line interface has some useful options:
 
     Running this command without any parameters will launch the graphical user
     interface. Documentation is available here: https://iris-ued.readthedocs.io/
-    PS C:\Users\Laurent\OneDrive\McGill\Code\iris-ued> python -m iris --help
-    usage: iris [-h] [-v] {open,docs} ...
-
-    Iris is both a library for interacting with ultrafast electron diffraction
-    data, as well as a GUI frontend for interactively exploring this data. Below
-    are some helpful commands.
-
-    optional arguments:
-    -h, --help        show this help message and exit
-    -v, --version     show program's version number and exit
-
-    Subcommands:
-    {open,docs}  Available sub-commands
-        open            Dataset to open with iris start-up.
-        docs            Open online documentation in your default web browser.
-
-    Running this command without any parameters will launch the graphical user
-    interface.
-
+    
 Most importantly, you can programatically start the GUI with opening a dataset::
 
     > python -m iris open --reduced ~/dataset.hdf5
