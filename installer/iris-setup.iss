@@ -21,10 +21,11 @@ AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
 DefaultDirName={pf}\{#AppName}
 DisableProgramGroupPage=yes
+ChangesEnvironment=true
 LicenseFile=..\LICENSE.txt
-OutputDir=.\dist\setup\{#AppVersion}
+OutputDir=.\dist\setup-{#AppVersion}
 OutputBaseFilename=iris-setup-{#AppVersion}
-Compression=lzma
+Compression=lzma2/ultra64
 SolidCompression=yes
 
 [Languages]
@@ -35,8 +36,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
-Source: ".\dist\iris.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ".\dist\executable\iris\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

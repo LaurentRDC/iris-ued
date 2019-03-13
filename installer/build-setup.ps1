@@ -1,8 +1,5 @@
 Write-Host "Building .exe pyinstaller"
-$INSTALLATION_RESULT = python -O -m PyInstaller --clean --distpath=dist iris.exe.spec
-if($INSTALLATION_RESULT -ne 0){
-    Write-Host "PyInstaller run failed"
-}
+python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
 
 Write-Host "Building setup using ISCC"
 if ($ENV:PROCESSOR_ARCHITECTURE -eq "AMD64"){
@@ -11,4 +8,4 @@ if ($ENV:PROCESSOR_ARCHITECTURE -eq "AMD64"){
 else {
     $iscc = get-item "C:\Program Files\Inno Setup 5\ISCC.exe"
 }
-& $iscc "iris-setup.iss" #*> iscc.out
+& $iscc "iris-setup.iss"
