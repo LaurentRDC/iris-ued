@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from .. import AbstractRawDataset, check_raw_bounds
-from ..meta import ExperimentalParameter
+from iris import AbstractRawDataset, check_raw_bounds
+from iris.meta import ExperimentalParameter
 import numpy as np
 
 
