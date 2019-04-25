@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.1.2
+-----
+
+* Fixed an issue where the QDarkStyle internal imports were absolute.
+
 5.1.1
 -----
 

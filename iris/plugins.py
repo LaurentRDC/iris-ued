@@ -33,7 +33,8 @@ def install_plugin(path):
     Parameters
     ----------
     path : path-like
-        Path to the plug-in. This plug-in file will be copied. """
+        Path to the plug-in. This plug-in file will be copied. 
+    """
     path = Path(path)
     new_path = PLUGIN_DIR / path.name
     copy2(path, new_path)
