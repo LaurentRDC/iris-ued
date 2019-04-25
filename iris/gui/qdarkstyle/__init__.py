@@ -229,11 +229,11 @@ def load_stylesheet(pyside=True):
             pyside_ver = 1
 
         if pyside_ver == 1:
-            import qdarkstyle.pyside_style_rc
+            from . import pyside_style_rc
         else:
-            import qdarkstyle.pyside2_style_rc
+            from . import pyside2_style_rc
     else:
-        import qdarkstyle.pyqt_style_rc
+        from . import pyqt_style_rc
 
     # Load the stylesheet content from resources
     if not pyside:
@@ -326,7 +326,7 @@ def load_stylesheet_pyqt5():
         PendingDeprecationWarning
     )
     # Smart import of the rc file
-    import qdarkstyle.pyqt5_style_rc
+    from . import pyqt5_style_rc
 
     # Load the stylesheet content from resources
     from PyQt5.QtCore import QFile, QTextStream
