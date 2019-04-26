@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import os
 import platform
 import sys
 from contextlib import contextmanager
 from os.path import join
-from subprocess import Popen
 from pathlib import Path
+from subprocess import Popen
 from warnings import warn
+
+import pyqtgraph as pg
+from PyQt5 import QtGui
+
+from ..raw import open_raw
+from .gui import Iris, image_folder
+from .qdarkstyle import load_stylesheet_pyqt5
 
 try:
     from subprocess import CREATE_NEW_PROCESS_GROUP
@@ -16,12 +24,6 @@ try:
 except ImportError:
     WINDOWS = False
 
-from PyQt5 import QtGui
-import pyqtgraph as pg
-
-from .qdarkstyle import load_stylesheet_pyqt5
-from .gui import Iris, image_folder
-from ..raw import open_raw
 
 DETACHED_PROCESS = 0x00000008  # 0x8 | 0x200 == 0x208
 
@@ -91,7 +93,9 @@ def run(path=None, dset_type=None, **kwargs):
         # Possibility to restart. A complete new interpreter must
         # be used so that new plug-ins are loaded correctly.
         gui.restart_signal.connect(lambda: restart(app))
-        return app.exec_()
+        result = app.exec_()
+        logging.shutdown()
+        return result
 
 
 def restart(application):
