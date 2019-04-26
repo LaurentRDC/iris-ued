@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.1.3
+-----
+
+* Added logging support for the GUI component. Logs can be reached via the help menu.
+
 5.1.2
 -----
 
