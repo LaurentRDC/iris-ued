@@ -17,7 +17,7 @@ environment:
       # Conda channels to use, separated by spaces
       CONDA_CHANNELS: "conda-forge"
 
-      CONDA_DEPENDENCIES: "numpy scipy scikit-image pyqt h5py tqdm npstreams scikit-ued pyqtgraph"
+      CONDA_DEPENDENCIES: "numpy scipy scikit-image pyqt h5py npstreams scikit-ued pyqtgraph"
       PIP_DEPENDENCIES: "black"
 
   matrix:
