@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 from skued import diffread
 
 # Get all proper subclasses of AbstractRawDataset
@@ -24,6 +23,7 @@ from .metadata_edit_dialog import MetadataEditDialog
 from .powder_viewer import PowderViewer
 from .processing_dialog import ProcessingDialog
 from .qbusyindicator import QBusyIndicator
+from .qlogger import LOG_DIRECTORY
 from .symmetrize_dialog import SymmetrizeDialog
 from .update import UpdateChecker
 
@@ -471,6 +471,13 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             )
         )
 
+        self.open_log_directory_action = QtWidgets.QAction("& Open log directory", self)
+        self.open_log_directory_action.triggered.connect(
+            lambda: QtGui.QDesktopServices.openUrl(
+                QtCore.QUrl("file:///" + str(LOG_DIRECTORY))
+            )
+        )
+
         self.update_action = QtWidgets.QAction("& Download the latest version", self)
         self.update_action.triggered.connect(
             lambda: QtGui.QDesktopServices.openUrl(
@@ -488,6 +495,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.help_menu.addAction(self.goto_repository_action)
         self.help_menu.addAction(self.report_issue_action)
         self.help_menu.addSeparator()
+        self.help_menu.addAction(self.open_log_directory_action)
         self.help_menu.addAction(self.update_action)
 
         ###################

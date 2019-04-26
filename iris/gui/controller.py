@@ -13,6 +13,7 @@ import numpy as np
 from PyQt5 import QtCore
 
 from .. import AbstractRawDataset, DiffractionDataset, PowderDiffractionDataset
+from .qlogger import QLogger
 
 
 def error_aware(func):
@@ -118,6 +119,16 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         # TODO: is it worth it?
         self._averaged_data_container = None
         self._average_time_series_container = None
+
+        self.logger = QLogger(parent=self)
+        self.logger.debug("Controller started.")
+
+        # A lot of info-level messages should be mirrored between the status
+        # bar and the info log
+        # Similarly, the error messages from ErrorAware type should be
+        # mirrored in the error log
+        self.status_message_signal.connect(self.logger.info)
+        self.error_message_signal.connect(self.logger.error)
 
     @QtCore.pyqtSlot(int, int)
     def display_raw_data(self, timedelay_index, scan):
