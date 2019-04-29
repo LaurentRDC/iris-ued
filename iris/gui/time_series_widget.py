@@ -33,6 +33,9 @@ class TimeSeriesWidget(QtWidgets.QWidget):
     # Internal refresh signal
     _refresh_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray)
 
+    # Signal to change the y-axis units
+    _yaxis_units_signal = QtCore.pyqtSignal(str)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -41,6 +44,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
             title="Diffraction time-series",
             labels={"left": ("Intensity", "a. u."), "bottom": ("time", "ps")},
         )
+        self._yaxis_units_signal.connect(self.set_yaxis_units)
 
         self.plot_widget.getPlotItem().showGrid(x=True, y=True)
 
@@ -50,21 +54,8 @@ class TimeSeriesWidget(QtWidgets.QWidget):
 
         # Internal memory on last time-series info
         self._last_times = None
-        self._last_intensities = None
+        self._last_intensities_abs = None
         self._refresh_signal.connect(self.plot)
-
-        # Shortcut for some controls provided by PyQtGraph
-        self.horz_grid_widget = QtWidgets.QCheckBox("Show horizontal grid", self)
-        self.horz_grid_widget.setChecked(True)
-        self.horz_grid_widget.toggled.connect(
-            lambda toggle: self.plot_widget.getPlotItem().showGrid(x=toggle)
-        )
-
-        self.vert_grid_widget = QtWidgets.QCheckBox("Show vertical grid", self)
-        self.vert_grid_widget.setChecked(True)
-        self.vert_grid_widget.toggled.connect(
-            lambda toggle: self.plot_widget.getPlotItem().showGrid(y=toggle)
-        )
 
         self.connect_widget = QtWidgets.QCheckBox("Connect time-series", self)
         self.connect_widget.toggled.connect(self.enable_connect)
@@ -75,6 +66,11 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.symbol_size_widget.setPrefix("Symbol size: ")
         self.symbol_size_widget.valueChanged.connect(self.set_symbol_size)
 
+        self.absolute_intensity_widget = QtWidgets.QCheckBox(
+            "Show absolute intensity", self
+        )
+        self.absolute_intensity_widget.toggled.connect(self.toggle_absolute_intensity)
+
         self.exponential_fit_widget = QtWidgets.QPushButton(
             "Calculate exponential decay", self
         )
@@ -83,9 +79,8 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.fit_constants_label = QtWidgets.QLabel(self)
 
         self.controls = QtWidgets.QHBoxLayout()
-        self.controls.addWidget(self.horz_grid_widget)
-        self.controls.addWidget(self.vert_grid_widget)
         self.controls.addWidget(self.connect_widget)
+        self.controls.addWidget(self.absolute_intensity_widget)
         self.controls.addWidget(self.symbol_size_widget)
         self.controls.addWidget(self.exponential_fit_widget)
         self.controls.addWidget(self.fit_constants_label)
@@ -96,7 +91,21 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         layout.addLayout(self.controls)
         self.setLayout(layout)
 
-    @QtCore.pyqtSlot(object, object)
+    @QtCore.pyqtSlot(str)
+    def set_yaxis_units(self, units):
+        """ Set the y-axis label """
+        self.plot_widget.getPlotItem().setLabel("left", text="Intensity", units=units)
+
+    @QtCore.pyqtSlot(bool)
+    def toggle_absolute_intensity(self, absolute):
+        # Normalize to intensity before time-zero
+        if absolute:
+            self._yaxis_units_signal.emit("counts")
+        else:
+            self._yaxis_units_signal.emit("a.u.")
+
+        self.refresh()
+
     @QtCore.pyqtSlot(np.ndarray, np.ndarray)
     def plot(self, time_points, intensity):
         """
@@ -107,13 +116,20 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         time_points : `~numpy.ndarray`, shape (N,)
             Time-delays [ps]
         intensity : `~numpy.ndarray`, shape (N,)
-            Diffracted intensity [a.u.]
+            Diffracted intensity in absolute units.
         """
         self._last_times = np.asarray(time_points)
-        self._last_intensities = np.asarray(intensity)
+        self._last_intensities_abs = np.asarray(intensity)
 
         # Normalize to intensity before time-zero
-        self._last_intensities /= np.mean(self._last_intensities[self._last_times < 0])
+        # Note that the change in units is taken care of in the toggle_absolute_intensity method
+        absolute = self.absolute_intensity_widget.isChecked()
+        intensity = (
+            self._last_intensities_abs
+            if absolute
+            else self._last_intensities_abs
+            / np.mean(self._last_intensities_abs[self._last_times < 0])
+        )
 
         # Only compute the colors if number of time-points changes or first time
         pens, brushes = pens_and_brushes(len(time_points))
@@ -121,7 +137,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         connect_kwargs = {"pen": None} if not self._time_series_connect else dict()
         self.plot_widget.plot(
             x=self._last_times,
-            y=self._last_intensities,
+            y=intensity,
             symbol="o",
             symbolPen=pens,
             symbolBrush=brushes,
@@ -137,7 +153,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
     def fit_exponential_decay(self):
         """ Try to fit to a time-series with an exponential decay. If successful, plot the result. """
         times = self._last_times
-        intensity = self._last_intensities
+        intensity = self._last_intensities_abs
 
         # time-zero, amplitude, time-constant, offset
         initial_guesses = (0, intensity.max(), 1, intensity.min())
@@ -163,7 +179,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def refresh(self):
-        self._refresh_signal.emit(self._last_times, self._last_intensities)
+        self._refresh_signal.emit(self._last_times, self._last_intensities_abs)
 
     @QtCore.pyqtSlot()
     def clear(self):
