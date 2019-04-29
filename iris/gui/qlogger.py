@@ -19,10 +19,9 @@ LOG_DIRECTORY.mkdir(exist_ok=True)
 
 
 class QLogger(QtCore.QObject):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
 

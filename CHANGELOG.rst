@@ -5,6 +5,7 @@ Changelog
 -----
 
 * Added logging support for the GUI component. Logs can be reached via the help menu.
+* Added the ability to view time-series dynamics in absolute units AND relative change.
 
 5.1.2
 -----
