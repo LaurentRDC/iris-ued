@@ -50,14 +50,21 @@ class UpdateChecker(QtCore.QThread):
     """
 
     update_available_signal = QtCore.pyqtSignal(bool)
+    update_status_signal = QtCore.pyqtSignal(str)
 
     def __init__(self, *args, **kwargs):
         QtCore.QThread.__init__(self)
 
     def run(self):
         try:
-            outdated, _ = update_available()
+            outdated, latest = update_available()
+            if outdated:
+                msg = f"An update is available: latest version is {latest}, and you are currently running version {__version__}."
+            else:
+                msg = f"You are running the latest version, {__version__}."
         except ConnectionError:
             outdated = False
+            msg = "Could not determine if an update is available."
 
         self.update_available_signal.emit(outdated)
+        self.update_status_signal.emit(msg)
