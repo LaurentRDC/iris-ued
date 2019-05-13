@@ -8,6 +8,7 @@ from contextlib import suppress
 from functools import wraps
 from shutil import copy2
 from types import FunctionType
+import logging
 
 import numpy as np
 from PyQt5 import QtCore
@@ -129,6 +130,23 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         # mirrored in the error log
         self.status_message_signal.connect(self.logger.info)
         self.error_message_signal.connect(self.logger.error)
+    
+    @QtCore.pyqtSlot(str)
+    @QtCore.pyqtSlot(str, object)
+    def log(self, message, level=logging.INFO):
+        """
+        Interface to the iris logger.
+
+        ALL logging should go through the controller.
+
+        Parameters
+        ----------
+        message : str
+            Logging message
+        level : logging.Level, optional
+            Level of the logging message.
+        """
+        self.logger.log(message, level)
 
     @QtCore.pyqtSlot(int, int)
     def display_raw_data(self, timedelay_index, scan):

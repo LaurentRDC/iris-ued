@@ -37,6 +37,10 @@ class QLogger(QtCore.QObject):
 
         self.logger.addHandler(self.file_handler)
         self.logger.addHandler(self.stream_handler)
+    
+    def log(self, msg, level):
+        """ General method for logging. Ideal for dynamic logging levels. """
+        self.logger.log(level, msg)
 
     # The methods below mirror those from the logging module
     @QtCore.pyqtSlot(str)
