@@ -4,7 +4,8 @@ Changelog
 5.1.3
 -----
 
-* Added logging support for the GUI component. Logs can be reached via the help menu.
+* Added logging support for the GUI component. Logs can be reached via the help menu
+* Added an update check. You can see whether an update is available via the help menu, as well as via the status bar.
 * Added the ability to view time-series dynamics in absolute units AND relative change.
 
 5.1.2
