@@ -478,7 +478,8 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             )
         )
 
-        self.update_action = QtWidgets.QAction("& Download the latest version", self)
+        # When iris starts, no knowledge if update is available
+        self.update_action = QtWidgets.QAction("& Checking for updates...", self)
         self.update_action.triggered.connect(
             lambda: QtGui.QDesktopServices.openUrl(
                 QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/releases/latest")
@@ -534,7 +535,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # This is done in a separate thread to prevent slow startups
         self.update_checker = UpdateChecker(parent=self)
         self.update_checker.update_available_signal.connect(
-            self.update_action.setEnabled
+            self.update_available
         )
         self.update_checker.start()
 
@@ -634,6 +635,16 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         dialog.calibration_parameters.connect(self.controller.powder_calq)
         dialog.exec_()
         dialog.calibration_parameters.disconnect(self.controller.powder_calq)
+    
+    @QtCore.pyqtSlot(bool)
+    def update_available(self, available):
+        """ Handle UI in case an update is available or not. """
+        if available:
+            self.update_action.setEnabled(True)
+            self.update_action.setText('An update is available!')
+        else:
+            self.update_action.setEnabled(False)
+            self.update_action.setText('No updates available.')
 
     @QtCore.pyqtSlot(object)
     def load_raw_dataset(self, cls):
