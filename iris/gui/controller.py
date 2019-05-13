@@ -130,7 +130,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         # mirrored in the error log
         self.status_message_signal.connect(self.logger.info)
         self.error_message_signal.connect(self.logger.error)
-    
+
     @QtCore.pyqtSlot(str)
     @QtCore.pyqtSlot(str, object)
     def log(self, message, level=logging.INFO):
