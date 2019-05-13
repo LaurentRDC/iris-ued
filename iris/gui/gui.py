@@ -116,7 +116,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # Including custom 'busy' indicator
         status_bar = QtWidgets.QStatusBar(parent=self)
         self.controller.status_message_signal.connect(
-            lambda msg: status_bar.showMessage(msg, 10e3)
+            lambda msg: status_bar.showMessage(msg, 20e3)
         )
         self.setStatusBar(status_bar)
 
@@ -533,7 +533,10 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
         # At the end, we start the check for an update
         # This is done in a separate thread to prevent slow startups
+        # Note: the update status signal is passed to the controller
+        # so it can be logged as well.
         self.update_checker = UpdateChecker(parent=self)
+        self.update_checker.update_status_signal.connect(self.controller.status_message_signal)
         self.update_checker.update_available_signal.connect(
             self.update_available
         )
