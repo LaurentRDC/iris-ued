@@ -536,10 +536,10 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # Note: the update status signal is passed to the controller
         # so it can be logged as well.
         self.update_checker = UpdateChecker(parent=self)
-        self.update_checker.update_status_signal.connect(self.controller.status_message_signal)
-        self.update_checker.update_available_signal.connect(
-            self.update_available
+        self.update_checker.update_status_signal.connect(
+            self.controller.status_message_signal
         )
+        self.update_checker.update_available_signal.connect(self.update_available)
         self.update_checker.start()
 
     def _create_load_raw(self, cls, submenu):
@@ -638,16 +638,16 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         dialog.calibration_parameters.connect(self.controller.powder_calq)
         dialog.exec_()
         dialog.calibration_parameters.disconnect(self.controller.powder_calq)
-    
+
     @QtCore.pyqtSlot(bool)
     def update_available(self, available):
         """ Handle UI in case an update is available or not. """
         if available:
             self.update_action.setEnabled(True)
-            self.update_action.setText('An update is available!')
+            self.update_action.setText("An update is available!")
         else:
             self.update_action.setEnabled(False)
-            self.update_action.setText('No updates available.')
+            self.update_action.setText("No updates available.")
 
     @QtCore.pyqtSlot(object)
     def load_raw_dataset(self, cls):
