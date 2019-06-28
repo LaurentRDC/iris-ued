@@ -7,6 +7,7 @@ Changelog
 * Added logging support for the GUI component. Logs can be reached via the help menu
 * Added an update check. You can see whether an update is available via the help menu, as well as via the status bar.
 * Added the ability to view time-series dynamics in absolute units AND relative change.
+* Changed dependency bounds on scikit-ued, to prevent upgrade to scikit-ued 2.0 unless appropriate.
 
 5.1.2
 -----
