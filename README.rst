@@ -31,6 +31,10 @@ Iris also includes a plug-in manager so that you can explore your data.
 
     Two instances of the iris GUI showing data exploration for ultrafast electron diffraction of single crystals and polycrystals.
 
+.. contents::
+   :depth: 4
+..
+
 Installation
 ------------
 
