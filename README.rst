@@ -19,6 +19,10 @@ Iris - Ultrafast Electron Scattering Data Exploration
     :target: https://github.com/ambv/black
     :alt: Code formatting style
 
+.. contents::
+   :depth: 2
+..
+
 Iris is both a library for interacting with ultrafast electron diffraction data, as well as a GUI frontend
 for interactively exploring this data.
 
@@ -30,10 +34,6 @@ Iris also includes a plug-in manager so that you can explore your data.
     :width: 85%
 
     Two instances of the iris GUI showing data exploration for ultrafast electron diffraction of single crystals and polycrystals.
-
-.. contents::
-   :depth: 2
-..
 
 Installation
 ------------
