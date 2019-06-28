@@ -27,7 +27,7 @@ from .qlogger import LOG_DIRECTORY
 from .symmetrize_dialog import SymmetrizeDialog
 from .update import UpdateChecker
 
-image_folder = join(dirname(__file__), "images")
+IMAGE_FOLDER = join(dirname(__file__), "images")
 
 LOAD_PLUGIN_HELP = """You will be prompted to select a plug-in file. This file will be COPIED into:
 
@@ -194,19 +194,19 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self._create_load_raw(cls, load_raw_submenu)
 
         self.load_dataset_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "locator.png")), "& Load dataset", self
+            QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")), "& Load dataset", self
         )
         self.load_dataset_action.triggered.connect(self.load_dataset)
 
         self.load_single_picture_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "locator.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")),
             "& Load diffraction picture",
             self,
         )
         self.load_single_picture_action.triggered.connect(self.load_single_picture)
 
         self.close_raw_dataset_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "locator.png")), "& Close raw dataset", self
+            QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")), "& Close raw dataset", self
         )
         self.close_raw_dataset_action.triggered.connect(
             self.controller.close_raw_dataset
@@ -217,7 +217,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.close_dataset_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "locator.png")), "& Close dataset", self
+            QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")), "& Close dataset", self
         )
         self.close_dataset_action.triggered.connect(self.controller.close_dataset)
         self.close_dataset_action.setEnabled(False)
@@ -237,7 +237,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         ###################
         # Plug-in Actions
         self.load_plugin_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "eye.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")),
             "& Install plug-in (restarts program)",
             self,
         )
@@ -250,7 +250,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )  # wouldn't want to restart during processing
 
         self.open_plugin_directory_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "eye.png")), "& Open plug-in directory", self
+            QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")), "& Open plug-in directory", self
         )
         self.open_plugin_directory_action.triggered.connect(
             lambda: QtGui.QDesktopServices.openUrl(
@@ -259,7 +259,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.howto_write_plugin_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "revert.png")), "& Writing a plug-in", self
+            QtGui.QIcon(join(IMAGE_FOLDER, "revert.png")), "& Writing a plug-in", self
         )
         self.howto_write_plugin_action.triggered.connect(
             lambda: QtGui.QDesktopServices.openUrl(
@@ -276,7 +276,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         ###################
         # Operations on Diffraction Datasets
         self.processing_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "analysis.png")), "& Process raw data", self
+            QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")), "& Process raw data", self
         )
         self.processing_action.triggered.connect(self.launch_processsing_dialog)
         self.controller.raw_dataset_loaded_signal.connect(
@@ -284,7 +284,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.symmetrize_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "analysis.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")),
             "& Symmetrize data (beta)",
             self,
         )
@@ -294,7 +294,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.calculate_azimuthal_averages_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "analysis.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")),
             "& Calculate azimuthal averages",
             self,
         )
@@ -306,7 +306,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.update_metadata_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "save.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "save.png")),
             "& Update dataset metadata",
             self,
         )
@@ -316,7 +316,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.calibrate_scattvector_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "analysis.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")),
             "& Calibrate scattering vector",
             self,
         )
@@ -441,7 +441,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.about_action.triggered.connect(self.show_about)
 
         self.launch_documentation_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "revert.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "revert.png")),
             "& Open online documentation",
             self,
         )
@@ -452,7 +452,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.goto_repository_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "revert.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "revert.png")),
             "& Go to GitHub Repository",
             self,
         )
@@ -463,7 +463,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.report_issue_action = QtWidgets.QAction(
-            QtGui.QIcon(join(image_folder, "revert.png")), "& Report issue", self
+            QtGui.QIcon(join(IMAGE_FOLDER, "revert.png")), "& Report issue", self
         )
         self.report_issue_action.triggered.connect(
             lambda: QtGui.QDesktopServices.openUrl(
@@ -526,7 +526,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         available.setSize(0.75 * available.size())
         self.setGeometry(available)
 
-        self.setWindowIcon(QtGui.QIcon(join(image_folder, "eye.png")))
+        self.setWindowIcon(QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")))
         self.setWindowTitle("Iris - UED data exploration")
         self.center_window()
         self.showMaximized()
@@ -546,7 +546,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # Note : because of dynamical nature of these bindings,
         # it must be done in a separate method
         return submenu.addAction(
-            QtGui.QIcon(join(image_folder, "locator.png")),
+            QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")),
             "&Load {}".format(cls.__name__),
             lambda: self.load_raw_dataset(cls),
         )
