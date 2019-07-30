@@ -2,6 +2,6 @@ numpy >= 1.12
 scipy >= 1.0.0
 h5py >= 2.6.0
 PyQt5
-scikit-ued >= 1.0.1.1
+scikit-ued >= 1.0.1.1, <2
 pyqtgraph >= 0.10
-npstreams >= 1.6
+npstreams >= 1.6, <2
