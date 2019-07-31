@@ -1,6 +1,3 @@
-Write-Host "Create clean environment"
-conda activate ./env
-
 Write-Host "Building .exe pyinstaller"
 python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
 
@@ -12,6 +9,3 @@ else {
     $iscc = get-item "C:\Program Files\Inno Setup 5\ISCC.exe"
 }
 & $iscc "iris-setup.iss"
-
-Write-Host "Cleanup"
-conda deactivate
