@@ -88,8 +88,6 @@ if ($env:CONDA_CHANNELS) {
 }
 
 # Install the build and runtime dependencies of the project.
-conda install -q conda
-
 if (! $env:CONDA_CHANNEL_PRIORITY) {
    $CONDA_CHANNEL_PRIORITY="false"
 } else {
@@ -139,11 +137,11 @@ if ($env:CONDA_DEPENDENCIES) {
 # Check whether the installation is successful, if not abort the build
 $output = cmd /c conda install -n test -q $NUMPY_OPTION $CONDA_DEPENDENCIES 2>&1
 
-Write-Output $output
+echo $output
 if ($output | select-string UnsatisfiableError, PackageNotFoundError) {
-   Write-Output "Installing dependencies with conda was unsuccessful, using pip instead"
+   echo "Installing dependencies with conda was unsuccessful, using pip instead"
    $output = cmd /c pip install $CONDA_DEPENDENCIES 2>&1
-   Write-Output $output
+   echo $output
    if ($output | select-string UnsatisfiableError, PackageNotFoundError) {
       $host.SetShouldExit(1)
    }
