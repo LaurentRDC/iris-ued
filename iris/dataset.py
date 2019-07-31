@@ -666,6 +666,9 @@ class PowderDiffractionDataset(DiffractionDataset):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # TODO: stop writing datasets in __init__
+        #       since the GUI will only open datasets in read-mode by default
+        
         # Ensure that all required powder groups exist
         maxshape = (len(self.time_points), sqrt(2 * max(self.resolution) ** 2))
         for name in {"intensity", "baseline"}:

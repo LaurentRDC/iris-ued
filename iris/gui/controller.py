@@ -444,6 +444,14 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             else:
                 is_powder = False
 
+        # For powder datasets, there might be the creation of placeholder datasets
+        # therefore, we open the file and do nothing
+        # TODO: stop writing datasets in PowderDiffractionDataset.__init__
+        #       since the GUI will only open datasets in read-mode by default
+        if cls is PowderDiffractionDataset:
+            with cls(path, mode='r+'):
+                pass
+        
         self.dataset = cls(path, mode="r")
         self.dataset_metadata.emit(self.dataset.metadata)
 
