@@ -17,6 +17,7 @@ a = Analysis([os.path.join(basepath, 'iris/__main__.py'), ],
              binaries=[],
              datas=[],
              hiddenimports=["pywt", # force hook-pywt.py
+                            "dask", # force hook-dask.py
                             "tifffile._tifffile"],
              hookspath=[builddir],
              runtime_hooks=[],
@@ -33,10 +34,10 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           name='iris',
-          debug=False,
+          debug=True,
           strip=False,
           upx=False,
-          console=False,
+          console=True,
           icon="iris.ico")
 
 coll = COLLECT(exe,
