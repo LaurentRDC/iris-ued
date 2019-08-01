@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define AppName "Iris - Interactive UES Exploration"
-#define AppVersion "5.1.3"
+#define AppVersion "5.1.4"
 #define AppPublisher "Laurent P. René de Cotret"
 #define AppURL "https://iris-ued.readthedocs.io"
 #define AppEXEName "iris.exe"
