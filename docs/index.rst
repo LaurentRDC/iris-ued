@@ -33,6 +33,7 @@ General Documentation
     dataset
     plugins
     api
+    whatsnew
 
 Authors
 =======
