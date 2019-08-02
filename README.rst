@@ -15,9 +15,6 @@ Iris - Ultrafast Electron Scattering Data Exploration
     :alt: Conda-forge Version
 .. image:: https://img.shields.io/pypi/pyversions/iris-ued.svg
     :alt: Supported Python Versions
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :target: https://github.com/ambv/black
-    :alt: Code formatting style
 
 .. contents::
    :depth: 2
