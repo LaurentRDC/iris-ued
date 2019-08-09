@@ -14,7 +14,7 @@ import pyqtgraph as pg
 from PyQt5 import QtGui
 
 from ..raw import open_raw
-from .gui import IMAGE_FOLDER, Iris
+from .gui import Iris, IMAGE_FOLDER
 from .qdarkstyle import load_stylesheet_pyqt5
 
 try:

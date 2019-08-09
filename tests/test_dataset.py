@@ -6,11 +6,11 @@ from tempfile import gettempdir
 
 import numpy as np
 from numpy.random import random
+
 from skued import Crystal, nfold
 
-from iris import DiffractionDataset, PowderDiffractionDataset
-
 from . import TestRawDataset
+from iris import DiffractionDataset, PowderDiffractionDataset
 
 np.random.seed(23)
 
