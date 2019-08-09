@@ -277,12 +277,17 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
         ------
         pattern : `~numpy.ndarray`, ndim 2
         """
+        # Convention for masks is different for scikit-ued
+        # For backwards compatibility, we cannot change the definition
+        # in iris-ued
+        valid_mask = np.logical_not(mask)
+
         kwargs = {
             "raw": self,
             "exclude_scans": exclude_scans,
             "align": align,
             "normalize": normalize,
-            "invalid_mask": mask,
+            "valid_mask": valid_mask,
             "dtype": dtype,
         }
 
@@ -297,33 +302,31 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
         # Each image at the same time-delay are aligned to each other. This means that
         # the reference image is different for each time-delay. We align the reduced images
         # to each other as well.
-        # Note : the fast = False fixes issue #11, where single crystal images were not successfully aligned.
         if align:
-            yield from ialign(combined, mask=mask, fast=False)
+            yield from ialign(combined, mask=valid_mask)
         else:
             yield from combined
 
 
 # For multiprocessing, the function to be mapped must be
 # global, hence defined outside of the class method
-def _raw_combine(timedelay, raw, exclude_scans, normalize, align, invalid_mask, dtype):
+def _raw_combine(timedelay, raw, exclude_scans, normalize, align, valid_mask, dtype):
 
     images = raw.itertime(timedelay, exclude_scans=exclude_scans)
 
     if align:
         # Note : the fast = False fixes issue #11, where single crystal images were not successfully aligned.
-        images = ialign(images, mask=invalid_mask, fast=False)
+        images = ialign(images, mask=valid_mask)
 
     # Set up normalization
     if normalize:
-        valid = np.logical_not(invalid_mask)
         images, images2 = itercopy(images, copies=2)
 
         # Compute the total intensity of first image
         # This will be the reference point
         first2, images2 = peek(images2)
-        initial_weight = np.sum(first2[valid])
-        weights = (initial_weight / np.sum(image[valid]) for image in images2)
+        initial_weight = np.sum(first2[valid_mask])
+        weights = (initial_weight / np.sum(image[valid_mask]) for image in images2)
     else:
         weights = None
 
