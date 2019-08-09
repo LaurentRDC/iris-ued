@@ -1,8 +1,10 @@
-import os, glob
+import glob
+import os
 
-from PyInstaller.compat import string_types
-from PyInstaller.utils.hooks import get_package_paths, remove_prefix, collect_data_files
 from PyInstaller import log as logging
+from PyInstaller.compat import string_types
+from PyInstaller.utils.hooks import (collect_data_files, get_package_paths,
+                                     remove_prefix)
 
 logger = logging.getLogger(__name__)
 

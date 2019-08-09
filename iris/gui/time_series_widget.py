@@ -7,8 +7,8 @@ from functools import lru_cache
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
-from pyqtgraph import PlotWidget, mkBrush, mkPen, TextItem
-
+from pyqtgraph import PlotWidget, TextItem, mkBrush, mkPen
+from scipy.optimize import curve_fit
 from skued import spectrum_colors
 
 try:
@@ -16,7 +16,6 @@ try:
 except ImportError:
     from skued import exponential as exponential_decay
 
-from scipy.optimize import curve_fit
 
 
 @lru_cache(maxsize=1)

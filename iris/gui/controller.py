@@ -2,13 +2,13 @@
 """
 Controller object to handle DiffractionDataset objects
 """
+import logging
 import traceback
 import warnings
 from contextlib import suppress
 from functools import wraps
 from shutil import copy2
 from types import FunctionType
-import logging
 
 import numpy as np
 from PyQt5 import QtCore

@@ -6,7 +6,6 @@ from collections import Iterable
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pywt import Modes
-
 from skued import available_dt_filters, available_first_stage_filters
 
 

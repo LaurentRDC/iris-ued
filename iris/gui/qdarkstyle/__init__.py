@@ -45,12 +45,12 @@ Enjoy!
 
 """
 
+import copy
 import logging
 import os
 import platform
 import sys
 import warnings
-import copy
 
 if sys.version_info >= (3, 4):
     import importlib

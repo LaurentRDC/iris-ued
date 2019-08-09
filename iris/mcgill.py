@@ -12,7 +12,6 @@ from os.path import isdir, isfile, join
 from re import search, sub
 
 import numpy as np
-
 from npstreams import average
 from skued import diffread
 

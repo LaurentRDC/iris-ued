@@ -10,7 +10,6 @@ from functools import wraps
 from pathlib import Path
 
 import numpy as np
-
 from npstreams import average, itercopy, peek, pmap
 from skued import ialign
 

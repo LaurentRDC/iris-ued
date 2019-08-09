@@ -3,8 +3,8 @@
 import argparse
 import sys
 import webbrowser
-from pathlib import Path
 from multiprocessing import freeze_support
+from pathlib import Path
 
 # We explicitly import __version__ because
 # PyInstaller has trouble with relative import from __init__
