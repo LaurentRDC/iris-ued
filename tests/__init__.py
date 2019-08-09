@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import numpy as np
+
 from iris import AbstractRawDataset, check_raw_bounds
 from iris.meta import ExperimentalParameter
-import numpy as np
 
 
 class TestRawDataset(AbstractRawDataset):
