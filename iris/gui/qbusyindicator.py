@@ -7,7 +7,7 @@
         https://github.com/mojocorp/QProgressIndicator
 """
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 
 class QBusyIndicator(QtWidgets.QWidget):

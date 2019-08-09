@@ -3,10 +3,9 @@ import unittest
 
 import numpy as np
 
+from . import TestRawDataset
 from iris import AbstractRawDataset
 from iris.meta import ExperimentalParameter
-
-from . import TestRawDataset
 
 
 class TestAbstractRawDataset(unittest.TestCase):

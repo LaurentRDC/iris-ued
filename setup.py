@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*
+from glob import glob
 import os
 import re
-from glob import glob
-
-from setuptools import find_packages, setup
+from setuptools import setup, find_packages
 
 # To upload to pypi.org:
 #   >>> python setup.py sdist

@@ -5,7 +5,9 @@ Dialog for Q-vector calibration of powder diffraction data
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 from skued import Crystal, powder_calq
+
 
 EXPLANATION = """Calibrate the scattering vector range of polycrystalline data. Select two peaks of known Miller indices by dragging the vertical lines, 
 and use an appropriate structure. Some structures are built-in, but you can also use a CIF of your own. Make sure the structure 

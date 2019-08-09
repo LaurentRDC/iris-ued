@@ -2,12 +2,12 @@
 """
 Logging utilities
 """
+import sys
 import logging
 import logging.handlers
-import sys
-from pathlib import Path
 from tempfile import gettempdir
 
+from pathlib import Path
 from PyQt5 import QtCore
 
 from .. import __version__

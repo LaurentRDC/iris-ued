@@ -9,8 +9,8 @@ import json
 from urllib.error import URLError
 from urllib.request import urlopen
 
-from pkg_resources import parse_version
 from PyQt5 import QtCore
+from pkg_resources import parse_version
 
 from .. import __version__
 

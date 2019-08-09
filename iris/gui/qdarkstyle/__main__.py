@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from qdarkstyle import qt_bindings, qt_abstractions, information, __version__
+import qdarkstyle
 import argparse
 import sys
-from os.path import abspath, dirname
 
-import qdarkstyle
-from qdarkstyle import __version__, information, qt_abstractions, qt_bindings
+from os.path import abspath, dirname
 
 sys.path.insert(0, abspath(dirname(abspath(__file__)) + "/.."))
 

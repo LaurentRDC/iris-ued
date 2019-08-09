@@ -4,9 +4,8 @@ Example Plugin
 ==============
 """
 
-import numpy as np
-
 from iris import AbstractRawDataset, ExperimentalParameter
+import numpy as np
 
 
 class MinimalRawDataset(AbstractRawDataset):
