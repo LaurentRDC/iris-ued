@@ -16,10 +16,6 @@ from npstreams import average, itercopy, peek, pmap
 from skued import (
     azimuthal_average,
     baseline_dt,
-    combine_masks,
-    electron_wavelength,
-    ialign,
-    mask_from_collection,
     nfold,
     powder_calq,
 )
@@ -423,7 +419,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             _symmetrize,
             mod=mod,
             center=center,
-            mask=self.invalid_mask,
+            mask=self.valid_mask,
             kernel_size=kernel_size,
         )
         self.diff_apply(apply, callback=callback, processes=processes)
@@ -1056,7 +1052,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             px_radius, avg = azimuthal_average(
                 self.diff_data(timedelay),
                 center=self.center,
-                mask=self.invalid_mask,
+                mask=self.valid_mask,
                 angular_bounds=angular_bounds,
                 trim=False,
             )
