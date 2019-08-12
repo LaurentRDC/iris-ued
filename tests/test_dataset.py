@@ -261,7 +261,7 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             mode="w",
         )
         self.dataset = PowderDiffractionDataset.from_dataset(
-            diff_dataset, center=(23, 45),
+            diff_dataset, center=(23, 45)
         )
 
     def test_baseline_attributes(self):
