@@ -166,6 +166,9 @@ class TimeSeriesWidget(QtWidgets.QWidget):
             return
 
         fit = exponential_decay(times, *params)
+        absolute = self.absolute_intensity_widget.isChecked()
+        if not absolute:
+            fit /= np.mean(self._last_intensities_abs[self._last_times < 0])
         self.plot_widget.plot(x=times, y=fit, symbol=None, clear=False)
 
         # Write fit parameters to text items
