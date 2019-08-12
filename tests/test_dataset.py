@@ -7,7 +7,8 @@ from tempfile import gettempdir
 import numpy as np
 from numpy.random import random
 
-from skued import Crystal, nfold
+from crystals import Crystal
+from skued import nfold
 
 from . import TestRawDataset
 from iris import DiffractionDataset, PowderDiffractionDataset
@@ -260,7 +261,7 @@ class TestPowderDiffractionDataset(unittest.TestCase):
             mode="w",
         )
         self.dataset = PowderDiffractionDataset.from_dataset(
-            diff_dataset, center=(23, 45)
+            diff_dataset, center=(23, 45),
         )
 
     def test_baseline_attributes(self):

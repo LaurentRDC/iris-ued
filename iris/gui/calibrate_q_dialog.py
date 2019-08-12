@@ -6,7 +6,8 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from skued import Crystal, powder_calq
+from crystals import Crystal
+from skued import powder_calq
 
 
 EXPLANATION = """Calibrate the scattering vector range of polycrystalline data. Select two peaks of known Miller indices by dragging the vertical lines, 
