@@ -14,6 +14,7 @@ from scipy.ndimage import gaussian_filter
 
 from npstreams import average, itercopy, peek, pmap
 from skued import (
+    __version__,
     azimuthal_average,
     baseline_dt,
     nfold,
