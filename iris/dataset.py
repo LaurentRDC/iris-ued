@@ -13,13 +13,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 from npstreams import average, itercopy, peek, pmap
-from skued import (
-    __version__,
-    azimuthal_average,
-    baseline_dt,
-    nfold,
-    powder_calq,
-)
+from skued import __version__, azimuthal_average, baseline_dt, nfold, powder_calq
 from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
