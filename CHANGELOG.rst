@@ -1,7 +1,7 @@
-5.1.4 (development)
+5.2.0 (development)
 -------------------
 
-
+* Fixed an issue where time-series fit would not display properly in fractional change mode.
 
 5.1.3
 -----
