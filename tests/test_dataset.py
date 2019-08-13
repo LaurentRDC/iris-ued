@@ -146,8 +146,8 @@ class TestDiffractionDataset(unittest.TestCase):
         with self.subTest("Checking for callable"):
             with self.assertRaises(TypeError):
                 self.dataset.diff_apply(None)
-    
-    @unittest.skipIf(sys.platform=='linux', reason="Very long CI builds")
+
+    @unittest.skipIf(sys.platform == "linux", reason="Very long CI builds")
     def test_diff_apply_parallel(self):
         """ Test that the diff_apply method works as expected in parallel mode """
         with self.subTest("Applying an operation"):
