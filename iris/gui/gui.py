@@ -13,6 +13,7 @@ from skued import diffread
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
 from .. import AbstractRawDataset, __author__, __license__, __version__
+from ..dataset import SWMR_AVAILABLE
 from ..plugins import PLUGIN_DIR, install_plugin
 from .angular_average_dialog import AngularAverageDialog
 from .calibrate_q_dialog import QCalibratorDialog
@@ -738,6 +739,7 @@ def make_about_string():
     <b>License</b>: {__license__}                    <br>
     <b>Author</b>: {__author__}                      <br>
     <b>Install location</b>: {Path(__file__).parent} <br> 
+    <b>SWMR available</b>: {SWMR_AVAILABLE}          <br>
 
     <h3>Versions</h3>
     <table style="width:100%">
