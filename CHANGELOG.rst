@@ -2,6 +2,7 @@
 -------------------
 
 * Fixed an issue where time-series fit would not display properly in fractional change mode.
+* Official support for macOS and Linux.
 
 5.1.3
 -----
