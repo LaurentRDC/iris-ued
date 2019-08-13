@@ -1,7 +1,8 @@
 5.2.0 (development)
 -------------------
 
-* Fixed an issue where time-series fit would not display properly in fractional change mode.
+* Fixed an issue where time-series fit would not display properly in fractional change mode;
+* Switched to Azure Pipelines for continuous integration builds;
 * Official support for macOS and Linux.
 
 5.1.3
