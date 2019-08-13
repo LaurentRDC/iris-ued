@@ -6,8 +6,11 @@ jobs:
     steps:
       - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
         displayName: Add conda to PATH
+
+      - powershell: conda init cmd.exe
+        displayName: Initiate conda support for cmd.exe
       
-      - script: conda env create --quiet --file ./.azure/env.yml
+      - script: conda env create --file ./.azure/env.yml
         displayName: Create Anaconda environment
 
       - script: |
@@ -28,7 +31,10 @@ jobs:
       - bash: echo "##vso[task.prependpath]$CONDA/bin"
         displayName: Add conda to PATH
       
-      - script: conda env create --quiet --file ./.azure/env.yml
+      - bash: conda init bash
+        displayName: Initiate conda support for bash
+      
+      - script: conda env create --file ./.azure/env.yml
         displayName: Create Anaconda environment
 
       - script: |

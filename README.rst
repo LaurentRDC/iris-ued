@@ -4,6 +4,9 @@ Iris - Ultrafast Electron Scattering Data Exploration
 .. image:: https://img.shields.io/appveyor/ci/LaurentRDC/iris-ued/master.svg
     :target: https://ci.appveyor.com/project/LaurentRDC/iris-ued
     :alt: Windows Build Status
+.. image:: https://dev.azure.com/laurentdecotret/iris-ued/_apis/build/status/LaurentRDC.iris-ued?branchName=master
+    :target: https://dev.azure.com/laurentdecotret/iris-ued/_build/latest?definitionId=3&branchName=master
+    :alt: Azure Pipelines Build Status
 .. image:: https://readthedocs.org/projects/iris-ued/badge/?version=master
     :target: http://iris-ued.readthedocs.io/
     :alt: Documentation Build Status
