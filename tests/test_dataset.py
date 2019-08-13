@@ -13,6 +13,7 @@ from skued import nfold
 
 from . import TestRawDataset
 from iris import DiffractionDataset, PowderDiffractionDataset
+from iris.dataset import SWMR_AVAILABLE
 
 np.random.seed(23)
 
@@ -147,7 +148,7 @@ class TestDiffractionDataset(unittest.TestCase):
             with self.assertRaises(TypeError):
                 self.dataset.diff_apply(None)
 
-    @unittest.skipIf(sys.platform == "linux", reason="Very long CI builds")
+    @unittest.skipIf(not SWMR_AVAILABLE, reason="Parallel execution is not available")
     def test_diff_apply_parallel(self):
         """ Test that the diff_apply method works as expected in parallel mode """
         with self.subTest("Applying an operation"):
@@ -183,6 +184,7 @@ class TestDiffractionDataset(unittest.TestCase):
             "Diffraction center was not properly set after symmetrization",
         )
 
+    @unittest.skipIf(not SWMR_AVAILABLE, reason="Parallel execution is not available")
     def test_symmetrization_parallel(self):
         """ Test correctness of symmetrization operation in parallel mode """
         before = np.array(self.dataset.diffraction_group["intensity"])
