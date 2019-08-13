@@ -11,7 +11,7 @@ jobs:
     steps:
       - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
         displayName: Add conda to PATH
-      - template: .azure/steps.yml
+      - template: ./.azure/steps.yml
     strategy:
       matrix:
         Python36:
@@ -29,7 +29,7 @@ jobs:
       # We need to take ownership if we want to update conda or install packages globally
       - bash: sudo chown -R $USER $CONDA
         displayName: Take ownership of conda installation
-      - template: .azure/steps.yml
+      - template: ./.azure/steps.yml
     strategy:
       matrix:
         Python36:
@@ -43,7 +43,7 @@ jobs:
     steps:
       - bash: echo "##vso[task.prependpath]$CONDA/bin"
         displayName: Add conda to PATH
-      - template: .azure/steps.yml
+      - template: ./.azure/steps.yml
     strategy:
       matrix:
         Python36:
