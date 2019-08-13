@@ -6,7 +6,14 @@ jobs:
     steps:
       - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
         displayName: Add conda to PATH
-      - template: ./.azure/steps.yml
+      
+      - script: conda env create --quiet --file .azure/environment.yml
+        displayName: Create Anaconda environment
+
+      - script: |
+          conda activate irisbuild
+          python -m unittest discover --verbose
+        displayName: Unit tests 
     strategy:
       matrix:
         Python36:
@@ -20,7 +27,14 @@ jobs:
     steps:
       - bash: echo "##vso[task.prependpath]$CONDA/bin"
         displayName: Add conda to PATH
-      - template: ./.azure/steps.yml
+      
+      - script: conda env create --quiet --file .azure/environment.yml
+        displayName: Create Anaconda environment
+
+      - script: |
+          conda activate irisbuild
+          python -m unittest discover --verbose
+        displayName: Unit tests 
     strategy:
       matrix:
         Python36:
