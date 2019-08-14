@@ -179,7 +179,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
         itertime : generator of diffraction patterns for a single time-delay, in scan order
         """
         if scan not in set(self.scans):
-            raise ValueError("There is no scan {} in available scans".format(scan))
+            raise ValueError(f"There is no scan {scan} in available scans")
 
         for timedelay in self.time_points:
             yield self.raw_data(timedelay=timedelay, scan=scan, **kwargs)
@@ -210,7 +210,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
             exclude_scans = set([])
 
         if timedelay not in set(self.time_points):
-            raise ValueError("There is no scan {} in available scans".format(scan))
+            raise ValueError(f"There is no time-delay {timedelay} in available time-delays")
 
         valid_scans = sorted(set(self.scans) - set(exclude_scans))
         for scan in valid_scans:
