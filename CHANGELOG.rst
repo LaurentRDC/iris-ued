@@ -4,6 +4,7 @@
 * Fixed an issue where time-series fit would not display properly in fractional change mode;
 * Switched to Azure Pipelines for continuous integration builds;
 * Official support for macOS and Linux.
+* Fixed an issue where non-str Path-like objects caused problems in LegacyMcGillRawDataset. 
 
 5.1.3
 -----
