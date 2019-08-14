@@ -136,7 +136,7 @@ class LegacyMcGillRawDataset(AbstractRawDataset):
         # If directory name doesn't match the time pattern, the
         # acquisition date will be the default value
         with suppress(AttributeError):
-            self.acquisition_date = search("(\d+[.])+", self.source).group()[
+            self.acquisition_date = search(r"(\d+[.])+", str(self.source)).group()[
                 :-1
             ]  # Last [:-1] removes a '.' at the end
 
