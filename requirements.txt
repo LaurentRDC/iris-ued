@@ -5,4 +5,4 @@ PyQt5
 crystals >= 0.6.4
 scikit-ued == 2.0.0
 pyqtgraph >= 0.10
-npstreams == 1.6
+npstreams == 1.6.1
