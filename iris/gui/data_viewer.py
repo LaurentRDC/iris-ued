@@ -4,6 +4,7 @@ Viewer widgets for DiffractionDatasets
 """
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets
+import numpy as np
 
 from .time_series_widget import TimeSeriesWidget
 
@@ -103,6 +104,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         if image is None:
             self.image_viewer.clear()
             return
+
         # autoLevels = False ensures that the colormap stays the same
         # when 'sliding' through data. This makes it easier to compare
         # data at different time points.

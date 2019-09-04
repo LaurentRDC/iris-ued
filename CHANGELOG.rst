@@ -5,6 +5,7 @@
 * Switched to Azure Pipelines for continuous integration builds;
 * Official support for macOS and Linux.
 * Fixed an issue where non-str Path-like objects caused problems in LegacyMcGillRawDataset. 
+* Fixed an issue where very large relative differences in datasets would crash the GUI displays.
 
 5.1.3
 -----
