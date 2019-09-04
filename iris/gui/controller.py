@@ -192,6 +192,16 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             relative=self._relative_averaged,
             out=self._averaged_data_container,
         )
+        if self._relative_averaged:
+            # The range of relative values can be outrageous if very large floats
+            # are involved. This causes problems with pyqtgraph displays.
+            # I doubt relative changes can exceed 50000%
+            np.clip(
+                self._averaged_data_container,
+                a_min=-60000,
+                a_max=60000,
+                out=self._averaged_data_container,
+            )
 
         self.averaged_data_signal.emit(self._averaged_data_container)
         self.status_message_signal.emit(
