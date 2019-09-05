@@ -9,6 +9,7 @@ from pathlib import Path
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
 from skued import diffread
+import qdarkstyle
 
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
@@ -754,6 +755,10 @@ def make_about_string():
         <tr>
             <td style="padding-right:75">Qt</td>
             <td align="right">{QtCore.qVersion()}</td>
+        </tr>
+        <tr>
+            <td style="padding-right:75">qdarkstyle</td>
+            <td align="right">{qdarkstyle.__version__}</td>
         </tr>
         <tr>
             <td style="padding-right:75">PyQtGraph</td>
