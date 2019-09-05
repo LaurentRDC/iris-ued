@@ -15,7 +15,7 @@ from PyQt5 import QtGui
 
 from ..raw import open_raw
 from .gui import Iris, IMAGE_FOLDER
-from .qdarkstyle import load_stylesheet_pyqt5
+from qdarkstyle import load_stylesheet_pyqt5
 
 try:
     from subprocess import CREATE_NEW_PROCESS_GROUP
