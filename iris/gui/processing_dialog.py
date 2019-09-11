@@ -366,7 +366,7 @@ class ProcessingDialog(QtWidgets.QDialog):
             exclude_scans = parse_range(exclude_scans_text)
         except ValueError:
             self.error_message_signal.emit(
-                "Exclude scans unparseable:\n {}".format(exclude_scans_text)
+                f"Exclude scans unparseable:\n {exclude_scans_text}"
             )
             return
 

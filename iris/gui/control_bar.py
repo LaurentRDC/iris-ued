@@ -128,7 +128,7 @@ class RawDatasetControl(QtWidgets.QFrame):
         self.timedelay_widget.setTickInterval(1)
         self.timedelay_widget.sliderMoved.connect(
             lambda pos: self.td_label.setText(
-                "Time-delay: {:.3f}ps".format(self.time_points[pos])
+                f"Time-delay: {self.time_points[pos]:.3f}ps"
             )
         )
 
@@ -140,7 +140,7 @@ class RawDatasetControl(QtWidgets.QFrame):
         self.scan_widget.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.scan_widget.setTickInterval(1)
         self.scan_widget.sliderMoved.connect(
-            lambda pos: self.s_label.setText("Scan: {:d}".format(self.scans[pos]))
+            lambda pos: self.s_label.setText(f"Scan: {self.scans[pos]:d}")
         )
 
         prev_timedelay_btn = QtWidgets.QPushButton("<", self)
@@ -247,7 +247,7 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         self.timedelay_widget.setTickInterval(1)
         self.timedelay_widget.sliderMoved.connect(
             lambda pos: self.td_label.setText(
-                "Time-delay: {:.3f}ps".format(self.time_points[pos])
+                f"Time-delay: {self.time_points[pos]:.3f}ps"
             )
         )
 

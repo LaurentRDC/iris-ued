@@ -22,9 +22,7 @@ from . import AbstractRawDataset, check_raw_bounds
 class McGillRawDataset(AbstractRawDataset):
     def __init__(self, source, *args, **kwargs):
         if not isdir(source):
-            raise ValueError(
-                "{} does not point to an existing directory".format(source)
-            )
+            raise ValueError(f"{source} does not point to an existing directory")
 
         metadata_dict = self.parse_metadata(join(source, "metadata.cfg"))
         super().__init__(source, metadata_dict)
@@ -85,16 +83,12 @@ class McGillRawDataset(AbstractRawDataset):
         # scan directory looks like 'scan 0132'
         # Note that a glob pattern is required because every diffraction pattern
         # has a timestamp in the filename.
-        directory = join(self.source, "scan {:04d}".format(scan))
+        directory = join(self.source, f"scan {scan:04d}")
         try:
-            fname = next(
-                iglob(join(directory, "pumpon_{:+010.3f}ps_*.tif".format(timedelay)))
-            )
+            fname = next(iglob(join(directory, f"pumpon_{timedelay:+010.3f}ps_*.tif")))
         except StopIteration:
             raise IOError(
-                "Expected the file for {t}ps and scan {s} to exist, but could not find it.".format(
-                    t=timedelay, s=scan
-                )
+                f"Expected the file for {timedelay}ps and scan {scan} to exist, but could not find it."
             )
 
         return diffread(fname)
@@ -118,9 +112,7 @@ class LegacyMcGillRawDataset(AbstractRawDataset):
 
     def __init__(self, source, *args, **kwargs):
         if not isdir(source):
-            raise ValueError(
-                "{} does not point to an existing directory".format(source)
-            )
+            raise ValueError(f"{source} does not point to an existing directory")
         super().__init__(source)
 
         # Populate experimental parameters
@@ -217,7 +209,7 @@ class LegacyMcGillRawDataset(AbstractRawDataset):
         # Template filename looks like:
         #    'data.timedelay.+1.00.nscan.04.pumpon.tif'
         sign = "" if timedelay < 0 else "+"
-        str_time = sign + "{0:.2f}".format(timedelay)
+        str_time = sign + f"{timedelay:.2f}"
         filename = (
             "data.timedelay."
             + str_time

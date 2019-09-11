@@ -66,9 +66,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
     notes = HDF5ExperimentalParameter("notes", str, default="")
 
     def __repr__(self):
-        rep = "< {} object with following metadata: ".format(type(self).__name__)
+        rep = f"< {type(self).__name__} object with following metadata: "
         for key, val in self.metadata.items():
-            rep += "\n    {key}: {val}".format(key=key, val=val)
+            rep += f"\n    {key}: {val}"
 
         return rep + " >"
 
@@ -83,7 +83,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         dtype=None,
         ckwargs=None,
         callback=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Create a DiffractionDataset from a collection of diffraction patterns and metadata.
@@ -170,7 +170,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
                 name="intensity",
                 shape=resolution + (len(time_points),),
                 dtype=dtype,
-                **ckwargs
+                **ckwargs,
             )
 
             # Making use of the H5DS dimension scales
@@ -207,7 +207,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         normalize=True,
         ckwargs=None,
         dtype=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Create a DiffractionDataset from a subclass of AbstractRawDataset.
@@ -319,9 +319,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         TypeError : if `func` is not a proper callable
         """
         if not callable(func):
-            raise TypeError(
-                "Expected a callable argument, but received {}".format(type(func))
-            )
+            raise TypeError(f"Expected a callable argument, but received {type(func)}")
 
         if callback is None:
             callback = lambda _: None
@@ -496,10 +494,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         except TypeError:
             time_index = np.argmin(np.abs(self.time_points - float(timedelay)))
             warn(
-                "Time-delay {}ps not available. Using \
-                 closest-timedelay {}ps instead".format(
-                    timedelay, self.time_points[time_index]
-                )
+                f"Time-delay {timedelay}ps not available. Using \
+                 closest-timedelay {self.time_points[time_index]}ps instead"
             )
         return time_index
 
@@ -674,7 +670,7 @@ class PowderDiffractionDataset(DiffractionDataset):
                     maxshape=maxshape,
                     dtype=np.float,
                     fillvalue=0.0,
-                    **self.compression_params
+                    **self.compression_params,
                 )
 
         # Radius from center in units of pixels
@@ -934,7 +930,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         # In some cases, it is easier
         if units not in {"pixels", "momentum"}:
             raise ValueError(
-                "``units`` must be either 'pixels' or 'momentum', not {}".format(units)
+                f"``units`` must be either 'pixels' or 'momentum', not {units}"
             )
         abscissa = self.px_radius if units == "pixels" else self.scattering_vector
 
