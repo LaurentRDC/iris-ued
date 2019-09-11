@@ -143,7 +143,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
             symbolBrush=brushes,
             symbolSize=self._symbol_size,
             clear=True,
-            **connect_kwargs
+            **connect_kwargs,
         )
 
         # Don't forget to clear the fit constants
@@ -175,9 +175,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         tconst, tconsterr = params[2], np.sqrt(pcov[2, 2])
         tzero, tzeroerr = params[0], np.sqrt(pcov[0, 0])
         self.fit_constants_label.setText(
-            "Time-constant: ({:.3f}±{:.3f} ps, Time-zero: ({:.3f}±{:.3f}) ps".format(
-                tconst, tconsterr, tzero, tzeroerr
-            )
+            f"Time-constant: ({tconst:.3f}±{tconsterr:.3f} ps, Time-zero: ({tzero:.3f}±{tzeroerr:.3f}) ps"
         )
 
     @QtCore.pyqtSlot()

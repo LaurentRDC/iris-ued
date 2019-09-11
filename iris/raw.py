@@ -52,7 +52,7 @@ def open_raw(path):
             pass
 
     raise RuntimeError(
-        "No data format could be guessed for item located at: \n {}".format(path)
+        f"No data format could be guessed for item located at: \n {path}"
     )
 
 
@@ -132,9 +132,9 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
         pass
 
     def __repr__(self):
-        rep = "< {} object with following metadata: ".format(type(self).__name__)
+        rep = f"< {type(self).__name__} object with following metadata: "
         for key, val in self.metadata.items():
-            rep += "\n    {key}: {val}".format(key=key, val=val)
+            rep += f"\n    {key}: {val}"
 
         return rep + " >"
 
@@ -356,9 +356,7 @@ def check_raw_bounds(method):
 
         if (not valid_scan) or (not valid_timedelay):
             raise ValueError(
-                "Requested time-delay {t} and scan {s} are invalid or out-of-bounds".format(
-                    t=timedelay, s=scan
-                )
+                f"Requested time-delay {timedelay} and scan {scan} are invalid or out-of-bounds"
             )
 
         return method(self, timedelay, scan, *args, **kwargs)

@@ -115,10 +115,8 @@ class ExperimentalParameter:
             value = self.type(value)
         except ValueError:
             raise TypeError(
-                "Experimental parameter {} expects values of type \
-                             {}, but received {}".format(
-                    self.name, self.type, value
-                )
+                f"Experimental parameter {self.name} expects values of type \
+                             {self.type}, but received {value}"
             )
         else:
             instance.__dict__[self.name] = value

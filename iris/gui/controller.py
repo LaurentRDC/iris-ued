@@ -163,7 +163,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         timedelay = self.raw_dataset.time_points[timedelay_index]
         self.raw_data_signal.emit(self.raw_dataset.raw_data(timedelay, scan, bgr=True))
         self.status_message_signal.emit(
-            "Displaying data at {:.3f}ps, scan {:d}.".format(timedelay, scan)
+            f"Displaying data at {timedelay:.3f}ps, scan {scan:d}."
         )
 
     @QtCore.pyqtSlot(int)
@@ -204,9 +204,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             )
 
         self.averaged_data_signal.emit(self._averaged_data_container)
-        self.status_message_signal.emit(
-            "Displaying data at {:.3f}ps.".format(timedelay)
-        )
+        self.status_message_signal.emit(f"Displaying data at {timedelay:.3f}ps.")
 
     @QtCore.pyqtSlot()
     def display_powder_data(self):
@@ -386,7 +384,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         if self._relative_powder:
             self.display_powder_data()
 
-        self.status_message_signal.emit("Time-zero shifted by {:.3f}ps.".format(shift))
+        self.status_message_signal.emit(f"Time-zero shifted by {shift:.3f}ps.")
 
     @QtCore.pyqtSlot(str, object)
     def load_raw_dataset(self, path, cls):
@@ -402,9 +400,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         """
         if cls not in AbstractRawDataset.implementations:
             raise ValueError(
-                "Expected a proper subclass of AbstractRawDataset, but received {}".format(
-                    cls
-                )
+                f"Expected a proper subclass of AbstractRawDataset, but received {cls}"
             )
 
         if not path:

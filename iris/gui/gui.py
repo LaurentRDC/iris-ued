@@ -549,7 +549,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # it must be done in a separate method
         return submenu.addAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")),
-            "&Load {}".format(cls.__name__),
+            f"&Load {cls.__name__}",
             lambda: self.load_raw_dataset(cls),
         )
 
