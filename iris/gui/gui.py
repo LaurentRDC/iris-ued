@@ -35,8 +35,7 @@ LOAD_PLUGIN_HELP = """You will be prompted to select a plug-in file. This file w
 
 {dir}
 
-Once this is done, iris will have to restart. 
-The plug-in will remain installed as long as it can be found in the above directory"""
+The plug-in is immediately available. The plug-in will remain installed as long as it can be found in the above directory"""
 
 
 class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
@@ -45,7 +44,6 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
     raw_dataset_path_signal = QtCore.pyqtSignal(str, object)  # path and class
     single_picture_path_signal = QtCore.pyqtSignal(str)
     error_message_signal = QtCore.pyqtSignal(str)
-    restart_signal = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -185,15 +183,11 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
         self.file_menu = self.menu_bar.addMenu("&File")
         self.file_menu.setToolTipsVisible(True)
-        load_raw_submenu = self.file_menu.addMenu("Load raw dataset...")
+        self.load_raw_submenu = self.file_menu.addMenu("Load raw dataset...")
 
-        # Dynamically add an option for each implementation of AbstractRawDataset
-        # Note : because of dynamical nature of these bindings,
-        # it must be done in a separate method
-        for cls in sorted(
-            AbstractRawDataset.implementations, key=lambda cls: cls.__name__
-        ):
-            self._create_load_raw(cls, load_raw_submenu)
+        # Create the menu based on the currently-available plugins
+        # This can be called multiple times (e.g. when new plugins are installed)
+        self.create_load_raw_menu()
 
         self.load_dataset_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")), "& Load dataset", self
@@ -239,17 +233,12 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         ###################
         # Plug-in Actions
         self.load_plugin_action = QtWidgets.QAction(
-            QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")),
-            "& Install plug-in (restarts program)",
-            self,
+            QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")), "& Install plug-in", self
         )
         self.load_plugin_action.setToolTip(
-            "Copy a plug-in file into the internal storage. The application will restart and the new plug-in will be available."
+            "Copy a plug-in file into the internal storage. The new plug-in will be available immediately."
         )
         self.load_plugin_action.triggered.connect(self.load_plugin)
-        self.controller.operation_in_progress.connect(
-            self.load_plugin_action.setDisabled
-        )  # wouldn't want to restart during processing
 
         self.open_plugin_directory_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")), "& Open plug-in directory", self
@@ -544,14 +533,20 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.update_checker.update_available_signal.connect(self.update_available)
         self.update_checker.start()
 
-    def _create_load_raw(self, cls, submenu):
+    def create_load_raw_menu(self):
+        # Dynamically add an option for each implementation of AbstractRawDataset
         # Note : because of dynamical nature of these bindings,
         # it must be done in a separate method
-        return submenu.addAction(
-            QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")),
-            f"&Load {cls.__name__}",
-            lambda: self.load_raw_dataset(cls),
-        )
+        self.load_raw_submenu.clear()
+
+        for cls in sorted(
+            AbstractRawDataset.implementations, key=lambda cls: cls.__name__
+        ):
+            self.load_raw_submenu.addAction(
+                QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")),
+                f"&Load {cls.__name__}",
+                lambda: self.load_raw_dataset(cls),
+            )
 
     def closeEvent(self, event):
         self._controller_thread.quit()
@@ -702,7 +697,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def load_plugin(self):
-        """ Load plug-in and restart application. """
+        """ Load plug-in. """
         explanation = LOAD_PLUGIN_HELP.format(dir=PLUGIN_DIR)
 
         QtWidgets.QMessageBox.information(self, "Loading a plug-in", explanation)
@@ -714,10 +709,6 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             return
 
         install_plugin(path)
-
-        self.controller.close_dataset()
-        self.controller.close_raw_dataset()
-        self.restart_signal.emit()
 
     @QtCore.pyqtSlot()
     def show_about(self):

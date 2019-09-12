@@ -68,7 +68,7 @@ a new plug-in, use the following option:
     :scale: 50 %
     :align: center
 
-You'll be able to select a plug-in file which will be copied to the plug-in directory. The program will then restart.
+You'll be able to select a plug-in file which will be copied to the plug-in directory. The plugin can be used immediately.
 Once a plug-in is installed, a new raw data format will appear.
 
 .. image:: images/load_raw.png
