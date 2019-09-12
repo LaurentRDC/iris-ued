@@ -90,19 +90,6 @@ def run(path=None, dset_type=None, **kwargs):
             else:
                 warn(f"dset_type invalid value: {dset_type}. Ignoring path.")
 
-        # Possibility to restart. A complete new interpreter must
-        # be used so that new plug-ins are loaded correctly.
-        gui.restart_signal.connect(lambda: restart(app))
         result = app.exec_()
         logging.shutdown()
         return result
-
-
-def restart(application):
-    """ Restart an application in a separate process. A new python interpreter is used, which
-    means that plug-ins are reloaded. """
-    application.quit()
-    flags = DETACHED_PROCESS
-    if WINDOWS:
-        flags = flags | CREATE_NEW_PROCESS_GROUP
-    return Popen(["pythonw", "-m", "iris"], creationflags=flags)
