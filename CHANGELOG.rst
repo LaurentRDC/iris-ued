@@ -1,11 +1,12 @@
 5.2.0 (development)
 -------------------
 
-* Fixed an issue where time-series fit would not display properly in fractional change mode;
-* Switched to Azure Pipelines for continuous integration builds;
 * Official support for macOS and Linux.
+* Plug-ins installed via the GUI can now be used right away. No restarts required.
+* Switched to Azure Pipelines for continuous integration builds;
 * Fixed an issue where non-str Path-like objects caused problems in LegacyMcGillRawDataset. 
 * Fixed an issue where very large relative differences in datasets would crash the GUI displays.
+* Fixed an issue where time-series fit would not display properly in fractional change mode;
 
 5.1.3
 -----
