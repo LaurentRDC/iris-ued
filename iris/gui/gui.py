@@ -9,6 +9,7 @@ from pathlib import Path
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
 from skued import diffread
+
 import qdarkstyle
 
 # Get all proper subclasses of AbstractRawDataset
