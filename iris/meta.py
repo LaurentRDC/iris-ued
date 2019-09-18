@@ -46,6 +46,10 @@ class MetaRawDataset(ABCMeta):
         with suppress(AttributeError):
             cls.valid_metadata = set.union(cls.valid_metadata, super().valid_metadata)
 
+        # Check if a display_name is available; otherwise, it is the name of the class
+        if not hasattr(cls, "display_name"):
+            cls.display_name = str(cls.__name__)
+
     @property
     def implementations(self):
         """ Iterable of concrete implementations. This includes direct subclasses, sub-subclasses, and so on. """
