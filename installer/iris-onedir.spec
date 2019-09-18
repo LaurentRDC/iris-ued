@@ -16,8 +16,9 @@ a = Analysis([os.path.join(basepath, 'iris/__main__.py'), ],
              pathex=[basepath, ],
              binaries=[],
              datas=[],
-             hiddenimports=["pywt", # force hook-pywt.py
-                            "dask", # force hook-dask.py
+             hiddenimports=["pywt",  # force hook-pywt.py
+                            "dask",  # force hook-dask.py
+                            "skued", # force hook-skued.py
                             "tifffile._tifffile"],
              hookspath=[builddir],
              runtime_hooks=[],
