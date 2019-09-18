@@ -17,7 +17,8 @@ Installed plug-ins can be imported from :mod:`iris.plugins`::
 
   from iris.plugins import DatasetSubclass
 
-which would work if the :class:`DatasetSubclass` is defined in the file :file:`~/iris_plugins/<anything>.py`. Example plug-ins is available `here <https://github.com/LaurentRDC/iris-ued/tree/master/example_plugins>`_
+which would work if the :class:`DatasetSubclass` is defined in the file :file:`~/iris_plugins/<anything>.py`. Example plug-ins is available `here <https://github.com/LaurentRDC/iris-ued/tree/master/example_plugins>`_.
+Plug-ins used by members of the Siwick research group are visible `here <https://github.com/Siwick-Research-Group/iris-ued-plugins>`_.
 
 Installing a plug-in
 --------------------
