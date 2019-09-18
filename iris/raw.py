@@ -72,6 +72,8 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
         * __init__
         * __exit__
     
+    Optionally, the ``display_name`` class attribute can be specified.
+    
     For better results or performance during reduction, the following methods
     can be specialized:
 

@@ -541,11 +541,11 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.load_raw_submenu.clear()
 
         for cls in sorted(
-            AbstractRawDataset.implementations, key=lambda cls: cls.__name__
+            AbstractRawDataset.implementations, key=lambda cls: cls.display_name
         ):
             self.load_raw_submenu.addAction(
                 QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")),
-                f"&Load {cls.__name__}",
+                f"&{cls.display_name}",
                 lambda: self.load_raw_dataset(cls),
             )
 

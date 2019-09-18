@@ -17,6 +17,9 @@ class MinimalRawDataset(AbstractRawDataset):
 
     Minimal full implementation is only the :meth:`raw_data` method.
     """
+    # Optionally, a display name can be added as a class attribute
+    # This affects GUI displays only. By default, the class name is used.
+    display_name = "Minimal raw dataset v1"
 
     # While the temperature metadata is already implemented in AbstractRawDataset,
     # it can be overriden in subclasses
