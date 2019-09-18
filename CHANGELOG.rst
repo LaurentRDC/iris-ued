@@ -3,6 +3,7 @@
 
 * Official support for macOS and Linux.
 * Plug-ins installed via the GUI can now be used right away. No restarts required.
+* Siwick Research Group-specific Plugins were removed. They can be found here: https://github.com/Siwick-Research-Group/iris-ued-plugins
 * Switched to Azure Pipelines for continuous integration builds;
 * Fixed an issue where non-str Path-like objects caused problems in LegacyMcGillRawDataset. 
 * Fixed an issue where very large relative differences in datasets would crash the GUI displays.
