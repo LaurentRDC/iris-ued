@@ -537,17 +537,21 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
     def create_load_raw_menu(self):
         # Dynamically add an option for each implementation of AbstractRawDataset
         # Note : because of dynamical nature of these bindings,
-        # it must be done in a separate method
+        # it must be done in a separate method (_create_load_raw)
+        # Otherwise, it doesn't work correctly
         self.load_raw_submenu.clear()
 
-        for cls in sorted(
-            AbstractRawDataset.implementations, key=lambda cls: cls.display_name
+        for rawdatacls in sorted(
+            AbstractRawDataset.implementations, key=lambda c: c.display_name
         ):
-            self.load_raw_submenu.addAction(
-                QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")),
-                f"&{cls.display_name}",
-                lambda: self.load_raw_dataset(cls),
-            )
+            self._create_load_raw(rawdatacls, self.load_raw_submenu)
+
+    def _create_load_raw(self, cls, submenu):
+        submenu.addAction(
+            QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")),
+            f"&{cls.display_name}",
+            lambda: self.load_raw_dataset(cls),
+        )
 
     def closeEvent(self, event):
         self._controller_thread.quit()
