@@ -26,12 +26,21 @@ jobs:
           cd installer
           python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
         displayName: Executable build
+
+      # As of right now, only save Windows build artifacts
+      # because that's the only machine I have available to test them.
+      - task: PublishPipelineArtifact@0
+        displayName: Publish artifacts
+        inputs:
+          artifactNames: dist$(pythonVersion)
+          targetPath: installer/dist/executable
+          
     strategy:
       matrix:
         Python36:
-          python.version: '3.6'
+          pythonVersion: '3.6'
         Python37:
-          python.version: '3.7'
+          pythonVersion: '3.7'
 
   # ------------------------------------------------------------
   #                 LINUX BUILD
@@ -59,9 +68,9 @@ jobs:
     strategy:
       matrix:
         Python36:
-          python.version: '3.6'
+          pythonVersion: '3.6'
         Python37:
-          python.version: '3.7'
+          pythonVersion: '3.7'
 
   # ------------------------------------------------------------
   #                 MACOS BUILD
@@ -94,6 +103,6 @@ jobs:
     strategy:
       matrix:
         Python36:
-          python.version: '3.6'
+          pythonVersion: '3.6'
         Python37:
-          python.version: '3.7'
+          pythonVersion: '3.7'
