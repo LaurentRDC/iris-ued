@@ -20,6 +20,11 @@ jobs:
           call activate irisbuild
           python -m unittest discover --verbose
         displayName: Unit tests 
+      
+      - script: |
+          cd installer
+          python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
+        displayName: Executable build
     strategy:
       matrix:
         Python36:
