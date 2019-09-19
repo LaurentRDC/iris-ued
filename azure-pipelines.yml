@@ -25,16 +25,21 @@ jobs:
           call activate irisbuild
           cd installer
           python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
-        displayName: Executable build
+        displayName: Build executable with PyInstaller
+      
+      - script: |
+          cd installer
+          iscc iris-setup.iss
+        displayName: Build Windows installer with ISCC 
 
       # As of right now, only save Windows build artifacts
       # because that's the only machine I have available to test them.
       - task: PublishPipelineArtifact@0
         displayName: Publish artifacts
         inputs:
-          artifactNames: dist$(pythonVersion)
-          targetPath: installer/dist/executable
-          
+          artifactNames: setup$(pythonVersion)
+          targetPath: installer/dist/setup/
+
     strategy:
       matrix:
         Python36:
