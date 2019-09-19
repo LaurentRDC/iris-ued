@@ -22,6 +22,7 @@ jobs:
         displayName: Unit tests 
       
       - script: |
+          call activate irisbuild
           cd installer
           python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
         displayName: Executable build
