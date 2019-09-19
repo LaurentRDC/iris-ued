@@ -50,6 +50,12 @@ jobs:
           source activate irisbuild
           python -m unittest discover --verbose
         displayName: Unit tests 
+
+      - bash: |
+          source activate irisbuild
+          cd installer
+          python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
+        displayName: Executable build
     strategy:
       matrix:
         Python36:
@@ -79,6 +85,12 @@ jobs:
           source activate irisbuild
           python -m unittest discover --verbose
         displayName: Unit tests 
+
+      - bash: |
+          source activate irisbuild
+          cd installer
+          python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
+        displayName: Executable build
     strategy:
       matrix:
         Python36:
