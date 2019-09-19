@@ -13,7 +13,7 @@ jobs:
       - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
         displayName: Add conda to PATH
       
-      - script: conda env create --file ./.azure/env.yml
+      - script: conda env create --quiet --file ./.azure/env.yml
         displayName: Create Anaconda environment
 
       - script: |
