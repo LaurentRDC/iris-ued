@@ -29,18 +29,18 @@ jobs:
       
       # Command-line parameters for Inno Setup are specified here:
       #   http://www.jrsoftware.org/ishelp/index.php?topic=compilercmdline
-      - script: |
-          cd installer
-          iscc iris-setup.iss /F"iris-setup-py$(pythonVersion)"
-        displayName: Build Windows installer with ISCC 
+      # - script: |
+      #     cd installer
+      #     iscc iris-setup.iss /F"iris-setup-py$(pythonVersion)"
+      #   displayName: Build Windows installer with ISCC 
 
-      # As of right now, only save Windows build artifacts
-      # because that's the only machine I have available to test them.
-      - task: PublishPipelineArtifact@0
-        displayName: Publish artifacts
-        inputs:
-          artifactNames: setup$(pythonVersion)
-          targetPath: installer/dist/setup/
+      # # As of right now, only save Windows build artifacts
+      # # because that's the only machine I have available to test them.
+      # - task: PublishPipelineArtifact@0
+      #   displayName: Publish artifacts
+      #   inputs:
+      #     artifactNames: setup$(pythonVersion)
+      #     targetPath: installer/dist/setup/
 
     strategy:
       matrix:
