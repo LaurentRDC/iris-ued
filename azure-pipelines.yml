@@ -27,9 +27,11 @@ jobs:
           python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
         displayName: Build executable with PyInstaller
       
+      # Command-line parameters for Inno Setup are specified here:
+      #   http://www.jrsoftware.org/ishelp/index.php?topic=compilercmdline
       - script: |
           cd installer
-          iscc iris-setup.iss
+          iscc iris-setup.iss /F"iris-setup-py$(pythonVersion)"
         displayName: Build Windows installer with ISCC 
 
       # As of right now, only save Windows build artifacts
