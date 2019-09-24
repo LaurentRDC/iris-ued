@@ -32,7 +32,7 @@ from .update import UpdateChecker
 
 IMAGE_FOLDER = join(dirname(__file__), "images")
 
-LOAD_PLUGIN_HELP = """You will be prompted to select a plug-in file. This file will be COPIED into:
+INSTALL_PLUGIN_HELP = """You will be prompted to select a plug-in file. This file will be COPIED into:
 
 {dir}
 
@@ -233,13 +233,13 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
         ###################
         # Plug-in Actions
-        self.load_plugin_action = QtWidgets.QAction(
+        self.install_plugin_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")), "& Install plug-in", self
         )
-        self.load_plugin_action.setToolTip(
+        self.install_plugin_action.setToolTip(
             "Copy a plug-in file into the internal storage. The new plug-in will be available immediately."
         )
-        self.load_plugin_action.triggered.connect(self.load_plugin)
+        self.install_plugin_action.triggered.connect(self.install_plugin)
 
         self.open_plugin_directory_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")), "& Open plug-in directory", self
@@ -260,7 +260,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.plugin_menu = self.menu_bar.addMenu("Plug-ins")
-        self.plugin_menu.addAction(self.load_plugin_action)
+        self.plugin_menu.addAction(self.install_plugin_action)
         self.plugin_menu.addAction(self.open_plugin_directory_action)
         self.plugin_menu.addSeparator()
         self.plugin_menu.addAction(self.howto_write_plugin_action)
@@ -701,9 +701,9 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.move(qr.topLeft())
 
     @QtCore.pyqtSlot()
-    def load_plugin(self):
+    def install_plugin(self):
         """ Load plug-in. """
-        explanation = LOAD_PLUGIN_HELP.format(dir=PLUGIN_DIR)
+        explanation = INSTALL_PLUGIN_HELP.format(dir=PLUGIN_DIR)
 
         QtWidgets.QMessageBox.information(self, "Loading a plug-in", explanation)
 
@@ -714,6 +714,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             return
 
         install_plugin(path)
+        self.create_load_raw_menu()
 
     @QtCore.pyqtSlot()
     def show_about(self):
