@@ -9,11 +9,11 @@ import numpy as np
 from numpy.random import random
 
 from crystals import Crystal
+from iris import DiffractionDataset, PowderDiffractionDataset
+from iris.dataset import SWMR_AVAILABLE
 from skued import nfold
 
 from . import TestRawDataset
-from iris import DiffractionDataset, PowderDiffractionDataset
-from iris.dataset import SWMR_AVAILABLE
 
 np.random.seed(23)
 

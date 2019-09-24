@@ -58,5 +58,6 @@ def install_plugin(path):
 
     load_plugin(new_path)
 
+
 for fname in PLUGIN_DIR.rglob("*.py"):
     load_plugin(PLUGIN_DIR / fname)
