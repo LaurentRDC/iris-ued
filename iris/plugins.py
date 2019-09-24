@@ -20,13 +20,30 @@ PLUGIN_DIR = Path.home() / Path("iris_plugins")
 if not PLUGIN_DIR.exists():
     PLUGIN_DIR.mkdir()
 
-for fname in PLUGIN_DIR.rglob("*.py"):
-    globals().update(run_path(PLUGIN_DIR / fname, run_name="iris.plugins"))
+
+def load_plugin(path):
+    """ 
+    Load an iris plug-in, but do not install it. The plug-in
+    will not be available in the next session.
+
+    .. versionadded:: 5.2.0
+    
+    Parameters
+    ----------
+    path : path-like
+        Path to the plug-in. 
+    """
+    path = Path(path)
+    if not path.exists():
+        raise OSError(f"The plug-in file {path} does not exist.")
+
+    globals().update(run_path(path, run_name="iris.plugins"))
 
 
 def install_plugin(path):
     """ 
-    Install and load an iris plug-in.
+    Install and load an iris plug-in. Installed plug-ins are loaded
+    at every iris start-up.
 
     .. versionadded:: 5.0.4
     
@@ -39,4 +56,7 @@ def install_plugin(path):
     new_path = PLUGIN_DIR / path.name
     copy2(path, new_path)
 
-    globals().update(run_path(new_path, run_name="iris.plugins"))
+    load_plugin(new_path)
+
+for fname in PLUGIN_DIR.rglob("*.py"):
+    load_plugin(PLUGIN_DIR / fname)

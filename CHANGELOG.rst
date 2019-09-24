@@ -3,6 +3,7 @@
 
 * Official support for macOS and Linux.
 * Plug-ins installed via the GUI can now be used right away. No restarts required.
+* Added the `iris.plugins.load_plugin` function to load plug-ins without installing them. Useful for testing.
 * Plug-ins can now have the ``display_name`` property which will be displayed in the GUI. This is optional and backwards-compatible.
 * Siwick Research Group-specific plugins were removed. They can be found here: https://github.com/Siwick-Research-Group/iris-ued-plugins
 * Switched to Azure Pipelines for continuous integration builds;
