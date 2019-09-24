@@ -7,6 +7,6 @@ __version__ = "5.2.0rc1"
 from .raw import AbstractRawDataset, check_raw_bounds, open_raw
 from .dataset import DiffractionDataset, PowderDiffractionDataset
 from .meta import ExperimentalParameter
-from .plugins import install_plugin
+from .plugins import install_plugin, load_plugin
 
 from . import plugins
