@@ -2,7 +2,7 @@
 """
 Dialog for processing between AbstractRawDataset and DiffractionDataset
 """
-from os import cpu_count
+from os import sched_getaffinity
 
 import numpy as np
 import pyqtgraph as pg
@@ -48,6 +48,9 @@ DTYPE_NAMES = {
     "16-bit integers": np.int16,
 }
 
+# os.cpu_count is not equivalent to the number of CPUs the current process can use. 
+# The number of usable CPUs is obtained as follows:
+CPU_COUNT = len(sched_getaffinity(0))
 
 class MaskCreator(QtWidgets.QWidget):
     """ Widget allowing for creation of arbitrary masks """
@@ -177,8 +180,8 @@ class ProcessingDialog(QtWidgets.QDialog):
         title.setAlignment(QtCore.Qt.AlignCenter)
 
         self.processes_widget = QtWidgets.QSpinBox(parent=self)
-        self.processes_widget.setRange(1, cpu_count() - 1)
-        self.processes_widget.setValue(min([cpu_count(), 7]))
+        self.processes_widget.setRange(1, CPU_COUNT - 1)
+        self.processes_widget.setValue(min([CPU_COUNT, 7]))
 
         self.dtype_widget = QtWidgets.QComboBox(parent=self)
         self.dtype_widget.addItems(DTYPE_NAMES.keys())
