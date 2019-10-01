@@ -2,7 +2,7 @@
 """
 Dialog for symmetrization of DiffractionDataset
 """
-from os import sched_getaffinity
+from os import cpu_count
 
 import numpy as np
 import pyqtgraph as pg
@@ -12,9 +12,6 @@ description = (
     """Align the circle so that its center is aligned with the diffraction center. """
 )
 
-# os.cpu_count is not equivalent to the number of CPUs the current process can use. 
-# The number of usable CPUs is obtained as follows:
-CPU_COUNT = len(sched_getaffinity(0))
 
 class SymmetrizeDialog(QtWidgets.QDialog):
     """
@@ -67,7 +64,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         )
 
         self.processes_widget = QtWidgets.QSpinBox(parent=self)
-        self.processes_widget.setRange(1, CPU_COUNT - 1)
+        self.processes_widget.setRange(1, cpu_count() - 1)
         self.processes_widget.setValue(1)
 
         self.accept_btn = QtWidgets.QPushButton("Symmetrize", self)
