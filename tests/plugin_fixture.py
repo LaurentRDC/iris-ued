@@ -9,7 +9,7 @@ import numpy as np
 
 
 class TestRawDatasetPlugin(AbstractRawDataset):
-    
+
     display_name = "Minimal raw dataset v1"
 
     temperature = ExperimentalParameter("temperature", ptype=float, default=500)
