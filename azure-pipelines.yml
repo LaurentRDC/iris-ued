@@ -48,8 +48,8 @@ jobs:
           pythonVersion: '3.6'
         Python37:
           pythonVersion: '3.7'
-        #Python38:
-        #  pythonVersion: '3.8'
+        Python38:
+          pythonVersion: '3.8'
 
   # ------------------------------------------------------------
   #                 LINUX BUILD
@@ -80,8 +80,8 @@ jobs:
           pythonVersion: '3.6'
         Python37:
           pythonVersion: '3.7'
-        #Python38:
-        #  pythonVersion: '3.8'
+        Python38:
+          pythonVersion: '3.8'
 
   # ------------------------------------------------------------
   #                 MACOS BUILD
