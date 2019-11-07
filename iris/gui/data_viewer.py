@@ -22,6 +22,9 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.image_viewer = pg.ImageView(parent=self)
         self.time_series_widget = TimeSeriesWidget(parent=self)
 
+        self.cursor_info_widget = QtWidgets.QLabel(parent=self)
+        self.cursor_info_widget.setAlignment(QtCore.Qt.AlignHCenter)
+
         self.peak_dynamics_region = pg.ROI(
             pos=[0, 0], size=[200, 200], pen=pg.mkPen("r")
         )
@@ -34,12 +37,19 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.image_viewer.addItem(self.roi_topleft_text)
         self.image_viewer.addItem(self.roi_bottomright_text)
 
+        self._proxy = pg.SignalProxy(
+            self.image_viewer.scene.sigMouseMoved,
+            rateLimit=60,
+            slot=self.update_cursor_info,
+        )
+
         self.image_viewer.getView().addItem(self.peak_dynamics_region)
         self.peak_dynamics_region.hide()
         self.time_series_widget.hide()
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.image_viewer)
+        self.layout.addWidget(self.cursor_info_widget)
         self.layout.addWidget(self.time_series_widget)
         self.setLayout(self.layout)
 
@@ -57,6 +67,19 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         y2 = round(max(0, rect.x() + rect.width()))
 
         self.peak_dynamics_roi_signal.emit((x1, x2, y1, y2))
+
+    @QtCore.pyqtSlot(object)
+    def update_cursor_info(self, event):
+        """ Provide information about the cursor (position, value, etc) """
+        mouse_point = self.image_viewer.getView().mapSceneToView(event[0])
+        i, j = int(mouse_point.x()), int(mouse_point.y())
+        try:
+            val = self.image_viewer.getImageItem().image[j, i]
+        except IndexError:
+            val = 0
+        self.cursor_info_widget.setText(
+            f"Position: ({i},{j}) | Pixel value: {val:.2f} cnts"
+        )
 
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics(self, toggle):
