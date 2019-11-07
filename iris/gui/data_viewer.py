@@ -30,17 +30,23 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         )
         self.peak_dynamics_region.addScaleHandle([1, 1], [0, 0])
         self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
-        self.peak_dynamics_region.sigRegionChanged.connect(self.update_peak_dynamics)
+        
 
         self.roi_topleft_text = pg.TextItem("", anchor=(1, 1))
         self.roi_bottomright_text = pg.TextItem("", anchor=(0, 0))
         self.image_viewer.addItem(self.roi_topleft_text)
         self.image_viewer.addItem(self.roi_bottomright_text)
 
-        self._proxy = pg.SignalProxy(
+        # Signal proxies allow to rate-limit them
+        self.__cursor_proxy = pg.SignalProxy(
             self.image_viewer.scene.sigMouseMoved,
             rateLimit=60,
             slot=self.update_cursor_info,
+        )
+        self.__dynamics_roi_proxy = pg.SignalProxy(
+            self.peak_dynamics_region.sigRegionChanged,
+            rateLimit=60,
+            slot=self.update_peak_dynamics
         )
 
         self.image_viewer.getView().addItem(self.peak_dynamics_region)
