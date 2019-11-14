@@ -1,7 +1,7 @@
 5.2.0 (development)
 -------------------
 
-* Official support for macOS and Linux.
+* Official support for Linux.
 * Plug-ins installed via the GUI can now be used right away. No restarts required.
 * Added the `iris.plugins.load_plugin` function to load plug-ins without installing them. Useful for testing.
 * Plug-ins can now have the ``display_name`` property which will be displayed in the GUI. This is optional and backwards-compatible.
