@@ -8,7 +8,7 @@
 * Siwick Research Group-specific plugins were removed. They can be found here: https://github.com/Siwick-Research-Group/iris-ued-plugins
 * Switched to Azure Pipelines for continuous integration builds;
 * Added cursor information (position and image value) for processed data view;
-* Fixed an issue where non-str Path-like objects caused problems in LegacyMcGillRawDataset;
+
 * Fixed an issue where very large relative differences in datasets would crash the GUI displays;
 * Fixed an issue where time-series fit would not display properly in fractional change mode;
 

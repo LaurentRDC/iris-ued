@@ -35,10 +35,10 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           name='iris',
-          debug=True,
+          debug=False,
           strip=False,
           upx=False,
-          console=True,
+          console=False,
           icon="iris.ico")
 
 coll = COLLECT(exe,
