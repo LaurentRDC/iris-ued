@@ -2,7 +2,7 @@ numpy >= 1.12
 scipy >= 1.0.0
 h5py >= 2.6.0
 PyQt5
-crystals >= 0.6.5, < 1
+crystals >= 0.6.6, < 1
 scikit-ued == 2.0.1
 qdarkstyle == 2.7
 pyqtgraph >= 0.10
