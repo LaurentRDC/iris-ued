@@ -598,7 +598,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         x1, x2, y1, y2 = rect
         data = self.diffraction_group["intensity"][x1:x2, y1:y2, :]
         if relative:
-            data -= self.diff_eq()[x1:x2, y1:y2]
+            data -= self.diff_eq()[x1:x2, y1:y2, None]
         return np.mean(data, axis=(0, 1), out=out)
 
     @property
