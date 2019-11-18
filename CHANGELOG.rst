@@ -1,5 +1,10 @@
-5.2.0 (development)
--------------------
+5.2.1
+-----
+
+* Fixed an issue where calculations of time-series, relative to pre-time-zero, would raise an error.
+
+5.2.0
+-----
 
 * Official support for Linux.
 * Plug-ins installed via the GUI can now be used right away. No restarts required.
