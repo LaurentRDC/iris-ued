@@ -243,7 +243,11 @@ class TestDiffractionDataset(unittest.TestCase):
         stack = np.stack(self.patterns, axis=-1)
         ts = np.mean(stack[r1:r2, c1:c2], axis=(0, 1))
 
-        self.assertTrue(np.allclose(self.dataset.time_series([r1, r2, c1, c2]), ts))
+        with self.subTest("Non-relative time-series"):
+            self.assertTrue(np.allclose(self.dataset.time_series([r1, r2, c1, c2], relative=False), ts))
+        
+        with self.subTest("Relative time-series"):
+            self.assertTrue(np.allclose(self.dataset.time_series([r1, r2, c1, c2], relative=True), ts))
 
     def tearDown(self):
         fname = self.dataset.filename
