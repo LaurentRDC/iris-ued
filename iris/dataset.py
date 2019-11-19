@@ -594,12 +594,68 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         Returns
         -------
         out : ndarray, ndim 1
+
+        See also
+        --------
+        time_series_by_mask : generalized intensity integration.
         """
         x1, x2, y1, y2 = rect
         data = self.diffraction_group["intensity"][x1:x2, y1:y2, :]
         if relative:
             data -= self.diff_eq()[x1:x2, y1:y2, None]
         return np.mean(data, axis=(0, 1), out=out)
+
+    def time_series_by_mask(self, mask, relative=False, out=None):
+        """
+        Integrated intensity over time according to some arbitrary mask. This
+        is a generalization of the ``DiffractionDataset.time_series`` method, which
+        is much faster, but limited to rectangular selections.
+
+        Parameters
+        ----------
+        mask : ndarray, dtype bool, shape (N,M)
+            Mask evaluating to ``True`` in the regions to integrate. The mask must be
+            the same shape as one scattering pattern (i.e. two-dimensional).
+        relative : bool, optional
+            If True, data is returned relative to the average of all diffraction patterns
+            before photoexcitation.
+        out : ndarray or None, optional
+            1-D ndarray in which to store the results. The shape
+            should be compatible with ``(len(time_points),)``
+
+        Returns
+        -------
+        out : ndarray, ndim 1
+
+        See also
+        --------
+        time_series : integrated intensity in a rectangle.
+        """
+        mask = np.array(mask, dtype=np.bool)
+        if mask.shape != self.resolution:
+            raise ValueError(
+                f"Mask shape {mask.shape} does not match scattering pattern shape {self.resolution}"
+            )
+
+        if out is None:
+            out = np.zeros(shape=(len(self.time_points),), dtype=np.float)
+
+        # There is no way to select data from HDF5 using arbitrary boolean mask
+        # Therefore, we must iterate through all time-points.
+        dataset = self.diffraction_group['intensity']
+        placeholder = np.empty(shape=self.resolution, dtype=dataset.dtype)
+        for index, _ in enumerate(self.time_points):
+            # It is faster to read data directly 
+            # than to go through DiffractionDataset.diff_data
+            dataset.read_direct(
+                placeholder, source_sel=np.s_[:, :, index], dest_sel=np.s_[:, :]
+            )
+            out[index] = np.mean(placeholder[mask])
+        
+        if relative:
+            out -= np.mean(self.diff_eq()[mask])
+        
+        return out
 
     @property
     def experimental_parameters_group(self):

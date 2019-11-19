@@ -30,7 +30,6 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         )
         self.peak_dynamics_region.addScaleHandle([1, 1], [0, 0])
         self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
-        
 
         self.roi_topleft_text = pg.TextItem("", anchor=(1, 1))
         self.roi_bottomright_text = pg.TextItem("", anchor=(0, 0))
@@ -46,7 +45,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.__dynamics_roi_proxy = pg.SignalProxy(
             self.peak_dynamics_region.sigRegionChanged,
             rateLimit=60,
-            slot=self.update_peak_dynamics
+            slot=self.update_peak_dynamics,
         )
 
         self.image_viewer.getView().addItem(self.peak_dynamics_region)
