@@ -1,6 +1,8 @@
 5.2.1
 -----
 
+* Added the `DiffractionDataset.time_series_by_mask` method, which allows to create time-series integrated across an arbitrary momentum-space mask.
+  This allows to create time-series from shapes that are not rectangular, at the expense of performance.
 * Fixed an issue where calculations of time-series, relative to pre-time-zero, would raise an error.
 
 5.2.0
