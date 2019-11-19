@@ -627,6 +627,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         -------
         out : ndarray, ndim 1
 
+        Raises
+        ------
+        ValueError : if the shape of `mask` does not match the scattering patterns.
+
         See also
         --------
         time_series : integrated intensity in a rectangle.
