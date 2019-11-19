@@ -175,7 +175,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
             # Making use of the H5DS dimension scales
             # http://docs.h5py.org/en/latest/high/dims.html
-            dset.dims.create_scale(times, "time-delay")
+            times.make_scale("time-delay")
             dset.dims[2].attach_scale(times)
 
             # At each iteration, we flush the changes to file
@@ -610,6 +610,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         Integrated intensity over time according to some arbitrary mask. This
         is a generalization of the ``DiffractionDataset.time_series`` method, which
         is much faster, but limited to rectangular selections.
+
+        .. versionadded:: 5.2.1
 
         Parameters
         ----------
