@@ -307,16 +307,26 @@ class TestDiffractionDataset(unittest.TestCase):
         DiffractionDataset.selection_disk """
         selection = self.dataset.selection_disk(center=(120, 200), radius=10)
 
-        # First, modify the dataset so that within the selection, only zeroes are found
-        # Note that HDF5 does not support fancy boolean indexing, so we must change the
-        # content image-by-image.
-        for index, _ in enumerate(self.dataset.time_points):
-            arr = self.dataset.diffraction_group["intensity"][:, :, index]
-            arr[selection] = 0
-            self.dataset.diffraction_group["intensity"][:, :, index] = arr
+        with self.subTest('Non-relative'):
+            # We modify the dataset so that within the selection, only zeroes are found
+            # Note that HDF5 does not support fancy boolean indexing, so we must change the
+            # content image-by-image.
+            for index, _ in enumerate(self.dataset.time_points):
+                arr = self.dataset.diffraction_group["intensity"][:, :, index]
+                arr[selection] = 0
+                self.dataset.diffraction_group["intensity"][:, :, index] = arr
 
-        ts = self.dataset.time_series_selection(selection, relative=False)
-        self.assertTrue(np.allclose(ts, np.zeros_like(ts)))
+            ts = self.dataset.time_series_selection(selection, relative=False)
+            self.assertTrue(np.allclose(ts, np.zeros_like(ts)))
+
+        with self.subTest('Relative'):
+            for index, _ in enumerate(self.dataset.time_points):
+                arr = self.dataset.diffraction_group["intensity"][:, :, index]
+                arr[selection] = 1
+                self.dataset.diffraction_group["intensity"][:, :, index] = arr
+
+            ts = self.dataset.time_series_selection(selection, relative=True)
+            self.assertTrue(np.allclose(ts, np.ones_like(ts)))
 
     def test_selection_ring(self):
         """ Test DiffractionDataset.time_series_selection with 
@@ -325,16 +335,26 @@ class TestDiffractionDataset(unittest.TestCase):
             center=(120, 200), inner_radius=10, outer_radius=20
         )
 
-        # First, modify the dataset so that within the selection, only zeroes are found
-        # Note that HDF5 does not support fancy boolean indexing, so we must change the
-        # content image-by-image.
-        for index, _ in enumerate(self.dataset.time_points):
-            arr = self.dataset.diffraction_group["intensity"][:, :, index]
-            arr[selection] = 0
-            self.dataset.diffraction_group["intensity"][:, :, index] = arr
+        with self.subTest('Non-relative'):
+            # We modify the dataset so that within the selection, only zeroes are found
+            # Note that HDF5 does not support fancy boolean indexing, so we must change the
+            # content image-by-image.
+            for index, _ in enumerate(self.dataset.time_points):
+                arr = self.dataset.diffraction_group["intensity"][:, :, index]
+                arr[selection] = 0
+                self.dataset.diffraction_group["intensity"][:, :, index] = arr
 
-        ts = self.dataset.time_series_selection(selection, relative=False)
-        self.assertTrue(np.allclose(ts, np.zeros_like(ts)))
+            ts = self.dataset.time_series_selection(selection, relative=False)
+            self.assertTrue(np.allclose(ts, np.zeros_like(ts)))
+
+        with self.subTest('Relative'):
+            for index, _ in enumerate(self.dataset.time_points):
+                arr = self.dataset.diffraction_group["intensity"][:, :, index]
+                arr[selection] = 1
+                self.dataset.diffraction_group["intensity"][:, :, index] = arr
+
+            ts = self.dataset.time_series_selection(selection, relative=True)
+            self.assertTrue(np.allclose(ts, np.ones_like(ts)))
 
 
 class TestPowderDiffractionDataset(unittest.TestCase):
