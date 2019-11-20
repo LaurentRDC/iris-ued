@@ -716,9 +716,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         """
         center_row, center_col = center
         selection = np.zeros(shape=self.resolution, dtype=np.bool)
-        rr, cc = np.meshgrid(
-            np.arange(0, selection.shape[0], dtype=np.int) - center_row,
-            np.arange(0, selection.shape[1], dtype=np.int) - center_col,
+        cc, rr = np.meshgrid(
+            np.arange(0, selection.shape[0], dtype=np.int) - center_col,
+            np.arange(0, selection.shape[1], dtype=np.int) - center_row,
         )
         distance = np.sqrt(rr ** 2 + cc ** 2)
         selection[distance <= radius] = True
@@ -751,9 +751,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         """
         center_row, center_col = center
         selection = np.zeros(shape=self.resolution, dtype=np.bool)
-        rr, cc = np.meshgrid(
-            np.arange(0, selection.shape[0], dtype=np.int) - center_row,
-            np.arange(0, selection.shape[1], dtype=np.int) - center_col,
+        cc, rr = np.meshgrid(
+            np.arange(0, selection.shape[0], dtype=np.int) - center_col,
+            np.arange(0, selection.shape[1], dtype=np.int) - center_row,
         )
         distance = np.sqrt(rr ** 2 + cc ** 2)
         selection[
