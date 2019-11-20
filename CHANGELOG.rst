@@ -1,8 +1,9 @@
 5.2.1
 -----
 
-* Added the `DiffractionDataset.time_series_selection` method, which allows to create time-series integrated across an arbitrary momentum-space mask.
+* Added the `DiffractionDataset.time_series_selection` method, which allows to create time-series integrated across an arbitrary momentum-space selection mask.
   This allows to create time-series from shapes that are not rectangular, at the expense of performance.
+* Added a few methods to create selection masks: `DiffractionDataset.selection_rect`, `DiffractionDataset.selection_disk`, and `DiffractionDataset.selection_ring`.
 * Fixed an issue where calculations of time-series, relative to pre-time-zero, would raise an error.
 * Symmetrization dialog is no longer in "beta".
 
