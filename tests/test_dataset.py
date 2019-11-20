@@ -257,8 +257,8 @@ class TestDiffractionDataset(unittest.TestCase):
                 )
             )
 
-    def test_time_series_by_mask(self):
-        """ Test that the DiffractionDataset.time_series_by_mask 
+    def test_time_series_selection(self):
+        """ Test that the DiffractionDataset.time_series_selection 
         method is working as expected """
         mask = np.random.choice([True, False], size=self.dataset.resolution)
 
@@ -268,20 +268,20 @@ class TestDiffractionDataset(unittest.TestCase):
         with self.subTest("Non-relative time-series"):
             self.assertTrue(
                 np.allclose(
-                    self.dataset.time_series_by_mask(mask, relative=False), ts
+                    self.dataset.time_series_selection(mask, relative=False), ts
                 )
             )
 
         with self.subTest("Relative time-series"):
             self.assertTrue(
                 np.allclose(
-                    self.dataset.time_series_by_mask(mask, relative=True), ts
+                    self.dataset.time_series_selection(mask, relative=True), ts
                 )
             )
     
     def test_time_series_vs_by_mask(self):
         """ Comparison of DiffractionDataset.time_series vs 
-        DiffractionDataset.time_series_by_mask """
+        DiffractionDataset.time_series_selection """
 
         r1, r2, c1, c2 = 100, 120, 45, 57
         mask = np.zeros_like(self.patterns[0], dtype=np.bool)
@@ -289,7 +289,7 @@ class TestDiffractionDataset(unittest.TestCase):
 
         with self.subTest("Non-relative"):
             ts = self.dataset.time_series([r1, r2, c1, c2], relative=False)
-            tsbm = self.dataset.time_series_by_mask(mask, relative=False)
+            tsbm = self.dataset.time_series_selection(mask, relative=False)
             self.assertTrue(
                 np.allclose(
                     ts, tsbm
@@ -298,7 +298,7 @@ class TestDiffractionDataset(unittest.TestCase):
 
         with self.subTest("Relative"):
             ts = self.dataset.time_series([r1, r2, c1, c2], relative=True)
-            tsbm = self.dataset.time_series_by_mask(mask, relative=True)
+            tsbm = self.dataset.time_series_selection(mask, relative=True)
             self.assertTrue(
                 np.allclose(
                     ts, tsbm

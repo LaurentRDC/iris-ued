@@ -56,7 +56,7 @@ for a complete description.
     :noindex:
 .. automethod:: DiffractionDataset.time_series
     :noindex:
-.. automethod:: DiffractionDataset.time_series_by_mask
+.. automethod:: DiffractionDataset.time_series_selection
     :noindex:
 
 The :class:`PowderDiffractionDataset` object
