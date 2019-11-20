@@ -328,6 +328,14 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
         ###################
         # Display options
+        self.toggle_controls_visibility_action = QtWidgets.QAction(
+            "& Show/hide controls", self
+        )
+        self.toggle_controls_visibility_action.setCheckable(True)
+        self.toggle_controls_visibility_action.setChecked(True)
+        self.toggle_controls_visibility_action.toggled.connect(
+            self.controls.setVisible
+        )
         self.show_diff_peak_dynamics_action = QtWidgets.QAction(
             "& Show/hide peak dynamics", self
         )
@@ -393,6 +401,8 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.display_options_menu = self.menu_bar.addMenu("&Display")
+        self.display_options_menu.addAction(self.toggle_controls_visibility_action)
+        self.display_options_menu.addSeparator()
         self.diffraction_dataset_display_options_menu = self.display_options_menu.addMenu(
             "& Diffraction display options"
         )
