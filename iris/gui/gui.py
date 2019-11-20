@@ -276,9 +276,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.symmetrize_action = QtWidgets.QAction(
-            QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")),
-            "& Symmetrize data",
-            self,
+            QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")), "& Symmetrize data", self
         )
         self.symmetrize_action.triggered.connect(self.launch_symmetrize_dialog)
         self.controller.processed_dataset_loaded_signal.connect(

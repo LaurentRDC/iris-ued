@@ -636,6 +636,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         See also
         --------
         time_series : integrated intensity in a rectangle.
+        selection_rect : build a rectangular selection mask.
+        selection_disk : build a disk selection mask.
+        selection_ring : build a ring selection mask. 
         """
         selection = np.array(selection, dtype=np.bool)
         if selection.shape != self.resolution:
@@ -648,20 +651,115 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         # There is no way to select data from HDF5 using arbitrary boolean mask
         # Therefore, we must iterate through all time-points.
-        dataset = self.diffraction_group['intensity']
+        dataset = self.diffraction_group["intensity"]
         placeholder = np.empty(shape=self.resolution, dtype=dataset.dtype)
         for index, _ in enumerate(self.time_points):
-            # It is faster to read data directly 
+            # It is faster to read data directly
             # than to go through DiffractionDataset.diff_data
             dataset.read_direct(
                 placeholder, source_sel=np.s_[:, :, index], dest_sel=np.s_[:, :]
             )
             out[index] = np.mean(placeholder[selection])
-        
+
         if relative:
             out -= np.mean(self.diff_eq()[selection])
-        
+
         return out
+
+    def selection_rect(self, r1, r2, c1, c2):
+        """
+        Create a rectangular selection mask.
+
+        .. versionadded:: 5.2.1
+
+        Parameters
+        ----------
+        r1, r2, c1, c2 : int
+            Bounds of the region in px. Bounds are specified as [row1, row2, col1, col2]
+        
+        Returns
+        -------
+        selection : ndarray, dtype bool
+            Selection mask evaluating to `True` for pixels within the rectangular bounds. 
+
+        See also
+        --------
+        selection_disk : build a disk selection mask.
+        selection_ring : build a ring selection mask. 
+        """
+        selection = np.zeros(shape=self.resolution, dtype=np.bool)
+        selection[r1:r2, c1:c2] = True
+        return selection
+
+    def selection_disk(self, center, radius):
+        """
+        Create a circular selection mask.
+
+        .. versionadded:: 5.2.1
+
+        Parameters
+        ----------
+        center : (int,int)
+            Center position of the selection mask, in pixels.
+        radius : int or float
+            Radius of the selection mask.
+        
+        Returns
+        -------
+        selection : ndarray, dtype bool
+            Selection mask evaluating to `True` for pixels within the circular bounds. 
+
+        See also
+        --------
+        selection_rect : build a rectangular selection mask.
+        selection_ring : build a ring selection mask. 
+        """
+        center_row, center_col = center
+        selection = np.zeros(shape=self.resolution, dtype=np.bool)
+        rr, cc = np.meshgrid(
+            np.arange(0, selection.shape[0], dtype=np.int) - center_row,
+            np.arange(0, selection.shape[1], dtype=np.int) - center_col,
+        )
+        distance = np.sqrt(rr ** 2 + cc ** 2)
+        selection[distance <= radius] = True
+        return selection
+
+    def selection_ring(self, center, inner_radius, outer_radius):
+        """
+        Create a ring selection mask.
+
+        .. versionadded:: 5.2.1
+
+        Parameters
+        ----------
+        center : (int,int)
+            Center position of the selection mask, in pixels.
+        inner_radius : int or float
+            Inner radius of the selection mask.
+        outer_radius : int or float
+            Outer radius of the selection mask.
+        
+        Returns
+        -------
+        selection : ndarray, dtype bool
+            Selection mask evaluating to `True` for pixels within the toroidal bounds. 
+
+        See also
+        --------
+        selection_rect : build a rectangular selection mask.
+        selection_disk : build a disk selection mask.
+        """
+        center_row, center_col = center
+        selection = np.zeros(shape=self.resolution, dtype=np.bool)
+        rr, cc = np.meshgrid(
+            np.arange(0, selection.shape[0], dtype=np.int) - center_row,
+            np.arange(0, selection.shape[1], dtype=np.int) - center_col,
+        )
+        distance = np.sqrt(rr ** 2 + cc ** 2)
+        selection[
+            np.logical_and(distance >= inner_radius, distance <= outer_radius)
+        ] = True
+        return selection
 
     @property
     def experimental_parameters_group(self):
