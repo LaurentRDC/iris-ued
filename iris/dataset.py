@@ -597,7 +597,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         See also
         --------
-        time_series_by_mask : generalized intensity integration.
+        time_series_selection : intensity integration using arbitrary selections.
         """
         x1, x2, y1, y2 = rect
         data = self.diffraction_group["intensity"][x1:x2, y1:y2, :]
@@ -605,9 +605,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             data -= self.diff_eq()[x1:x2, y1:y2, None]
         return np.mean(data, axis=(0, 1), out=out)
 
-    def time_series_by_mask(self, mask, relative=False, out=None):
+    def time_series_selection(self, selection, relative=False, out=None):
         """
-        Integrated intensity over time according to some arbitrary mask. This
+        Integrated intensity over time according to some arbitrary selection. This
         is a generalization of the ``DiffractionDataset.time_series`` method, which
         is much faster, but limited to rectangular selections.
 
@@ -615,8 +615,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Parameters
         ----------
-        mask : ndarray, dtype bool, shape (N,M)
-            Mask evaluating to ``True`` in the regions to integrate. The mask must be
+        selection : ndarray, dtype bool, shape (N,M)
+            Selection mask evaluating to ``True`` in the regions to integrate. The selection must be
             the same shape as one scattering pattern (i.e. two-dimensional).
         relative : bool, optional
             If True, data is returned relative to the average of all diffraction patterns
@@ -637,10 +637,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         --------
         time_series : integrated intensity in a rectangle.
         """
-        mask = np.array(mask, dtype=np.bool)
-        if mask.shape != self.resolution:
+        selection = np.array(selection, dtype=np.bool)
+        if selection.shape != self.resolution:
             raise ValueError(
-                f"Mask shape {mask.shape} does not match scattering pattern shape {self.resolution}"
+                f"selection mask shape {selection.shape} does not match scattering pattern shape {self.resolution}"
             )
 
         if out is None:
@@ -656,10 +656,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             dataset.read_direct(
                 placeholder, source_sel=np.s_[:, :, index], dest_sel=np.s_[:, :]
             )
-            out[index] = np.mean(placeholder[mask])
+            out[index] = np.mean(placeholder[selection])
         
         if relative:
-            out -= np.mean(self.diff_eq()[mask])
+            out -= np.mean(self.diff_eq()[selection])
         
         return out
 
