@@ -5,6 +5,7 @@
   This allows to create time-series from shapes that are not rectangular, at the expense of performance.
 * Added a few methods to create selection masks: `DiffractionDataset.selection_rect`, `DiffractionDataset.selection_disk`, and `DiffractionDataset.selection_ring`.
 * Added the ability to show/hide dataset control bar;
+* Added the ability to export time-series data in CSV format;
 
 * Fixed an issue where calculations of time-series, relative to pre-time-zero, would raise an error.
 * Symmetrization dialog is no longer in "beta".
