@@ -76,6 +76,11 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         )
         self.exponential_fit_widget.clicked.connect(self.fit_exponential_decay)
 
+        self.export_timeseries_widget = QtWidgets.QPushButton(
+            "Export time-series data", self
+        )
+        self.export_timeseries_widget.clicked.connect(self.export_timeseries)
+
         self.fit_constants_label = QtWidgets.QLabel(self)
 
         self.controls = QtWidgets.QHBoxLayout()
@@ -84,6 +89,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.controls.addWidget(self.symbol_size_widget)
         self.controls.addWidget(self.exponential_fit_widget)
         self.controls.addWidget(self.fit_constants_label)
+        self.controls.addWidget(self.export_timeseries_widget)
         self.controls.addStretch(1)
 
         layout = QtWidgets.QVBoxLayout()
@@ -177,6 +183,27 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.fit_constants_label.setText(
             f"Time-constant: ({tconst:.3f}±{tconsterr:.3f} ps, Time-zero: ({tzero:.3f}±{tzeroerr:.3f}) ps"
         )
+
+    @QtCore.pyqtSlot()
+    def export_timeseries(self):
+        """ Allow exporting the time-series data. """
+        times = self._last_times
+        intensity = self._last_intensities_abs
+
+        if (times is None) or (intensity is None):
+            return QtWidgets.QMessageBox.warning("No time-series to export.")
+
+        file_dialog = QtWidgets.QFileDialog()
+        path = file_dialog.getSaveFileName(
+            parent=self, caption="Export time-series data", filter="*.csv"
+        )[0]
+        if not path:
+            return
+
+        data = np.empty(shape=(len(times), 2), dtype=np.float)
+        data[:, 0] = times
+        data[:, 1] = intensity
+        np.savetxt(path, data, delimiter=",", header="times [ps], intensity [cnts]")
 
     @QtCore.pyqtSlot()
     def refresh(self):
