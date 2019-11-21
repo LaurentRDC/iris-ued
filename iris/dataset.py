@@ -649,17 +649,22 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         if out is None:
             out = np.zeros(shape=(len(self.time_points),), dtype=np.float)
 
+        # For performance reasons, we want to know what is the largest bounding box that
+        # fits this selection. Otherwise, all data must be loaded from disk, all the time.
+        r1, r2, c1, c2 = selection_bbox(selection)
+        reduced_selection = selection[r1:r2, c1:c2]
+
         # There is no way to select data from HDF5 using arbitrary boolean mask
         # Therefore, we must iterate through all time-points.
         dataset = self.diffraction_group["intensity"]
-        placeholder = np.empty(shape=self.resolution, dtype=dataset.dtype)
+        placeholder = np.empty(shape=(r2 - r1, c2 - c1), dtype=dataset.dtype)
         for index, _ in enumerate(self.time_points):
             # It is faster to read data directly
             # than to go through DiffractionDataset.diff_data
             dataset.read_direct(
-                placeholder, source_sel=np.s_[:, :, index], dest_sel=np.s_[:, :]
+                placeholder, source_sel=np.s_[r1:r2, c1:c2, index], dest_sel=np.s_[:, :]
             )
-            out[index] = np.mean(placeholder[selection])
+            out[index] = np.mean(placeholder[reduced_selection])
 
         if relative:
             out -= np.mean(self.diff_eq()[selection])
@@ -781,6 +786,44 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         if dataset.compression_opts:  # could be None
             ckwargs.update(dataset.compression_opts)
         return ckwargs
+
+
+def selection_bbox(selection):
+    """ 
+    Determine the bounding box within which a selection mask fits.
+
+    Parameters
+    ----------
+    selection : ndarray, dtype bool, ndim 2
+        Selection mask where pixels evaluate to `True` on desirable regions.
+
+    Returns
+    -------
+    r1, r2 : int
+        Row-wise bounds
+    c1, c2 : int
+        Column-wise bounds
+    """
+    selection = np.asarray(selection, dtype=np.bool)
+
+    # The idea is to add values along rows and columns.
+    # Since True ~ 1, and False ~ 0, we can determine
+    # the bounding box by finding minimum and maximum indices
+    # where the projection is nonzero
+    # Warning : nonzero() returns a tuple!
+    row_nonzero, = np.sum(selection, axis=1).nonzero()
+    col_nonzero, = np.sum(selection, axis=0).nonzero()
+
+    # In case of empty selection (i.e. all False), min and max will fail
+    # Therefore, we replace with trivial value
+    if row_nonzero.size == 0:
+        row_nonzero = np.array([0])
+    if col_nonzero.size == 0:
+        col_nonzero = np.array([0])
+
+    r1, r2 = np.min(row_nonzero), np.max(row_nonzero) + 1
+    c1, c2 = np.min(col_nonzero), np.max(col_nonzero) + 1
+    return (r1, r2, c1, c2)
 
 
 # Functions to be passed to pmap must not be local functions
