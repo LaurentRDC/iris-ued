@@ -14,7 +14,15 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 from npstreams import average, itercopy, peek, pmap
-from skued import __version__, azimuthal_average, baseline_dt, nfold, powder_calq
+from skued import (
+    __version__,
+    azimuthal_average,
+    baseline_dt,
+    nfold,
+    powder_calq,
+    ArbitrarySelection,
+    Selection
+)
 from skued.baseline import dt_max_level
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
@@ -615,9 +623,11 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Parameters
         ----------
-        selection : ndarray, dtype bool, shape (N,M)
-            Selection mask evaluating to ``True`` in the regions to integrate. The selection must be
-            the same shape as one scattering pattern (i.e. two-dimensional).
+        selection : skued.Selection or ndarray, dtype bool, shape (N,M)
+            A selection mask that dictates the regions to integrate in each scattering patterns.
+            In the case `selection` is an array, an ArbirarySelection will be used. Performance 
+            may be degraded. Selection mask evaluating to ``True`` in the regions to integrate. 
+            The selection must be the same shape as one scattering pattern (i.e. two-dimensional).
         relative : bool, optional
             If True, data is returned relative to the average of all diffraction patterns
             before photoexcitation.
@@ -636,11 +646,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         See also
         --------
         time_series : integrated intensity in a rectangle.
-        selection_rect : build a rectangular selection mask.
-        selection_disk : build a disk selection mask.
-        selection_ring : build a ring selection mask. 
         """
-        selection = np.array(selection, dtype=np.bool)
+        if not isinstance(selection, Selection):
+            selection=ArbitrarySelection(selection)
+
         if selection.shape != self.resolution:
             raise ValueError(
                 f"selection mask shape {selection.shape} does not match scattering pattern shape {self.resolution}"
@@ -651,8 +660,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         # For performance reasons, we want to know what is the largest bounding box that
         # fits this selection. Otherwise, all data must be loaded from disk, all the time.
-        r1, r2, c1, c2 = selection_bbox(selection)
-        reduced_selection = selection[r1:r2, c1:c2]
+        r1, r2, c1, c2 = selection.bounding_box
+        reduced_selection = np.asarray(selection)[r1:r2, c1:c2]
 
         # There is no way to select data from HDF5 using arbitrary boolean mask
         # Therefore, we must iterate through all time-points.
@@ -670,101 +679,6 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             out -= np.mean(self.diff_eq()[selection])
 
         return out
-
-    def selection_rect(self, r1, r2, c1, c2):
-        """
-        Create a rectangular selection mask.
-
-        .. versionadded:: 5.2.1
-
-        Parameters
-        ----------
-        r1, r2, c1, c2 : int
-            Bounds of the region in px. Bounds are specified as [row1, row2, col1, col2]
-        
-        Returns
-        -------
-        selection : ndarray, dtype bool
-            Selection mask evaluating to `True` for pixels within the rectangular bounds. 
-
-        See also
-        --------
-        selection_disk : build a disk selection mask.
-        selection_ring : build a ring selection mask. 
-        """
-        selection = np.zeros(shape=self.resolution, dtype=np.bool)
-        selection[r1:r2, c1:c2] = True
-        return selection
-
-    def selection_disk(self, center, radius):
-        """
-        Create a circular selection mask.
-
-        .. versionadded:: 5.2.1
-
-        Parameters
-        ----------
-        center : (int,int)
-            Center position of the selection mask, in pixels.
-        radius : int or float
-            Radius of the selection mask.
-        
-        Returns
-        -------
-        selection : ndarray, dtype bool
-            Selection mask evaluating to `True` for pixels within the circular bounds. 
-
-        See also
-        --------
-        selection_rect : build a rectangular selection mask.
-        selection_ring : build a ring selection mask. 
-        """
-        center_row, center_col = center
-        selection = np.zeros(shape=self.resolution, dtype=np.bool)
-        cc, rr = np.meshgrid(
-            np.arange(0, selection.shape[0], dtype=np.int) - center_col,
-            np.arange(0, selection.shape[1], dtype=np.int) - center_row,
-        )
-        distance = np.sqrt(rr ** 2 + cc ** 2)
-        selection[distance <= radius] = True
-        return selection
-
-    def selection_ring(self, center, inner_radius, outer_radius):
-        """
-        Create a ring selection mask.
-
-        .. versionadded:: 5.2.1
-
-        Parameters
-        ----------
-        center : (int,int)
-            Center position of the selection mask, in pixels.
-        inner_radius : int or float
-            Inner radius of the selection mask.
-        outer_radius : int or float
-            Outer radius of the selection mask.
-        
-        Returns
-        -------
-        selection : ndarray, dtype bool
-            Selection mask evaluating to `True` for pixels within the toroidal bounds. 
-
-        See also
-        --------
-        selection_rect : build a rectangular selection mask.
-        selection_disk : build a disk selection mask.
-        """
-        center_row, center_col = center
-        selection = np.zeros(shape=self.resolution, dtype=np.bool)
-        cc, rr = np.meshgrid(
-            np.arange(0, selection.shape[0], dtype=np.int) - center_col,
-            np.arange(0, selection.shape[1], dtype=np.int) - center_row,
-        )
-        distance = np.sqrt(rr ** 2 + cc ** 2)
-        selection[
-            np.logical_and(distance >= inner_radius, distance <= outer_radius)
-        ] = True
-        return selection
 
     @property
     def experimental_parameters_group(self):
@@ -786,44 +700,6 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         if dataset.compression_opts:  # could be None
             ckwargs.update(dataset.compression_opts)
         return ckwargs
-
-
-def selection_bbox(selection):
-    """ 
-    Determine the bounding box within which a selection mask fits.
-
-    Parameters
-    ----------
-    selection : ndarray, dtype bool, ndim 2
-        Selection mask where pixels evaluate to `True` on desirable regions.
-
-    Returns
-    -------
-    r1, r2 : int
-        Row-wise bounds
-    c1, c2 : int
-        Column-wise bounds
-    """
-    selection = np.asarray(selection, dtype=np.bool)
-
-    # The idea is to add values along rows and columns.
-    # Since True ~ 1, and False ~ 0, we can determine
-    # the bounding box by finding minimum and maximum indices
-    # where the projection is nonzero
-    # Warning : nonzero() returns a tuple!
-    row_nonzero, = np.sum(selection, axis=1).nonzero()
-    col_nonzero, = np.sum(selection, axis=0).nonzero()
-
-    # In case of empty selection (i.e. all False), min and max will fail
-    # Therefore, we replace with trivial value
-    if row_nonzero.size == 0:
-        row_nonzero = np.array([0])
-    if col_nonzero.size == 0:
-        col_nonzero = np.array([0])
-
-    r1, r2 = np.min(row_nonzero), np.max(row_nonzero) + 1
-    c1, c2 = np.min(col_nonzero), np.max(col_nonzero) + 1
-    return (r1, r2, c1, c2)
 
 
 # Functions to be passed to pmap must not be local functions
