@@ -333,9 +333,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
         self.toggle_controls_visibility_action.setCheckable(True)
         self.toggle_controls_visibility_action.setChecked(True)
-        self.toggle_controls_visibility_action.toggled.connect(
-            self.controls.setVisible
-        )
+        self.toggle_controls_visibility_action.toggled.connect(self.controls.setVisible)
         self.show_diff_peak_dynamics_action = QtWidgets.QAction(
             "& Show/hide peak dynamics", self
         )

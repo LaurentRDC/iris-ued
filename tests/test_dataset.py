@@ -10,7 +10,7 @@ from numpy.random import random
 
 from crystals import Crystal
 from iris import DiffractionDataset, PowderDiffractionDataset
-from iris.dataset import SWMR_AVAILABLE
+from iris.dataset import SWMR_AVAILABLE, selection_bbox
 from skued import nfold
 
 from . import TestRawDataset
@@ -307,7 +307,7 @@ class TestDiffractionDataset(unittest.TestCase):
         DiffractionDataset.selection_disk """
         selection = self.dataset.selection_disk(center=(120, 200), radius=10)
 
-        with self.subTest('Non-relative'):
+        with self.subTest("Non-relative"):
             # We modify the dataset so that within the selection, only zeroes are found
             # Note that HDF5 does not support fancy boolean indexing, so we must change the
             # content image-by-image.
@@ -319,7 +319,7 @@ class TestDiffractionDataset(unittest.TestCase):
             ts = self.dataset.time_series_selection(selection, relative=False)
             self.assertTrue(np.allclose(ts, np.zeros_like(ts)))
 
-        with self.subTest('Relative'):
+        with self.subTest("Relative"):
             for index, _ in enumerate(self.dataset.time_points):
                 arr = self.dataset.diffraction_group["intensity"][:, :, index]
                 arr[selection] = 1
@@ -335,7 +335,7 @@ class TestDiffractionDataset(unittest.TestCase):
             center=(120, 200), inner_radius=10, outer_radius=20
         )
 
-        with self.subTest('Non-relative'):
+        with self.subTest("Non-relative"):
             # We modify the dataset so that within the selection, only zeroes are found
             # Note that HDF5 does not support fancy boolean indexing, so we must change the
             # content image-by-image.
@@ -347,7 +347,7 @@ class TestDiffractionDataset(unittest.TestCase):
             ts = self.dataset.time_series_selection(selection, relative=False)
             self.assertTrue(np.allclose(ts, np.zeros_like(ts)))
 
-        with self.subTest('Relative'):
+        with self.subTest("Relative"):
             for index, _ in enumerate(self.dataset.time_points):
                 arr = self.dataset.diffraction_group["intensity"][:, :, index]
                 arr[selection] = 1
@@ -355,6 +355,30 @@ class TestDiffractionDataset(unittest.TestCase):
 
             ts = self.dataset.time_series_selection(selection, relative=True)
             self.assertTrue(np.allclose(ts, np.ones_like(ts)))
+
+
+class TestSelectionBbox(unittest.TestCase):
+    def test_selection_bbox_trivial(self):
+        """ Test that the selection_bbox function returns a zero-size bbox
+        for a trivial selection (all False) """
+        selection = np.zeros((8, 8), dtype=np.bool)
+        r1, r2, c1, c2 = selection_bbox(selection)
+        self.assertListEqual([r1, r2, c1, c2], [0, 1, 0, 1])
+
+    def test_selection_bbox_rectangle(self):
+        """ Test that the selection_bbox function works for a rectangular selection """
+        with self.subTest("Corner"):
+            selection = np.zeros((8, 8), dtype=np.bool)
+            selection[0:2, 0:2] = True
+            r1, r2, c1, c2 = selection_bbox(selection)
+            self.assertListEqual([r1, c1, r2, c2], [0, 0, 2, 2])
+
+        with self.subTest("Off-center"):
+
+            selection = np.zeros((8, 8), dtype=np.bool)
+            selection[3:7, 1:3] = True
+            r1, r2, c1, c2 = selection_bbox(selection)
+            self.assertListEqual([r1, r2, c1, c2], [3, 7, 1, 3])
 
 
 class TestPowderDiffractionDataset(unittest.TestCase):
