@@ -11,7 +11,7 @@ from numpy.random import random
 from crystals import Crystal
 from iris import DiffractionDataset, PowderDiffractionDataset
 from iris.dataset import SWMR_AVAILABLE, selection_bbox
-from skued import nfold
+from skued import nfold, RectSelection, DiskSelection, RingSelection, ArbitrarySelection
 
 from . import TestRawDataset
 
@@ -268,20 +268,21 @@ class TestDiffractionDataset(unittest.TestCase):
         """ Test that the DiffractionDataset.time_series_selection 
         method is working as expected """
         mask = np.random.choice([True, False], size=self.dataset.resolution)
+        selection = ArbitrarySelection(mask)
 
         stack = np.stack(self.patterns, axis=-1)
-        ts = np.mean(stack[mask], axis=(0, 1))
+        ts = np.mean(stack[selection], axis=(0, 1))
 
         with self.subTest("Non-relative time-series"):
             self.assertTrue(
                 np.allclose(
-                    self.dataset.time_series_selection(mask, relative=False), ts
+                    self.dataset.time_series_selection(selection, relative=False), ts
                 )
             )
 
         with self.subTest("Relative time-series"):
             self.assertTrue(
-                np.allclose(self.dataset.time_series_selection(mask, relative=True), ts)
+                np.allclose(self.dataset.time_series_selection(selection, relative=True), ts)
             )
 
     def test_selection_rect(self):
@@ -290,7 +291,7 @@ class TestDiffractionDataset(unittest.TestCase):
         DiffractionDataset.selection_rect """
 
         r1, r2, c1, c2 = 100, 120, 45, 57
-        selection = self.dataset.selection_rect(r1, r2, c1, c2)
+        selection = RectSelection(self.dataset.selection, r1, r2, c1, c2)
 
         with self.subTest("Non-relative"):
             ts = self.dataset.time_series([r1, r2, c1, c2], relative=False)
@@ -305,7 +306,7 @@ class TestDiffractionDataset(unittest.TestCase):
     def test_selection_disk(self):
         """ Test DiffractionDataset.time_series_selection with 
         DiffractionDataset.selection_disk """
-        selection = self.dataset.selection_disk(center=(120, 200), radius=10)
+        selection = DiskSelection(self.dataset.resolution, center=(120, 200), radius=10)
 
         with self.subTest("Non-relative"):
             # We modify the dataset so that within the selection, only zeroes are found
@@ -331,7 +332,7 @@ class TestDiffractionDataset(unittest.TestCase):
     def test_selection_ring(self):
         """ Test DiffractionDataset.time_series_selection with 
         DiffractionDataset.selection_ring """
-        selection = self.dataset.selection_ring(
+        selection = RingSelection(self.dataset.resolution
             center=(120, 200), inner_radius=10, outer_radius=20
         )
 
@@ -355,30 +356,6 @@ class TestDiffractionDataset(unittest.TestCase):
 
             ts = self.dataset.time_series_selection(selection, relative=True)
             self.assertTrue(np.allclose(ts, np.ones_like(ts)))
-
-
-class TestSelectionBbox(unittest.TestCase):
-    def test_selection_bbox_trivial(self):
-        """ Test that the selection_bbox function returns a zero-size bbox
-        for a trivial selection (all False) """
-        selection = np.zeros((8, 8), dtype=np.bool)
-        r1, r2, c1, c2 = selection_bbox(selection)
-        self.assertListEqual([r1, r2, c1, c2], [0, 1, 0, 1])
-
-    def test_selection_bbox_rectangle(self):
-        """ Test that the selection_bbox function works for a rectangular selection """
-        with self.subTest("Corner"):
-            selection = np.zeros((8, 8), dtype=np.bool)
-            selection[0:2, 0:2] = True
-            r1, r2, c1, c2 = selection_bbox(selection)
-            self.assertListEqual([r1, c1, r2, c2], [0, 0, 2, 2])
-
-        with self.subTest("Off-center"):
-
-            selection = np.zeros((8, 8), dtype=np.bool)
-            selection[3:7, 1:3] = True
-            r1, r2, c1, c2 = selection_bbox(selection)
-            self.assertListEqual([r1, r2, c1, c2], [3, 7, 1, 3])
 
 
 class TestPowderDiffractionDataset(unittest.TestCase):
