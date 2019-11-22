@@ -64,7 +64,7 @@ class UpdateChecker(QtCore.QThread):
                 msg = f"You are running the latest version, {__version__}."
         except ConnectionError:
             outdated = False
-            msg = "Could not determine if an update is available."
+            msg = "Could not determine if an update is available. No connections available."
 
         self.update_available_signal.emit(outdated)
         self.update_status_signal.emit(msg)
