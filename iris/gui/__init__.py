@@ -17,16 +17,6 @@ from ..raw import open_raw
 from .gui import Iris, IMAGE_FOLDER
 from qdarkstyle import load_stylesheet_pyqt5
 
-try:
-    from subprocess import CREATE_NEW_PROCESS_GROUP
-
-    WINDOWS = True
-except ImportError:
-    WINDOWS = False
-
-
-DETACHED_PROCESS = 0x00000008  # 0x8 | 0x200 == 0x208
-
 
 @contextmanager
 def gui_environment():
