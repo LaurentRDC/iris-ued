@@ -139,7 +139,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
 
         self.processed_viewer = ProcessedDataViewer(parent=self)
-        self.processed_viewer.peak_dynamics_roi_signal.connect(
+        self.processed_viewer.timeseries_rect_signal.connect(
             self.controller.time_series
         )
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
