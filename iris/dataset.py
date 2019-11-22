@@ -21,7 +21,7 @@ from skued import (
     nfold,
     powder_calq,
     ArbitrarySelection,
-    Selection
+    Selection,
 )
 from skued.baseline import dt_max_level
 
@@ -648,7 +648,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         time_series : integrated intensity in a rectangle.
         """
         if not isinstance(selection, Selection):
-            selection=ArbitrarySelection(selection)
+            selection = ArbitrarySelection(selection)
 
         if selection.shape != self.resolution:
             raise ValueError(

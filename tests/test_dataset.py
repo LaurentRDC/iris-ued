@@ -282,7 +282,9 @@ class TestDiffractionDataset(unittest.TestCase):
 
         with self.subTest("Relative time-series"):
             self.assertTrue(
-                np.allclose(self.dataset.time_series_selection(selection, relative=True), ts)
+                np.allclose(
+                    self.dataset.time_series_selection(selection, relative=True), ts
+                )
             )
 
     def test_selection_rect(self):
@@ -332,8 +334,8 @@ class TestDiffractionDataset(unittest.TestCase):
     def test_selection_ring(self):
         """ Test DiffractionDataset.time_series_selection with 
         DiffractionDataset.selection_ring """
-        selection = RingSelection(self.dataset.resolution
-            center=(120, 200), inner_radius=10, outer_radius=20
+        selection = RingSelection(
+            self.dataset.resolution, center=(120, 200), inner_radius=10, outer_radius=20
         )
 
         with self.subTest("Non-relative"):
