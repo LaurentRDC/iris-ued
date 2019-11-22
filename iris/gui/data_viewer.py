@@ -14,7 +14,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
     Widget displaying DiffractionDatasets
     """
 
-    peak_dynamics_roi_signal = QtCore.pyqtSignal(tuple)
+    timeseries_rect_signal = QtCore.pyqtSignal(tuple)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,11 +25,11 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.cursor_info_widget = QtWidgets.QLabel(parent=self)
         self.cursor_info_widget.setAlignment(QtCore.Qt.AlignHCenter)
 
-        self.peak_dynamics_region = pg.ROI(
+        self.timeseries_rect_region = pg.ROI(
             pos=[0, 0], size=[200, 200], pen=pg.mkPen("r")
         )
-        self.peak_dynamics_region.addScaleHandle([1, 1], [0, 0])
-        self.peak_dynamics_region.addScaleHandle([0, 0], [1, 1])
+        self.timeseries_rect_region.addScaleHandle([1, 1], [0, 0])
+        self.timeseries_rect_region.addScaleHandle([0, 0], [1, 1])
 
         self.roi_topleft_text = pg.TextItem("", anchor=(1, 1))
         self.roi_bottomright_text = pg.TextItem("", anchor=(0, 0))
@@ -43,13 +43,13 @@ class ProcessedDataViewer(QtWidgets.QWidget):
             slot=self.update_cursor_info,
         )
         self.__dynamics_roi_proxy = pg.SignalProxy(
-            self.peak_dynamics_region.sigRegionChanged,
+            self.timeseries_rect_region.sigRegionChanged,
             rateLimit=60,
-            slot=self.update_peak_dynamics,
+            slot=self.update_timeseries_rect,
         )
 
-        self.image_viewer.getView().addItem(self.peak_dynamics_region)
-        self.peak_dynamics_region.hide()
+        self.image_viewer.getView().addItem(self.timeseries_rect_region)
+        self.timeseries_rect_region.hide()
         self.time_series_widget.hide()
 
         self.layout = QtWidgets.QVBoxLayout()
@@ -59,8 +59,8 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
     @QtCore.pyqtSlot()
-    def update_peak_dynamics(self):
-        rect = self.peak_dynamics_region.parentBounds().toRect()
+    def update_timeseries_rect(self):
+        rect = self.timeseries_rect_region.parentBounds().toRect()
 
         # Add text to show rect bounds
         # If coordinate is negative, return 0
@@ -71,7 +71,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         y1 = round(max(0, rect.topLeft().x()))
         y2 = round(max(0, rect.x() + rect.width()))
 
-        self.peak_dynamics_roi_signal.emit((x1, x2, y1, y2))
+        self.timeseries_rect_signal.emit((x1, x2, y1, y2))
 
     @QtCore.pyqtSlot(object)
     def update_cursor_info(self, event):
@@ -90,9 +90,9 @@ class ProcessedDataViewer(QtWidgets.QWidget):
     def toggle_peak_dynamics(self, toggle):
         """ Toggle interactive peak dynamics region-of-interest"""
         if toggle:
-            self.peak_dynamics_region.show()
+            self.timeseries_rect_region.show()
         else:
-            self.peak_dynamics_region.hide()
+            self.timeseries_rect_region.hide()
             self.roi_topleft_text.setText("")
             self.roi_bottomright_text.setText("")
 
@@ -102,12 +102,12 @@ class ProcessedDataViewer(QtWidgets.QWidget):
     def toggle_roi_bounds_text(self, enable):
         """ Toggle showing array indices around the peak dynamics region-of-interest """
         if enable:
-            self.peak_dynamics_roi_signal.connect(self._update_roi_bounds_text)
-            self.update_peak_dynamics()
+            self.timeseries_rect_signal.connect(self._update_roi_bounds_text)
+            self.update_timeseries_rect()
         else:
             self.roi_topleft_text.setText("")
             self.roi_bottomright_text.setText("")
-            self.peak_dynamics_roi_signal.disconnect(self._update_roi_bounds_text)
+            self.timeseries_rect_signal.disconnect(self._update_roi_bounds_text)
 
     @QtCore.pyqtSlot(tuple)
     def _update_roi_bounds_text(self, rect):
@@ -138,7 +138,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         # data at different time points.
         # Similarly for autoRange = False
         self.image_viewer.setImage(image, autoLevels=False, autoRange=False)
-        self.update_peak_dynamics()
+        self.update_timeseries_rect()
 
     @QtCore.pyqtSlot(object, object)
     def display_peak_dynamics(self, times, intensities):
