@@ -296,12 +296,12 @@ class TestDiffractionDataset(unittest.TestCase):
         selection = RectSelection(self.dataset.resolution, r1, r2, c1, c2)
 
         with self.subTest("Non-relative"):
-            ts = self.dataset.time_series([r1, r2+1, c1, c2+1], relative=False)
+            ts = self.dataset.time_series([r1, r2 + 1, c1, c2 + 1], relative=False)
             tsbm = self.dataset.time_series_selection(selection, relative=False)
             self.assertTrue(np.allclose(ts, tsbm))
 
         with self.subTest("Relative"):
-            ts = self.dataset.time_series([r1, r2+1, c1, c2+1], relative=True)
+            ts = self.dataset.time_series([r1, r2 + 1, c1, c2 + 1], relative=True)
             tsbm = self.dataset.time_series_selection(selection, relative=True)
             self.assertTrue(np.allclose(ts, tsbm))
 

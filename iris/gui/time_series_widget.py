@@ -9,12 +9,7 @@ import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pyqtgraph import PlotWidget, mkBrush, mkPen, TextItem
 
-from skued import spectrum_colors
-
-try:
-    from skued import exponential_decay
-except ImportError:
-    from skued import exponential as exponential_decay
+from skued import spectrum_colors, exponential
 
 from scipy.optimize import curve_fit
 
@@ -165,13 +160,11 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         initial_guesses = (0, intensity.max(), 1, intensity.min())
 
         try:
-            params, pcov = curve_fit(
-                exponential_decay, times, intensity, p0=initial_guesses
-            )
+            params, pcov = curve_fit(exponential, times, intensity, p0=initial_guesses)
         except RuntimeError:
             return
 
-        fit = exponential_decay(times, *params)
+        fit = exponential(times, *params)
         absolute = self.absolute_intensity_widget.isChecked()
         if not absolute:
             fit /= np.mean(self._last_intensities_abs[self._last_times < 0])
