@@ -10,7 +10,7 @@ from numpy.random import random
 
 from crystals import Crystal
 from iris import DiffractionDataset, PowderDiffractionDataset
-from iris.dataset import SWMR_AVAILABLE, selection_bbox
+from iris.dataset import SWMR_AVAILABLE
 from skued import nfold, RectSelection, DiskSelection, RingSelection, ArbitrarySelection
 
 from . import TestRawDataset
@@ -293,15 +293,15 @@ class TestDiffractionDataset(unittest.TestCase):
         DiffractionDataset.selection_rect """
 
         r1, r2, c1, c2 = 100, 120, 45, 57
-        selection = RectSelection(self.dataset.selection, r1, r2, c1, c2)
+        selection = RectSelection(self.dataset.resolution, r1, r2, c1, c2)
 
         with self.subTest("Non-relative"):
-            ts = self.dataset.time_series([r1, r2, c1, c2], relative=False)
+            ts = self.dataset.time_series([r1, r2+1, c1, c2+1], relative=False)
             tsbm = self.dataset.time_series_selection(selection, relative=False)
             self.assertTrue(np.allclose(ts, tsbm))
 
         with self.subTest("Relative"):
-            ts = self.dataset.time_series([r1, r2, c1, c2], relative=True)
+            ts = self.dataset.time_series([r1, r2+1, c1, c2+1], relative=True)
             tsbm = self.dataset.time_series_selection(selection, relative=True)
             self.assertTrue(np.allclose(ts, tsbm))
 
