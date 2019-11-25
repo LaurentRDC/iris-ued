@@ -10,7 +10,7 @@ Standalone Installation
 =======================
 
 Starting with `iris` 5.1.0, **standalone Windows installers and executables are available**. You can find them on
-the `GitHub release page <https://github.com/LaurentRDC/iris-ued/releases/latest/>`.
+the `GitHub release page <https://github.com/LaurentRDC/iris-ued/releases/latest/>`_.
 
 The standalone installers and executables make the installation of `iris` completely separate from any other 
 Python installation. This method should be preferred, unless Python scripting using the `iris` library is required.
