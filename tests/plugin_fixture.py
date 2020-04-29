@@ -6,6 +6,7 @@ Text plug-in
 
 from iris import AbstractRawDataset, ExperimentalParameter
 import numpy as np
+import unittest
 
 
 class TestRawDatasetPlugin(AbstractRawDataset):
@@ -32,3 +33,7 @@ class TestRawDatasetPlugin(AbstractRawDataset):
 
     def raw_data(self, *args, **kwargs):
         return np.random.random(size=self.resolution)
+
+
+if __name__ == "__main__":
+    unittest.main()

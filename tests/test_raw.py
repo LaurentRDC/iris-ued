@@ -68,3 +68,7 @@ class TestAbstractRawDataset(unittest.TestCase):
 
         # Invalid metadata should be ignored.
         self.assertFalse(hasattr(test_dataset, "random_attr"))
+
+
+if __name__ == "__main__":
+    unittest.main()

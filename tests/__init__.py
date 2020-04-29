@@ -2,6 +2,7 @@
 from iris import AbstractRawDataset, check_raw_bounds
 from iris.meta import ExperimentalParameter
 import numpy as np
+import unittest
 
 
 class TestRawDataset(AbstractRawDataset):
@@ -19,3 +20,7 @@ class TestRawDataset(AbstractRawDataset):
     @check_raw_bounds
     def raw_data(self, timedelay, scan=1):
         return np.ones((self.resolution), dtype=np.uint8)
+
+
+if __name__ == "__main__":
+    unittest.main()

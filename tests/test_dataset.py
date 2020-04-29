@@ -464,3 +464,7 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         del self.dataset
         with suppress(OSError):
             os.remove(fname)
+
+
+if __name__ == "__main__":
+    unittest.main()

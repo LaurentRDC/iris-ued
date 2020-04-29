@@ -39,3 +39,7 @@ class TestPlugin(unittest.TestCase):
             # Assert that extra metadata is not kept
             self.assertTrue(hasattr(test, "is_useful"))
             self.assertFalse(hasattr(dataset, "is_useful"))
+
+
+if __name__ == "__main__":
+    unittest.main()
