@@ -20,6 +20,9 @@ import matplotlib
 
 matplotlib.use("agg")  # required for Readthedocs
 
+currentpath = os.path.dirname(__file__)
+sys.path.append(os.path.join(currentpath, ".."))
+
 import iris
 
 # -- General configuration ------------------------------------------------
