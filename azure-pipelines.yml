@@ -16,13 +16,13 @@ jobs:
       - script: conda env create --quiet --file ./.azure/env.yml
         displayName: Create Anaconda environment
 
-      - script: |
-          call activate irisbuild
+      - bash: |
+          source activate irisbuild
           python -m unittest discover --verbose
         displayName: Unit tests 
       
-      - script: |
-          call activate irisbuild
+      - bash: |
+          source activate irisbuild
           cd installer
           python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
         displayName: Build executable with PyInstaller
