@@ -95,7 +95,7 @@ HDF5 layout
 Therefore, it is possible to inspect and manipulate instances with any other tool that has bindings to the HDF5 libraries. The 
 HDF5 layout is presented below.
 
-To look at your own data, don't try to create such an HDF5 file by hand! Take a look at our `plugin <plugins>`_ infrastructure.
+To look at your own data, don't try to create such an HDF5 file by hand! Take a look at our plugin infrastructure (see :ref:`plugins`).
 
 .. image:: datastructure.png
     :align: center
