@@ -70,7 +70,7 @@ AbstractRawDataset metadata
 * ``date`` (`str`): Acquisition date. Date format is up to you.
 * ``energy`` (`float`): Electron energy in keV.
 * ``pump_wavelength`` (`int`): photoexcitation wavelength in nanometers.
-* ``fluence`` (`float`): photoexcitation fluence :math:`\text{mJ}/\text{cm}**2`.
+* ``fluence`` (`float`): photoexcitation fluence :math:`\text{mJ}/\text{cm}^2`.
 * ``time_zero_shift`` (`float`): Time-zero shift in picoseconds. 
 * ``temperature`` (`float`): sample temperature in Kelvins.
 * ``exposure`` (`float`): picture exposure in seconds.
