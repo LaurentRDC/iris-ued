@@ -46,5 +46,27 @@ class MinimalRawDataset(AbstractRawDataset):
         self.notes = "This is only an example"
         self.is_useful = False
 
-    def raw_data(self, *args, **kwargs):
+    def raw_data(self, timedelay, scan=1, **kwargs):
+        """
+        Returns an array of the image at a timedelay and scan.
+        
+        Parameters
+        ----------
+        timdelay : float
+            Acquisition time-delay.
+        scan : int, optional
+            Scan number. Default is 1.
+        kwargs
+            Keyword-arguments are ignored.
+        
+        Returns
+        -------
+        arr : `~numpy.ndarray`, ndim 2
+        
+        Raises
+        ------
+        ValueError : if ``timedelay`` or ``scan`` are invalid / out of bounds.
+        IOError : Filename is not associated with an image/does not exist.
+        """
+        # Parameters are ignored in this example
         return np.random.random(size=(512, 512))
