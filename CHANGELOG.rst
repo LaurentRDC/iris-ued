@@ -1,3 +1,8 @@
+5.2.2
+-----
+
+* Windows installers have been removed. They proved far too unreliable to be useful.
+
 5.2.1
 -----
 
