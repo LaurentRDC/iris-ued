@@ -319,7 +319,6 @@ def _raw_combine(timedelay, raw, exclude_scans, normalize, align, valid_mask, dt
     images = raw.itertime(timedelay, exclude_scans=exclude_scans)
 
     if align:
-        # Note : the fast = False fixes issue #11, where single crystal images were not successfully aligned.
         images = ialign(images, mask=valid_mask)
 
     # Set up normalization

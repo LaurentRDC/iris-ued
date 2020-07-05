@@ -13,7 +13,7 @@ import h5py
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
-from npstreams import average, itercopy, peek, pmap
+from npstreams import peek, pmap
 from skued import (
     __version__,
     azimuthal_average,
