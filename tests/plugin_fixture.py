@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Text plug-in
+Test plug-in
 ============
 """
 

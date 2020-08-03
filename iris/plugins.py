@@ -36,8 +36,11 @@ def load_plugin(path):
     path = Path(path)
     if not path.exists():
         raise OSError(f"The plug-in file {path} does not exist.")
-
-    globals().update(run_path(str(path), run_name="iris.plugins"))
+    
+    try:
+        globals().update(run_path(str(path), run_name="iris.plugins"))
+    except Exception as e:
+        print(f'Failed loading plugin {path} with error: {e}')
 
 
 def install_plugin(path):

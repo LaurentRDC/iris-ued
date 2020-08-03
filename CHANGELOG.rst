@@ -1,6 +1,7 @@
 5.2.2
 -----
 
+* Fixed an issue where a broken plug-in would crash Iris. Instead, broken plug-in will not be loaded.
 * Windows installers have been removed. They proved far too unreliable to be useful.
 
 5.2.1

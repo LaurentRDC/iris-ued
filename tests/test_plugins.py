@@ -6,12 +6,13 @@ from tempfile import gettempdir
 from iris import AbstractRawDataset, DiffractionDataset
 from iris.plugins import load_plugin
 
-test_plugin_path = Path(__file__).parent / "plugin_fixture.py"
+TEST_PLUGIN_PATH = Path(__file__).parent / "plugin_fixture.py"
+BROKEN_PLUGIN_PATH = Path(__file__).parent / "broken_plugin.py"
 
 
 class TestPlugin(unittest.TestCase):
     def setUp(self):
-        load_plugin(test_plugin_path)
+        load_plugin(TEST_PLUGIN_PATH)
 
     def test_experimental_parameters(self):
         """ Test that arbitrary experimental parameters can be manipulated """
@@ -40,6 +41,11 @@ class TestPlugin(unittest.TestCase):
             self.assertTrue(hasattr(test, "is_useful"))
             self.assertFalse(hasattr(dataset, "is_useful"))
 
+class TestBrokenPlugin(unittest.TestCase):
+
+    def test_loading_broken_plugin(self):
+        """ Test that exceptions are caught when loading a broken plug-in. """
+        load_plugin(BROKEN_PLUGIN_PATH)
 
 if __name__ == "__main__":
     unittest.main()
