@@ -24,7 +24,7 @@ OPEN_HELP = """Dataset to open with iris start-up. """
 DOCS_HELP = """Open online documentation in your default web browser."""
 
 parser = argparse.ArgumentParser(prog="iris", description=DESCRIPTION, epilog=EPILOG)
-parser.add_argument("-v", "--version", action="version", version=f"iris {__version__}")
+parser.add_argument("-v", "--version", action="version", version=__version__)
 
 subparsers = parser.add_subparsers(
     title="Subcommands", help="Available sub-commands", dest="subcmd"

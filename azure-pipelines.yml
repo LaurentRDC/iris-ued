@@ -20,6 +20,29 @@ jobs:
           source activate irisbuild
           python -m unittest discover --verbose
         displayName: Unit tests 
+      
+      - bash: |
+          source activate irisbuild
+          cd installer
+          python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
+        displayName: Build executable with PyInstaller
+      
+      # Command-line parameters for Inno Setup are specified here:
+      #   http://www.jrsoftware.org/ishelp/index.php?topic=compilercmdline
+      - bash: |
+          source activate irisbuild
+          VERSION=$(python -m iris --version)
+          cd installer
+          iscc "/dAppVersion=$VERSION" iris-setup.iss
+        displayName: Build Windows installer with ISCC 
+
+      # # As of right now, only save Windows build artifacts
+      # # because that's the only machine I have available to test them.
+      # - task: PublishPipelineArtifact@0
+      #   displayName: Publish artifacts
+      #   inputs:
+      #     artifactNames: setup$(pythonVersion)
+      #     targetPath: installer/dist/setup/
 
     strategy:
       matrix:
@@ -48,6 +71,11 @@ jobs:
           python -m unittest discover --verbose
         displayName: Unit tests 
 
+      - bash: |
+          source activate irisbuild
+          cd installer
+          python -O -m PyInstaller --clean -y --distpath=dist\executable --onedir iris-onedir.spec
+        displayName: Executable build
     strategy:
       matrix:
         Python36:
