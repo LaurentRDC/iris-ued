@@ -4,6 +4,7 @@
 #define AppName "Iris - Interactive UES Exploration"
 #define AppPublisher "Laurent P. René de Cotret"
 #define AppURL "https://iris-ued.readthedocs.io"
+#define AppVersion "5.2.2"
 #define AppEXEName "iris.exe"
 
 [Setup]
