@@ -41,11 +41,12 @@ class TestPlugin(unittest.TestCase):
             self.assertTrue(hasattr(test, "is_useful"))
             self.assertFalse(hasattr(dataset, "is_useful"))
 
-class TestBrokenPlugin(unittest.TestCase):
 
+class TestBrokenPlugin(unittest.TestCase):
     def test_loading_broken_plugin(self):
         """ Test that exceptions are caught when loading a broken plug-in. """
         load_plugin(BROKEN_PLUGIN_PATH)
+
 
 if __name__ == "__main__":
     unittest.main()
