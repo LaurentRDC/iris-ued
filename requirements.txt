@@ -4,6 +4,6 @@ h5py >= 2.10.0
 PyQt5
 crystals >= 1.1.2, < 2
 scikit-ued >= 2.0.3, < 3
-qdarkstyle == 2.8
+qdarkstyle >= 2.8, < 3
 pyqtgraph >= 0.11
 npstreams >= 1.6.2, < 2
