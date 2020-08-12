@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "Laurent P. René de Cotret"
 __email__ = "laurent.renedecotret@mail.mcgill.ca"
-__license__ = "MIT"
+__license__ = "GPLv3"
 __version__ = "5.2.3"
 
 from .raw import AbstractRawDataset, check_raw_bounds, open_raw

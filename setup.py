@@ -74,7 +74,7 @@ if __name__ == "__main__":
             "Topic :: Scientific/Engineering :: Physics",
             "Topic :: Scientific/Engineering :: Chemistry",
             "Topic :: Scientific/Engineering :: Visualization",
-            "License :: OSI Approved :: MIT License",
+            "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
             "Natural Language :: English",
             "Operating System :: OS Independent",
             "Programming Language :: Python",

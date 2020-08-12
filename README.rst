@@ -92,4 +92,4 @@ All support requests and issue reports should be
 License
 -------
 
-iris is made available under the MIT License. For more details, see `LICENSE.txt <https://github.com/LaurentRDC/iris-ued/blob/master/LICENSE.txt>`_.
+iris is made available under the GPLv3 License. For more details, see `LICENSE.txt <https://github.com/LaurentRDC/iris-ued/blob/master/LICENSE.txt>`_.

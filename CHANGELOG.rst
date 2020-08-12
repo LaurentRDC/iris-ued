@@ -1,3 +1,8 @@
+5.2.3
+-----
+
+* Re-licensing `iris-ued` to GPLv3.
+
 5.2.2
 -----
 
