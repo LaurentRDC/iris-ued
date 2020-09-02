@@ -2,6 +2,7 @@
 -----
 
 * Re-licensing `iris-ued` to GPLv3.
+* Changed the default colormap for processed datasets, to visually distinguish between raw and processed data viewers
 
 5.2.2
 -----

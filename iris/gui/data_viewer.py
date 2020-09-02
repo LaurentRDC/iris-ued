@@ -20,6 +20,10 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         super().__init__(*args, **kwargs)
 
         self.image_viewer = pg.ImageView(parent=self)
+        self.image_viewer.setPredefinedGradient(
+            "inferno"
+        )  # to distinguish between raw and processed
+
         self.time_series_widget = TimeSeriesWidget(parent=self)
 
         self.cursor_info_widget = QtWidgets.QLabel(parent=self)
