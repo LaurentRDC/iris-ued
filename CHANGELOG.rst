@@ -3,6 +3,7 @@
 
 * Re-licensing `iris-ued` to GPLv3.
 * Changed the default colormap for processed datasets, to visually distinguish between raw and processed data viewers
+* Added support for Python 3.9
 
 5.2.2
 -----
