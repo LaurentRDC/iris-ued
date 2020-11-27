@@ -16,8 +16,8 @@ def subclasses(cls):
 
 class MetaRawDataset(ABCMeta):
     """
-    Metaclass for AbstractRawDataset. 
-    
+    Metaclass for AbstractRawDataset.
+
     This metaclass allows to determine the valid metadata that has been defined using the
     ExperimentalParameter class descriptor as class variables. For example, the AbstractRawDataset
     class already has some built-in ExperimentalParameter descriptors (date, notes, etc.)
@@ -95,7 +95,7 @@ class ExperimentalParameter:
     name : str
         Parameter name
     ptype : type or callable
-        Parameter type, e.g. float, or callable, e.g. numpy.array. 
+        Parameter type, e.g. float, or callable, e.g. numpy.array.
     default : object or None
         Default value of the parameter. If None, no default value is set. Hence, the
         default value can never be None.
@@ -127,7 +127,7 @@ class ExperimentalParameter:
 
 
 class HDF5ExperimentalParameter(ExperimentalParameter):
-    """ 
+    """
     Descriptor to experimental parameters and metadata stored in an iris DiffractionDataset.
     These should never be instantiated directly; they are created dynamically at dataset creation.
 
@@ -136,7 +136,7 @@ class HDF5ExperimentalParameter(ExperimentalParameter):
     name : str
         Parameter name
     ptype : type or callable
-        Parameter type, e.g. float, or callable, e.g. numpy.array. 
+        Parameter type, e.g. float, or callable, e.g. numpy.array.
     default : object or None
         Default value of the parameter. If None, no default value is set. Hence, the
         default value can never be None.

@@ -6,8 +6,8 @@ from PyQt5 import QtCore, QtWidgets
 
 
 class MetadataEditDialog(QtWidgets.QDialog):
-    """ Modal dialog to specify modify metadata
-    like camera distance, etc. """
+    """Modal dialog to specify modify metadata
+    like camera distance, etc."""
 
     updated_metadata_signal = QtCore.pyqtSignal(dict)
 

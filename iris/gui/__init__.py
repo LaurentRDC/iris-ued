@@ -20,14 +20,14 @@ from qdarkstyle import load_stylesheet_pyqt5
 
 @contextmanager
 def gui_environment():
-    """ 
+    """
     Prepare the environment in which iris GUI will run. This includes the following:
 
         * Set the PyQtGraph QT library to PyQt5 while Iris GUI is running. Revert back when done.
-        * Set the image-axis order to row-major. Revert back when done. 
-    
-    Note that interactions with the screen (e.g. mask creation) assumes that the image-axis order is 
-    row-major. 
+        * Set the image-axis order to row-major. Revert back when done.
+
+    Note that interactions with the screen (e.g. mask creation) assumes that the image-axis order is
+    row-major.
     """
     old_qt_lib = os.environ.get(
         "PYQTGRAPH_QT_LIB", "PyQt5"
@@ -43,14 +43,14 @@ def gui_environment():
 
 
 def run(path=None, dset_type=None, **kwargs):
-    """ 
+    """
     Run the iris GUI with the correct environment, and open a dataset. Invalid
     datasets are ignored.
-    
+
     Parameters
     ----------
     path : path-like or None, optional
-        Path to either a raw dataset or a processed datasets. 
+        Path to either a raw dataset or a processed datasets.
         Raw dataset formats will be guessed.
     dset_type : {'raw', 'reduced', None}, optional
         Dataset type.

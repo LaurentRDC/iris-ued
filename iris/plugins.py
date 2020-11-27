@@ -22,16 +22,16 @@ if not PLUGIN_DIR.exists():
 
 
 def load_plugin(path):
-    """ 
+    """
     Load an iris plug-in, but do not install it. The plug-in
     will not be available in the next session.
 
     .. versionadded:: 5.2.0
-    
+
     Parameters
     ----------
     path : path-like
-        Path to the plug-in. 
+        Path to the plug-in.
     """
     path = Path(path)
     if not path.exists():
@@ -44,16 +44,16 @@ def load_plugin(path):
 
 
 def install_plugin(path):
-    """ 
+    """
     Install and load an iris plug-in. Installed plug-ins are loaded
     at every iris start-up.
 
     .. versionadded:: 5.0.4
-    
+
     Parameters
     ----------
     path : path-like
-        Path to the plug-in. This plug-in file will be copied. 
+        Path to the plug-in. This plug-in file will be copied.
     """
     path = Path(path)
     new_path = PLUGIN_DIR / path.name

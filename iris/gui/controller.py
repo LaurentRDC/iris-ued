@@ -21,7 +21,7 @@ def error_aware(func):
     """
     Wrap an instance method with a try/except and emit a message.
     Instance must have a signal called 'error_message_signal' which
-    will be emitted with the message upon error. 
+    will be emitted with the message upon error.
     """
 
     @wraps(func)
@@ -50,9 +50,9 @@ class ErrorAware(type(QtCore.QObject)):
 
 
 def indicate_in_progress(method):
-    """ Decorator for IrisController methods that should
+    """Decorator for IrisController methods that should
     emit the ``operation_in_progress`` signal and automatically
-    revert when the operation is finished. """
+    revert when the operation is finished."""
 
     @wraps(method)
     def new_method(*args, **kwargs):
@@ -175,7 +175,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         ----------
         timedelay_index : int
             Time-delay index.
-        
+
         Returns
         -------
         arr : `~numpy.ndarray`, ndim 2
@@ -274,7 +274,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(tuple)
     def time_series(self, rect):
-        """" 
+        """ "
         Single-crystal time-series as the integrated diffracted intensity inside a rectangular ROI
 
         Parameters
@@ -296,13 +296,13 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(dict)
     def powder_calq(self, params):
-        """ 
-        Calibrate the range of q-vector for a polycrystalline data of known structure. 
+        """
+        Calibrate the range of q-vector for a polycrystalline data of known structure.
 
         Parameters
         ----------
         params : dict
-            Parameters are passed to `skued.powder_calq`. 
+            Parameters are passed to `skued.powder_calq`.
         """
         self.dataset.powder_calq(**params)
         self.display_powder_data()
@@ -310,9 +310,9 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(dict)
     def update_metadata(self, metadata):
-        """ 
-        Update metadata attributes in DiffractionDataset 
-        
+        """
+        Update metadata attributes in DiffractionDataset
+
         Parameters
         ----------
         metadata : dict
@@ -339,9 +339,9 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(str)
     def set_dataset_notes(self, notes):
-        """ 
-        Update notes metadata in DiffractionDataset 
-        
+        """
+        Update notes metadata in DiffractionDataset
+
         Parameters
         ----------
         notes : str
@@ -352,9 +352,9 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(float)
     def set_time_zero_shift(self, shift):
-        """ 
+        """
         Set the time-zero shift in picoseconds.
-        
+
         Parameters
         ----------
         shift : float
@@ -429,9 +429,9 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(str)
     def load_dataset(self, path):
-        """ 
+        """
         Load dataset, distinguishing between PowderDiffractionDataset and DiffractionDataset.
-        
+
         Parameters
         ----------
         path : str or path-like
@@ -500,10 +500,10 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(str, dict)
     def symmetrize(self, destination, params):
-        """ 
-        Launches a background thread that copies the currently-loaded dataset, 
-        symmetrize the copy, and load the copy. 
-        
+        """
+        Launches a background thread that copies the currently-loaded dataset,
+        symmetrize the copy, and load the copy.
+
         Parameters
         ----------
         destination : str or path-like
@@ -557,9 +557,9 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(dict)
     def calculate_azimuthal_averages(self, params):
-        """ 
-        Promote a DiffractionDataset to a PowderDiffractionDataset 
-        
+        """
+        Promote a DiffractionDataset to a PowderDiffractionDataset
+
         Parameters
         ----------
         params : dict
@@ -581,9 +581,9 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(dict)
     def compute_baseline(self, params):
-        """ Compute the powder baseline. The dictionary `params` is passed to 
-        PowderDiffractionDataset.compute_baseline(), except its key 'callback'. The callable 'callback' 
-        is called (no argument) when computation is done. """
+        """Compute the powder baseline. The dictionary `params` is passed to
+        PowderDiffractionDataset.compute_baseline(), except its key 'callback'. The callable 'callback'
+        is called (no argument) when computation is done."""
         params.update({"fname": self.dataset.filename})
 
         self.worker = WorkThread(function=compute_powder_baseline, kwargs=params)
@@ -599,9 +599,9 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 class WorkThread(QtCore.QThread):
     """
     Object taking care of threading computations. These computations are very specific:
-    a function takes in a filename (pointing to a DiffractionDataset), parameters, 
+    a function takes in a filename (pointing to a DiffractionDataset), parameters,
     and returns a filename again.
-    
+
     Signals
     -------
     done_signal
@@ -639,8 +639,8 @@ class WorkThread(QtCore.QThread):
 
 
 def calculate_azimuthal_averages(**kwargs):
-    """ Create a PowderDiffractionDataset from a DiffractionDataset. If azimuthal averages
-    were already calculated, recalculate them. """
+    """Create a PowderDiffractionDataset from a DiffractionDataset. If azimuthal averages
+    were already calculated, recalculate them."""
     filename = kwargs.pop("filename")
 
     # Determine if azimuthal averages have already been computed
@@ -662,10 +662,10 @@ def calculate_azimuthal_averages(**kwargs):
 
 
 def symmetrize(dataset, destination, **kwargs):
-    """ 
+    """
     Copies a dataset and symmetrize it. Keyword arguments
     are passed to `DiffractionDataset.symmetrize`.
-    
+
     Parameters
     ----------
     dataset : path-like
@@ -680,10 +680,10 @@ def symmetrize(dataset, destination, **kwargs):
 
 
 def compute_powder_baseline(fname, **kwargs):
-    """ 
-    Compute a powder baseline. Keyword arguments are passed to 
-    `PowderDiffractionDataset.compute_baseline` 
-    
+    """
+    Compute a powder baseline. Keyword arguments are passed to
+    `PowderDiffractionDataset.compute_baseline`
+
     Parameters
     ----------
     dataset : path-like

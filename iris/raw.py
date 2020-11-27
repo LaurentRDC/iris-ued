@@ -19,24 +19,24 @@ from .meta import ExperimentalParameter, MetaRawDataset
 
 def open_raw(path):
     """
-    Open a raw data item, guessing the AbstractRawDataset instance that 
+    Open a raw data item, guessing the AbstractRawDataset instance that
     should be used based on available plug-ins.
 
     This function can also be used as a context manager::
 
         with open_raw('.') as dset:
             ...
-    
+
     Parameters
     ----------
     path : path-like
         Path to the file/folder containing the raw data.
-    
+
     Returns
     -------
     raw : AbstractRawDataset instance
         The raw dataset. If no format could be guessed, an RuntimeError is raised.
-    
+
     Raises
     ------
     RuntimeError : if the data format could not be guessed.
@@ -58,8 +58,8 @@ def open_raw(path):
 
 class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
     """
-    Abstract base class for ultrafast electron diffraction data set. 
-    AbstractRawDataset allows for enforced metadata types and values, 
+    Abstract base class for ultrafast electron diffraction data set.
+    AbstractRawDataset allows for enforced metadata types and values,
     as well as a standard interface. For example, AbstractRawDataset
     implements the context manager interface.
 
@@ -71,17 +71,17 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
 
         * __init__
         * __exit__
-    
+
     Optionally, the ``display_name`` class attribute can be specified.
-    
+
     For better results or performance during reduction, the following methods
     can be specialized:
 
         * reduced
-    
-    A list of concrete implementations of AbstractRawDatasets is available in 
+
+    A list of concrete implementations of AbstractRawDatasets is available in
     the ``implementations`` class attribute. Subclasses are automatically added.
-    
+
     The call signature must remain the same for all overwritten methods.
     """
 
@@ -162,7 +162,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
 
     def iterscan(self, scan, **kwargs):
         """
-        Generator function of diffraction patterns as part of a scan, in 
+        Generator function of diffraction patterns as part of a scan, in
         time-delay order.
 
         Parameters
@@ -171,7 +171,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
             Scan from which to yield the data.
         kwargs
             Keyword-arguments are passed to ``raw_data`` method.
-        
+
         Yields
         ------
         data : `~numpy.ndarray`, ndim 2
@@ -188,7 +188,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
 
     def itertime(self, timedelay, exclude_scans=None, **kwargs):
         """
-        Generator function of diffraction patterns of the same time-delay, in 
+        Generator function of diffraction patterns of the same time-delay, in
         scan order.
 
         Parameters
@@ -199,7 +199,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
             These scans will be skipped.
         kwargs
             Keyword-arguments are passed to ``raw_data`` method.
-        
+
         Yields
         ------
         data : `~numpy.ndarray`, ndim 2
@@ -224,7 +224,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
     def raw_data(self, timedelay, scan=1, **kwargs):
         """
         Returns an array of the image at a timedelay and scan.
-        
+
         Parameters
         ----------
         timdelay : float
@@ -233,11 +233,11 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
             Scan number. Default is 1.
         kwargs
             Keyword-arguments are ignored.
-        
+
         Returns
         -------
         arr : `~numpy.ndarray`, ndim 2
-        
+
         Raises
         ------
         ValueError : if ``timedelay`` or ``scan`` are invalid / out of bounds.
@@ -268,12 +268,12 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
             If True (default), raw diffraction patterns will be aligned using the masked normalized
             cross-correlation approach. See `skued.align` for more information.
         normalize : bool, optional
-            If True (default), equivalent diffraction pictures (e.g. same time-delay, different scans) 
+            If True (default), equivalent diffraction pictures (e.g. same time-delay, different scans)
             are normalized to the same diffracted intensity.
         mask : array-like of bool or None, optional
             If not None, pixels where ``mask = True`` are ignored for certain operations (e.g. alignment).
         processes : int or None, optional
-            Number of Processes to spawn for processing. 
+            Number of Processes to spawn for processing.
         dtype : numpy.dtype or None, optional
             Reduced patterns will be cast to ``dtype``.
 

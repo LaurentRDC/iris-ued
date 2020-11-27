@@ -265,8 +265,8 @@ class TestDiffractionDataset(unittest.TestCase):
             )
 
     def test_time_series_selection(self):
-        """ Test that the DiffractionDataset.time_series_selection 
-        method is working as expected """
+        """Test that the DiffractionDataset.time_series_selection
+        method is working as expected"""
         mask = np.random.choice([True, False], size=self.dataset.resolution)
         selection = ArbitrarySelection(mask)
 
@@ -288,9 +288,9 @@ class TestDiffractionDataset(unittest.TestCase):
             )
 
     def test_selection_rect(self):
-        """ Comparison of DiffractionDataset.time_series vs 
-        DiffractionDataset.time_series_selection with 
-        DiffractionDataset.selection_rect """
+        """Comparison of DiffractionDataset.time_series vs
+        DiffractionDataset.time_series_selection with
+        DiffractionDataset.selection_rect"""
 
         r1, r2, c1, c2 = 100, 120, 45, 57
         selection = RectSelection(self.dataset.resolution, r1, r2, c1, c2)
@@ -306,8 +306,8 @@ class TestDiffractionDataset(unittest.TestCase):
             self.assertTrue(np.allclose(ts, tsbm))
 
     def test_selection_disk(self):
-        """ Test DiffractionDataset.time_series_selection with 
-        DiffractionDataset.selection_disk """
+        """Test DiffractionDataset.time_series_selection with
+        DiffractionDataset.selection_disk"""
         selection = DiskSelection(self.dataset.resolution, center=(120, 200), radius=10)
 
         with self.subTest("Non-relative"):
@@ -332,8 +332,8 @@ class TestDiffractionDataset(unittest.TestCase):
             self.assertTrue(np.allclose(ts, np.ones_like(ts)))
 
     def test_selection_ring(self):
-        """ Test DiffractionDataset.time_series_selection with 
-        DiffractionDataset.selection_ring """
+        """Test DiffractionDataset.time_series_selection with
+        DiffractionDataset.selection_ring"""
         selection = RingSelection(
             self.dataset.resolution, center=(120, 200), inner_radius=10, outer_radius=20
         )
@@ -376,8 +376,8 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         )
 
     def test_baseline_attributes(self):
-        """ Test that the attributes related to baseline have correct defaults and are
-        set to the correct values after computation """
+        """Test that the attributes related to baseline have correct defaults and are
+        set to the correct values after computation"""
         self.assertIs(self.dataset.first_stage, "")
         self.assertIs(self.dataset.wavelet, "")
         self.assertEqual(self.dataset.level, 0)
@@ -428,8 +428,8 @@ class TestPowderDiffractionDataset(unittest.TestCase):
         self.assertSequenceEqual(time_slice.shape, self.dataset.px_radius.shape)
 
     def test_recomputing_angular_average(self):
-        """ Test that recomputing the angular average multiple times will work. This also
-        tests resizing all powder data multiple times. """
+        """Test that recomputing the angular average multiple times will work. This also
+        tests resizing all powder data multiple times."""
         self.dataset.compute_angular_averages(center=(34, 56))
         self.dataset.compute_baseline(first_stage="sym6", wavelet="qshift1")
         self.dataset.compute_angular_averages(center=(45, 45), normalized=False)

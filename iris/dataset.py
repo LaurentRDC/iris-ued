@@ -100,7 +100,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         ----------
         patterns : iterable of ndarray or ndarray
             Diffraction patterns. These should be in the same order as ``time_points``. Note that
-            the iterable can be a generator, in which case it will be consumed. 
+            the iterable can be a generator, in which case it will be consumed.
         filename : str or path-like
             Path to the assembled DiffractionDataset.
         time_points : array_like, shape (N,)
@@ -120,10 +120,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             Callable that takes an int between 0 and 99. This can be used for progress update when
             ``patterns`` is a generator and involves large computations.
         kwargs
-            Keywords are passed to ``h5py.File`` constructor. 
+            Keywords are passed to ``h5py.File`` constructor.
             Default is file-mode 'x', which raises error if file already exists.
             Default libver is 'latest'.
-        
+
         Returns
         -------
         dataset : DiffractionDataset
@@ -190,9 +190,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             # If this is not done, data can be accumulated in memory (>5GB)
             # until this loop is done.
             for index, pattern in enumerate(patterns):
-                dset.write_direct(
-                    pattern, dest_sel=np.s_[:, :, index]
-                )
+                dset.write_direct(pattern, dest_sel=np.s_[:, :, index])
                 file.flush()
                 callback(round(100 * index / np.size(time_points)))
 
@@ -246,9 +244,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             Patterns will be cast to ``dtype``. If None (default), ``dtype`` will be set to the same
             data-type as the first pattern in ``patterns``.
         kwargs
-            Keywords are passed to ``h5py.File`` constructor. 
+            Keywords are passed to ``h5py.File`` constructor.
             Default is file-mode 'x', which raises error if file already exists.
-        
+
         Returns
         -------
         dataset : DiffractionDataset
@@ -306,7 +304,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         .. warning::
             This is an irreversible in-place operation.
-        
+
         .. versionadded:: 5.0.3
 
         Parameters
@@ -321,7 +319,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             In case Single Writer Multiple Reader mode is not available, ``processes`` is ignored.
 
             .. versionadded:: 5.0.6
-        
+
         Raises
         ------
         TypeError : if `func` is not a proper callable
@@ -394,12 +392,12 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         Parameters
         ----------
         mod : int
-            Fold symmetry number. 
+            Fold symmetry number.
         center : array-like, shape (2,) or None
             Coordinates of the center (in pixels). If None, the data is symmetrized around the
             center of the images.
         kernel_size : float or None, optional
-            If not None, every diffraction pattern will be smoothed with a gaussian kernel. 
+            If not None, every diffraction pattern will be smoothed with a gaussian kernel.
             `kernel_size` is the standard deviation of the gaussian kernel in units of pixels.
         callback : callable or None, optional
             Callable that takes an int between 0 and 99. This can be used for progress update.
@@ -408,11 +406,11 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             In case Single Writer Multiple Reader mode is not available, ``processes`` is ignored.
 
             .. versionadded:: 5.0.6
-        
+
         Raises
         ------
         ValueError: if ``mod`` is not a divisor of 360.
-    
+
         See Also
         --------
         diff_apply : apply an operation to each diffraction pattern one-by-one
@@ -466,7 +464,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         """
         Insert a shift in time points. Reset the shift by setting it to zero. Shifts are
         not consecutive, so that calling `shift_time_zero(20)` twice will not result
-        in a shift of 40ps. 
+        in a shift of 40ps.
 
         Parameters
         ----------
@@ -482,14 +480,14 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         self.diff_eq.cache_clear()
 
     def _get_time_index(self, timedelay):
-        """ 
+        """
         Returns the index of the closest available time-point.
-        
+
         Parameters
         ----------
         timdelay : float
             Time-delay [ps]
-        
+
         Returns
         -------
         tp : index
@@ -509,8 +507,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     @lru_cache(maxsize=1)
     def diff_eq(self):
-        """ 
-        Returns the averaged diffraction pattern for all times before photoexcitation. 
+        """
+        Returns the averaged diffraction pattern for all times before photoexcitation.
         In case no data is available before photoexcitation, an array of zeros is returned.
         The result of this function is cached to minimize overhead.
 
@@ -547,13 +545,13 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
-        
+
         Returns
         -------
-        arr : ndarray 
+        arr : ndarray
             Time-delay data. If ``out`` is provided, ``arr`` is a view
             into ``out``.
-        
+
         Raises
         ------
         ValueError
@@ -598,7 +596,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         out : ndarray or None, optional
             1-D ndarray in which to store the results. The shape
             should be compatible with ``(len(time_points),)``
-        
+
         Returns
         -------
         out : ndarray, ndim 1
@@ -625,8 +623,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         ----------
         selection : skued.Selection or ndarray, dtype bool, shape (N,M)
             A selection mask that dictates the regions to integrate in each scattering patterns.
-            In the case `selection` is an array, an ArbirarySelection will be used. Performance 
-            may be degraded. Selection mask evaluating to ``True`` in the regions to integrate. 
+            In the case `selection` is an array, an ArbirarySelection will be used. Performance
+            may be degraded. Selection mask evaluating to ``True`` in the regions to integrate.
             The selection must be the same shape as one scattering pattern (i.e. two-dimensional).
         relative : bool, optional
             If True, data is returned relative to the average of all diffraction patterns
@@ -717,7 +715,7 @@ def _symmetrize(im, mod, center, mask, kernel_size):
 
 
 class PowderDiffractionDataset(DiffractionDataset):
-    """ 
+    """
     Abstraction of HDF5 files for powder diffraction datasets.
     """
 
@@ -787,12 +785,12 @@ class PowderDiffractionDataset(DiffractionDataset):
         normalized : bool, optional
             If True, each pattern is normalized to its integral. Default is False.
         angular_bounds : 2-tuple of float or None, optional
-            Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis. 
+            Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis.
             Angle bounds outside [0, 360) are mapped back to [0, 360).
         callback : callable or None, optional
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
-        
+
         Returns
         -------
         powder : PowderDiffractionDataset
@@ -851,7 +849,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         miller_indices : iterable of 3-tuples
             Indices associated with the peaks of ``peak_indices``. More than two peaks can be used.
             E.g. ``indices = [(2,2,0), (-3,0,2)]``
-        
+
         Raises
         ------
         ValueError : if the number of peak indices does not match the number of Miller indices.
@@ -870,8 +868,8 @@ class PowderDiffractionDataset(DiffractionDataset):
 
     @lru_cache(maxsize=2)  # with and without background
     def powder_eq(self, bgr=False):
-        """ 
-        Returns the average powder diffraction pattern for all times before photoexcitation. 
+        """
+        Returns the average powder diffraction pattern for all times before photoexcitation.
         In case no data is available before photoexcitation, an array of zeros is returned.
 
         Parameters
@@ -914,7 +912,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
-        
+
         Returns
         -------
         I : ndarray, shape (N,) or (N,M)
@@ -942,8 +940,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         return out
 
     def powder_baseline(self, timedelay, out=None):
-        """ 
-        Returns the baseline data. 
+        """
+        Returns the baseline data.
 
         Parameters
         ----------
@@ -952,7 +950,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         out : ndarray or None, optional
             If an out ndarray is provided, h5py can avoid
             making intermediate copies.
-        
+
         Returns
         -------
         out : ndarray
@@ -989,7 +987,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         rmin : float
             Lower scattering vector bound [1/A]
         rmax : float
-            Higher scattering vector bound [1/A]. 
+            Higher scattering vector bound [1/A].
         bgr : bool, optional
             If True, background is removed. Default is False.
         relative : bool, optional
@@ -1000,7 +998,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         out : ndarray or None, optional
             1-D ndarray in which to store the results. The shape
             should be compatible with (len(time_points),)
-        
+
         Returns
         -------
         out : ndarray, shape (N,)
@@ -1031,7 +1029,7 @@ class PowderDiffractionDataset(DiffractionDataset):
 
     def compute_baseline(self, first_stage, wavelet, max_iter=50, level=None, **kwargs):
         """
-        Compute and save the baseline computed based on the dual-tree complex wavelet transform. 
+        Compute and save the baseline computed based on the dual-tree complex wavelet transform.
         All keyword arguments are passed to scikit-ued's `baseline_dt` function.
 
         Parameters
@@ -1086,9 +1084,9 @@ class PowderDiffractionDataset(DiffractionDataset):
         trim=True,
         callback=None,
     ):
-        """ 
+        """
         Compute the angular averages.
-        
+
         Parameters
         ----------
         center : 2-tuple or None, optional
@@ -1097,7 +1095,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         normalized : bool, optional
             If True, each pattern is normalized to its integral.
         angular_bounds : 2-tuple of float or None, optional
-            Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis. 
+            Angle bounds are specified in degrees. 0 degrees is defined as the positive x-axis.
             Angle bounds outside [0, 360) are mapped back to [0, 360).
         trim : bool, optional
             If True, leading/trailing zeros - possibly due to masks - are trimmed.

@@ -18,14 +18,14 @@ from .. import __version__
 def update_available():
     """
     Checks whether the currently-installed iris-ued is outdated.
-    
+
     Returns
     -------
     is_outdated : bool
         Whether or not a new version is available
     latest : str
         Latest available version, currently installed or not.
-    
+
     Raises
     ------
     ConnectionError : if connection to PyPI could not be made.

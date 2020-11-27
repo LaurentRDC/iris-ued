@@ -10,13 +10,13 @@ from iris.meta import ExperimentalParameter
 
 class TestAbstractRawDataset(unittest.TestCase):
     def test_abstract_methods(self):
-        """ Test that instantiation of AbstractRawDataset 
-        raises an error """
+        """Test that instantiation of AbstractRawDataset
+        raises an error"""
         with self.assertRaises(TypeError):
             AbstractRawDataset("")
 
     def test_minimal_methods(self):
-        """ 
+        """
         Test implementing the minimal methods:
 
         * raw_data
@@ -58,8 +58,8 @@ class TestAbstractRawDataset(unittest.TestCase):
         )
 
     def test_init_metadata(self):
-        """ Test that metadata is recorded correctly inside __init__ and
-        that invalid metadata is ignored. """
+        """Test that metadata is recorded correctly inside __init__ and
+        that invalid metadata is ignored."""
         test_dataset = TestRawDataset(
             metadata={"test": 5, "fluence": -2, "random_attr": None}
         )

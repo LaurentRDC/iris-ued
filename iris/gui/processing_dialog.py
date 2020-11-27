@@ -391,21 +391,21 @@ class ProcessingDialog(QtWidgets.QDialog):
 
 
 def parse_range(range_str):
-    """ 
-    Parse an integer range into a list of numbers. 
-    
+    """
+    Parse an integer range into a list of numbers.
+
     Parameters
     ----------
     range_str : str
-        String of the form : "-10, 1:5, 10:50, 100, 101". 
+        String of the form : "-10, 1:5, 10:50, 100, 101".
         Ranges are inclusive (the endpoint is included). Can also be
         an empty string.
-    
+
     Returns
     -------
     range : iterable of ints
         Iterable of integers (possibly empty). Guaranteed to be sorted and unique.
-    
+
     Raises
     ------
     ValueError : if the input ``range_str`` is unparseable.

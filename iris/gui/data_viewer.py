@@ -146,8 +146,8 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(object, object)
     def display_peak_dynamics(self, times, intensities):
-        """ 
-        Display the time series associated with the integral between the bounds 
+        """
+        Display the time series associated with the integral between the bounds
         of the ROI
         """
         self.time_series_widget.plot(times, intensities)

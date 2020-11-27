@@ -51,7 +51,7 @@ class PowderViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(object, object)
     def display_powder_data(self, scattering_vector, powder_data_block):
-        """ 
+        """
         Display the radial averages of a dataset.
 
         Parameters
@@ -103,8 +103,8 @@ class PowderViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(object, object)
     def display_peak_dynamics(self, times, intensities):
-        """ 
-        Display the time series associated with the integral between the bounds 
+        """
+        Display the time series associated with the integral between the bounds
         of the ROI
         """
         self.time_series_widget.plot(times, intensities)
