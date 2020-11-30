@@ -346,11 +346,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             # NOTE: Using dset.read_direct was causing problems because
             #       the destination had shape (N,N), but read_direct wanted a
             #       destination of shape (N,N,1). This is a new behavior since h5py 3.*
-            placeholder[:] = dset[:,:,index]
+            placeholder[:] = dset[:, :, index]
             placeholder[:] = func(placeholder)
-            dset.write_direct(
-                placeholder, dest_sel=np.s_[:, :, index]
-            )
+            dset.write_direct(placeholder, dest_sel=np.s_[:, :, index])
             callback(int(100 * index / ntimes))
 
         self.diff_eq.cache_clear()
@@ -572,7 +570,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             # NOTE: Using dataset.read_direct was causing problems because
             #       the destination had shape (N,N), but read_direct wanted a
             #       destination of shape (N,N,1). This is a new behavior since h5py 3.*
-            out[:] = dataset[:,:,time_index]
+            out[:] = dataset[:, :, time_index]
 
         if relative:
             out -= self.diff_eq()
