@@ -343,12 +343,13 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         placeholder = np.empty(shape=self.resolution, dtype=dset.dtype, order="C")
 
         for index, time_point in enumerate(self.time_points):
-            dset.read_direct(
-                placeholder, source_sel=np.s_[:, :, index], dest_sel=np.s_[:, :]
-            )
+            # NOTE: Using dset.read_direct was causing problems because
+            #       the destination had shape (N,N), but read_direct wanted a
+            #       destination of shape (N,N,1). This is a new behavior since h5py 3.*
+            placeholder[:] = dset[:,:,index]
             placeholder[:] = func(placeholder)
             dset.write_direct(
-                placeholder, source_sel=np.s_[:, :], dest_sel=np.s_[:, :, index]
+                placeholder, dest_sel=np.s_[:, :, index]
             )
             callback(int(100 * index / ntimes))
 
@@ -377,7 +378,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         self.swmr_mode = True
 
         for index, im in enumerate(transformed):
-            dset.write_direct(im, source_sel=np.s_[:, :], dest_sel=np.s_[:, :, index])
+            dset.write_direct(im, dest_sel=np.s_[:, :, index])
             dset.flush()
             callback(int(100 * index / ntimes))
         self.diff_eq.cache_clear()
@@ -568,9 +569,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             time_index = self._get_time_index(timedelay)
             if out is None:
                 out = np.empty(self.resolution, dtype=dataset.dtype)
-            dataset.read_direct(
-                out, source_sel=np.s_[:, :, time_index], dest_sel=np.s_[:, :]
-            )
+            # NOTE: Using dataset.read_direct was causing problems because
+            #       the destination had shape (N,N), but read_direct wanted a
+            #       destination of shape (N,N,1). This is a new behavior since h5py 3.*
+            out[:] = dataset[:,:,time_index]
 
         if relative:
             out -= self.diff_eq()
@@ -666,11 +668,11 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         dataset = self.diffraction_group["intensity"]
         placeholder = np.empty(shape=(r2 - r1, c2 - c1), dtype=dataset.dtype)
         for index, _ in enumerate(self.time_points):
-            # It is faster to read data directly
-            # than to go through DiffractionDataset.diff_data
-            dataset.read_direct(
-                placeholder, source_sel=np.s_[r1:r2, c1:c2, index], dest_sel=np.s_[:, :]
-            )
+            # NOTE: Using dataset.read_direct was causing problems because
+            #       the destination had shape (N,N), but read_direct wanted a
+            #       destination of shape (N,N,1). This is a new behavior since h5py 3.*
+            placeholder[:] = dataset[r1:r2, c1:c2, index]
+
             out[index] = np.mean(placeholder[reduced_selection])
 
         if relative:
@@ -929,7 +931,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             time_index = self._get_time_index(timedelay)
             if out is None:
                 out = np.empty_like(self.px_radius)
-            dataset.read_direct(out, source_sel=np.s_[time_index, :], dest_sel=np.s_[:])
+            dataset.read_direct(out, source_sel=np.s_[time_index, :])
 
         if bgr:
             out -= self.powder_baseline(timedelay)
@@ -971,7 +973,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             time_index = self._get_time_index(timedelay)
             if out is None:
                 out = np.empty_like(self.px_radius)
-            dataset.read_direct(out, source_sel=np.s_[time_index, :], dest_sel=np.s_[:])
+            dataset.read_direct(out, source_sel=np.s_[time_index, :])
 
         return out
 
