@@ -48,7 +48,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         )
         self.__dynamics_roi_proxy = pg.SignalProxy(
             self.timeseries_rect_region.sigRegionChanged,
-            rateLimit=60,
+            rateLimit=30,
             slot=self.update_timeseries_rect,
         )
 
