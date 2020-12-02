@@ -18,7 +18,7 @@ jobs:
 
       - bash: |
           source activate irisbuild
-          python -m unittest discover --verbose
+          python -Wa -m unittest discover --verbose
         displayName: Unit tests 
       
       - bash: |
@@ -70,7 +70,7 @@ jobs:
 
       - bash: |
           source activate irisbuild
-          python -m unittest discover --verbose
+          python -Wa -m unittest discover --verbose
         displayName: Unit tests 
 
       - bash: |
