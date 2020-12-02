@@ -2,9 +2,6 @@
 import unittest
 from pathlib import Path
 from tempfile import gettempdir
-from contextlib import redirect_stdout
-import io
-
 
 from iris import AbstractRawDataset, DiffractionDataset
 from iris.plugins import load_plugin
@@ -48,11 +45,8 @@ class TestPlugin(unittest.TestCase):
 class TestBrokenPlugin(unittest.TestCase):
     def test_loading_broken_plugin(self):
         """ Test that exceptions are caught when loading a broken plug-in. """
-        to_the_void = io.StringIO()
-        with redirect_stdout(to_the_void):
-            load_plugin(BROKEN_PLUGIN_PATH)
+        load_plugin(BROKEN_PLUGIN_PATH)
 
 
 if __name__ == "__main__":
-    from utils import FutureProofTestRunner
-    unittest.main(testRunner=FutureProofTestRunner)
+    unittest.main()

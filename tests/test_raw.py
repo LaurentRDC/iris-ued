@@ -71,5 +71,4 @@ class TestAbstractRawDataset(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    from utils import FutureProofTestRunner
-    unittest.main(testRunner=FutureProofTestRunner)
+    unittest.main()
