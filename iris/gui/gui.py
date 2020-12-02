@@ -107,6 +107,8 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.progress_bar.setSizePolicy(
             QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Maximum
         )
+        self.progress_bar.setVisible(False)
+        self.controller.processing_data_signal.connect(self.progress_bar.setVisible)
 
         self.controller.processing_progress_signal.connect(self.progress_bar.setValue)
         self.controller.powder_promotion_progress.connect(self.progress_bar.setValue)

@@ -79,6 +79,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
     powder_dataset_metadata = QtCore.pyqtSignal(dict)
 
     error_message_signal = QtCore.pyqtSignal(str)
+    processing_data_signal = QtCore.pyqtSignal(bool)
     operation_in_progress = QtCore.pyqtSignal(bool)
     status_message_signal = QtCore.pyqtSignal(str)
 
@@ -525,6 +526,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
         self.worker = WorkThread(function=symmetrize, kwargs=kwargs)
         self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.processing_data_signal)
         self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.done_signal.connect(
             lambda: self.processing_progress_signal.emit(100)
@@ -548,6 +550,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
         self.worker = WorkThread(function=process, kwargs=info_dict)
         self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.processing_data_signal)
         self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.done_signal.connect(
             lambda: self.processing_progress_signal.emit(100)
@@ -576,6 +579,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self.close_dataset()
 
         self.worker.results_signal.connect(self.load_dataset)
+        self.worker.in_progress_signal.connect(self.processing_data_signal)
         self.worker.in_progress_signal.connect(self.operation_in_progress)
         self.worker.start()
 
