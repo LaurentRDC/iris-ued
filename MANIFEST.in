@@ -1,3 +1,11 @@
-include README.rst CHANGELOG.rst LICENSE.txt requirements.txt iris_screen.png
-recursive-exclude tests *
+include README.md
+include CHANGELOG.rst
+include LICENSE.txt 
+include requirements.txt 
+include dev-requirements.txt
+include iris_screen.png
+
+recursive-include tests *
 recursive-exclude docs *
+
+global-exclude *.py[cod] __pycache__ *.so *.dylib

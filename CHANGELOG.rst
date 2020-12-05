@@ -2,6 +2,7 @@
 -----
 
 * Code snippets in documentation are now tested for correctness.
+* Tests are now included in source distributions.
 
 5.2.4
 -----
