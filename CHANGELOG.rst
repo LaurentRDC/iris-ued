@@ -1,3 +1,8 @@
+5.2.5
+-----
+
+* Code snippets in documentation are now tested for correctness.
+
 5.2.4
 -----
 
