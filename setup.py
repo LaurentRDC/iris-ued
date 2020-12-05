@@ -26,7 +26,7 @@ with open(os.path.join(base_path, BASE_PACKAGE, "__init__.py")) as f:
         re.compile(r".*__license__ = \"(.*?)\"", re.S).match(module_content).group(1)
     )
 
-with open("README.rst") as f:
+with open("README.md") as f:
     README = f.read()
 
 with open("requirements.txt") as f:
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         name=PACKAGE_NAME,
         description=DESCRIPTION,
         long_description=README,
-        long_description_content_type="text/x-rst",
+        long_description_content_type="text/markdown",
         license=LICENSE,
         url=URL,
         download_url=DOWNLOAD_URL,
