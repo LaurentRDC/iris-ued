@@ -82,7 +82,7 @@ class QCalibratorDialog(QtWidgets.QDialog):
         self.setModal(True)
         self.setWindowTitle("Scattering vector range calibration")
 
-        title = QtWidgets.QLabel("<h2>Scattering Calibration<\h2>")
+        title = QtWidgets.QLabel("<h2>Scattering Calibration<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 

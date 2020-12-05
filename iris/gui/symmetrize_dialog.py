@@ -26,7 +26,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         self.setModal(True)
         self.setWindowTitle("Symmetrization")
 
-        title = QtWidgets.QLabel("<h2>Symmetrization Options<\h2>")
+        title = QtWidgets.QLabel("<h2>Symmetrization Options<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 

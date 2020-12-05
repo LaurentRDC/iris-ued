@@ -4,7 +4,7 @@ Plugin managemenent
 ===================
 
 Plug-ins are modules implementing a subclass of AbstractRawDataset. 
-Plug-ins should be placed in ~\iris_plugins.
+Plug-ins should be placed in ~\\iris_plugins.
 
 Plug-in classes can be imported from ``iris.plugins``.
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 from runpy import run_path
 from shutil import copy2
 
-# Pluging location is ~\iris_plugins
+# Pluging location is ~\\iris_plugins
 PLUGIN_DIR = Path.home() / Path("iris_plugins")
 
 # Create the installation directory if it does not exist

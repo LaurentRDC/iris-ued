@@ -35,7 +35,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.setModal(True)
         self.setWindowTitle("Calculate azimuthal averages")
 
-        title = QtWidgets.QLabel("<h2>Azimuthal Average Options<\h2>")
+        title = QtWidgets.QLabel("<h2>Azimuthal Average Options<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 

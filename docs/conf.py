@@ -47,7 +47,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
     "matplotlib.sphinxext.plot_directive",
-    "sphinx.ext.doctest"
+    "sphinx.ext.doctest",
 ]
 
 intersphinx_mapping = {"numpy": ("http://docs.scipy.org/doc/numpy/", None)}

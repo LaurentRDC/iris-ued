@@ -183,7 +183,7 @@ class RawDatasetControl(QtWidgets.QFrame):
         sliders.addLayout(time_layout)
         sliders.addLayout(scan_layout)
 
-        title = QtWidgets.QLabel("<h2>Raw dataset controls<\h2>")
+        title = QtWidgets.QLabel("<h2>Raw dataset controls<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -292,7 +292,7 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         time_zero_shift_layout.addWidget(self.time_zero_shift_widget)
         time_zero_shift_layout.addWidget(self.clear_time_zero_shift_btn)
 
-        title = QtWidgets.QLabel("<h2>Diffraction dataset controls<\h2>")
+        title = QtWidgets.QLabel("<h2>Diffraction dataset controls<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -373,7 +373,7 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
 
         # TODO: add callback and progressbar for computing the baseline?
 
-        title = QtWidgets.QLabel("<h2>Powder dataset controls<\h2>")
+        title = QtWidgets.QLabel("<h2>Powder dataset controls<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -398,7 +398,7 @@ class MetadataWidget(QtWidgets.QWidget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        title = QtWidgets.QLabel("<h2>Dataset metadata<\h2>", parent=self)
+        title = QtWidgets.QLabel("<h2>Dataset metadata<\\h2>", parent=self)
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -451,7 +451,7 @@ class NotesEditor(QtWidgets.QFrame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        title = QtWidgets.QLabel("<h2>Dataset notes and remarks<\h2>", parent=self)
+        title = QtWidgets.QLabel("<h2>Dataset notes and remarks<\\h2>", parent=self)
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 

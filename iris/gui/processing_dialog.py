@@ -172,7 +172,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         image = raw.raw_data(timedelay=raw.time_points[0], scan=raw.scans[0], bgr=True)
         self.mask_widget = MaskCreator(image, parent=self)
 
-        title = QtWidgets.QLabel("<h2>Data Reduction Options<\h2>")
+        title = QtWidgets.QLabel("<h2>Data Reduction Options<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
 
