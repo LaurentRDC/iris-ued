@@ -12,4 +12,4 @@ python:
   version: 3
   install:
     - requirements: requirements.txt
-  system_packages: true
+    - requirements: dev-requirements.txt
