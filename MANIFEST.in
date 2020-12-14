@@ -5,7 +5,6 @@ include requirements.txt
 include dev-requirements.txt
 include iris_screen.png
 
-recursive-include tests *
 recursive-exclude docs *
 
 global-exclude *.py[cod] __pycache__ *.so *.dylib

@@ -52,7 +52,7 @@ dset_modes.add_argument(
 # Parser to reach documentation
 docs_parser = subparsers.add_parser("docs", help=DOCS_HELP)
 
-if __name__ == "__main__":
+def main():
     # This is to support the PyInstaller-built executables
     # as described here:
     #   https://docs.python.org/3/library/multiprocessing.html#multiprocessing.freeze_support
@@ -72,3 +72,6 @@ if __name__ == "__main__":
     # Default behavior : open gui without loading any data
     else:
         sys.exit(run(path=None))
+
+if __name__ == "__main__":
+    main()

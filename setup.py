@@ -32,7 +32,7 @@ with open("README.md") as f:
 with open("requirements.txt") as f:
     REQUIREMENTS = [line for line in f.read().split("\n") if len(line.strip())]
 
-exclude = {"exclude": ["docs", "*cache", "*tests"]}
+exclude = {"exclude": ["docs", "*cache"]}
 PACKAGES = [
     BASE_PACKAGE + "." + x
     for x in find_packages(os.path.join(base_path, BASE_PACKAGE), **exclude)
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         keywords=["ultrafast electron diffraction visualization pyqtgraph"],
         packages=PACKAGES,
         data_files=[("iris\\gui\\images", glob("iris\\gui\\images\\*.png"))],
-        entry_points={"gui_scripts": ["iris = iris.gui:run"]},
+        entry_points={"gui_scripts": ["iris = iris.__main__:main"]},
         include_package_data=True,
         project_urls={
             "Documentation": "http://iris-ued.readthedocs.io/en/master/",
