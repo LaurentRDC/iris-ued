@@ -1,5 +1,5 @@
-import os.path
 import sys
+import os
 import unittest
 from contextlib import suppress
 from itertools import repeat
@@ -12,7 +12,7 @@ from crystals import Crystal
 from iris import DiffractionDataset, PowderDiffractionDataset
 from iris.dataset import SWMR_AVAILABLE
 from skued import nfold, RectSelection, DiskSelection, RingSelection, ArbitrarySelection
-
+from pathlib import Path
 from . import TestRawDataset
 
 np.random.seed(23)
@@ -24,7 +24,7 @@ def double(im):
 
 class TestDiffractionDatasetCreation(unittest.TestCase):
     def setUp(self):
-        self.fname = os.path.join(gettempdir(), "test.hdf5")
+        self.fname = Path(gettempdir()) / "test.hdf5"
 
     def test_from_raw_default(self):
         """ Test that DiffractionDataset.from_raw() works with default settigns """
@@ -93,7 +93,7 @@ class TestDiffractionDataset(unittest.TestCase):
         self.metadata = {"fluence": 10, "energy": 90}
         self.dataset = DiffractionDataset.from_collection(
             self.patterns,
-            filename=os.path.join(gettempdir(), "test.hdf5"),
+            filename=Path(gettempdir()) / "test.hdf5",
             time_points=range(5),
             metadata=self.metadata,
             mode="w",

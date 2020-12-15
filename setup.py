@@ -2,6 +2,7 @@
 from glob import glob
 import os
 import re
+from pathlib import Path
 from setuptools import setup, find_packages
 
 # To upload to pypi.org:
@@ -16,8 +17,8 @@ AUTHOR = "Laurent P. René de Cotret"
 AUTHOR_EMAIL = "laurent.renedecotret@mail.mcgill.ca"
 BASE_PACKAGE = "iris"
 
-base_path = os.path.dirname(__file__)
-with open(os.path.join(base_path, BASE_PACKAGE, "__init__.py")) as f:
+base_path = Path(__file__).parent
+with open(base_path / BASE_PACKAGE / "__init__.py") as f:
     module_content = f.read()
     VERSION = (
         re.compile(r".*__version__ = \"(.*?)\"", re.S).match(module_content).group(1)
@@ -35,7 +36,7 @@ with open("requirements.txt") as f:
 exclude = {"exclude": ["docs", "*cache"]}
 PACKAGES = [
     BASE_PACKAGE + "." + x
-    for x in find_packages(os.path.join(base_path, BASE_PACKAGE), **exclude)
+    for x in find_packages(str(base_path / BASE_PACKAGE), **exclude)
 ]
 if BASE_PACKAGE not in PACKAGES:
     PACKAGES.append(BASE_PACKAGE)
