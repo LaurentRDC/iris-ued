@@ -178,7 +178,7 @@ class TestDiffractionDataset(unittest.TestCase):
         symmetrized = np.array(before, copy=True)
         for index, _ in enumerate(self.dataset.time_points):
             symmetrized[:, :, index] = nfold(
-                before[:, :, index], mod=3, center=(63, 65)
+                before[:, :, index], mod=3, center=(63, 65), mask=self.dataset.valid_mask
             )
 
         self.dataset.symmetrize(mod=3, center=(63, 65))
@@ -198,7 +198,7 @@ class TestDiffractionDataset(unittest.TestCase):
         symmetrized = np.array(before, copy=True)
         for index, _ in enumerate(self.dataset.time_points):
             symmetrized[:, :, index] = nfold(
-                before[:, :, index], mod=3, center=(63, 65)
+                before[:, :, index], mod=3, center=(63, 65), mask=self.dataset.valid_mask
             )
 
         self.dataset.symmetrize(mod=3, center=(63, 65), processes=2)
