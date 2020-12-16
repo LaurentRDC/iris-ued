@@ -6,7 +6,6 @@ Test plug-in
 
 from iris import AbstractRawDataset, ExperimentalParameter
 import numpy as np
-import unittest
 
 
 class TestRawDatasetPlugin(AbstractRawDataset):
@@ -15,6 +14,10 @@ class TestRawDatasetPlugin(AbstractRawDataset):
 
     temperature = ExperimentalParameter("temperature", ptype=float, default=500)
     is_useful = ExperimentalParameter("is_useful", ptype=bool, default=True)
+
+    # We don't want pytest to collect this class as a test
+    # https://stackoverflow.com/a/63430765
+    __test__ = False
 
     def __init__(self, source=None, metadata=dict()):
         # Metadata can be filled as a dictionary before
@@ -33,7 +36,3 @@ class TestRawDatasetPlugin(AbstractRawDataset):
 
     def raw_data(self, *args, **kwargs):
         return np.random.random(size=self.resolution)
-
-
-if __name__ == "__main__":
-    unittest.main()

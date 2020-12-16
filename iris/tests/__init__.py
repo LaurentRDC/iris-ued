@@ -2,11 +2,14 @@
 from iris import AbstractRawDataset, check_raw_bounds
 from iris.meta import ExperimentalParameter
 import numpy as np
-import unittest
 
 
 class TestRawDataset(AbstractRawDataset):
     """ Class for using raw datasets in tests """
+
+    # We don't want pytest to collect this class as a test
+    # https://stackoverflow.com/a/63430765
+    __test__ = False
 
     test = ExperimentalParameter("test", int, default=0)
     resolution = ExperimentalParameter("resolution", tuple, (16, 16))
@@ -20,7 +23,3 @@ class TestRawDataset(AbstractRawDataset):
     @check_raw_bounds
     def raw_data(self, timedelay, scan=1):
         return np.ones((self.resolution), dtype=np.uint8)
-
-
-if __name__ == "__main__":
-    unittest.main()

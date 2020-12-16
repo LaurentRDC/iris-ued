@@ -2,6 +2,7 @@
 -----
 
 * Code snippets in documentation are now tested for correctness.
+* Migration of test infrastructure to pytest.
 * Tests are now included in source distributions.
 
 5.2.4
@@ -19,7 +20,7 @@
 5.2.2
 -----
 
-* Fixed an issue where a broken plug-in would crash Iris. Instead, broken plug-in will not be loaded.
+* Fixed an issue where a broken plug-in would crash Iris. Instead, broken plug-ins will not be loaded.
 
 5.2.1
 -----
