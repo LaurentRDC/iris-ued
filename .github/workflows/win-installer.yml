@@ -9,6 +9,9 @@ jobs:
     # To prevent this job from running, have "[skip ci]" or "[ci skip]" in the commit message 
     if: contains(toJson(github.event.commits), '[ci skip]') == false && contains(toJson(github.event.commits), '[skip ci]') == false
 
+    env:
+      EXE_NAME: 'iris-win-installer-x64.exe'
+
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -32,4 +35,10 @@ jobs:
 
     - name: Build installer
       run: |
-        python installer/build.py
+        python installer/build.py ${{ env.EXE_NAME }}
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        path: dist/${{ env.EXE_NAME }}
+        name: ${{ env.EXE_NAME }}

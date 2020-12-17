@@ -6,12 +6,12 @@ Inspired from the Spyder installer script:
 https://github.com/spyder-ide/spyder/tree/master/installers/Windows
 """
 from pathlib import Path
+import sys
 from subprocess import run, check_output
 import tempfile
 import importlib.util as iutil
 import shutil
 
-INSTALLER_NAME = "iris_64bit.exe"
 REPO_ROOT = Path(__file__).parent.parent
 DESTINATION = REPO_ROOT / "dist"
 INSTALLER_REQUIREMENTS_FILE = Path(__file__).parent / "inst-requirements.txt"
@@ -61,7 +61,7 @@ def importable_name(pkg):
     return translations.get(pkg.lower(), pkg)
 
 
-def generate_pynsist_config(python_exe, filename):
+def generate_pynsist_config(python_exe, filename, exe_name):
     """
     Create a pynsist configuration file
 
@@ -95,7 +95,7 @@ def generate_pynsist_config(python_exe, filename):
         python_version=python_version,
         publisher="Laurent P. René de Cotret",  # TODO: find dynamically
         packages="\n    ".join([importable_name(p) for p in packages]),
-        installer_name="iris_64bit.exe",
+        installer_name=exe_name,
         template=None,
     )
     with open(filename, mode="wt", encoding="latin1") as f:
@@ -103,6 +103,8 @@ def generate_pynsist_config(python_exe, filename):
 
 
 if __name__ == "__main__":
+    exe_name = sys.argv[1]
+
     with tempfile.TemporaryDirectory(prefix="installer-iris-ued-") as work_dir:
         work_dir = Path(work_dir)
         run(f"python -m venv {work_dir} --upgrade --upgrade-deps --copies")
@@ -114,7 +116,9 @@ if __name__ == "__main__":
         # Generating configuration file BEFORE installing pynsist ensures that
         # we bundle the requirements for iris
         cfg_path = work_dir / "pynsist.cfg"
-        generate_pynsist_config(python_exe=env_python, filename=cfg_path)
+        generate_pynsist_config(
+            python_exe=env_python, filename=cfg_path, exe_name=exe_name
+        )
         print(open(cfg_path, "rt").read())
 
         run(
@@ -124,4 +128,4 @@ if __name__ == "__main__":
         run(f"{env_python} -m nsist {cfg_path}")
 
         DESTINATION.mkdir(exist_ok=True)
-        shutil.copy(work_dir / "build" / "nsis" / INSTALLER_NAME, DESTINATION)
+        shutil.copy(work_dir / "build" / "nsis" / exe_name, DESTINATION)
