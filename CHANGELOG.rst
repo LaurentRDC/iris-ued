@@ -1,6 +1,7 @@
 5.2.5
 -----
 
+* Parallel operations on datasets (via HDF5 single-writer multiple-reader) is now possible on all platforms. 
 * Code snippets in documentation are now tested for correctness.
 * Migration of test infrastructure to pytest.
 * Tests are now included in source distributions.
