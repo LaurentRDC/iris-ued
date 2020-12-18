@@ -9,3 +9,4 @@ scikit-ued >= 2.1.0, < 3
 qdarkstyle >= 2.8, < 3
 pyqtgraph >= 0.11
 npstreams >= 1.6.4, < 2
+packaging >= 20

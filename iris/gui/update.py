@@ -2,15 +2,13 @@
 """
 Update checks management
 ========================
-
-Based on the ``outdated`` package
 """
 import json
 from urllib.error import URLError
 from urllib.request import urlopen
 
 from PyQt5 import QtCore
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from .. import __version__
 
@@ -37,9 +35,9 @@ def update_available():
     except URLError:
         raise ConnectionError("No connection available.")
 
-    latest_version = parse_version(json.loads(response)["info"]["version"])
+    latest_version = Version(json.loads(response)["info"]["version"])
 
-    is_outdated = latest_version > parse_version(__version__)
+    is_outdated = latest_version > Version(__version__)
     return is_outdated, str(latest_version)
 
 
