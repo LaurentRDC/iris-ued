@@ -6,8 +6,6 @@ import webbrowser
 from pathlib import Path
 from multiprocessing import freeze_support
 
-# We explicitly import __version__ because
-# PyInstaller has trouble with relative import from __init__
 from iris import __version__
 from iris.gui import run
 
@@ -54,7 +52,7 @@ docs_parser = subparsers.add_parser("docs", help=DOCS_HELP)
 
 
 def main():
-    # This is to support the PyInstaller-built executables
+    # This is to support the pynsist-built executables
     # as described here:
     #   https://docs.python.org/3/library/multiprocessing.html#multiprocessing.freeze_support
     freeze_support()

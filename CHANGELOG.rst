@@ -1,3 +1,8 @@
+5.2.6
+-----
+
+* Windows installers are now built with pynsist/NSIS instead of PyInstaller (#15).
+
 5.2.5
 -----
 

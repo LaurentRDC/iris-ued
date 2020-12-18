@@ -24,14 +24,11 @@ polycrystals.](iris_screen.png)
 
 ## Installation
 
-To interact with [iris]{.title-ref} datasets from a Python environment,
-the [iris-ued]{.title-ref} package must be installed. [iris]{.title-ref}
-is available on PyPI; it can be installed with
-[pip](https://pip.pypa.io).:
+To interact with `iris` datasets from a Python environment, the `iris` package must be installed. `iris` is available on PyPI; it can be installed with [pip](https://pip.pypa.io).:
 
     python -m pip install iris-ued
 
-[iris]{.title-ref} is also available on the conda-forge channel:
+`iris` is also available on the conda-forge channel:
 
     conda config --add channels conda-forge
     conda install iris-ued
@@ -43,6 +40,10 @@ To install the latest development version from
 
 Each version is tested against Python 3.6+. If you are using a different
 version, tests can be run using the `pytest` package.
+
+### Windows Installers
+
+For Windows, installers are available on the [Releases](https://github.com/LaurentRDC/iris-ued/releases) page. You will still need to install `iris` via `pip` or `conda` to use the scripting functionality.
 
 ## Usage
 
