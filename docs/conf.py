@@ -119,7 +119,7 @@ if not on_rtd:  # only set the theme if we're building docs locally
 html_sidebars = {"**": ["about.html", "navigation.html", "searchbox.html"]}
 
 # Everything intersphinx's to Python.
-intersphinx_mapping = {"python": ("https://docs.python.org/3.6", None)}
+intersphinx_mapping = {"python": ("https://docs.python.org", None)}
 
 # Autodoc settings
 autodoc_default_flags = ["members", "special-members"]
