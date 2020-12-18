@@ -11,6 +11,7 @@ from subprocess import run, check_output
 import tempfile
 import importlib.util as iutil
 import shutil
+import argparse
 
 REPO_ROOT = Path(__file__).parent.parent
 DESTINATION = REPO_ROOT / "dist"
@@ -38,6 +39,17 @@ packages=
 installer_name={installer_name}
 directory=build/nsis/
 """
+
+parser = argparse.ArgumentParser(
+    prog="build.py", description="Iris Windows installer build script."
+)
+parser.add_argument(
+    "exe_name",
+    metavar="TARGET",
+    help="Name of the resulting installer executable (e.g. 'iris-installer.exe')",
+    type=str,
+    default=None,
+)
 
 
 def importable_name(pkg):
@@ -109,7 +121,8 @@ def generate_pynsist_config(python_exe, filename, exe_name):
 
 
 if __name__ == "__main__":
-    exe_name = sys.argv[1]
+    args = parser.parse_args()
+    exe_name = args.exe_name
 
     with tempfile.TemporaryDirectory(prefix="installer-iris-ued-") as work_dir:
         work_dir = Path(work_dir)
