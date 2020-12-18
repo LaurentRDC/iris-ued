@@ -63,7 +63,8 @@ def importable_name(pkg):
 
 def generate_pynsist_config(python_exe, filename, exe_name):
     """
-    Create a pynsist configuration file
+    Create a pynsist configuration file. Note that all required packages need
+    to be installed before calling this function.
 
     Parameters
     ----------
@@ -75,12 +76,11 @@ def generate_pynsist_config(python_exe, filename, exe_name):
     package_name = lambda t: t.partition("==")[0].split("@")[0].strip()
 
     freeze = check_output(f"{python_exe} -m pip freeze --all").decode("latin1")
-    # PyQt requirements are baked in the template string
+    # PyQt5/PyQt5-sip requirements are baked in the template string
     requirements = [
         line
         for line in freeze.splitlines()
         if package_name(line) not in {"iris-ued", "PyQt5", "PyQt5-sip"}
-        and "-e git" not in line
     ]
     packages = [package_name(p) for p in requirements]
 
@@ -88,15 +88,21 @@ def generate_pynsist_config(python_exe, filename, exe_name):
         check_output(f"{env_python} --version").decode("latin1").split(" ")[-1].strip()
     )
 
+    iris_version = check_output(
+        f'{python_exe} -c "import iris; print(iris.__version__)"'
+    ).decode("latin1")
+    iris_authors = check_output(
+        f'{python_exe} -c "import iris; print(iris.__author__)"'
+    ).decode("latin1")
+
     pynsist_cfg_payload = PYNSIST_CFG_TEMPLATE.format(
-        version="5.2.6",  # TODO: find dynamically
+        version=iris_version,
         icon_file=Path(__file__).parent / "iris.ico",
         license_file=REPO_ROOT / "LICENSE.txt",
         python_version=python_version,
-        publisher="Laurent P. René de Cotret",  # TODO: find dynamically
+        publisher=iris_authors,
         packages="\n    ".join([importable_name(p) for p in packages]),
         installer_name=exe_name,
-        template=None,
     )
     with open(filename, mode="wt", encoding="latin1") as f:
         f.write(pynsist_cfg_payload)
