@@ -13,12 +13,8 @@ from pathlib import Path
 from runpy import run_path
 from shutil import copy2
 
-# Pluging location is ~\\iris_plugins
 PLUGIN_DIR = Path.home() / Path("iris_plugins")
-
-# Create the installation directory if it does not exist
-if not PLUGIN_DIR.exists():
-    PLUGIN_DIR.mkdir()
+PLUGIN_DIR.mkdir(exist_ok=True)
 
 
 def load_plugin(path):

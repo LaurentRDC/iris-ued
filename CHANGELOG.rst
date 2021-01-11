@@ -3,6 +3,7 @@
 
 * `Support for Python 3.6 and NumPy<1.17 has been dropped <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_
 * Windows installers are now built with pynsist/NSIS instead of PyInstaller (#15).
+* Fixed an issue where creating the plug-in directory would rarely fail.
 
 5.2.5
 -----
