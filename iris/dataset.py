@@ -497,8 +497,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         except TypeError:
             time_index = np.argmin(np.abs(self.time_points - float(timedelay)))
             warn(
-                f"Time-delay {timedelay}ps not available. Using \
-                 closest-timedelay {self.time_points[time_index]}ps instead"
+                f"Time-delay {timedelay}ps not available. Using closest-timedelay {self.time_points[time_index]}ps instead"
             )
         return time_index
 
