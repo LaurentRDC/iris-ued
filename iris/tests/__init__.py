@@ -22,4 +22,6 @@ class TestRawDataset(AbstractRawDataset):
 
     @check_raw_bounds
     def raw_data(self, timedelay, scan=1):
-        return np.ones((self.resolution), dtype=np.uint8)
+        return np.ones((self.resolution), dtype=np.uint8) + np.random.randint(
+            0, 100, size=self.resolution, dtype=np.uint8
+        )

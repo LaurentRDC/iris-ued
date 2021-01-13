@@ -19,6 +19,7 @@ from skued import (
     azimuthal_average,
     baseline_dt,
     nfold,
+    autocenter,
     powder_calq,
     ArbitrarySelection,
     Selection,
@@ -191,6 +192,13 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
                 dset.write_direct(pattern, dest_sel=np.s_[:, :, index])
                 file.flush()
                 callback(round(100 * index / np.size(time_points)))
+
+            # Automatically determine the center
+            # Note that for backwards-compatibility, the center
+            # coordinates need to be stored as (col, row)
+            image = np.average(pgp["intensity"], axis=2)
+            r, c = autocenter(im=image.astype(np.float), mask=valid_mask)
+            file.center = (c, r)
 
         callback(100)
 
