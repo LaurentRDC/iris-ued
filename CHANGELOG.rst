@@ -1,6 +1,7 @@
 5.2.6
 -----
 
+* Added the :meth:`DiffractionDataset.autocenter` to automatically set the center of diffraction patterns.
 * Windows installers are now built with pynsist/NSIS instead of PyInstaller (#15).
 * Better handling of write permissions.
 * `Support for Python 3.6 and NumPy<1.17 has been dropped <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_
