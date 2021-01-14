@@ -543,17 +543,16 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             Diffracted intensity [counts]
         """
         # TODO: in-file cache
-        dset = self.diffraction_group["intensity"]
+        intensity = self.diffraction_group["intensity"]
         t0_index = np.argmin(np.abs(self.time_points))
-        b4t0_slice = dset[:, :, :t0_index]
 
         # If there are no available data before time-zero, np.mean()
         # will return an array of NaNs; instead, return zeros.
         if t0_index == 0:
-            return np.zeros(shape=self.resolution, dtype=dset.dtype)
+            return np.zeros(shape=self.resolution, dtype=intensity.dtype)
 
         # To be able to use lru_cache, we cannot have an `out` parameter
-        return np.mean(b4t0_slice, axis=2)
+        return ns.average((intensity[:, :, i] for i in range(t0_index)), axis=2)
 
     def diff_data(self, timedelay, relative=False, out=None):
         """
