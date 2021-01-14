@@ -161,6 +161,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         ------
         ValueError : if the number of peak indices does not match the number of Miller indices.
         ValueError : if the number of peaks given is lower than two.
+        IOError : If the filename is already associated with a file.
         """
         I = self.powder_eq()
         q = powder_calq(
@@ -351,6 +352,10 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         level : int or None, optional
             If None (default), maximum level is used.
+
+        Raises
+        ------
+        IOError : If the filename is already associated with a file.
         """
         block = self.powder_data(timedelay=None, bgr=False)
 
@@ -400,7 +405,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         ----------
         center : 2-tuple or None, optional
             Center of the diffraction patterns. If None (default), the dataset
-            attribute will be used instead.
+            attribute will be used instead. If that is not possible, the center will
+            be automatically determined. See :meth:`DiffractionDataset.autocenter`.
         normalized : bool, optional
             If True, each pattern is normalized to its integral.
         angular_bounds : 2-tuple of float or None, optional
@@ -411,6 +417,10 @@ class PowderDiffractionDataset(DiffractionDataset):
         callback : callable or None, optional
             Callable of a single argument, to which the calculation progress will be passed as
             an integer between 0 and 100.
+
+        Raises
+        ------
+        IOError : If the filename is already associated with a file.
         """
         # TODO: allow to cut away regions
         if not any([self.center, center]):
@@ -424,6 +434,9 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         if center is not None:
             self.center = center
+
+        if center is None and self.center == (0, 0):
+            self.autocenter()
 
         # Because it is difficult to know the angular averaged data's shape in advance,
         # we calculate it first and store it next

@@ -13,7 +13,7 @@ import h5py
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
-from npstreams import peek, pmap
+import npstreams as ns
 from skued import (
     __version__,
     nfold,
@@ -35,7 +35,7 @@ def write_access_needed(f):
     @wraps(f)
     def newf(self, *args, **kwargs):
         if self.mode != "r+":
-            raise IOError(
+            raise PermissionError(
                 f"The dataset {self.filename} has not been opened with write access."
             )
         return f(self, *args, **kwargs)
@@ -157,7 +157,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             "chunks"
         ] = True  # For some reason, if no chunking, writing to disk is SLOW
 
-        first, patterns = peek(patterns)
+        first, patterns = ns.peek(patterns)
         if dtype is None:
             dtype = first.dtype
         resolution = first.shape
@@ -203,12 +203,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
                 file.flush()
                 callback(round(100 * index / np.size(time_points)))
 
-            # Automatically determine the center
-            # Note that for backwards-compatibility, the center
-            # coordinates need to be stored as (col, row)
-            image = np.average(pgp["intensity"], axis=2)
-            r, c = autocenter(im=image.astype(np.float), mask=valid_mask)
-            file.center = (c, r)
+            file.autocenter()
 
         callback(100)
 
@@ -340,6 +335,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         Raises
         ------
         TypeError : if `func` is not a proper callable
+        PermissionError: if the dataset has not been opened with write access.
         """
         if not callable(func):
             raise TypeError(f"Expected a callable argument, but received {type(func)}")
@@ -377,11 +373,15 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         will be modified in-place. This method is not supposed to be called directly.
 
         .. versionadded:: 5.0.6
+
+        Raises
+        ------
+        PermissionError: if the dataset has not been opened with write access.
         """
         ntimes = len(self.time_points)
         dset = self.diffraction_group["intensity"]
 
-        transformed = pmap(
+        transformed = ns.pmap(
             _apply_diff,
             self.time_points,
             processes=processes,
@@ -428,6 +428,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         Raises
         ------
         ValueError: if ``mod`` is not a divisor of 360.
+        PermissionError: if the dataset has not been opened with write access.
 
         See Also
         --------
@@ -490,6 +491,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         shift : float
             Shift [ps]. A positive value of `shift` will move all time-points forward in time,
             whereas a negative value of `shift` will move all time-points backwards in time.
+
+        Raises
+        ------
+        PermissionError: if the dataset has not been opened with write access.
         """
         differential = shift - self.time_zero_shift
         self.time_zero_shift = shift
@@ -697,6 +702,25 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             out -= np.mean(self.diff_eq()[selection])
 
         return out
+
+    @write_access_needed
+    def autocenter(self):
+        """
+        Determine the diffraction pattern center automatically.
+
+        .. versionadded:: 5.2.6
+
+        Raises
+        ------
+        PermissionError: if the dataset has not been opened with write access.
+        """
+        intensity = self.diffraction_group["intensity"]
+        image = ns.average(intensity[:, :, i] for i in range(intensity.shape[2]))
+        r, c = autocenter(im=image, mask=self.valid_mask)
+
+        # Note that for backwards-compatibility, the center
+        # coordinates need to be stored as (col, row)
+        self.center = (c, r)
 
     @property
     def experimental_parameters_group(self):
