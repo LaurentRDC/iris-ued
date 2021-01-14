@@ -3,14 +3,32 @@
 Dialog for symmetrization of DiffractionDataset
 """
 from os import cpu_count
-
+from skued import autocenter
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
+from .controller import WorkThread
+from .qbusyindicator import QBusyIndicator
 
 description = (
     """Align the circle so that its center is aligned with the diffraction center. """
 )
+
+
+class CircleROIWithCenter(pg.CircleROI):
+
+    # Calculating the center position assumes that PyQtGraph is configured
+    # such that imageAxisOrder == 'row-major'
+    def center():
+        corner_x, corner_y = self.pos().x(), self.pos().y()
+        radius = self.size().x() / 2
+        return (round(corner_x + radius), round(corner_y + radius))
+
+    def set_center(self, x, y):
+        radius = self.size().x() / 2
+        left = x - radius
+        bottom = y - radius
+        self.setPos(left, bottom)
 
 
 class SymmetrizeDialog(QtWidgets.QDialog):
@@ -21,10 +39,14 @@ class SymmetrizeDialog(QtWidgets.QDialog):
     error_message_signal = QtCore.pyqtSignal(str)
     symmetrize_parameters_signal = QtCore.pyqtSignal(str, dict)
 
-    def __init__(self, image, **kwargs):
+    def __init__(self, image, mask, **kwargs):
         super().__init__(**kwargs)
         self.setModal(True)
         self.setWindowTitle("Symmetrization")
+
+        # For use with autocenter
+        self._image = image
+        self._mask = mask
 
         title = QtWidgets.QLabel("<h2>Symmetrization Options<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
@@ -40,7 +62,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
             QtWidgets.QSizePolicy.MinimumExpanding,
         )
         self.viewer.setImage(image)
-        self.center_finder = pg.CircleROI(
+        self.center_finder = CircleROIWithCenter(
             pos=np.array(image.shape) / 2 - 100, size=[200, 200], pen=pg.mkPen("r")
         )
         self.viewer.getView().addItem(self.center_finder)
@@ -67,6 +89,16 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         self.processes_widget.setRange(1, cpu_count() - 1)
         self.processes_widget.setValue(1)
 
+        self.autocenter_btn = QtWidgets.QPushButton("Autocenter", self)
+        self.autocenter_btn.clicked.connect(self.initiate_autocenter)
+        self.autocenter_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        self.busy_indicator = QBusyIndicator(parent=self)
+        autocenter_layout = QtWidgets.QHBoxLayout()
+        autocenter_layout.addWidget(self.autocenter_btn)
+        autocenter_layout.addWidget(self.busy_indicator)
+
         self.accept_btn = QtWidgets.QPushButton("Symmetrize", self)
         self.accept_btn.clicked.connect(self.accept)
         self.accept_btn.setSizePolicy(
@@ -85,6 +117,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         btns = QtWidgets.QHBoxLayout()
         btns.addWidget(self.accept_btn)
         btns.addWidget(self.cancel_btn)
+        btns.addWidget(self.busy_indicator)
 
         multiplicity_layout = QtWidgets.QFormLayout()
         multiplicity_layout.addRow("Rotational multiplicity: ", self.mod_widget)
@@ -101,6 +134,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         params_layout.addWidget(description_label)
         params_layout.addLayout(multiplicity_layout)
         params_layout.addLayout(smoothing_layout)
+        params_layout.addLayout(autocenter_layout)
         params_layout.addLayout(btns)
 
         params_widget = QtWidgets.QFrame(parent=self)
@@ -132,11 +166,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         if filename == "":
             return
 
-        # Calculating the center position assumes that PyQtGraph is configured
-        # such that imageAxisOrder == 'row-major'
-        corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
-        radius = self.center_finder.size().x() / 2
-        center = (round(corner_x + radius), round(corner_y + radius))
+        center = self.center_finder.center()
 
         params = {
             "center": center,
@@ -149,3 +179,23 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         self.symmetrize_parameters_signal.emit(filename, params)
         super().accept()
+
+    @QtCore.pyqtSlot()
+    def initiate_autocenter(self):
+        """Automatically determine the center of an image
+        and move the center-finder accordingly"""
+        self._worker = AutocenteringThread(
+            function=autocenter, kwargs=dict(im=self._image, mask=self._mask)
+        )
+        self._worker.results_signal.connect(self.set_center)
+        self._worker.in_progress_signal.connect(self.busy_indicator.toggle_animation)
+        self._worker.start()
+
+    @QtCore.pyqtSlot(object)
+    def set_center(self, rc):
+        row, col = rc
+        self.center_finder.set_center(col, row)
+
+
+class AutocenteringThread(WorkThread):
+    results_signal = QtCore.pyqtSignal(object)

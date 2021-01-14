@@ -591,6 +591,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             image=self.controller.dataset.diff_data(
                 timedelay=self.controller.dataset.time_points[0]
             ),
+            mask=self.controller.dataset.valid_mask,
         )
         symmetrize_dialog.resize(0.75 * self.size())
         symmetrize_dialog.symmetrize_parameters_signal.connect(
