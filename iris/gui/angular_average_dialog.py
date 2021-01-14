@@ -5,6 +5,10 @@ Dialog for azimuthal average of diffraction data
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets
+from skued import autocenter
+from .controller import WorkThread
+from .qbusyindicator import QBusyIndicator
+from .symmetrize_dialog import CircleROIWithCenter
 
 
 normalize_help = """ If checked, all powder patterns will be normalized to their overall intensity.
@@ -24,7 +28,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
 
     angular_average_signal = QtCore.pyqtSignal(dict)
 
-    def __init__(self, image, *args, **kwargs):
+    def __init__(self, image, mask, center=None, *args, **kwargs):
         """
         Parameters
         ----------
@@ -34,6 +38,10 @@ class AngularAverageDialog(QtWidgets.QDialog):
         super().__init__(*args, **kwargs)
         self.setModal(True)
         self.setWindowTitle("Calculate azimuthal averages")
+
+        # For use with autocenter
+        self._image = image
+        self._mask = mask
 
         title = QtWidgets.QLabel("<h2>Azimuthal Average Options<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
@@ -48,9 +56,11 @@ class AngularAverageDialog(QtWidgets.QDialog):
             QtWidgets.QSizePolicy.MinimumExpanding,
         )
         self.viewer.setImage(image)
-        self.center_finder = pg.CircleROI(
+        self.center_finder = CircleROIWithCenter(
             pos=np.array(image.shape) / 2 - 100, size=[200, 200], pen=pg.mkPen("r")
         )
+        if center is not None and center != (0, 0):
+            self.center_finder.set_center(*center)
         self.viewer.getView().addItem(self.center_finder)
 
         self.partial_circle_btn = QtWidgets.QCheckBox("Restrict azimuthal angle", self)
@@ -62,6 +72,16 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.cancel_btn = QtWidgets.QPushButton("Cancel", self)
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setDefault(True)
+
+        self.autocenter_btn = QtWidgets.QPushButton("Autocenter", self)
+        self.autocenter_btn.clicked.connect(self.initiate_autocenter)
+        self.autocenter_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        self.busy_indicator = QBusyIndicator(parent=self)
+        autocenter_layout = QtWidgets.QHBoxLayout()
+        autocenter_layout.addWidget(self.autocenter_btn)
+        autocenter_layout.addWidget(self.busy_indicator)
 
         self.min_angular_bound_widget = QtWidgets.QDoubleSpinBox(parent=self)
         self.min_angular_bound_widget.setRange(0, 360)
@@ -106,6 +126,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
         params_layout = QtWidgets.QVBoxLayout()
         params_layout.addWidget(title)
         params_layout.addWidget(explanation_label)
+        params_layout.addLayout(autocenter_layout)
         params_layout.addWidget(self.normalize_widget)
         params_layout.addLayout(angle_bounds_layout)
         params_layout.addLayout(btns)
@@ -131,9 +152,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
     def accept(self):
         # Calculating the center position assumes that PyQtGraph is configured
         # such that imageAxisOrder == 'row-major'
-        corner_x, corner_y = self.center_finder.pos().x(), self.center_finder.pos().y()
-        radius = self.center_finder.size().x() / 2
-        center = (round(corner_x + radius), round(corner_y + radius))
+        center = self.center_finder.center()
 
         params = {
             "center": center,
@@ -149,3 +168,23 @@ class AngularAverageDialog(QtWidgets.QDialog):
 
         self.angular_average_signal.emit(params)
         super().accept()
+
+    @QtCore.pyqtSlot()
+    def initiate_autocenter(self):
+        """Automatically determine the center of an image
+        and move the center-finder accordingly"""
+        self._worker = AutocenteringThread(
+            function=autocenter, kwargs=dict(im=self._image, mask=self._mask)
+        )
+        self._worker.results_signal.connect(self.set_center)
+        self._worker.in_progress_signal.connect(self.busy_indicator.toggle_animation)
+        self._worker.start()
+
+    @QtCore.pyqtSlot(object)
+    def set_center(self, rc):
+        row, col = rc
+        self.center_finder.set_center(col, row)
+
+
+class AutocenteringThread(WorkThread):
+    results_signal = QtCore.pyqtSignal(object)

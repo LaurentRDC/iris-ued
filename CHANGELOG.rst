@@ -1,6 +1,7 @@
 5.2.6
 -----
 
+* Added the ability to automatically find the center when symmetrizing or computing angular averages in the GUI.
 * Added the :meth:`DiffractionDataset.autocenter` to automatically set the center of diffraction patterns.
 * Windows installers are now built with pynsist/NSIS instead of PyInstaller (#15).
 * Better handling of write permissions.

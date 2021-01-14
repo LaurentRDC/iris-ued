@@ -592,6 +592,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
                 timedelay=self.controller.dataset.time_points[0]
             ),
             mask=self.controller.dataset.valid_mask,
+            center=self.controller.dataset.center,
         )
         symmetrize_dialog.resize(0.75 * self.size())
         symmetrize_dialog.symmetrize_parameters_signal.connect(
@@ -615,10 +616,12 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def launch_calculate_azimuthal_averages_dialog(self):
-        image = self.controller.dataset.diff_data(
-            self.controller.dataset.time_points[0]
+        promote_dialog = AngularAverageDialog(
+            self.controller.dataset.diff_data(self.controller.dataset.time_points[0]),
+            mask=self.controller.dataset.valid_mask,
+            center=self.controller.dataset.center,
+            parent=self,
         )
-        promote_dialog = AngularAverageDialog(image, parent=self)
         promote_dialog.resize(0.75 * self.size())
         promote_dialog.angular_average_signal.connect(
             self.controller.calculate_azimuthal_averages
@@ -630,10 +633,12 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def launch_recompute_angular_average_dialog(self):
-        image = self.controller.dataset.diff_data(
-            self.controller.dataset.time_points[0]
+        dialog = AngularAverageDialog(
+            self.controller.dataset.diff_data(self.controller.dataset.time_points[0]),
+            mask=self.controller.dataset.valid_mask,
+            center=self.controller.dataset.center,
+            parent=self,
         )
-        dialog = AngularAverageDialog(image, parent=self)
         dialog.resize(0.75 * self.size())
         dialog.angular_average_signal.connect(self.controller.recompute_angular_average)
         dialog.exec_()

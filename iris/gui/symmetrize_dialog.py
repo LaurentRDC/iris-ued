@@ -39,7 +39,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
     error_message_signal = QtCore.pyqtSignal(str)
     symmetrize_parameters_signal = QtCore.pyqtSignal(str, dict)
 
-    def __init__(self, image, mask, **kwargs):
+    def __init__(self, image, mask, center=None, **kwargs):
         super().__init__(**kwargs)
         self.setModal(True)
         self.setWindowTitle("Symmetrization")
@@ -65,6 +65,9 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         self.center_finder = CircleROIWithCenter(
             pos=np.array(image.shape) / 2 - 100, size=[200, 200], pen=pg.mkPen("r")
         )
+        if center is not None and center != (0, 0):
+            self.center_finder.set_center(*center)
+
         self.viewer.getView().addItem(self.center_finder)
 
         self.mod_widget = QtWidgets.QComboBox(parent=self)
@@ -132,9 +135,9 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         params_layout = QtWidgets.QVBoxLayout()
         params_layout.addWidget(title)
         params_layout.addWidget(description_label)
+        params_layout.addLayout(autocenter_layout)
         params_layout.addLayout(multiplicity_layout)
         params_layout.addLayout(smoothing_layout)
-        params_layout.addLayout(autocenter_layout)
         params_layout.addLayout(btns)
 
         params_widget = QtWidgets.QFrame(parent=self)
