@@ -127,6 +127,20 @@ def test_file_modes(dataset):
     dataset = DiffractionDataset(fname, mode="r")
 
 
+def test_write_access(dataset):
+    """ Check that certain operations respect write access """
+    fname = dataset.filename
+    metadata = dataset.metadata
+    dataset.close()
+
+    with DiffractionDataset(fname, mode="r") as dset:
+        with pytest.raises(IOError):
+            dset.symmetrize(mod=3, center=(0, 0))
+
+    # Reopen dataset so it can be deleted
+    dataset = DiffractionDataset(fname, mode="r")
+
+
 def test_dataset_metadata(dataset):
     """ Test that the property 'metadata' is working correctly"""
     metadata = dataset.metadata

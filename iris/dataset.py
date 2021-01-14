@@ -5,7 +5,7 @@ Diffraction dataset types
 from sys import platform
 from collections import OrderedDict
 from collections.abc import Callable
-from functools import lru_cache, partial
+from functools import lru_cache, partial, wraps
 from math import sqrt
 from warnings import warn
 
@@ -31,6 +31,20 @@ from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 # Whether or not single-writer multiple-reader (SWMR) mode is available
 # See http://docs.h5py.org/en/latest/swmr.html for more information
 SWMR_AVAILABLE = h5py.version.hdf5_version_tuple > (1, 10, 0)
+
+
+def write_access_needed(f):
+    """ Ensure that write access has been granted before using a method. """
+
+    @wraps(f)
+    def newf(self, *args, **kwargs):
+        if self.mode != "r+":
+            raise IOError(
+                f"The dataset {self.filename} has not been opened with write access."
+            )
+        return f(self, *args, **kwargs)
+
+    return newf
 
 
 class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
@@ -303,6 +317,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         return cls.from_collection(patterns=reduced, **kwargs)
 
+    @write_access_needed
     def diff_apply(self, func, callback=None, processes=1):
         """
         Apply a function to each diffraction pattern possibly in parallel. The diffraction patterns
@@ -359,6 +374,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         self.diff_eq.cache_clear()
 
+    @write_access_needed
     def _diff_apply_parallel(self, func, callback, processes):
         """
         Apply a function to each diffraction pattern in parallel. The diffraction patterns
@@ -387,6 +403,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             callback(int(100 * index / ntimes))
         self.diff_eq.cache_clear()
 
+    @write_access_needed
     def symmetrize(self, mod, center, kernel_size=None, callback=None, processes=1):
         """
         Symmetrize diffraction images based on n-fold rotational symmetry.
@@ -465,6 +482,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         intensity_shape = self.diffraction_group["intensity"].shape
         return tuple(intensity_shape[0:2])
 
+    @write_access_needed
     def shift_time_zero(self, shift):
         """
         Insert a shift in time points. Reset the shift by setting it to zero. Shifts are
@@ -523,6 +541,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         I : ndarray, shape (N,)
             Diffracted intensity [counts]
         """
+        # TODO: in-file cache
         dset = self.diffraction_group["intensity"]
         t0_index = np.argmin(np.abs(self.time_points))
         b4t0_slice = dset[:, :, :t0_index]
@@ -836,6 +855,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         self.powder_eq.cache_clear()
         return super().shift_time_zero(*args, **kwargs)
 
+    @write_access_needed
     def powder_calq(self, crystal, peak_indices, miller_indices):
         """
         Determine the scattering vector q corresponding to a polycrystalline diffraction pattern
@@ -1032,6 +1052,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             return np.mean(axis=1, out=out)
         return np.mean(trace, axis=1).reshape(-1)
 
+    @write_access_needed
     def compute_baseline(self, first_stage, wavelet, max_iter=50, level=None, **kwargs):
         """
         Compute and save the baseline computed based on the dual-tree complex wavelet transform.
@@ -1081,6 +1102,7 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         self.powder_eq.cache_clear()
 
+    @write_access_needed
     def compute_angular_averages(
         self,
         center=None,
