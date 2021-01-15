@@ -178,6 +178,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
         )
         self._worker.results_signal.connect(self.set_center)
         self._worker.in_progress_signal.connect(self.busy_indicator.toggle_animation)
+        self._worker.in_progress_signal.connect(self.autocenter_btn.setDisabled)
         self._worker.start()
 
     @QtCore.pyqtSlot(object)
