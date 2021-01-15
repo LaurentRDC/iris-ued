@@ -364,7 +364,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             dset.write_direct(placeholder, dest_sel=np.s_[:, :, index])
             callback(int(100 * index / ntimes))
 
-        self.diff_eq.cache_clear()
+        # Recompute that diff_eq cache
+        _ = self.diff_eq()
 
     @write_access_needed
     def _diff_apply_parallel(self, func, callback, processes):
@@ -397,7 +398,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             dset.write_direct(im, dest_sel=np.s_[:, :, index])
             dset.flush()
             callback(int(100 * index / ntimes))
-        self.diff_eq.cache_clear()
+
+        # Recompute that diff_eq cache
+        _ = self.diff_eq()
 
     @write_access_needed
     def symmetrize(self, mod, center, kernel_size=None, callback=None, processes=1):
@@ -501,7 +504,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         self.experimental_parameters_group["time_points"][:] = (
             self.time_points + differential
         )
-        self.diff_eq.cache_clear()
+
+        # Recompute that diff_eq cache
+        _ = self.diff_eq()
 
     def _get_time_index(self, timedelay):
         """
@@ -528,12 +533,13 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             )
         return time_index
 
-    @lru_cache(maxsize=1)
     def diff_eq(self):
         """
         Returns the averaged diffraction pattern for all times before photoexcitation.
         In case no data is available before photoexcitation, an array of zeros is returned.
-        The result of this function is cached to minimize overhead.
+
+        If the dataset was opened with writing access, the result of this function is
+        cached to file. It will be recomputed as needed.
 
         Time-zero can be adjusted using the ``shift_time_zero`` method.
 
@@ -542,17 +548,30 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         I : ndarray, shape (N,)
             Diffracted intensity [counts]
         """
-        # TODO: in-file cache
-        intensity = self.diffraction_group["intensity"]
-        t0_index = np.argmin(np.abs(self.time_points))
+        try:
+            # The reason this diffraction group might not exist is because
+            # this dataset was not part of the initial iris v5 format.
+            # it was added in 5.2.6. Therefore, we need to be prepared
+            # in case it does not exist in older DiffractionDatasets
+            diff_eq = np.array(self.diffraction_group["equilibrium"])
+        except KeyError:
+            intensity = self.diffraction_group["intensity"]
+            t0_index = np.argmin(np.abs(self.time_points))
 
-        # If there are no available data before time-zero, np.mean()
-        # will return an array of NaNs; instead, return zeros.
-        if t0_index == 0:
-            return np.zeros(shape=self.resolution, dtype=intensity.dtype)
+            # If there are no available data before time-zero, np.mean()
+            # will return an array of NaNs; instead, return zeros.
+            if t0_index == 0:
+                return np.zeros(shape=self.resolution, dtype=intensity.dtype)
 
-        # To be able to use lru_cache, we cannot have an `out` parameter
-        return ns.average((intensity[:, :, i] for i in range(t0_index)), axis=2)
+            diff_eq = ns.average((intensity[:, :, i] for i in range(t0_index)), axis=2)
+            # Only with write access can diff_eq be cached.
+            if self.mode == "r+":
+                eq_dset = self.diffraction_group.require_dataset(
+                    name="equilibrium", shape=diff_eq.shape, dtype=diff_eq.dtype
+                )
+                eq_dset[:] = diff_eq
+
+        return diff_eq
 
     def diff_data(self, timedelay, relative=False, out=None):
         """
