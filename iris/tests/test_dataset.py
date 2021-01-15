@@ -180,6 +180,26 @@ def test_diff_apply_parallel(dataset):
         dataset.diff_apply(None)
 
 
+def test_mask_apply(dataset):
+    """ test that DiffractionDataset.mask_apply method works as expected """
+    old_mask = dataset.valid_mask
+    func = lambda m: np.logical_not(m)
+    new_mask = func(old_mask)
+    dataset.mask_apply(func)
+    assert np.allclose(dataset.valid_mask, new_mask)
+
+    with pytest.raises(TypeError):
+        dataset.mask_apply(None)
+
+    func2 = lambda m: m.astype(np.float)
+    with pytest.raises(TypeError):
+        dataset.mask_apply(func2)
+
+    func3 = lambda m: np.zeros((m.shape[0] // 2, m.shape[1] // 2), dtype=np.bool)
+    with pytest.raises(ValueError):
+        dataset.mask_apply(func3)
+
+
 def test_symmetrization(dataset):
     """ Test correctness of symmetrization operation """
     before = np.array(dataset.diffraction_group["intensity"])

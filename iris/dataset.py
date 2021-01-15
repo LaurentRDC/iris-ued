@@ -403,6 +403,39 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         _ = self.diff_eq()
 
     @write_access_needed
+    def mask_apply(self, func):
+        """
+        Modify the diffraction pattern mask ``m`` to ``func(m)``
+
+        Parameters
+        ----------
+        func : callable
+            Function that takes in the diffraction pattern mask, which evaluates to
+            ``True`` on valid pixels, and returns an array of the exact same shape,
+            with the same data-type.
+
+        Raises
+        ------
+        TypeError : if `func` is not a proper callable.
+        TypeError : if the result of ``func(m)`` is not boolean.
+        ValueError: if the result of ``func(m)`` does not have the right shape.
+        PermissionError: if the dataset has not been opened with write access.
+        """
+        if not callable(func):
+            raise TypeError(f"Expected a callable argument, but received {type(func)}")
+
+        old_mask = func(self.valid_mask)
+
+        r = func(old_mask)
+        if r.dtype != np.bool:
+            raise TypeError(f"Diffraction pattern masks must be boolean, not {r.dtype}")
+        if r.shape != old_mask.shape:
+            raise ValueError(
+                f"Expected diffraction pattern mask with shape {old_mask.shape}, but got {r.shape}"
+            )
+        self.experimental_parameters_group["valid_mask"][:] = func(self.valid_mask)
+
+    @write_access_needed
     def symmetrize(self, mod, center, kernel_size=None, callback=None, processes=1):
         """
         Symmetrize diffraction images based on n-fold rotational symmetry.

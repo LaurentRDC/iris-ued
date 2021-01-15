@@ -1,10 +1,13 @@
 5.2.6
 -----
 
-* Added the ability to automatically find the center when symmetrizing or computing angular averages in the GUI.
 * Added the :meth:`DiffractionDataset.autocenter` to automatically set the center of diffraction patterns.
-* Windows installers are now built with pynsist/NSIS instead of PyInstaller (#15).
+* Added the :meth:`DiffractionDataset.mask_apply` to modify the diffraction pattern mask.
 * Better handling of write permissions.
+
+* Added the ability to automatically find the center when symmetrizing or computing angular averages in the GUI.
+
+* Windows installers are now built with pynsist/NSIS instead of PyInstaller (#15).
 * `Support for Python 3.6 and NumPy<1.17 has been dropped <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_
 * Fixed an issue where creating the plug-in directory would rarely fail.
 
