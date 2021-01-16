@@ -123,8 +123,8 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.roi_bottomright_text.setPos(y2, x2)
         self.roi_bottomright_text.setText(f"({y2},{x2})")
 
-    @QtCore.pyqtSlot(object)
-    def display(self, image):
+    @QtCore.pyqtSlot(object, bool)
+    def display(self, image, autocontrast=False):
         """
         Display an image in the form of an ndarray.
 
@@ -132,16 +132,16 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         ----------
         image : ndarray or None
             If None, the display is cleared.
+        autocontrast: bool, optional
+            If True, the image contrast will be adjusted
         """
         if image is None:
             self.image_viewer.clear()
             return
 
-        # autoLevels = False ensures that the colormap stays the same
-        # when 'sliding' through data. This makes it easier to compare
-        # data at different time points.
-        # Similarly for autoRange = False
-        self.image_viewer.setImage(image, autoLevels=False, autoRange=False)
+        self.image_viewer.setImage(
+            image, autoLevels=autocontrast, autoRange=autocontrast
+        )
         self.update_timeseries_rect()
 
     @QtCore.pyqtSlot(object, object)

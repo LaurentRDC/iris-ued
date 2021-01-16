@@ -84,7 +84,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
     status_message_signal = QtCore.pyqtSignal(str)
 
     raw_data_signal = QtCore.pyqtSignal(object)
-    averaged_data_signal = QtCore.pyqtSignal(object)
+    averaged_data_signal = QtCore.pyqtSignal(object, bool)
     powder_data_signal = QtCore.pyqtSignal(object, object)
 
     time_series_signal = QtCore.pyqtSignal(object, object)
@@ -168,7 +168,8 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         )
 
     @QtCore.pyqtSlot(int)
-    def display_averaged_data(self, timedelay_index):
+    @QtCore.pyqtSlot(int, bool)
+    def display_averaged_data(self, timedelay_index, autocontrast=False):
         """
         Extract processed diffraction pattern.
 
@@ -176,6 +177,8 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         ----------
         timedelay_index : int
             Time-delay index.
+        autocontrast : bool, optional
+            Whether or not the contrast of the image should be adjusted.
 
         Returns
         -------
@@ -204,7 +207,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
                 out=self._averaged_data_container,
             )
 
-        self.averaged_data_signal.emit(self._averaged_data_container)
+        self.averaged_data_signal.emit(self._averaged_data_container, autocontrast)
         self.status_message_signal.emit(f"Displaying data at {timedelay:.3f}ps.")
 
     @QtCore.pyqtSlot()
@@ -475,7 +478,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self.processed_dataset_loaded_signal.emit(True)
         self.powder_dataset_loaded_signal.emit(is_powder)
 
-        self.display_averaged_data(timedelay_index=0)
+        self.display_averaged_data(timedelay_index=0, autocontrast=True)
         if is_powder:
             self.display_powder_data()
         else:
@@ -494,7 +497,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self.processed_dataset_loaded_signal.emit(False)
         self.powder_dataset_loaded_signal.emit(False)
 
-        self.averaged_data_signal.emit(None)
+        self.averaged_data_signal.emit(None, True)
         self.powder_data_signal.emit(None, None)
 
         self.status_message_signal.emit("Dataset closed.")
