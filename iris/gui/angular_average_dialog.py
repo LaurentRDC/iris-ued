@@ -148,6 +148,8 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.layout.addLayout(right_layout)
         self.setLayout(self.layout)
 
+        self.initiate_autocenter()
+
     @QtCore.pyqtSlot()
     def accept(self):
         # Calculating the center position assumes that PyQtGraph is configured

@@ -157,6 +157,8 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         self.layout.addLayout(right_layout)
         self.setLayout(self.layout)
 
+        self.initiate_autocenter()
+
     @QtCore.pyqtSlot(str)
     def show_error_message(self, msg):
         self.error_dialog = QtGui.QErrorMessage(parent=self)

@@ -578,7 +578,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Returns
         -------
-        I : ndarray, shape (N,)
+        I : ndarray, ndim 2
             Diffracted intensity [counts]
         """
         try:
