@@ -11,13 +11,6 @@ from pathlib import Path
 from warnings import warn
 from skued import (
     autocenter,
-    nfold,
-    ArbitrarySelection,
-    Selection,
-    azimuthal_average,
-    powder_calq,
-    baseline_dt,
-    dt_max_level,
 )
 from warnings import catch_warnings, simplefilter
 from scipy.ndimage import gaussian_filter
@@ -59,14 +52,25 @@ def write_access_needed(f):
     return newf
 
 
-def update_dependents(f):
+def update_center(f):
+    """ Recompute the dependent quantities following a transformation, i.e. equilibrium pattern. """
+
+    @wraps(f)
+    def newf(self, *args, **kwargs):
+        r = f(self, *args, **kwargs)
+        self._recenter()
+        return r
+
+    return newf
+
+
+def update_equilibrium_pattern(f):
     """ Recompute the dependent quantities following a transformation, i.e. equilibrium pattern. """
 
     @wraps(f)
     def newf(self, *args, **kwargs):
         r = f(self, *args, **kwargs)
         self._recompute_equilibrium_pattern()
-        self._recenter()
         return r
 
     return newf
@@ -100,6 +104,14 @@ class LowLevelDataset(h5py.File):
 
     .. versionadded:: 6.0.0
 
+    Parameters
+    ----------
+    filename: Path-like
+        Path to the file.
+    mode : IOMode, optional
+        File IO mode.
+    kwargs
+        Keyword arguments are passed to the :class:`h5py.File` constructor.
     """
 
     def __init__(self, filename, mode=IOMode.ReadOnly, **kwargs):
@@ -236,7 +248,10 @@ class LowLevelDataset(h5py.File):
 
     @property
     def time_points(self):
-        return np.array(self.get_dataset(InternalDatasets.TimeDelays))
+        return (
+            np.array(self.get_dataset(InternalDatasets.TimeDelays))
+            - self.time_zero_shift
+        )
 
     @property
     def center(self):
@@ -256,33 +271,9 @@ class LowLevelDataset(h5py.File):
 
     @time_zero_shift.setter
     @write_access_needed
-    def time_zero_shift(self, val):
+    @update_equilibrium_pattern
+    def time_zero_shift(self, val: float):
         self.attrs[RequiredMetadata.TimeZeroShift.value] = val
-
-    @write_access_needed
-    @update_dependents
-    def shift_time_zero(self, shift):
-        """
-        Insert a shift in time points. Reset the shift by setting it to zero. Shifts are
-        not consecutive, so that calling `shift_time_zero(20)` twice will not result
-        in a shift of 40ps.
-
-        Parameters
-        ----------
-        shift : float
-            Shift [ps]. A positive value of `shift` will move all time-points forward in time,
-            whereas a negative value of `shift` will move all time-points backwards in time.
-
-        Raises
-        ------
-        PermissionError: if the dataset has not been opened with write access.
-        """
-        differential = shift - self.time_zero_shift
-        self.time_zero_shift = shift
-        time_points = self.time_points
-        self.get_dataset(InternalDatasets.TimeDelays).write_direct(
-            time_points + differential
-        )
 
     @property
     def metadata(self):
@@ -296,7 +287,7 @@ class LowLevelDataset(h5py.File):
     def get_dataset(self, dataset: InternalDatasets):
         return self[InternalDatasets(dataset).value]
 
-    def get_time_index(self, timedelay):
+    def get_time_index(self, timedelay: float):
         """
         Returns the index of the closest available time-point.
 
@@ -366,14 +357,30 @@ class LowLevelDataset(h5py.File):
     def mask(self):
         return np.array(self.get_dataset(InternalDatasets.Mask))
 
-    def time_series(self, rect: (int, int, int, int), relative: bool = False, out=None):
+    @mask.setter
+    @write_access_needed
+    def mask(self, new):
+        old_mask = self.mask
+        if new.dtype != old_mask.dtype:
+            raise TypeError(
+                f"Diffraction pattern masks must be boolean, not {new.dtype}"
+            )
+        if new.shape != old_mask.shape:
+            raise ValueError(
+                f"Expected diffraction pattern mask with shape {old_mask.shape}, but got {new.shape}"
+            )
+        self.get_dataset(InternalDatasets.Mask).write_direct(new)
+
+    def time_series(self, r1, r2, c1, c2, relative: bool = False, out=None):
         """
-        Integrated intensity over time inside bounds.
+        Diffracted intensity over time inside bounds.
 
         Parameters
         ----------
-        rect : 4-tuple of ints
-            Bounds of the region in px. Bounds are specified as [row1, row2, col1, col2]
+        r1, r2 : ints
+            Row bounds of the region in px.
+        c1, c2 : int
+            Column bounds of the region in px.
         relative : bool, optional
             If True, data is returned relative to the average of all diffraction patterns
             before photoexcitation.
@@ -383,81 +390,19 @@ class LowLevelDataset(h5py.File):
 
         Returns
         -------
-        out : ndarray, ndim 1
+        out : ndarray, ndim 2
         """
         dset = self.get_dataset(InternalDatasets.Intensity)
-
-        r1, r2, c1, c2 = rect
-        if out is None:
-            out = np.empty(shape=(dset.shape[2]), dtype=np.float)
-
-        np.mean(np.array(dset[r1:r2, c1:c2, :]), axis=(0, 1), out=out)
-
-        if relative:
-            out -= np.mean(self.equilibrium_pattern[r1:r2, c1:c2])
-        return out
-
-    def time_series_selection(self, selection, relative=False, out=None):
-        """
-        Integrated intensity over time according to some arbitrary selection. This
-        is a generalization of the ``DiffractionDataset.time_series`` method, which
-        is much faster, but limited to rectangular selections.
-
-        Parameters
-        ----------
-        selection : skued.Selection or ndarray, dtype bool, shape (N,M)
-            A selection mask that dictates the regions to integrate in each scattering patterns.
-            In the case `selection` is an array, an ArbirarySelection will be used. Performance
-            may be degraded. Selection mask evaluating to ``True`` in the regions to integrate.
-            The selection must be the same shape as one scattering pattern (i.e. two-dimensional).
-        relative : bool, optional
-            If True, data is returned relative to the average of all diffraction patterns
-            before photoexcitation.
-        out : ndarray or None, optional
-            1-D ndarray in which to store the results. The shape
-            should be compatible with ``(len(time_points),)``
-
-        Returns
-        -------
-        out : ndarray, ndim 1
-
-        Raises
-        ------
-        ValueError : if the shape of `mask` does not match the scattering patterns.
-
-        See also
-        --------
-        time_series : integrated intensity in a rectangle.
-        """
-        if not isinstance(selection, Selection):
-            selection = ArbitrarySelection(selection)
-
-        resolution = self.get_dataset(InternalDatasets.Intensity).shape[0:2]
-        if selection.shape != resolution:
-            raise ValueError(
-                f"selection mask shape {selection.shape} does not match scattering pattern shape {resolution}"
-            )
+        r1, r2 = sorted([r1, r2])
+        c1, c2 = sorted([c1, c2])
 
         if out is None:
-            out = np.zeros(shape=(len(self.time_points),), dtype=np.float)
+            out = np.empty(shape=(r2 - r1, c2 - c1, dset.shape[2]), dtype=np.float)
 
-        # For performance reasons, we want to know what is the largest bounding box that
-        # fits this selection. Otherwise, all data must be loaded from disk, all the time.
-        r1, r2, c1, c2 = selection.bounding_box
-        reduced_selection = np.asarray(selection)[r1:r2, c1:c2, None]
-
-        # There is no way to select data from HDF5 using arbitrary boolean mask
-        # Therefore, we must iterate through all time-points.
-        dataset = self.get_dataset(InternalDatasets.Intensity)
-        placeholder = np.empty(shape=(r2 - r1, c2 - c1, 1), dtype=dataset.dtype)
-        for index, _ in enumerate(self.time_points):
-            dataset.read_direct(placeholder, source_sel=np.s_[r1:r2, c1:c2, index])
-
-            out[index] = np.mean(placeholder[reduced_selection])
+        dset.read_direct(out, source_sel=np.s_[r1:r2, c1:c2, :])
 
         if relative:
-            out -= np.mean(self.equilibrium_pattern[selection])
-
+            out /= self.equilibrium_pattern[r1:r2, c1:c2, None]
         return out
 
     def diffraction_pattern(self, timedelay, relative=False, out=None):
@@ -499,7 +444,8 @@ class LowLevelDataset(h5py.File):
         return out
 
     @write_access_needed
-    @update_dependents
+    @update_equilibrium_pattern
+    @update_center
     def diff_apply(self, func, callback=None, processes=1):
         """
         Apply a function to each diffraction pattern possibly in parallel. The diffraction patterns
@@ -534,7 +480,10 @@ class LowLevelDataset(h5py.File):
         # because single-threaded diff apply can be written with a
         # placeholder array
         if SWMR_AVAILABLE and (processes != 1):
-            return self._diff_apply_parallel(func, callback, processes)
+            self._diff_apply_parallel(func, callback, processes)
+            # Important to return from this function
+            # so that dependent quantities are updated.
+            return
 
         ntimes = self.get_dataset(InternalDatasets.TimeDelays).shape[0]
         dset = self.get_dataset(InternalDatasets.Intensity)
@@ -552,7 +501,6 @@ class LowLevelDataset(h5py.File):
             callback(int(100 * index / ntimes))
 
     @write_access_needed
-    @update_dependents
     def _diff_apply_parallel(self, func, callback, processes):
         """
         Apply a function to each diffraction pattern in parallel. The diffraction patterns
@@ -582,40 +530,6 @@ class LowLevelDataset(h5py.File):
             dset.flush()
             callback(int(100 * index / ntimes))
 
-    @write_access_needed
-    def mask_apply(self, func):
-        """
-        Modify the diffraction pattern mask ``m`` to ``func(m)``
-
-        Parameters
-        ----------
-        func : callable
-            Function that takes in the diffraction pattern mask, which evaluates to
-            ``True`` on valid pixels, and returns an array of the exact same shape,
-            with the same data-type.
-
-        Raises
-        ------
-        TypeError : if `func` is not a proper callable.
-        TypeError : if the result of ``func(m)`` is not boolean.
-        ValueError: if the result of ``func(m)`` does not have the right shape.
-        PermissionError: if the dataset has not been opened with write access.
-        """
-        if not callable(func):
-            raise TypeError(f"Expected a callable argument, but received {type(func)}")
-
-        old_mask = self.mask
-
-        r = func(old_mask)
-        if r.dtype != np.bool:
-            raise TypeError(f"Diffraction pattern masks must be boolean, not {r.dtype}")
-        if r.shape != old_mask.shape:
-            raise ValueError(
-                f"Expected diffraction pattern mask with shape {old_mask.shape}, but got {r.shape}"
-            )
-        dset = self.get_dataset(InternalDatasets.Mask)
-        dset.write_direct(r)
-
 
 # Functions to be passed to pmap must not be local functions
 def _apply_diff(timedelay, fname, func):
@@ -624,13 +538,6 @@ def _apply_diff(timedelay, fname, func):
     ) as dset:
         im = dset.diffraction_pattern(timedelay=timedelay)
     return func(im)
-
-
-def _symmetrize(im, mod, center, mask, kernel_size):
-    im = nfold(im, mod=mod, center=center, mask=mask)
-    if kernel_size is None:
-        return im
-    return gaussian_filter(im, order=0, sigma=kernel_size, mode="nearest")
 
 
 class MissingTimePointWarning(UserWarning):
