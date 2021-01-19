@@ -9,7 +9,13 @@ from numpy.random import random
 import npstreams as ns
 
 from crystals import Crystal
-from .. import LowLevelDataset, InternalDatasets, SWMR_AVAILABLE, IOMode
+from .. import (
+    LowLevelDataset,
+    InternalDatasets,
+    MissingTimePointWarning,
+    SWMR_AVAILABLE,
+    IOMode,
+)
 from skued import (
     ArbitrarySelection,
     RectSelection,
@@ -17,6 +23,7 @@ from skued import (
     RingArcSelection,
     RingSelection,
 )
+from warnings import catch_warnings, simplefilter
 from pathlib import Path
 import pytest
 
@@ -107,22 +114,6 @@ def test_lowlevel_write_access(dataset):
     dataset = LowLevelDataset(fname, IOMode.ReadOnly)
 
 
-def test_lowlevel_dataset_metadata(dataset):
-    """ Test that the property 'metadata' is working correctly"""
-    metadata = dataset.metadata
-    for required in LowLevelDataset.valid_metadata:
-        assert required in metadata
-    assert "filename" in metadata
-
-
-def test_lowlevel_notes(dataset):
-    """ Test that updating the notes works as intended """
-    dataset.notes = "test notes"
-    assert dataset.notes == "test notes"
-    dataset.notes = "different notes"
-    assert dataset.notes == "different notes"
-
-
 def test_lowlevel_diff_apply(dataset):
     """ Test that the diff_apply method works as expected """
     before = np.array(dataset.get_dataset(InternalDatasets.Intensity))
@@ -176,7 +167,9 @@ def test_lowlevel_time_zero_shift(dataset):
     """ Test that data changed with time_zero_shift() """
     unshifted = np.array(dataset.time_points)
     dataset.shift_time_zero(100)
-    assert dataset.get_time_index(0) == 0
+    with catch_warnings():
+        simplefilter("ignore", category=MissingTimePointWarning)
+        assert dataset.get_time_index(0) == 0
     shifted = np.array(dataset.time_points)
 
     assert not np.allclose(unshifted, shifted)
@@ -186,14 +179,18 @@ def test_lowlevel_time_zero_shift(dataset):
 def test_lowlevel_equilibrium_pattern(dataset):
     """ test that LowLevelDataset.equilibrium_pattern() returns the correct array """
     dataset.shift_time_zero(10)
-    assert dataset.get_time_index(0) == 0
+    with catch_warnings():
+        simplefilter("ignore", category=MissingTimePointWarning)
+        assert dataset.get_time_index(0) == 0
     assert np.allclose(
         dataset.equilibrium_pattern,
         np.array(dataset.get_dataset(InternalDatasets.Intensity)[:, :, 0]),
     )
 
     dataset.shift_time_zero(-20)
-    assert dataset.get_time_index(0) == len(dataset.time_points) - 1
+    with catch_warnings():
+        simplefilter("ignore", category=MissingTimePointWarning)
+        assert dataset.get_time_index(0) == len(dataset.time_points) - 1
     eq = ns.average(getattr(dataset, "patterns"), axis=2)
     assert np.allclose(dataset.equilibrium_pattern, eq)
 
@@ -222,7 +219,7 @@ def test_lowlevel_time_series_selection(dataset):
     )
     selection = ArbitrarySelection(mask)
 
-    stack = np.stack((im[selection] for im in getattr(dataset, "patterns")), axis=-1)
+    stack = np.stack([im[selection] for im in getattr(dataset, "patterns")], axis=-1)
     ts = np.mean(stack, axis=(0, 1))
 
     assert np.allclose(dataset.time_series_selection(selection, relative=False), ts)

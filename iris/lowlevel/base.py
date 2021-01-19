@@ -19,13 +19,13 @@ from skued import (
     baseline_dt,
     dt_max_level,
 )
+from warnings import catch_warnings, simplefilter
 from scipy.ndimage import gaussian_filter
 
 import h5py
 import npstreams as ns
 import numpy as np
 
-from ..meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
 # Whether or not single-writer multiple-reader (SWMR) mode is available
 # See http://docs.h5py.org/en/latest/swmr.html for more information
@@ -74,38 +74,33 @@ def update_dependents(f):
 
 @enum.unique
 class InternalDatasets(enum.Enum):
-    Intensity = "/processed/intensity"
-    Mask = "/valid_mask"
-    Equilibrium = "/processed/equilibrium"
+    Intensity = "/intensity"
+    Mask = "/mask"
+    Equilibrium = "/equilibrium"
     TimeDelays = "/time_points"
-    Q = "/wavevector"
+    ScatteringVectors = "/scattvectors"
 
 
-class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
+@enum.unique
+class RequiredGroups(enum.Enum):
+    Root = "/"
+    Metadata = "/metadata"  # location of user-defined metadata only
+
+
+@enum.unique
+class RequiredMetadata(enum.Enum):
+    Center = "center"
+    TimeZeroShift = "time_zero_shift"
+
+
+class LowLevelDataset(h5py.File):
     """
     Low-level interface between :mod:`iris` and ``HDF5``. This class implements
     all the basic operations on diffraction patterns and time-series.
 
-    .. versionadded:: 5.3.0
+    .. versionadded:: 6.0.0
 
     """
-
-    # Subclasses can add more experimental parameters like those below
-    # The types must be representable by h5py
-    center = HDF5ExperimentalParameter("center", tuple, default=(0, 0))
-    acquisition_date = HDF5ExperimentalParameter("acquisition_date", str, default="")
-    energy = HDF5ExperimentalParameter("energy", float, default=90)  # keV
-    pump_wavelength = HDF5ExperimentalParameter("pump_wavelength", int, default=800)
-    fluence = HDF5ExperimentalParameter("fluence", float, default=0)
-    time_zero_shift = HDF5ExperimentalParameter("time_zero_shift", float, default=0)
-    temperature = HDF5ExperimentalParameter("temperature", float, default=293)
-    exposure = HDF5ExperimentalParameter("exposure", float, default=1)  # seconds
-    scans = HDF5ExperimentalParameter("scans", tuple, default=(1,))
-    camera_length = HDF5ExperimentalParameter("camera_length", float, default=0.23)
-    pixel_width = HDF5ExperimentalParameter("pixel_width", float, default=14e-6)
-    aligned = HDF5ExperimentalParameter("aligned", bool, default=False)
-    normalized = HDF5ExperimentalParameter("normalized", bool, default=False)
-    notes = HDF5ExperimentalParameter("notes", str, default="")
 
     def __init__(self, filename, mode=IOMode.ReadOnly, **kwargs):
         super().__init__(name=Path(filename), mode=IOMode(mode).value, **kwargs)
@@ -116,9 +111,8 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
         patterns,
         filename,
         time_points,
-        metadata,
-        valid_mask=None,
-        dtype=None,
+        mask=None,
+        metadata=None,
         ckwargs=None,
         callback=None,
         **kwargs,
@@ -132,14 +126,14 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
             Diffraction patterns. These should be in the same order as ``time_points``. Note that
             the iterable can be a generator, in which case it will be consumed.
         filename : str or path-like
-            Path to the assembled DiffractionDataset.
+            Path to the assembled LowLevelDataset. If the path exists, an error is thrown.
         time_points : array_like, shape (N,)
             Time-points of the diffraction patterns, in picoseconds.
-        metadata : dict
-            Valid keys are contained in ``DiffractionDataset.valid_metadata``.
-        valid_mask : ndarray or None, optional
+        mask : ndarray or None, optional
             Boolean array that evaluates to True on valid pixels. This information is useful in
             cases where a beamblock is used.
+        metadata : dict, optional
+            User-defined metadata. Keys must be strings. Values must be types representable by HDF5.
         ckwargs : dict, optional
             HDF5 compression keyword arguments. Refer to ``h5py``'s documentation for details.
             Default is to use the `lzf` compression pipeline.
@@ -169,20 +163,22 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
         first, patterns = ns.peek(patterns)
         resolution = first.shape
 
-        if valid_mask is None:
-            valid_mask = np.ones(first.shape, dtype=np.bool)
+        if mask is None:
+            mask = np.ones(first.shape, dtype=np.bool)
 
         callback(0)
         mode = kwargs.pop("mode", "x")
         with cls(filename, mode=mode, **kwargs) as file:
 
-            # Note that keys not associated with an ExperimentalParameter
-            # descriptor will not be recorded in the file.
-            metadata.pop("time_points", None)
-            for key, val in metadata.items():
-                if key not in cls.valid_metadata:
-                    continue
-                setattr(file, key, val)
+            for required_group in RequiredGroups:
+                file.require_group(required_group.value)
+
+            if metadata:
+                for key, val in metadata.items():
+                    file[RequiredGroups.Metadata.value].attrs[key] = val
+
+            file.attrs[RequiredMetadata.Center.value] = (0, 0)  # placeholder
+            file.attrs[RequiredMetadata.TimeZeroShift.value] = 0
 
             # Record time-points as a dataset; then, changes to it will be reflected
             # in other dimension scales
@@ -190,7 +186,7 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
                 name=InternalDatasets.TimeDelays.value, data=time_points, dtype=np.float
             )
             mask = file.create_dataset(
-                name=InternalDatasets.Mask.value, data=valid_mask, dtype=np.bool
+                name=InternalDatasets.Mask.value, data=mask, dtype=np.bool
             )
 
             dset = file.create_dataset(
@@ -205,21 +201,20 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
                 name=InternalDatasets.Equilibrium.value,
                 shape=resolution,
                 dtype=np.float,  # Involves division; cannot be integer
-                chunks=True,
                 **ckwargs,
             )
 
-            # Making use of the H5DS dimension scales
-            # http://docs.h5py.org/en/latest/high/dims.html
-            times.make_scale("time-delay")
-            dset.dims[2].attach_scale(times)
+            file.create_dataset(
+                name=InternalDatasets.ScatteringVectors.value,
+                shape=resolution + (3,),
+                dtype=np.float,
+            )
 
             # At each iteration, we flush the changes to file
             # If this is not done, data can be accumulated in memory (>5GB)
             # until this loop is done.
             for index, pattern in enumerate(patterns):
                 dset.write_direct(pattern, dest_sel=np.s_[:, :, index])
-                file.flush()
                 callback(round(100 * index / np.size(time_points)))
 
             file._recompute_equilibrium_pattern()
@@ -228,7 +223,7 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
         callback(100)
 
         # Now that the file exists, we can switch to read/write mode
-        kwargs["mode"] = "r+"
+        kwargs["mode"] = IOMode.ReadWrite
         return cls(filename, **kwargs)
 
     @property
@@ -242,6 +237,27 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
     @property
     def time_points(self):
         return np.array(self.get_dataset(InternalDatasets.TimeDelays))
+
+    @property
+    def center(self):
+        """ Center of diffraction patterns in [row, col] format."""
+        return self.attrs[RequiredMetadata.Center.value]
+
+    @center.setter
+    @write_access_needed
+    def center(self, center):
+        center = tuple(center)
+        # TODO: check bounds?
+        self.attrs[RequiredMetadata.Center.value] = center
+
+    @property
+    def time_zero_shift(self):
+        return self.attrs[RequiredMetadata.TimeZeroShift.value]
+
+    @time_zero_shift.setter
+    @write_access_needed
+    def time_zero_shift(self, val):
+        self.attrs[RequiredMetadata.TimeZeroShift.value] = val
 
     @write_access_needed
     @update_dependents
@@ -270,28 +286,12 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     @property
     def metadata(self):
-        """ Dictionary of the dataset's metadata. Dictionary is sorted alphabetically by keys."""
-        meta = {k: getattr(self, k) for k in self.valid_metadata}
-        meta["filename"] = self.filename
-        meta["time_points"] = tuple(self.time_points)
-        meta.update(self.compression_params)
-
-        # Ordered dictionary by keys is easiest to inspect
+        """ Dictionary of the dataset's user-defined metadata. Dictionary is sorted alphabetically by keys."""
+        meta = dict(self.get_group(RequiredGroups.Metadata).attrs)
         return OrderedDict(sorted(meta.items(), key=lambda t: t[0]))
 
-    @property
-    def compression_params(self):
-        """ Compression options in the form of a dictionary """
-        dataset = self.get_dataset(InternalDatasets.Intensity)
-        ckwargs = dict(
-            compression=dataset.compression,
-            fletcher32=dataset.fletcher32,
-            shuffle=dataset.shuffle,
-            chunks=True if dataset.chunks else None,
-        )
-        if dataset.compression_opts:  # could be None
-            ckwargs.update(dataset.compression_opts)
-        return ckwargs
+    def get_group(self, gp: RequiredGroups):
+        return self[gp.value]
 
     def get_dataset(self, dataset: InternalDatasets):
         return self[InternalDatasets(dataset).value]
@@ -317,7 +317,9 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
         except TypeError:
             time_index = np.argmin(np.abs(self.time_points - float(timedelay)))
             warn(
-                f"Time-delay {timedelay}ps not available. Using closest-timedelay {self.time_points[time_index]}ps instead"
+                f"Time-delay {timedelay}ps not available. Using closest-timedelay {self.time_points[time_index]}ps instead.",
+                category=MissingTimePointWarning,
+                stacklevel=2,
             )
         return time_index
 
@@ -328,7 +330,9 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
     @write_access_needed
     def _recompute_equilibrium_pattern(self):
         intensity_dset = self.get_dataset(InternalDatasets.Intensity)
-        t0_index = self.get_time_index(0)
+        with catch_warnings():
+            simplefilter("ignore", category=MissingTimePointWarning)
+            t0_index = self.get_time_index(0)
 
         # If there are no available data before time-zero, np.mean()
         # will return an array of NaNs; instead, return the first diffraction pattern
@@ -356,7 +360,7 @@ class LowLevelDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         # Note that for backwards-compatibility, the center
         # coordinates need to be stored as (col, row)
-        self.center = (c, r)
+        self.center = (r, c)
 
     @property
     def mask(self):
@@ -627,3 +631,9 @@ def _symmetrize(im, mod, center, mask, kernel_size):
     if kernel_size is None:
         return im
     return gaussian_filter(im, order=0, sigma=kernel_size, mode="nearest")
+
+
+class MissingTimePointWarning(UserWarning):
+    """ Class of warning when requesting data from a time-point that is missing. """
+
+    pass
