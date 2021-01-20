@@ -132,13 +132,15 @@ class LowLevelDataset(h5py.File):
         """
         Create a LowLevelDataset from a collection of diffraction patterns and metadata.
 
+
         Parameters
         ----------
         patterns : iterable of ndarray or ndarray
             Diffraction patterns. These should be in the same order as ``time_points``. Note that
             the iterable can be a generator, in which case it will be consumed.
         filename : str or path-like
-            Path to the assembled LowLevelDataset. If the path exists, an error is thrown.
+            Path to the assembled LowLevelDataset. Default behavior is to overwrite the file at ``filename``;
+            to prevent this, pass the ``mode='x'`` argument.
         time_points : array_like, shape (N,)
             Time-points of the diffraction patterns, in picoseconds.
         mask : ndarray or None, optional
@@ -179,7 +181,7 @@ class LowLevelDataset(h5py.File):
             mask = np.ones(first.shape, dtype=np.bool)
 
         callback(0)
-        mode = kwargs.pop("mode", "x")
+        mode = kwargs.pop("mode", IOMode.Overwrite)
         with cls(filename, mode=mode, **kwargs) as file:
 
             for required_group in RequiredGroups:

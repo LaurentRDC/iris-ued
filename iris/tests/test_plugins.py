@@ -36,7 +36,7 @@ def test_plugin_reduction():
 
     temp_file = Path(gettempdir()) / "plugin_test.hdf5"
     with DiffractionDataset.from_raw(test, filename=temp_file, mode="w") as dataset:
-        assert test.temperature == dataset.temperature
+        assert test.temperature == dataset.metadata["temperature"]
         # Assert that extra metadata is not kept
         assert hasattr(test, "is_useful")
         assert not hasattr(dataset, "is_useful")
