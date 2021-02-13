@@ -252,7 +252,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
         normalize=True,
         mask=None,
         processes=1,
-        dtype=np.float,
+        dtype=float,
     ):
         """
         Generator of reduced dataset. The reduced diffraction patterns are generated in order of time-delay.

@@ -192,11 +192,11 @@ def test_mask_apply(dataset):
     with pytest.raises(TypeError):
         dataset.mask_apply(None)
 
-    func2 = lambda m: m.astype(np.float)
+    func2 = lambda m: m.astype(float)
     with pytest.raises(TypeError):
         dataset.mask_apply(func2)
 
-    func3 = lambda m: np.zeros((m.shape[0] // 2, m.shape[1] // 2), dtype=np.bool)
+    func3 = lambda m: np.zeros((m.shape[0] // 2, m.shape[1] // 2), dtype=bool)
     with pytest.raises(ValueError):
         dataset.mask_apply(func3)
 

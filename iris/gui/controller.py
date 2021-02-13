@@ -472,7 +472,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             dtype=self.dataset.diffraction_group["intensity"].dtype,
         )
         self._average_time_series_container = np.empty(
-            shape=self.dataset.time_points.shape, dtype=np.float
+            shape=self.dataset.time_points.shape, dtype=float
         )
 
         self.processed_dataset_loaded_signal.emit(True)

@@ -61,7 +61,7 @@ def update_equilibrium_pattern(f):
     @wraps(f)
     def newf(self, *args, **kwargs):
         r = f(self, *args, **kwargs)
-        _ = self.diff_eq() # It is assumed that diff_eq caches the result
+        _ = self.diff_eq()  # It is assumed that diff_eq caches the result
         return r
 
     return newf
@@ -187,7 +187,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         resolution = first.shape
 
         if valid_mask is None:
-            valid_mask = np.ones(first.shape, dtype=np.bool)
+            valid_mask = np.ones(first.shape, dtype=bool)
 
         callback(0)
         with cls(filename, **kwargs) as file:
@@ -203,8 +203,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             # Record time-points as a dataset; then, changes to it will be reflected
             # in other dimension scales
             gp = file.experimental_parameters_group
-            times = gp.create_dataset("time_points", data=time_points, dtype=np.float)
-            mask = gp.create_dataset("valid_mask", data=valid_mask, dtype=np.bool)
+            times = gp.create_dataset("time_points", data=time_points, dtype=float)
+            mask = gp.create_dataset("valid_mask", data=valid_mask, dtype=bool)
 
             pgp = file.diffraction_group
             dset = pgp.create_dataset(
@@ -301,7 +301,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             exclude_scans = set([])
 
         if valid_mask is None:
-            valid_mask = np.ones(shape=raw.resolution, dtype=np.bool)
+            valid_mask = np.ones(shape=raw.resolution, dtype=bool)
 
         metadata = raw.metadata.copy()
         metadata["scans"] = tuple(set(raw.scans) - set(exclude_scans))
@@ -449,7 +449,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         old_mask = func(self.valid_mask)
 
         r = func(old_mask)
-        if r.dtype != np.bool:
+        if r.dtype != bool:
             raise TypeError(f"Diffraction pattern masks must be boolean, not {r.dtype}")
         if r.shape != old_mask.shape:
             raise ValueError(
@@ -751,7 +751,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             )
 
         if out is None:
-            out = np.zeros(shape=(len(self.time_points),), dtype=np.float)
+            out = np.zeros(shape=(len(self.time_points),), dtype=float)
 
         # For performance reasons, we want to know what is the largest bounding box that
         # fits this selection. Otherwise, all data must be loaded from disk, all the time.

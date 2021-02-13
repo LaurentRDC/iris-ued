@@ -193,7 +193,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         if not path:
             return
 
-        data = np.empty(shape=(len(times), 2), dtype=np.float)
+        data = np.empty(shape=(len(times), 2), dtype=float)
         data[:, 0] = times
         data[:, 1] = intensity
         np.savetxt(path, data, delimiter=",", header="times [ps], intensity [cnts]")

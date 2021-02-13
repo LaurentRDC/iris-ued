@@ -51,7 +51,7 @@ class PowderDiffractionDataset(DiffractionDataset):
                     name=name,
                     shape=maxshape,
                     maxshape=maxshape,
-                    dtype=np.float,
+                    dtype=float,
                     fillvalue=0.0,
                     **self.compression_params,
                 )
@@ -61,7 +61,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         placeholder = np.arange(0, shape[-1])
         if "px_radius" not in self.powder_group:
             self.powder_group.create_dataset(
-                "px_radius", data=placeholder, maxshape=(maxshape[-1],), dtype=np.float
+                "px_radius", data=placeholder, maxshape=(maxshape[-1],), dtype=float
             )
 
         # Radius from center in units of inverse angstroms
@@ -70,7 +70,7 @@ class PowderDiffractionDataset(DiffractionDataset):
                 "scattering_vector",
                 data=placeholder,
                 maxshape=(maxshape[-1],),
-                dtype=np.float,
+                dtype=float,
             )
 
     @classmethod
