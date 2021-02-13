@@ -369,58 +369,41 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         if callback is None:
             callback = lambda _: None
 
+        ntimes = len(self.time_points)
+        dset = self.diffraction_group["intensity"]
+
         # We implement parallel diff apply in a separate method
         # because single-threaded diff apply can be written with a
         # placeholder array
         if SWMR_AVAILABLE and (processes != 1):
-            return self._diff_apply_parallel(func, callback, processes)
+            transformed = ns.pmap(
+                _apply_diff,
+                self.time_points,
+                processes=processes,
+                ntotal=ntimes,
+                kwargs=dict(fname=self.filename, func=func),
+            )
 
-        ntimes = len(self.time_points)
-        dset = self.diffraction_group["intensity"]
+            # We need to switch SWMR mode ON
+            # Note that it cannot be turned OFF
+            self.swmr_mode = True
 
-        # Create a placeholder numpy array where to load and store the results
-        placeholder = np.empty(shape=self.resolution, dtype=dset.dtype, order="C")
+            for index, im in enumerate(transformed):
+                dset.write_direct(im, dest_sel=np.s_[:, :, index])
+                dset.flush()
+                callback(int(100 * index / ntimes))
+        else:
+            # Create a placeholder numpy array where to load and store the results
+            placeholder = np.empty(shape=self.resolution, dtype=dset.dtype, order="C")
 
-        for index, time_point in enumerate(self.time_points):
-            # NOTE: Using dset.read_direct was causing problems because
-            #       the destination had shape (N,N), but read_direct wanted a
-            #       destination of shape (N,N,1). This is a new behavior since h5py 3.*
-            placeholder[:] = dset[:, :, index]
-            placeholder[:] = func(placeholder)
-            dset.write_direct(placeholder, dest_sel=np.s_[:, :, index])
-            callback(int(100 * index / ntimes))
-
-    @write_access_needed
-    def _diff_apply_parallel(self, func, callback, processes):
-        """
-        Apply a function to each diffraction pattern in parallel. The diffraction patterns
-        will be modified in-place. This method is not supposed to be called directly.
-
-        .. versionadded:: 5.0.6
-
-        Raises
-        ------
-        PermissionError: if the dataset has not been opened with write access.
-        """
-        ntimes = len(self.time_points)
-        dset = self.diffraction_group["intensity"]
-
-        transformed = ns.pmap(
-            _apply_diff,
-            self.time_points,
-            processes=processes,
-            ntotal=ntimes,
-            kwargs={"fname": self.filename, "func": func},
-        )
-
-        # We need to switch SWMR mode ON
-        # Note that it cannot be turned OFF
-        self.swmr_mode = True
-
-        for index, im in enumerate(transformed):
-            dset.write_direct(im, dest_sel=np.s_[:, :, index])
-            dset.flush()
-            callback(int(100 * index / ntimes))
+            for index, _ in enumerate(self.time_points):
+                # NOTE: Using dset.read_direct was causing problems because
+                #       the destination had shape (N,N), but read_direct wanted a
+                #       destination of shape (N,N,1). This is a new behavior since h5py 3.*
+                placeholder[:] = dset[:, :, index]
+                placeholder[:] = func(placeholder)
+                dset.write_direct(placeholder, dest_sel=np.s_[:, :, index])
+                callback(int(100 * index / ntimes))
 
     @write_access_needed
     @update_center
