@@ -39,7 +39,8 @@ def open_raw(path):
 
     Raises
     ------
-    RuntimeError : if the data format could not be guessed.
+    RuntimeError
+        if the data format could not be guessed.
     """
     if isinstance(path, Path):
         path = str(path)
@@ -124,7 +125,8 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
 
         Raises
         ------
-        TypeError : if an item from the metadata has an unexpected type.
+        TypeError
+            if an item from the metadata has an unexpected type.
         """
         self.source = source
         if metadata:
@@ -240,8 +242,10 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
 
         Raises
         ------
-        ValueError : if ``timedelay`` or ``scan`` are invalid / out of bounds.
-        IOError : Filename is not associated with an image/does not exist.
+        ValueError
+            if ``timedelay`` or ``scan`` are invalid / out of bounds.
+        IOError
+            Filename is not associated with an image/does not exist.
         """
         pass
 

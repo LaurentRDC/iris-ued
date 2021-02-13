@@ -159,9 +159,11 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         Raises
         ------
-        ValueError : if the number of peak indices does not match the number of Miller indices.
-        ValueError : if the number of peaks given is lower than two.
-        IOError : If the filename is already associated with a file.
+        ValueError
+            if the number of peak indices does not match the number of Miller indices, or if the
+            number of peaks given is lower than two.
+        IOError
+            If the filename is already associated with a file.
         """
         I = self.powder_eq()
         q = powder_calq(
@@ -355,7 +357,8 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         Raises
         ------
-        IOError : If the filename is already associated with a file.
+        IOError
+            If the filename is already associated with a file.
         """
         block = self.powder_data(timedelay=None, bgr=False)
 
@@ -420,7 +423,8 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         Raises
         ------
-        IOError : If the filename is already associated with a file.
+        IOError
+            If the filename is already associated with a file.
         """
         # TODO: allow to cut away regions
         if not any([self.center, center]):

@@ -292,7 +292,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Raises
         ------
-        IOError : If the filename is already associated with a file.
+        IOError
+            If the filename is already associated with a file.
         """
         if callback is None:
             callback = lambda _: None
@@ -360,8 +361,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Raises
         ------
-        TypeError : if `func` is not a proper callable
-        PermissionError: if the dataset has not been opened with write access.
+        TypeError
+            if `func` is not a proper callable
+        PermissionError
+            if the dataset has not been opened with write access.
         """
         if not callable(func):
             raise TypeError(f"Expected a callable argument, but received {type(func)}")
@@ -421,10 +424,12 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Raises
         ------
-        TypeError : if `func` is not a proper callable.
-        TypeError : if the result of ``func(m)`` is not boolean.
-        ValueError: if the result of ``func(m)`` does not have the right shape.
-        PermissionError: if the dataset has not been opened with write access.
+        TypeError
+            if `func` is not a proper callable, or if the result of ``func(m)`` is not boolean.
+        ValueError
+            if the result of ``func(m)`` does not have the right shape.
+        PermissionError
+            if the dataset has not been opened with write access.
         """
         if not callable(func):
             raise TypeError(f"Expected a callable argument, but received {type(func)}")
@@ -469,8 +474,10 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Raises
         ------
-        ValueError: if ``mod`` is not a divisor of 360.
-        PermissionError: if the dataset has not been opened with write access.
+        ValueError
+            if ``mod`` is not a divisor of 360.
+        PermissionError
+            if the dataset has not been opened with write access.
 
         See Also
         --------
@@ -537,7 +544,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Raises
         ------
-        PermissionError: if the dataset has not been opened with write access.
+        PermissionError
+            if the dataset has not been opened with write access.
         """
         differential = shift - self.time_zero_shift
         self.time_zero_shift = shift
@@ -719,7 +727,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Raises
         ------
-        ValueError : if the shape of `mask` does not match the scattering patterns.
+        ValueError
+            if the shape of ``mask`` does not match the scattering patterns.
 
         See also
         --------
@@ -767,7 +776,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         Raises
         ------
-        PermissionError: if the dataset has not been opened with write access.
+        PermissionError
+            if the dataset has not been opened with write access.
         """
         intensity = self.diffraction_group["intensity"]
         image = ns.average(intensity[:, :, i] for i in range(intensity.shape[2]))

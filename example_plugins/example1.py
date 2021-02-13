@@ -65,8 +65,10 @@ class MinimalRawDataset(AbstractRawDataset):
 
         Raises
         ------
-        ValueError : if ``timedelay`` or ``scan`` are invalid / out of bounds.
-        IOError : Filename is not associated with an image/does not exist.
+        ValueError
+            if ``timedelay`` or ``scan`` are invalid / out of bounds.
+        IOError
+            Filename is not associated with an image/does not exist.
         """
         # Parameters are ignored in this example
         return np.random.random(size=(512, 512))

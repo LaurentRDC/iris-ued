@@ -26,7 +26,8 @@ def update_available():
 
     Raises
     ------
-    ConnectionError : if connection to PyPI could not be made.
+    ConnectionError
+        if connection to PyPI could not be made.
     """
     url = "https://pypi.org/pypi/iris-ued/json"
 

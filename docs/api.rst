@@ -18,16 +18,23 @@ To open any raw dataset, take a look at the :func:`open_raw` function.
 Raw Dataset Classes
 ===================
 
-.. autosummary::
-    :toctree: classes/
-
-    AbstractRawDataset
+.. autoclass:: AbstractRawDataset
+    :members:
+    
 
 Diffraction Dataset Classes
 ===========================
 
-.. autosummary::
-    :toctree: classes/
+:class:`DiffractionDataset`
+---------------------------
 
-    DiffractionDataset
-    PowderDiffractionDataset
+.. autoclass:: DiffractionDataset
+    :show-inheritance:
+    :members:
+
+:class:`PowderDiffractionDataset`
+---------------------------------
+
+.. autoclass:: PowderDiffractionDataset
+    :show-inheritance:
+    :members:

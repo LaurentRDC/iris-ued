@@ -408,7 +408,8 @@ def parse_range(range_str):
 
     Raises
     ------
-    ValueError : if the input ``range_str`` is unparseable.
+    ValueError
+        if the input ``range_str`` is unparseable.
     """
     range_str = str(range_str)
     range_str = range_str.replace(" ", "")
