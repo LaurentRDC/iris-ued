@@ -183,7 +183,8 @@ def test_diff_apply_parallel(dataset):
 def test_mask_apply(dataset):
     """ test that DiffractionDataset.mask_apply method works as expected """
     old_mask = dataset.valid_mask
-    func = lambda m: np.logical_not(m)
+    random_mask = np.random.random(size=old_mask.shape) > 0.5
+    func = lambda m: random_mask
     new_mask = func(old_mask)
     dataset.mask_apply(func)
     assert np.allclose(dataset.valid_mask, new_mask)

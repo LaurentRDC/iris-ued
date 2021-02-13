@@ -43,6 +43,30 @@ def write_access_needed(f):
     return newf
 
 
+def update_center(f):
+    """ Recompute the dependent quantities following a transformation, i.e. equilibrium pattern. """
+
+    @wraps(f)
+    def newf(self, *args, **kwargs):
+        r = f(self, *args, **kwargs)
+        self.autocenter()
+        return r
+
+    return newf
+
+
+def update_equilibrium_pattern(f):
+    """ Recompute the dependent quantities following a transformation, i.e. equilibrium pattern. """
+
+    @wraps(f)
+    def newf(self, *args, **kwargs):
+        r = f(self, *args, **kwargs)
+        _ = self.diff_eq() # It is assumed that diff_eq caches the result
+        return r
+
+    return newf
+
+
 class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
     """
     Abstraction of an HDF5 file to represent diffraction datasets.
@@ -309,6 +333,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         return cls.from_collection(patterns=reduced, **kwargs)
 
     @write_access_needed
+    @update_center
+    @update_equilibrium_pattern
     def diff_apply(self, func, callback=None, processes=1):
         """
         Apply a function to each diffraction pattern possibly in parallel. The diffraction patterns
@@ -364,9 +390,6 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             dset.write_direct(placeholder, dest_sel=np.s_[:, :, index])
             callback(int(100 * index / ntimes))
 
-        # Recompute that diff_eq cache
-        _ = self.diff_eq()
-
     @write_access_needed
     def _diff_apply_parallel(self, func, callback, processes):
         """
@@ -399,10 +422,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             dset.flush()
             callback(int(100 * index / ntimes))
 
-        # Recompute that diff_eq cache
-        _ = self.diff_eq()
-
     @write_access_needed
+    @update_center
+    @update_equilibrium_pattern
     def mask_apply(self, func):
         """
         Modify the diffraction pattern mask ``m`` to ``func(m)``
@@ -436,6 +458,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         self.experimental_parameters_group["valid_mask"][:] = func(self.valid_mask)
 
     @write_access_needed
+    @update_equilibrium_pattern
     def symmetrize(self, mod, center, kernel_size=None, callback=None, processes=1):
         """
         Symmetrize diffraction images based on n-fold rotational symmetry.
@@ -516,6 +539,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         return tuple(intensity_shape[0:2])
 
     @write_access_needed
+    @update_equilibrium_pattern
     def shift_time_zero(self, shift):
         """
         Insert a shift in time points. Reset the shift by setting it to zero. Shifts are
@@ -537,9 +561,6 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         self.experimental_parameters_group["time_points"][:] = (
             self.time_points + differential
         )
-
-        # Recompute that diff_eq cache
-        _ = self.diff_eq()
 
     def _get_time_index(self, timedelay):
         """
@@ -767,6 +788,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         """
         intensity = self.diffraction_group["intensity"]
         image = ns.average(intensity[:, :, i] for i in range(intensity.shape[2]))
+        if np.allclose(image * self.valid_mask, 0):
+            raise ValueError("wtf")
         r, c = autocenter(im=image, mask=self.valid_mask)
 
         # Note that for backwards-compatibility, the center
