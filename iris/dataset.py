@@ -29,6 +29,12 @@ from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 SWMR_AVAILABLE = h5py.version.hdf5_version_tuple > (1, 10, 0)
 
 
+class MigrationWarning(UserWarning):
+    """ Warning class for warnings involving the migration of datasets to a newer version. """
+
+    pass
+
+
 def write_access_needed(f):
     """ Ensure that write access has been granted before using a method. """
 
@@ -49,7 +55,7 @@ def update_center(f):
     @wraps(f)
     def newf(self, *args, **kwargs):
         r = f(self, *args, **kwargs)
-        self.autocenter()
+        self._autocenter()
         return r
 
     return newf
@@ -61,7 +67,7 @@ def update_equilibrium_pattern(f):
     @wraps(f)
     def newf(self, *args, **kwargs):
         r = f(self, *args, **kwargs)
-        _ = self.diff_eq()  # It is assumed that diff_eq caches the result
+        self._recompute_diff_eq()  # It is assumed that diff_eq caches the result
         return r
 
     return newf
@@ -105,6 +111,44 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
     aligned = HDF5ExperimentalParameter("aligned", bool, default=False)
     normalized = HDF5ExperimentalParameter("normalized", bool, default=False)
     notes = HDF5ExperimentalParameter("notes", str, default="")
+
+    def __init__(self, *args, **kwargs):
+        # Secret option to skip the checks below
+        # This is only useful when building a dataset
+        # Don't use it
+        skip_checks = kwargs.pop("skip_checks", False)
+
+        super().__init__(*args, **kwargs)
+
+        if not skip_checks:
+            self._migration_checks()
+
+    def _migration_checks(self):
+        """
+        Migration checks should be performed here. As iris has evolved beyond v5.0.0,
+        new requirements have emerged. If the file is opened with writing
+        permissions, we can migrate silently.
+        """
+        if self.center == (0, 0):  # default
+            if self.mode == "r+":
+                self._autocenter()
+            else:
+                warn(
+                    f"The center of diffraction for the dataset {self.filename} is missing. \
+                    \Open it with writing permissions so it can be calculated.\
+                    \This warning will become an error in future versions of iris.",
+                    category=MigrationWarning,
+                )
+        if "equilibrium" not in self.diffraction_group:
+            if self.mode == "r+":
+                self._recompute_diff_eq()
+            else:
+                warn(
+                    f"The equilibrium diffraction pattern has not been precomputed for \
+                    \the dataset {self.filename}. Open it with writing permissions so it \
+                    can be calculated. This warning will become an error in future versions of iris.",
+                    category=MigrationWarning,
+                )
 
     def __repr__(self):
         rep = f"< {type(self).__name__} object with following metadata: "
@@ -190,7 +234,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             valid_mask = np.ones(first.shape, dtype=bool)
 
         callback(0)
-        with cls(filename, **kwargs) as file:
+        with cls(filename, skip_checks=True, **kwargs) as file:
 
             # Note that keys not associated with an ExperimentalParameter
             # descriptor will not be recorded in the file.
@@ -227,7 +271,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
                 file.flush()
                 callback(round(100 * index / np.size(time_points)))
 
-            file.autocenter()
+            file._autocenter()
+            file._recompute_diff_eq()
 
         callback(100)
 
@@ -598,8 +643,16 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             # this dataset was not part of the initial iris v5 format.
             # it was added in 5.2.6. Therefore, we need to be prepared
             # in case it does not exist in older DiffractionDatasets
-            diff_eq = np.array(self.diffraction_group["equilibrium"])
+            return np.array(self.diffraction_group["equilibrium"])
+
+        # Soon this will become a real error
         except KeyError:
+            # Only with write access can diff_eq be cached.
+            if self.mode == "r+":
+                self._recompute_diff_eq()
+                return np.array(self.diffraction_group["equilibrium"])
+
+            # Otherwise, it needs to be calculated from scratch
             intensity = self.diffraction_group["intensity"]
             t0_index = np.argmin(np.abs(self.time_points))
 
@@ -608,15 +661,26 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             if t0_index == 0:
                 return np.zeros(shape=self.resolution, dtype=intensity.dtype)
 
-            diff_eq = ns.average((intensity[:, :, i] for i in range(t0_index)), axis=2)
-            # Only with write access can diff_eq be cached.
-            if self.mode == "r+":
-                eq_dset = self.diffraction_group.require_dataset(
-                    name="equilibrium", shape=diff_eq.shape, dtype=diff_eq.dtype
-                )
-                eq_dset[:] = diff_eq
+            return ns.average((intensity[:, :, i] for i in range(t0_index)), axis=2)
 
-        return diff_eq
+    @write_access_needed
+    def _recompute_diff_eq(self):
+        """ Calculate and store the equilibrium diffraction pattern. """
+
+        intensity = self.diffraction_group["intensity"]
+        t0_index = np.argmin(np.abs(self.time_points))
+
+        # If there are no available data before time-zero, np.mean()
+        # will return an array of NaNs; instead, return zeros.
+        if t0_index == 0:
+            diff_eq = np.zeros(shape=self.resolution, dtype=float)
+        else:
+            diff_eq = ns.average((intensity[:, :, i] for i in range(t0_index)), axis=2)
+
+        eq_dset = self.diffraction_group.require_dataset(
+            name="equilibrium", shape=diff_eq.shape, dtype=float
+        )
+        eq_dset[:] = diff_eq
 
     def diff_data(self, timedelay, relative=False, out=None):
         """
@@ -768,7 +832,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         return out
 
     @write_access_needed
-    def autocenter(self):
+    def _autocenter(self):
         """
         Determine the diffraction pattern center automatically.
 
@@ -778,11 +842,15 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         ------
         PermissionError
             if the dataset has not been opened with write access.
+        ValueError
+            If all pixels that are deemed valid have zero intensity.
         """
         intensity = self.diffraction_group["intensity"]
         image = ns.average(intensity[:, :, i] for i in range(intensity.shape[2]))
         if np.allclose(image * self.valid_mask, 0):
-            raise ValueError("wtf")
+            raise ValueError(
+                "There is not enough data to determine a center; all valid pixels have zero intensity."
+            )
         r, c = autocenter(im=image, mask=self.valid_mask)
 
         # Note that for backwards-compatibility, the center
