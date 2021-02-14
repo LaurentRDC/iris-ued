@@ -25,6 +25,9 @@ Raw Dataset Classes
 Diffraction Dataset Classes
 ===========================
 
+.. autoclass:: MigrationWarning
+    :show-inheritance:
+
 :class:`DiffractionDataset`
 ---------------------------
 

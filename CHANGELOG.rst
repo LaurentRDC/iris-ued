@@ -1,9 +1,12 @@
-5.2.6
+5.3.0
 -----
 
 * Added the :meth:`DiffractionDataset.autocenter` to automatically set the center of diffraction patterns.
 * Added the :meth:`DiffractionDataset.mask_apply` to modify the diffraction pattern mask.
+
 * Better handling of write permissions.
+* Added the :class:`MigrationWarning` class. Warnings of this class tell the user that migration should
+  be performed. This is automatically done by opening a :class:`DiffractionDataset` with writing permission
 
 * Added the ability to automatically find the center when symmetrizing or computing angular averages in the GUI.
 

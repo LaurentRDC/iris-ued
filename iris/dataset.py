@@ -134,20 +134,30 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
                 self._autocenter()
             else:
                 warn(
-                    f"The center of diffraction for the dataset {self.filename} is missing. \
-                    \Open it with writing permissions so it can be calculated.\
-                    \This warning will become an error in future versions of iris.",
+                    "".join(
+                        [
+                            f"The center of diffraction for the dataset {self.filename} is missing.",
+                            "Open it with writing permissions so it can be calculated.",
+                            "This warning will become an error in future versions of iris.",
+                        ]
+                    ),
                     category=MigrationWarning,
+                    stacklevel=2,
                 )
         if "equilibrium" not in self.diffraction_group:
             if self.mode == "r+":
                 self._recompute_diff_eq()
             else:
                 warn(
-                    f"The equilibrium diffraction pattern has not been precomputed for \
-                    \the dataset {self.filename}. Open it with writing permissions so it \
-                    can be calculated. This warning will become an error in future versions of iris.",
+                    "".join(
+                        [
+                            f"The equilibrium diffraction pattern for the dataset {self.filename} is missing.",
+                            "Open it with writing permissions so it can be calculated.",
+                            "This warning will become an error in future versions of iris.",
+                        ]
+                    ),
                     category=MigrationWarning,
+                    stacklevel=2,
                 )
 
     def __repr__(self):
@@ -641,7 +651,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         try:
             # The reason this diffraction group might not exist is because
             # this dataset was not part of the initial iris v5 format.
-            # it was added in 5.2.6. Therefore, we need to be prepared
+            # it was added in 5.3.0. Therefore, we need to be prepared
             # in case it does not exist in older DiffractionDatasets
             return np.array(self.diffraction_group["equilibrium"])
 
@@ -836,7 +846,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         """
         Determine the diffraction pattern center automatically.
 
-        .. versionadded:: 5.2.6
+        .. versionadded:: 5.3.0
 
         Raises
         ------
