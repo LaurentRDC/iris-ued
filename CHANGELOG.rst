@@ -1,16 +1,12 @@
 5.3.0
 -----
 
-* Added the :meth:`DiffractionDataset.autocenter` to automatically set the center of diffraction patterns.
 * Added the :meth:`DiffractionDataset.mask_apply` to modify the diffraction pattern mask.
-
+* The center of diffraction is now calculated and updated as needed automatically.
 * Better handling of write permissions.
 * Added the :class:`MigrationWarning` and :class:`MigrationError` classes. Warnings/errors of these classes tell the user that migration should
   be performed. This is automatically done by opening a :class:`DiffractionDataset` with writing permission. The GUI does this
   automatically.
-
-* Added the ability to automatically find the center when symmetrizing or computing angular averages in the GUI.
-
 * Windows installers are now built with pynsist/NSIS instead of PyInstaller (#15).
 * `Support for Python 3.6 and NumPy<1.17 has been dropped <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_
 * Fixed an issue where creating the plug-in directory would rarely fail.
