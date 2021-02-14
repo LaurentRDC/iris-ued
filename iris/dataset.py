@@ -35,6 +35,12 @@ class MigrationWarning(UserWarning):
     pass
 
 
+class MigrationError(Exception):
+    """ Thrown if a particular dataset requires migration. """
+
+    pass
+
+
 def write_access_needed(f):
     """ Ensure that write access has been granted before using a method. """
 

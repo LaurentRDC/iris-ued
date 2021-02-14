@@ -448,7 +448,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
         # First, open the dataset as if it was the base class
         # and perform migration if required
-        with DiffractionDataset(path, mode="r+"):
+        with DiffractionDataset(path, mode="r"):
             self.logger.debug(f"Checking if {path} requires migration...")
         self.logger.debug(f"Migration check complete.")
 

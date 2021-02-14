@@ -25,8 +25,6 @@ Raw Dataset Classes
 Diffraction Dataset Classes
 ===========================
 
-.. autoclass:: MigrationWarning
-    :show-inheritance:
 
 :class:`DiffractionDataset`
 ---------------------------
@@ -41,3 +39,16 @@ Diffraction Dataset Classes
 .. autoclass:: PowderDiffractionDataset
     :show-inheritance:
     :members:
+
+Migrating older datasets
+------------------------
+
+The work "migration" here is used to signify that a particular dataset
+needs to be *migrated* to a slightly updated form. This is done automatically
+if the dataset is opened with write permissions.
+
+.. autoclass:: MigrationWarning
+    :show-inheritance:
+
+.. autoclass:: MigrationError
+    :show-inheritance:

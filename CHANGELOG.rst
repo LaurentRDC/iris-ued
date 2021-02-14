@@ -5,8 +5,9 @@
 * Added the :meth:`DiffractionDataset.mask_apply` to modify the diffraction pattern mask.
 
 * Better handling of write permissions.
-* Added the :class:`MigrationWarning` class. Warnings of this class tell the user that migration should
-  be performed. This is automatically done by opening a :class:`DiffractionDataset` with writing permission
+* Added the :class:`MigrationWarning` and :class:`MigrationError` classes. Warnings/errors of these classes tell the user that migration should
+  be performed. This is automatically done by opening a :class:`DiffractionDataset` with writing permission. The GUI does this
+  automatically.
 
 * Added the ability to automatically find the center when symmetrizing or computing angular averages in the GUI.
 
