@@ -50,13 +50,8 @@ For Windows, installers are available on the [Releases](https://github.com/Laure
 Once installed, the package can be imported as `iris`.
 
 The GUI component can be launched from a command line interpreter as
-`python -m iris` or `pythonw -m iris` (no console window).
-
-## Test Data
-
-Test datasets are made available on the Siwick research group public
-data server, which can be [accessed anonymously
-here](http://www.physics.mcgill.ca/siwicklab/publications.html).
+`python -m iris` or `pythonw -m iris` (no console window). See the documentation
+for a visual guide.
 
 ## Documentation
 
@@ -66,7 +61,14 @@ provides API-level documentation, as well as tutorials.
 ## Citations
 
 If you find this software useful, please consider citing the following
-publications:
+publication:
+
+> L. P. René de Cotret, M. R. Otto, M. J. Stern. and B. J. Siwick, *An open-source software ecosystem for the interactive exploration of ultrafast electron scattering data*, Advanced Structural and Chemical Imaging 4:11 (2018) [DOI: 10.1186/s40679-018-0060-y.](https://ascimaging.springeropen.com/articles/10.1186/s40679-018-0060-y)
+
+If you are using the baseline-removal functionality of iris-ued,
+please consider citing the following publication:
+
+> L. P. René de Cotret and B. J. Siwick, *A general method for baseline-removal in ultrafast electron powder diffraction data using the dual-tree complex wavelet transform*, Struct. Dyn. 4 (2017) [DOI: 10.1063/1.4972518](https://doi.org/10.1063/1.4972518).
 
 ## Support / Report Issues
 
