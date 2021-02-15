@@ -42,3 +42,4 @@ jobs:
       with:
         path: dist/${{ env.EXE_NAME }}
         name: ${{ env.EXE_NAME }}
+        retention-days: 7
