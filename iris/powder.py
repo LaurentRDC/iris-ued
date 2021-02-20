@@ -75,7 +75,7 @@ class PowderDiffractionDataset(DiffractionDataset):
 
     @classmethod
     def from_dataset(
-        cls, dataset, center, normalized=True, angular_bounds=None, callback=None
+        cls, dataset, center=None, normalized=True, angular_bounds=None, callback=None
     ):
         """
         Transform a DiffractionDataset instance into a PowderDiffractionDataset. This requires
@@ -86,8 +86,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         dataset : DiffractionDataset
             DiffractionDataset instance.
         center : 2-tuple or None, optional
-            Center of the diffraction patterns. If None (default), the dataset
-            attribute will be used instead.
+            Center of the diffraction patterns. If None (default), center will be automatically-determined.
         normalized : bool, optional
             If True, each pattern is normalized to its integral. Default is False.
         angular_bounds : 2-tuple of float or None, optional
@@ -439,8 +438,8 @@ class PowderDiffractionDataset(DiffractionDataset):
         if center is not None:
             self.center = center
 
-        if center is None and self.center == (0, 0):
-            self.autocenter()
+        if center is None:
+            center = self.center
 
         # Because it is difficult to know the angular averaged data's shape in advance,
         # we calculate it first and store it next
@@ -449,7 +448,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         for index, timedelay in enumerate(self.time_points):
             px_radius, avg = azimuthal_average(
                 self.diff_data(timedelay),
-                center=self.center,
+                center=center,
                 mask=self.valid_mask,
                 angular_bounds=angular_bounds,
                 trim=False,

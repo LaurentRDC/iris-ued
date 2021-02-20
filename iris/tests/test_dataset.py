@@ -214,10 +214,6 @@ def test_symmetrization(dataset):
     after = np.array(dataset.diffraction_group["intensity"])
 
     assert np.allclose(symmetrized, after)
-    assert dataset.center == (
-        63,
-        65,
-    ), "Diffraction center was not properly set after symmetrization"
 
 
 @pytest.mark.skipif(not SWMR_AVAILABLE, reason="Parallel execution is not available")

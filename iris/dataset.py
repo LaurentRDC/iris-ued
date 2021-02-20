@@ -508,7 +508,9 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     @write_access_needed
     @update_equilibrium_pattern
-    def symmetrize(self, mod, center, kernel_size=None, callback=None, processes=1):
+    def symmetrize(
+        self, mod, center=None, kernel_size=None, callback=None, processes=1
+    ):
         """
         Symmetrize diffraction images based on n-fold rotational symmetry.
 
@@ -520,8 +522,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         mod : int
             Fold symmetry number.
         center : array-like, shape (2,) or None
-            Coordinates of the center (in pixels). If None, the data is symmetrized around the
-            center of the images.
+            Coordinates of the center (in pixels). If None (default), the center will be automatically
+            determined.
         kernel_size : float or None, optional
             If not None, every diffraction pattern will be smoothed with a gaussian kernel.
             `kernel_size` is the standard deviation of the gaussian kernel in units of pixels.
@@ -544,6 +546,8 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         --------
         diff_apply : apply an operation to each diffraction pattern one-by-one
         """
+        if center is None:
+            center = self.center
         # Due to possibility of parallel operation,
         # we can't use lambdas or local functions
         # Therefore, we define _symmetrize below and use it here
@@ -555,7 +559,6 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
             kernel_size=kernel_size,
         )
         self.diff_apply(apply, callback=callback, processes=processes)
-        self.center = center
 
     @property
     def metadata(self):
