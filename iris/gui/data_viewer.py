@@ -52,6 +52,8 @@ class ProcessedDataViewer(QtWidgets.QWidget):
             slot=self.update_timeseries_rect,
         )
 
+        self.__bragg_peak_items = list()
+
         self.image_viewer.getView().addItem(self.timeseries_rect_region)
         self.timeseries_rect_region.hide()
         self.time_series_widget.hide()
@@ -151,3 +153,27 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         of the ROI
         """
         self.time_series_widget.plot(times, intensities)
+
+    @QtCore.pyqtSlot(list)
+    def display_bragg_peaks(self, peaks):
+        """
+        Highlight the location of Bragg peaks.
+
+        Parameters
+        ----------
+        peaks : list of 2-tuple
+            List of tuples [row, col] where Bragg peaks are located.
+        """
+        for item in self.__bragg_peak_items:
+            self.image_viewer.removeItem(item)
+        self.__bragg_peak_items.clear()
+
+        for r, c in peaks:
+            self.__bragg_peak_items.append(
+                pg.CircleROI(
+                    pos=(c, r), size=50, movable=False, resizable=False, removable=False
+                )
+            )
+
+        for item in self.__bragg_peak_items:
+            self.image_viewer.addItem(item)

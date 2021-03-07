@@ -12,7 +12,7 @@ import logging
 
 import numpy as np
 from PyQt5 import QtCore
-
+from skued import bragg_peaks
 from .. import AbstractRawDataset, DiffractionDataset, PowderDiffractionDataset
 from .qlogger import QLogger
 
@@ -22,13 +22,17 @@ def error_aware(func):
     Wrap an instance method with a try/except and emit a message.
     Instance must have a signal called 'error_message_signal' which
     will be emitted with the message upon error.
+
+    Keyboard interrupts are never ignored.
     """
 
     @wraps(func)
     def aware_func(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
-        except:
+        except KeyboardInterrupt:
+            raise
+        except Exception:
             exc = traceback.format_exc()
             self.error_message_signal.emit(exc)
             warnings.warn(exc, UserWarning)
@@ -86,6 +90,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
     raw_data_signal = QtCore.pyqtSignal(object)
     averaged_data_signal = QtCore.pyqtSignal(object, bool)
     powder_data_signal = QtCore.pyqtSignal(object, object)
+    bragg_peaks_signal = QtCore.pyqtSignal(list)
 
     time_series_signal = QtCore.pyqtSignal(object, object)
     powder_time_series_signal = QtCore.pyqtSignal(object, object)
@@ -311,6 +316,21 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self.dataset.powder_calq(**params)
         self.display_powder_data()
         self.status_message_signal.emit("Scattering vector range calibrated.")
+
+    @QtCore.pyqtSlot()
+    @indicate_in_progress
+    def find_bragg_peaks(self):
+        """
+        Determine the location of Bragg peaks for the equilibrium pattern
+        """
+        self.log("Finding Bragg peaks...", level=logging.DEBUG)
+        peaks = bragg_peaks(
+            im=self.dataset.diff_eq(),
+            mask=self.dataset.valid_mask,
+            center=self.dataset.center,
+            min_dist=50,
+        )
+        self.bragg_peaks_signal.emit(peaks)
 
     @QtCore.pyqtSlot(dict)
     def update_metadata(self, metadata):

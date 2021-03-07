@@ -148,6 +148,9 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.controller.time_series_signal.connect(
             self.processed_viewer.display_peak_dynamics
         )
+        self.controller.bragg_peaks_signal.connect(
+            self.processed_viewer.display_bragg_peaks
+        )
 
         self.powder_viewer = PowderViewer(parent=self)
         self.powder_viewer.peak_dynamics_roi_signal.connect(
@@ -372,6 +375,12 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self.show_diff_relative_action.setEnabled
         )
 
+        self.show_bragg_peaks_action = QtWidgets.QAction("& Show Bragg peaks", self)
+        self.controller.processed_dataset_loaded_signal.connect(
+            self.show_bragg_peaks_action.setEnabled
+        )
+        self.show_bragg_peaks_action.triggered.connect(self.controller.find_bragg_peaks)
+
         self.show_powder_relative_action = QtWidgets.QAction(
             "& Toggle relative dynamics", self
         )
@@ -426,6 +435,9 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         )
         self.diffraction_dataset_display_options_menu.addAction(
             self.show_diff_relative_action
+        )
+        self.diffraction_dataset_display_options_menu.addAction(
+            self.show_bragg_peaks_action
         )
 
         self.powder_dataset_display_options_menu.addAction(
@@ -549,10 +561,15 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # Otherwise, it doesn't work correctly
         self.load_raw_submenu.clear()
 
-        for rawdatacls in sorted(
-            AbstractRawDataset.implementations, key=lambda c: c.display_name
-        ):
-            self._create_load_raw(rawdatacls, self.load_raw_submenu)
+        if len(AbstractRawDataset.implementations) == 0:
+            act = QtWidgets.QAction("& (no plug-ins installed)", parent=self)
+            act.setEnabled(False)
+            self.load_raw_submenu.addAction(act)
+        else:
+            for rawdatacls in sorted(
+                AbstractRawDataset.implementations, key=lambda c: c.display_name
+            ):
+                self._create_load_raw(rawdatacls, self.load_raw_submenu)
 
     def _create_load_raw(self, cls, submenu):
         submenu.addAction(
