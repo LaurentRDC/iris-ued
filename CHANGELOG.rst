@@ -1,3 +1,8 @@
+5.3.1
+-----
+
+* Fixed an issue where `iris` would use up all available memory for datasets with a large number of time-delays (>500)
+
 5.3.0
 -----
 

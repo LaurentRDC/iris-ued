@@ -4,8 +4,7 @@ from tempfile import gettempdir
 from contextlib import redirect_stdout
 import io
 
-from iris import AbstractRawDataset, DiffractionDataset
-from iris.plugins import load_plugin
+from iris import load_plugin, AbstractRawDataset, DiffractionDataset
 
 TEST_PLUGIN_PATH = Path(__file__).parent / "plugin_fixture.py"
 BROKEN_PLUGIN_PATH = Path(__file__).parent / "broken_plugin.py"

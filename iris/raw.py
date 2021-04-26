@@ -6,12 +6,13 @@ Raw dataset classes
 from abc import abstractmethod
 from collections import OrderedDict
 from contextlib import AbstractContextManager
-from functools import wraps
+from functools import wraps, partial
 from pathlib import Path
+import multiprocessing as mp
 
 import numpy as np
 
-from npstreams import average, itercopy, peek, pmap
+from npstreams import average, itercopy, peek
 from skued import ialign
 
 from .meta import ExperimentalParameter, MetaRawDataset
@@ -299,13 +300,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
             "dtype": dtype,
         }
 
-        combined = pmap(
-            _raw_combine,
-            self.time_points,
-            kwargs=kwargs,
-            processes=processes,
-            ntotal=len(self.time_points),
-        )
+        combined = pmap(_raw_combine, iterable=self.time_points, kwargs=kwargs)
 
         # Each image at the same time-delay are aligned to each other. This means that
         # the reference image is different for each time-delay. We align the reduced images
@@ -336,7 +331,7 @@ def _raw_combine(timedelay, raw, exclude_scans, normalize, align, valid_mask, dt
         weights = (initial_weight / np.sum(image[valid_mask]) for image in images2)
     else:
         weights = None
-
+    print("timedelay")
     return average(images, weights=weights).astype(dtype)
 
 
@@ -367,3 +362,24 @@ def check_raw_bounds(method):
         return method(self, timedelay, scan, *args, **kwargs)
 
     return checked_method
+
+
+# We explicitly control the multiprocessing Pool
+# rather than use npstreams.pmap because we don't
+# want the process pool to precompute values like
+# npstreams.pmap does via chunking
+def pmap(func, iterable, args=None, kwargs=None, processes=1):
+    if kwargs is None:
+        kwargs = dict()
+
+    if args is None:
+        args = tuple()
+
+    func = partial(func, *args, **kwargs)
+
+    if processes == 1:
+        yield from map(func, iterable)
+        return
+
+    with Pool(processes) as pool:
+        yield from pool.imap(func=func, iterable=iterable, chunksize=1)
