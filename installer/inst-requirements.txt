@@ -1,1 +1,3 @@
 pynsist >= 2, <3
+pyqt5 >= 5.12
+pyqt5-sip >= 12

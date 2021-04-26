@@ -7,11 +7,15 @@ https://github.com/spyder-ide/spyder/tree/master/installers/Windows
 """
 from pathlib import Path
 import sys
-from subprocess import run, check_output
+import subprocess
+from functools import wraps
+import logging
 import tempfile
 import importlib.util as iutil
 import shutil
 import argparse
+
+logging.basicConfig(encoding="utf-8", level=logging.INFO)
 
 REPO_ROOT = Path(__file__).parent.parent
 DESTINATION = REPO_ROOT / "dist"
@@ -31,8 +35,9 @@ bitness=64
 format=bundled
 
 [Include]
-pypi_wheels= PyQt5==5.15.2
-    PyQt5-sip==12.8.1
+pypi_wheels= 
+    pyqt5==5.15.4
+    pyqt5-sip==12.8.1
 packages=
     {packages}
 [Build]
@@ -51,6 +56,16 @@ parser.add_argument(
     default=None,
 )
 
+@wraps(subprocess.run)
+def run(cmd, *args, **kwargs):
+    logging.info("Running " + cmd)
+    return subprocess.run(cmd, *args, **kwargs)
+
+@wraps(subprocess.check_output)
+def check_output(cmd, *args, **kwargs):
+    logging.info("Checking output of " + cmd)
+    return subprocess.check_output(cmd, *args, **kwargs)
+
 
 def importable_name(pkg):
     """
@@ -62,6 +77,7 @@ def importable_name(pkg):
         "scikit-ued": "skued",
         "iris-ued": "iris",
         "pyqt5-sip": "sip",
+        "pyqt5-qt5": "PyQt5",
         "pillow": "PIL",
         "pycifrw": "CifFile",
         "pywavelets": "pywt",
