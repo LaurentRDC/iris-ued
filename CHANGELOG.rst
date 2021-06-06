@@ -1,10 +1,11 @@
-5.3.1
------
+Release 5.3.1
+-------------
 
 * Fixed an issue where `iris` would use up all available memory for datasets with a large number of time-delays (>500)
-
-5.3.0
------
+* Releases are now automatically performed using Github Actions
+ 
+Release 5.3.0
+-------------
 
 * Added the :meth:`DiffractionDataset.mask_apply` to modify the diffraction pattern mask.
 * The center of diffraction is now calculated and updated as needed automatically.
