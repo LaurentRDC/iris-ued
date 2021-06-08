@@ -674,7 +674,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(bool)
     def update_available(self, available):
-        """ Handle UI in case an update is available or not. """
+        """Handle UI in case an update is available or not."""
         if available:
             self.update_action.setEnabled(True)
             self.update_action.setText("An update is available!")
@@ -733,7 +733,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def install_plugin(self):
-        """ Load plug-in. """
+        """Load plug-in."""
         explanation = INSTALL_PLUGIN_HELP.format(dir=PLUGIN_DIR)
 
         QtWidgets.QMessageBox.information(self, "Loading a plug-in", explanation)
@@ -749,7 +749,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def show_about(self):
-        """ Show the About information """
+        """Show the About information"""
 
         return QtWidgets.QMessageBox.about(self, "About Iris", make_about_string())
 

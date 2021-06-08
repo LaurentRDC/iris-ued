@@ -41,7 +41,7 @@ def error_aware(func):
 
 
 class ErrorAware(type(QtCore.QObject)):
-    """ Metaclass for error-aware Qt applications. """
+    """Metaclass for error-aware Qt applications."""
 
     def __new__(meta, classname, bases, class_dict):
         new_class_dict = dict()
@@ -217,7 +217,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def display_powder_data(self):
-        """ Emit a powder data signal with/out background """
+        """Emit a powder data signal with/out background"""
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
         self.powder_data_signal.emit(
@@ -444,7 +444,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def close_raw_dataset(self):
-        """ Close raw dataset. """
+        """Close raw dataset."""
         self.raw_dataset = None
         self.raw_dataset_loaded_signal.emit(False)
         self.raw_data_signal.emit(None)
@@ -516,7 +516,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def close_dataset(self):
-        """ Close current DiffractionDataset. """
+        """Close current DiffractionDataset."""
         with suppress(AttributeError):  # in case self.dataset is None
             self.dataset.close()
         self.dataset = None
@@ -727,7 +727,7 @@ def compute_powder_baseline(fname, **kwargs):
 
 
 def process(**kwargs):
-    """ Process a RawDataset into a DiffractionDataset """
+    """Process a RawDataset into a DiffractionDataset"""
     with DiffractionDataset.from_raw(**kwargs) as dset:
         fname = dset.filename
     return fname

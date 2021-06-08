@@ -23,7 +23,7 @@ def pens_and_brushes(num):
 
 
 class TimeSeriesWidget(QtWidgets.QWidget):
-    """ Time-series widget with built-in display controls. """
+    """Time-series widget with built-in display controls."""
 
     # Internal refresh signal
     _refresh_signal = QtCore.pyqtSignal(np.ndarray, np.ndarray)
@@ -94,7 +94,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str)
     def set_yaxis_units(self, units):
-        """ Set the y-axis label """
+        """Set the y-axis label"""
         self.plot_widget.getPlotItem().setLabel("left", text="Intensity", units=units)
 
     @QtCore.pyqtSlot(bool)
@@ -152,7 +152,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def fit_exponential_decay(self):
-        """ Try to fit to a time-series with an exponential decay. If successful, plot the result. """
+        """Try to fit to a time-series with an exponential decay. If successful, plot the result."""
         times = self._last_times
         intensity = self._last_intensities_abs
 
@@ -179,7 +179,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def export_timeseries(self):
-        """ Allow exporting the time-series data. """
+        """Allow exporting the time-series data."""
         times = self._last_times
         intensity = self._last_intensities_abs
 

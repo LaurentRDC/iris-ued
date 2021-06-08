@@ -31,7 +31,7 @@ def fname():
 
 
 def test_creation_from_raw_default(fname):
-    """ Test that DiffractionDataset.from_raw() works with default settigns """
+    """Test that DiffractionDataset.from_raw() works with default settigns"""
     raw = TestRawDataset()
 
     with DiffractionDataset.from_raw(raw, filename=fname, mode="w") as dataset:
@@ -41,7 +41,7 @@ def test_creation_from_raw_default(fname):
 
 
 def test_creation_from_raw_alignment(fname):
-    """ Test that DiffractionDataset.from_raw(..., align = True) does not throw any errors """
+    """Test that DiffractionDataset.from_raw(..., align = True) does not throw any errors"""
     raw = TestRawDataset()
 
     with DiffractionDataset.from_raw(
@@ -53,7 +53,7 @@ def test_creation_from_raw_alignment(fname):
 
 
 def test_creation_from_raw_multiprocess(fname):
-    """ Test that DiffractionDataset.from_raw(..., processes = 2) does not throw any errors """
+    """Test that DiffractionDataset.from_raw(..., processes = 2) does not throw any errors"""
     raw = TestRawDataset()
 
     with DiffractionDataset.from_raw(
@@ -65,7 +65,7 @@ def test_creation_from_raw_multiprocess(fname):
 
 
 def test_creation_from_collection(fname):
-    """ Test the creation of a DiffractionDataset from a collection of patterns """
+    """Test the creation of a DiffractionDataset from a collection of patterns"""
     patterns = repeat(random(size=(256, 256)), 10)
     metadata = {"fluence": 10, "energy": 90}
 
@@ -106,7 +106,7 @@ def dataset():
 
 
 def test_file_modes(dataset):
-    """ Successively open and close the same dataset with different file modes. """
+    """Successively open and close the same dataset with different file modes."""
     fname = dataset.filename
     metadata = dataset.metadata
     dataset.close()
@@ -128,7 +128,7 @@ def test_file_modes(dataset):
 
 
 def test_write_access(dataset):
-    """ Check that certain operations respect write access """
+    """Check that certain operations respect write access"""
     fname = dataset.filename
     metadata = dataset.metadata
     dataset.close()
@@ -142,7 +142,7 @@ def test_write_access(dataset):
 
 
 def test_dataset_metadata(dataset):
-    """ Test that the property 'metadata' is working correctly"""
+    """Test that the property 'metadata' is working correctly"""
     metadata = dataset.metadata
     for required in DiffractionDataset.valid_metadata:
         assert required in metadata
@@ -150,7 +150,7 @@ def test_dataset_metadata(dataset):
 
 
 def test_notes(dataset):
-    """ Test that updating the notes works as intended """
+    """Test that updating the notes works as intended"""
     dataset.notes = "test notes"
     assert dataset.notes == "test notes"
     dataset.notes = "different notes"
@@ -158,7 +158,7 @@ def test_notes(dataset):
 
 
 def test_diff_apply(dataset):
-    """ Test that the diff_apply method works as expected """
+    """Test that the diff_apply method works as expected"""
     before = np.array(dataset.diffraction_group["intensity"])
     dataset.diff_apply(lambda arr: arr * 2)
     after = np.array(dataset.diffraction_group["intensity"])
@@ -170,7 +170,7 @@ def test_diff_apply(dataset):
 
 @pytest.mark.skipif(not SWMR_AVAILABLE, reason="Parallel execution is not available")
 def test_diff_apply_parallel(dataset):
-    """ Test that the diff_apply method works as expected in parallel mode """
+    """Test that the diff_apply method works as expected in parallel mode"""
     before = np.array(dataset.diffraction_group["intensity"])
     dataset.diff_apply(double, processes=2)
     after = np.array(dataset.diffraction_group["intensity"])
@@ -181,7 +181,7 @@ def test_diff_apply_parallel(dataset):
 
 
 def test_mask_apply(dataset):
-    """ test that DiffractionDataset.mask_apply method works as expected """
+    """test that DiffractionDataset.mask_apply method works as expected"""
     old_mask = dataset.valid_mask
     random_mask = np.random.random(size=old_mask.shape) > 0.5
     func = lambda m: random_mask
@@ -202,7 +202,7 @@ def test_mask_apply(dataset):
 
 
 def test_symmetrization(dataset):
-    """ Test correctness of symmetrization operation """
+    """Test correctness of symmetrization operation"""
     before = np.array(dataset.diffraction_group["intensity"])
     symmetrized = np.array(before, copy=True)
     for index, _ in enumerate(dataset.time_points):
@@ -218,7 +218,7 @@ def test_symmetrization(dataset):
 
 @pytest.mark.skipif(not SWMR_AVAILABLE, reason="Parallel execution is not available")
 def test_symmetrization_parallel(dataset):
-    """ Test correctness of symmetrization operation in parallel mode """
+    """Test correctness of symmetrization operation in parallel mode"""
     before = np.array(dataset.diffraction_group["intensity"])
     symmetrized = np.array(before, copy=True)
     for index, _ in enumerate(dataset.time_points):
@@ -233,13 +233,13 @@ def test_symmetrization_parallel(dataset):
 
 
 def test_data(dataset):
-    """ Test that data stored in DiffractionDataset is correct """
+    """Test that data stored in DiffractionDataset is correct"""
     for time, pattern in zip(list(dataset.time_points), getattr(dataset, "patterns")):
         assert np.allclose(dataset.diff_data(time), pattern)
 
 
 def test_time_zero_shift(dataset):
-    """ Test that data changed with time_zero_shift() """
+    """Test that data changed with time_zero_shift()"""
     unshifted = np.array(dataset.time_points)
     dataset.shift_time_zero(100)
     shifted = np.array(dataset.time_points)
@@ -249,7 +249,7 @@ def test_time_zero_shift(dataset):
 
 
 def test_diff_eq(dataset):
-    """ test that DiffractionDataset.diff_eq() returns the correct array """
+    """test that DiffractionDataset.diff_eq() returns the correct array"""
     dataset.shift_time_zero(10)
     assert np.allclose(dataset.diff_eq(), np.zeros(dataset.resolution))
 
@@ -259,7 +259,7 @@ def test_diff_eq(dataset):
 
 
 def test_time_series(dataset):
-    """ Test that the DiffractionDataset.time_series method is working """
+    """Test that the DiffractionDataset.time_series method is working"""
 
     r1, r2, c1, c2 = 100, 120, 45, 57
     stack = np.stack(getattr(dataset, "patterns"), axis=-1)

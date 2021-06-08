@@ -158,7 +158,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
 
     @property
     def metadata(self):
-        """ Experimental parameters and dataset metadata as a dictionary. """
+        """Experimental parameters and dataset metadata as a dictionary."""
         meta = {k: getattr(self, k) for k in self.valid_metadata}
         # Ordered dictionary by keys is easiest to inspect
         return OrderedDict(sorted(meta.items(), key=lambda t: t[0]))

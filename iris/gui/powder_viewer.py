@@ -39,7 +39,7 @@ class PowderViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def update_peak_dynamics(self):
-        """ Update powder peak dynamics settings on demand. """
+        """Update powder peak dynamics settings on demand."""
         qmin, qmax = self.peak_dynamics_region.getRegion()
 
         self.peak_dynamics_roi_signal.emit(qmin, qmax)

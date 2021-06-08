@@ -115,12 +115,12 @@ class PowderDiffractionDataset(DiffractionDataset):
 
     @property
     def px_radius(self):
-        """ Pixel-radius of azimuthal average """
+        """Pixel-radius of azimuthal average"""
         return np.array(self.powder_group["px_radius"])
 
     @property
     def scattering_vector(self):
-        """ Array of scattering vector norm :math:`|q|` [:math:`1/\\AA`] """
+        """Array of scattering vector norm :math:`|q|` [:math:`1/\\AA`]"""
         return np.array(self.powder_group["scattering_vector"])
 
     def shift_time_zero(self, *args, **kwargs):
@@ -494,7 +494,7 @@ class PowderDiffractionDataset(DiffractionDataset):
 
 
 def _trim_bounds(arr):
-    """ Returns the bounds which would be used in numpy.trim_zeros but also trimmming nans"""
+    """Returns the bounds which would be used in numpy.trim_zeros but also trimmming nans"""
     first = 0
     for i in arr:
         if i != 0.0:

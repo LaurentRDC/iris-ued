@@ -24,7 +24,7 @@ def test_raw_minimal_methods():
 
 
 def test_raw_data_bounds():
-    """ Test that a ValueError is raised if ``timedelay`` or ``scan`` are out-of-bounds. """
+    """Test that a ValueError is raised if ``timedelay`` or ``scan`` are out-of-bounds."""
     test_dataset = TestRawDataset()
 
     with pytest.raises(ValueError):
@@ -35,7 +35,7 @@ def test_raw_data_bounds():
 
 
 def test_raw_experimental_parameters():
-    """ Test the behavior of the ExperimentalParameter descriptor """
+    """Test the behavior of the ExperimentalParameter descriptor"""
 
     test_dataset = TestRawDataset()
 
@@ -49,7 +49,7 @@ def test_raw_experimental_parameters():
 
 
 def test_raw_valid_metadata():
-    """ Test that the class attribute 'valid_metadata' is working as intended """
+    """Test that the class attribute 'valid_metadata' is working as intended"""
 
     assert "test" in TestRawDataset.valid_metadata
     assert AbstractRawDataset.valid_metadata <= TestRawDataset.valid_metadata

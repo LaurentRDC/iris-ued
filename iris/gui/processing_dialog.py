@@ -50,7 +50,7 @@ DTYPE_NAMES = {
 
 
 class MaskCreator(QtWidgets.QWidget):
-    """ Widget allowing for creation of arbitrary masks """
+    """Widget allowing for creation of arbitrary masks"""
 
     def __init__(self, image, **kwargs):
         super().__init__(**kwargs)
@@ -116,7 +116,7 @@ class MaskCreator(QtWidgets.QWidget):
         self.circ_masks.clear()
 
     def composite_mask(self):
-        """ Returns composite mask where invalid pixels are marked as True """
+        """Returns composite mask where invalid pixels are marked as True"""
         # Initially, all pixels are valid
         mask = np.zeros(self.resolution, dtype=bool)
 
@@ -321,7 +321,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.error_dialog.showMessage(msg)
 
     def file_params(self):
-        """ Returns a dictionary with HDF5 file parameters """
+        """Returns a dictionary with HDF5 file parameters"""
 
         fletcher32 = self.fletcher32_widget.isChecked()
         shuffle = self.shuffle_filter_widget.isChecked()

@@ -30,19 +30,19 @@ SWMR_AVAILABLE = h5py.version.hdf5_version_tuple > (1, 10, 0)
 
 
 class MigrationWarning(UserWarning):
-    """ Warning class for warnings involving the migration of datasets to a newer version. """
+    """Warning class for warnings involving the migration of datasets to a newer version."""
 
     pass
 
 
 class MigrationError(Exception):
-    """ Thrown if a particular dataset requires migration. """
+    """Thrown if a particular dataset requires migration."""
 
     pass
 
 
 def write_access_needed(f):
-    """ Ensure that write access has been granted before using a method. """
+    """Ensure that write access has been granted before using a method."""
 
     @wraps(f)
     def newf(self, *args, **kwargs):
@@ -56,7 +56,7 @@ def write_access_needed(f):
 
 
 def update_center(f):
-    """ Recompute the dependent quantities following a transformation, i.e. equilibrium pattern. """
+    """Recompute the dependent quantities following a transformation, i.e. equilibrium pattern."""
 
     @wraps(f)
     def newf(self, *args, **kwargs):
@@ -68,7 +68,7 @@ def update_center(f):
 
 
 def update_equilibrium_pattern(f):
-    """ Recompute the dependent quantities following a transformation, i.e. equilibrium pattern. """
+    """Recompute the dependent quantities following a transformation, i.e. equilibrium pattern."""
 
     @wraps(f)
     def newf(self, *args, **kwargs):
@@ -562,7 +562,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     @property
     def metadata(self):
-        """ Dictionary of the dataset's metadata. Dictionary is sorted alphabetically by keys."""
+        """Dictionary of the dataset's metadata. Dictionary is sorted alphabetically by keys."""
         meta = {k: getattr(self, k) for k in self.valid_metadata}
         meta["filename"] = self.filename
         meta["time_points"] = tuple(self.time_points)
@@ -573,12 +573,12 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     @property
     def valid_mask(self):
-        """ Array that evaluates to True on valid pixels (i.e. not on beam-block, not hot pixels, etc.) """
+        """Array that evaluates to True on valid pixels (i.e. not on beam-block, not hot pixels, etc.)"""
         return np.array(self.experimental_parameters_group["valid_mask"])
 
     @property
     def invalid_mask(self):
-        """ Array that evaluates to True on invalid pixels (i.e. on beam-block, hot pixels, etc.) """
+        """Array that evaluates to True on invalid pixels (i.e. on beam-block, hot pixels, etc.)"""
         return np.logical_not(self.valid_mask)
 
     @property
@@ -588,7 +588,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     @property
     def resolution(self):
-        """ Resolution of diffraction patterns (px, px) """
+        """Resolution of diffraction patterns (px, px)"""
         intensity_shape = self.diffraction_group["intensity"].shape
         return tuple(intensity_shape[0:2])
 
@@ -684,7 +684,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     @write_access_needed
     def _recompute_diff_eq(self):
-        """ Calculate and store the equilibrium diffraction pattern. """
+        """Calculate and store the equilibrium diffraction pattern."""
 
         intensity = self.diffraction_group["intensity"]
         t0_index = np.argmin(np.abs(self.time_points))
@@ -886,7 +886,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
     @property
     def compression_params(self):
-        """ Compression options in the form of a dictionary """
+        """Compression options in the form of a dictionary"""
         dataset = self.diffraction_group["intensity"]
         ckwargs = dict()
         ckwargs["compression"] = dataset.compression

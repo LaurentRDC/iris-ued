@@ -7,7 +7,7 @@ from contextlib import suppress
 
 
 def subclasses(cls):
-    """ Return a set of subclasses of ``cls``, including sub-subclasses and so on. """
+    """Return a set of subclasses of ``cls``, including sub-subclasses and so on."""
     direct_subclasses = set(cls.__subclasses__())
     return direct_subclasses.union(
         {s for c in direct_subclasses for s in subclasses(c)}
@@ -52,7 +52,7 @@ class MetaRawDataset(ABCMeta):
 
     @property
     def implementations(self):
-        """ Iterable of concrete implementations. This includes direct subclasses, sub-subclasses, and so on. """
+        """Iterable of concrete implementations. This includes direct subclasses, sub-subclasses, and so on."""
         return subclasses(self)
 
 
@@ -114,7 +114,7 @@ class ExperimentalParameter:
         return instance.__dict__.get(self.name, self.default)
 
     def __set__(self, instance, value):
-        """ If the value cannot be cast to the expected type, a TypeError is raised. """
+        """If the value cannot be cast to the expected type, a TypeError is raised."""
         try:
             value = self.type(value)
         except ValueError:

@@ -384,7 +384,7 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
         self.resize(self.minimumSize())
 
     def baseline_parameters(self):
-        """ Returns a dictionary of baseline-computation parameters """
+        """Returns a dictionary of baseline-computation parameters"""
         return {
             "first_stage": self.first_stage_cb.currentText(),
             "wavelet": self.wavelet_cb.currentText(),

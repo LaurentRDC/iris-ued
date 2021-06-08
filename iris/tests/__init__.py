@@ -5,7 +5,7 @@ import numpy as np
 
 
 class TestRawDataset(AbstractRawDataset):
-    """ Class for using raw datasets in tests """
+    """Class for using raw datasets in tests"""
 
     # We don't want pytest to collect this class as a test
     # https://stackoverflow.com/a/63430765

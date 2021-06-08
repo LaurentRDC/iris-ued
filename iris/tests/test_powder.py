@@ -54,7 +54,7 @@ def test_powder_baseline_attributes(powder_dataset):
 
 
 def test_powder_calq(powder_dataset):
-    """ Test scattering vector calibration """
+    """Test scattering vector calibration"""
     crystal = Crystal.from_database("vo2-m1")
     powder_dataset.powder_calq(crystal, (10, 100), [(1, 0, 0), (2, 0, 0)])
 
@@ -65,7 +65,7 @@ def test_powder_calq(powder_dataset):
 
 
 def test_powder_baseline_limits(powder_dataset):
-    """ Test that the baseline is never less than 0, and the baseline-subtracted data is never negative. """
+    """Test that the baseline is never less than 0, and the baseline-subtracted data is never negative."""
 
     powder_dataset.compute_baseline(
         first_stage="sym6", wavelet="qshift3", level=1, mode="periodic"
@@ -80,7 +80,7 @@ def test_powder_baseline_limits(powder_dataset):
 
 
 def test_powder_data_retrieval(powder_dataset):
-    """ Test the size of the output from PowderDiffractionDataset.powder_data """
+    """Test the size of the output from PowderDiffractionDataset.powder_data"""
     full_shape = (len(powder_dataset.time_points), powder_dataset.px_radius.size)
 
     full_data = powder_dataset.powder_data(timedelay=None)
@@ -102,7 +102,7 @@ def test_recomputing_angular_average(powder_dataset):
 
 
 def test_powder_eq(powder_dataset):
-    """ Test PowderDiffractionDataset.powder_eq() """
+    """Test PowderDiffractionDataset.powder_eq()"""
     eq = powder_dataset.powder_eq()
     assert eq.shape == powder_dataset.px_radius.shape
 

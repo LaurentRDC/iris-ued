@@ -11,7 +11,7 @@ BROKEN_PLUGIN_PATH = Path(__file__).parent / "broken_plugin.py"
 
 
 def test_plugin_experimental_parameters():
-    """ Test that arbitrary experimental parameters can be manipulated """
+    """Test that arbitrary experimental parameters can be manipulated"""
     load_plugin(TEST_PLUGIN_PATH)
     from iris.plugins import TestRawDatasetPlugin
 
@@ -25,7 +25,7 @@ def test_plugin_experimental_parameters():
 
 
 def test_plugin_reduction():
-    """ Test that data reduction works """
+    """Test that data reduction works"""
     load_plugin(TEST_PLUGIN_PATH)
     from iris.plugins import TestRawDatasetPlugin
 
@@ -42,7 +42,7 @@ def test_plugin_reduction():
 
 
 def test_loading_broken_plugin():
-    """ Test that exceptions are caught when loading a broken plug-in. """
+    """Test that exceptions are caught when loading a broken plug-in."""
     f = io.StringIO()
     with redirect_stdout(f):
         load_plugin(BROKEN_PLUGIN_PATH)

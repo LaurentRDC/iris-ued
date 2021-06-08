@@ -56,10 +56,12 @@ parser.add_argument(
     default=None,
 )
 
+
 @wraps(subprocess.run)
 def run(cmd, *args, **kwargs):
     logging.info("Running " + cmd)
     return subprocess.run(cmd, *args, **kwargs)
+
 
 @wraps(subprocess.check_output)
 def check_output(cmd, *args, **kwargs):
