@@ -1,6 +1,6 @@
 # Iris - Ultrafast Electron Scattering Data Exploration
 
-[![Documentation Build Status](https://readthedocs.org/projects/iris-ued/badge/?version=master)](http://iris-ued.readthedocs.io/) [![PyPI Version](https://img.shields.io/pypi/v/iris-ued.svg)](https://pypi.python.org/pypi/iris-ued) [![Conda-forge Version](https://img.shields.io/conda/vn/conda-forge/iris-ued.svg)](https://anaconda.org/conda-forge/iris-ued)
+[![Documentation Build Status](https://readthedocs.org/projects/iris-ued/badge/?version=master)](http://iris-ued.readthedocs.io/) [![PyPI Version](https://img.shields.io/pypi/v/iris-ued.svg)](https://pypi.python.org/pypi/iris-ued) [![Conda-forge Version](https://img.shields.io/conda/vn/conda-forge/iris-ued.svg)](https://anaconda.org/conda-forge/iris-ued) [![DOI badge](https://img.shields.io/badge/DOI-10.1186%2Fs40679--018--0060--y-blue)](https://doi.org/10.1186/s40679-018-0060-y)
 
 
 Iris is both a library for interacting with ultrafast electron
