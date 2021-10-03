@@ -86,6 +86,7 @@ jobs:
       EXE_NAME: 'iris-win-installer-x64.exe'
 
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
