@@ -37,7 +37,7 @@ format=bundled
 [Include]
 pypi_wheels= 
     pyqt5==5.15.4
-    pyqt5-sip==12.8.1
+    pyqt5-sip==12.9.0
 packages=
     {packages}
 [Build]
