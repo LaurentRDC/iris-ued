@@ -1,3 +1,8 @@
+Release 5.3.3
+-------------
+
+* Fixed an issue when computing azimuthal averages (#18).
+
 Release 5.3.2
 -------------
 
