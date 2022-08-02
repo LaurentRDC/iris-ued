@@ -99,10 +99,10 @@ class QBusyIndicator(QtWidgets.QWidget):
             painter.translate(self.rect().center())
             painter.rotate(self.m_angle - (i * 30.0))
             painter.drawRoundedRect(
-                capsuleWidth * -0.5,
-                (innerRadius + capsuleHeight) * -1,
-                capsuleWidth,
-                capsuleHeight,
+                int(capsuleWidth * -0.5),
+                int((innerRadius + capsuleHeight) * -1),
+                int(capsuleWidth),
+                int(capsuleHeight),
                 capsuleRadius,
                 capsuleRadius,
             )

@@ -2,7 +2,7 @@
 """
 Control bar for all Iris's controls
 """
-from collections import Iterable
+from collections.abc import Iterable
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pywt import Modes

@@ -119,7 +119,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # Including custom 'busy' indicator
         status_bar = QtWidgets.QStatusBar(parent=self)
         self.controller.status_message_signal.connect(
-            lambda msg: status_bar.showMessage(msg, 20e3)
+            lambda msg: status_bar.showMessage(msg, int(20e3))
         )
         self.setStatusBar(status_bar)
 
