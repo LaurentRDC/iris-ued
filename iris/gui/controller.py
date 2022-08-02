@@ -678,7 +678,7 @@ def calculate_azimuthal_averages(**kwargs):
 
     # Determine if azimuthal averages have already been computed
     recomputed = False
-    with PowderDiffractionDataset(filename) as d:
+    with PowderDiffractionDataset(filename, 'r+') as d:
         if PowderDiffractionDataset._powder_group_name in d:
             # We simply need to recompute the azimuthal averages
             recomputed = True
