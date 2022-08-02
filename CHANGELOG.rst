@@ -1,3 +1,8 @@
+Release 5.3.2
+-------------
+
+* Fixed some issues with new versions of Python and PyQt5 (#16) and other maintenance (#17).
+
 Release 5.3.1
 -------------
 
