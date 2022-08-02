@@ -11,7 +11,7 @@ from subprocess import Popen
 from warnings import warn
 
 import pyqtgraph as pg
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtWidgets
 
 from ..raw import open_raw
 from .gui import Iris, IMAGE_FOLDER
@@ -57,7 +57,7 @@ def run(path=None, dset_type=None, **kwargs):
     """
 
     with gui_environment():
-        app = QtGui.QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
         app.setStyleSheet(load_stylesheet_pyqt5())
         app.setWindowIcon(QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")))
         gui = Iris()
