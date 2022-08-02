@@ -19,7 +19,7 @@ class CircleROIWithCenter(pg.CircleROI):
 
     # Calculating the center position assumes that PyQtGraph is configured
     # such that imageAxisOrder == 'row-major'
-    def center():
+    def center(self):
         corner_x, corner_y = self.pos().x(), self.pos().y()
         radius = self.size().x() / 2
         return (round(corner_x + radius), round(corner_y + radius))
