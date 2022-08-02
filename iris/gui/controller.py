@@ -12,7 +12,7 @@ import logging
 
 import numpy as np
 from PyQt5 import QtCore
-from skued import bragg_peaks
+from skued import bragg_peaks, DiskSelection
 from .. import AbstractRawDataset, DiffractionDataset, PowderDiffractionDataset
 from .qlogger import QLogger
 
@@ -41,7 +41,7 @@ def error_aware(func):
 
 
 class ErrorAware(type(QtCore.QObject)):
-    """Metaclass for error-aware Qt applications."""
+    """ Metaclass for error-aware Qt applications. """
 
     def __new__(meta, classname, bases, class_dict):
         new_class_dict = dict()
@@ -92,6 +92,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
     powder_data_signal = QtCore.pyqtSignal(object, object)
     bragg_peaks_signal = QtCore.pyqtSignal(list)
 
+
     time_series_signal = QtCore.pyqtSignal(object, object)
     powder_time_series_signal = QtCore.pyqtSignal(object, object)
 
@@ -102,6 +103,8 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
     processing_progress_signal = QtCore.pyqtSignal(int)
     powder_promotion_progress = QtCore.pyqtSignal(int)
     angular_average_progress = QtCore.pyqtSignal(int)
+
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -130,12 +133,44 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self.logger = QLogger(parent=self)
         self.logger.debug("Controller started.")
 
+        self._file_dialog = None
+        self._parent = None
+
         # A lot of info-level messages should be mirrored between the status
         # bar and the info log
         # Similarly, the error messages from ErrorAware type should be
         # mirrored in the error log
         self.status_message_signal.connect(self.logger.info)
         self.error_message_signal.connect(self.logger.error)
+
+    @QtCore.pyqtProperty(object)
+    def file_dialog(self):
+        """I'm the '_file_dialog' property."""
+        return self._file_dialog
+
+    @file_dialog.setter
+    def file_dialog(self, value):
+        self._file_dialog = value
+
+    @file_dialog.deleter
+    def file_dialog(self):
+        del self._file_dialog
+
+    @QtCore.pyqtProperty(object)
+    def parent(self):
+        """I'm the '_parent' property."""
+        return self._parent
+
+    # @QtCore.pyqtSlot()
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
+
+    # @QtCore.pyqtSlot()
+    @parent.deleter
+    def parent(self):
+        del self._parent
+
 
     @QtCore.pyqtSlot(str)
     @QtCore.pyqtSlot(str, object)
@@ -217,7 +252,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def display_powder_data(self):
-        """Emit a powder data signal with/out background"""
+        """ Emit a powder data signal with/out background """
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
         self.powder_data_signal.emit(
@@ -332,6 +367,30 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         )
         self.bragg_peaks_signal.emit(peaks)
 
+    @QtCore.pyqtSlot()
+    @indicate_in_progress
+    def load_bragg_peaks(self):
+        """
+        Determine the location of Bragg peaks for the equilibrium pattern
+        """
+        path = self.file_dialog.getOpenFileName(
+            parent=self._parent, caption="Load Bragg peaks", filter="*.npy"
+        )[0]
+        if not path:
+            return
+        DATA = np.load(path)
+        # for id, peak in enumerate(DATA):
+        #     x, y = peak.astype(int)
+        #     REGION = self.dataset.diff_eq()[x-50:x+50,y-50:y+50]
+        #     DATA[id,:] = np.where(self.dataset.diff_eq() == REGION[np.unravel_index(np.argmax(REGION), REGION.shape)])
+        if DATA.shape[1] != 2:
+            raise ValueError("Bragg peaks in file are not 2D.")
+        else:
+            self.log("Loading Bragg peaks...", level=logging.DEBUG)
+            DATA[:,[0,1]] = DATA[:,[1,0]]
+            peaks = list(map(tuple, DATA))
+        self.bragg_peaks_signal.emit(peaks)
+
     @QtCore.pyqtSlot(dict)
     def update_metadata(self, metadata):
         """
@@ -444,7 +503,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def close_raw_dataset(self):
-        """Close raw dataset."""
+        """ Close raw dataset. """
         self.raw_dataset = None
         self.raw_dataset_loaded_signal.emit(False)
         self.raw_data_signal.emit(None)
@@ -516,7 +575,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def close_dataset(self):
-        """Close current DiffractionDataset."""
+        """ Close current DiffractionDataset. """
         with suppress(AttributeError):  # in case self.dataset is None
             self.dataset.close()
         self.dataset = None
@@ -678,7 +737,7 @@ def calculate_azimuthal_averages(**kwargs):
 
     # Determine if azimuthal averages have already been computed
     recomputed = False
-    with PowderDiffractionDataset(filename) as d:
+    with PowderDiffractionDataset(filename, 'r+') as d:
         if PowderDiffractionDataset._powder_group_name in d:
             # We simply need to recompute the azimuthal averages
             recomputed = True
@@ -727,7 +786,7 @@ def compute_powder_baseline(fname, **kwargs):
 
 
 def process(**kwargs):
-    """Process a RawDataset into a DiffractionDataset"""
+    """ Process a RawDataset into a DiffractionDataset """
     with DiffractionDataset.from_raw(**kwargs) as dset:
         fname = dset.filename
     return fname
