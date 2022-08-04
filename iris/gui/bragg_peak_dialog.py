@@ -31,6 +31,9 @@ class RectROIWithCenter(pg.RectROI):
 description = (
     """Auto-determine the Bragg peak positions and add manually those not found. Subsequent calculation will optimize and realign the Bragg peaks to local maxima. """
 )
+vertices_help = """This is the number of vertices you expect the projection of the Brilluoin
+zone to have. Since this tool is just a visualization aid, this ensures only robustly determined
+Brilluoin zones will be computed."""
 
 class BraggPeakDialog(QtWidgets.QDialog):
     """
@@ -40,7 +43,7 @@ class BraggPeakDialog(QtWidgets.QDialog):
 
     bragg_peak_signal = QtCore.pyqtSignal(dict)
 
-    def __init__(self, image, mask, center=None, *args, **kwargs):
+    def __init__(self, image, mask, pixel_width, center=None, *args, **kwargs):
         """
         Parameters
         ----------
@@ -70,9 +73,11 @@ class BraggPeakDialog(QtWidgets.QDialog):
             QtWidgets.QSizePolicy.MinimumExpanding,
         )
         self.viewer.setImage(image)
-    
+        if pixel_width is None:
+            pixel_width = 1.4e-5 #default to Gatan pixel width
+        self.bbox_size = int(7e-4 / pixel_width) #7e-4 m^-1 is about what looks right to cover most bragg peaks
         self.center_finder = RectROIWithCenter(
-            pos=np.array(image.shape) / 2 - 100, size=[50, 50]#, pen=pg.mkPen("r")
+            pos=np.array(image.shape) / 2 - 100, size=[self.bbox_size, self.bbox_size]#, pen=pg.mkPen("r")
         )
         # self.autocenter = autocenter(self._image, self._mask)
         # self.center_finder.set_center(self.autocenter[1], self.autocenter[0])
@@ -109,6 +114,7 @@ class BraggPeakDialog(QtWidgets.QDialog):
         self.vertices_widget = QtWidgets.QSpinBox(parent=self)
         self.vertices_widget.setRange(1, 12)
         self.vertices_widget.setValue(6)
+        self.vertices_widget.setToolTip(vertices_help)
     
         self.vertices_layout = QtWidgets.QFormLayout()
         self.vertices_layout.addRow("Number of vertices:", self.vertices_widget)
@@ -148,7 +154,7 @@ class BraggPeakDialog(QtWidgets.QDialog):
     def add_bragg_peak(self):
         new_roi = pg.RectROI(
             pos=self._resolution/2,
-            size=(50,50),
+            size=(self.bbox_size,self.bbox_size),
             resizable=False
         )
         self.viewer.addItem(new_roi)
@@ -174,7 +180,7 @@ class BraggPeakDialog(QtWidgets.QDialog):
         """Automatically determine the bragg peaks
         and move the center-finder accordingly"""
         self._worker = AutobraggpeakThread(
-            function=bragg_peaks, kwargs=dict(im=self._image, mask=self._mask, min_dist=50)
+            function=bragg_peaks, kwargs=dict(im=self._image, mask=self._mask, min_dist=self.bbox_size)
         )
 
         self._worker.results_signal.connect(self.set_peaks)
@@ -193,7 +199,7 @@ class BraggPeakDialog(QtWidgets.QDialog):
             r, c = peak
             self.__bragg_peak_items.append(
                 pg.RectROI(
-                    pos=(c-25, r-25), size=(50,50), movable=True, resizable=False, removable=True
+                    pos=(c-self.bbox_size//2, r-self.bbox_size//2), size=(self.bbox_size,self.bbox_size), movable=True, resizable=False, removable=True
                 )
             )
         for item in self.__bragg_peak_items:
