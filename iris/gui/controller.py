@@ -12,7 +12,7 @@ import logging
 
 import numpy as np
 from PyQt5 import QtCore
-from skued import bragg_peaks
+from skued import bragg_peaks, DiskSelection
 from .. import AbstractRawDataset, DiffractionDataset, PowderDiffractionDataset
 from .qlogger import QLogger
 
@@ -41,7 +41,7 @@ def error_aware(func):
 
 
 class ErrorAware(type(QtCore.QObject)):
-    """Metaclass for error-aware Qt applications."""
+    """ Metaclass for error-aware Qt applications. """
 
     def __new__(meta, classname, bases, class_dict):
         new_class_dict = dict()
@@ -76,6 +76,8 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     raw_dataset_loaded_signal = QtCore.pyqtSignal(bool)
     processed_dataset_loaded_signal = QtCore.pyqtSignal(bool)
+    initially_run_bragg_signal = QtCore.pyqtSignal(bool)
+
     powder_dataset_loaded_signal = QtCore.pyqtSignal(bool)
 
     raw_dataset_metadata = QtCore.pyqtSignal(dict)
@@ -90,7 +92,8 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
     raw_data_signal = QtCore.pyqtSignal(object)
     averaged_data_signal = QtCore.pyqtSignal(object, bool)
     powder_data_signal = QtCore.pyqtSignal(object, object)
-    bragg_peaks_signal = QtCore.pyqtSignal(list)
+    bragg_peaks_signal = QtCore.pyqtSignal(dict)
+
 
     time_series_signal = QtCore.pyqtSignal(object, object)
     powder_time_series_signal = QtCore.pyqtSignal(object, object)
@@ -98,10 +101,14 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
     relative_powder_enable_signal = QtCore.pyqtSignal(bool)
     relative_averaged_enable_signal = QtCore.pyqtSignal(bool)
     powder_bgr_enable_signal = QtCore.pyqtSignal(bool)
+    bragg_peak_enable_signal = QtCore.pyqtSignal(bool)
+    bz_enable_signal   = QtCore.pyqtSignal(bool)
 
     processing_progress_signal = QtCore.pyqtSignal(int)
     powder_promotion_progress = QtCore.pyqtSignal(int)
     angular_average_progress = QtCore.pyqtSignal(int)
+
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -116,8 +123,10 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         # Internal state for display format of averaged and powder data
         self._relative_powder = False
         self._relative_averaged = False
+        self._enable_bragg = False
+        self._enable_bz = False
         self._timedelay_index = 0
-
+        self.initially_run_bragg_signal.emit(False)
         # array containers
         # Preallocation is important for arrays that change often. Then,
         # we can take advantage of the out parameter
@@ -130,12 +139,44 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self.logger = QLogger(parent=self)
         self.logger.debug("Controller started.")
 
+        self._file_dialog = None
+        self._parent = None
+
         # A lot of info-level messages should be mirrored between the status
         # bar and the info log
         # Similarly, the error messages from ErrorAware type should be
         # mirrored in the error log
         self.status_message_signal.connect(self.logger.info)
         self.error_message_signal.connect(self.logger.error)
+
+    @QtCore.pyqtProperty(object)
+    def file_dialog(self):
+        """I'm the '_file_dialog' property."""
+        return self._file_dialog
+
+    @file_dialog.setter
+    def file_dialog(self, value):
+        self._file_dialog = value
+
+    @file_dialog.deleter
+    def file_dialog(self):
+        del self._file_dialog
+
+    @QtCore.pyqtProperty(object)
+    def parent(self):
+        """I'm the '_parent' property."""
+        return self._parent
+
+    # @QtCore.pyqtSlot()
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
+
+    # @QtCore.pyqtSlot()
+    @parent.deleter
+    def parent(self):
+        del self._parent
+
 
     @QtCore.pyqtSlot(str)
     @QtCore.pyqtSlot(str, object)
@@ -217,7 +258,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def display_powder_data(self):
-        """Emit a powder data signal with/out background"""
+        """ Emit a powder data signal with/out background """
         # Preallocation isn't so important for powder data because the whole block
         # is loaded
         self.powder_data_signal.emit(
@@ -227,6 +268,18 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             ),
         )
 
+    @QtCore.pyqtSlot()
+    def display_bragg_peaks(self):
+        params = {
+            "enable_peaks" : self._enable_bragg,
+            "peaks" : self.bragg_peaks,
+            "enable_bz" : self._enable_bz,
+            "bz" : self.bzs,
+            "n_vertices" : self.bz_vertices
+        }
+        self.bragg_peaks_signal.emit(params)
+
+    
     @QtCore.pyqtSlot(bool)
     def powder_background_subtracted(self, enable):
         """
@@ -252,6 +305,18 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self._relative_powder = enable
         self.relative_powder_enable_signal.emit(enable)
         self.display_powder_data()
+
+    @QtCore.pyqtSlot(bool)
+    def enable_bragg(self, enable):
+        self._enable_bragg = enable
+        self.bragg_peak_enable_signal.emit(enable)
+        self.display_bragg_peaks()
+
+    @QtCore.pyqtSlot(bool)
+    def enable_bz(self, enable):
+        self._enable_bz = enable
+        self.bz_enable_signal.emit(enable)
+        self.display_bragg_peaks()
 
     @QtCore.pyqtSlot(bool)
     def enable_averaged_relative(self, enable):
@@ -317,20 +382,77 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self.display_powder_data()
         self.status_message_signal.emit("Scattering vector range calibrated.")
 
-    @QtCore.pyqtSlot()
+
+    @QtCore.pyqtSlot(dict)
     @indicate_in_progress
-    def find_bragg_peaks(self):
+    def optimize_bragg_peaks(self, params):
         """
-        Determine the location of Bragg peaks for the equilibrium pattern
+        Update Bragg peaks to actual local maxima, as well as identify BZ 
+        using Voronoi diagramming
+
+        Parameters
+        ----------
+        peaks : list
+            Items returned from Bragg peak dialog
         """
-        self.log("Finding Bragg peaks...", level=logging.DEBUG)
-        peaks = bragg_peaks(
-            im=self.dataset.diff_eq(),
-            mask=self.dataset.valid_mask,
-            center=self.dataset.center,
-            min_dist=50,
-        )
-        self.bragg_peaks_signal.emit(peaks)
+        self.initially_run_bragg_signal.emit(True)
+        peaks = params['peaks']
+        symmetry = params['sym']
+
+        from scipy.spatial import Voronoi
+        current_view = self.dataset.diff_eq()
+        peaks = np.vstack((self.dataset.center[::-1],peaks))
+        new_peaks = np.array(peaks)
+        for idx, peak in enumerate(peaks):
+            # if idx == 0:
+            #     c, r = peaks[idx]
+            # else:
+            r, c = peaks[idx]
+            peak = np.asarray(peak).astype(int)
+            disk = DiskSelection(
+                shape=current_view.shape, center=peak[::-1], radius=25
+            )
+            r1, r2, c1, c2 = disk.bounding_box
+            region = current_view[r1:r2, c1:c2]
+            try:
+                true_peak_idx_local = np.where(region == region.max())
+                true_peak_idx_global = np.where(current_view == region[true_peak_idx_local])
+                new_r, new_c = true_peak_idx_global[0][0], true_peak_idx_global[1][0]
+            except:
+                if idx != 0:    print(f"Could not optimize peak {idx}")
+                # self.log(f"Could not optimize peak {idx}", level=logging.DEBUG)
+                new_r, new_c = r, c
+
+            new_peaks[idx] = np.array((new_r, new_c)).astype(int)
+        self.bragg_peaks = new_peaks
+
+        #load BZs
+        self.__vor = Voronoi(new_peaks[:,[1,0]])
+        self.__voronoi_regions = []
+
+        for i, point_region in enumerate(self.__vor.point_region):
+            region = self.__vor.regions[point_region]
+            vr = VoronoiRegion(point_region)
+            for r in region:
+                vr.add_vertex(r, self.__vor.vertices)
+            vr.point_inside = (i, self.__vor.points[i])
+            vr.set_center(self.__vor.points[i])
+            self.__voronoi_regions.append(vr)
+
+        for r in self.__voronoi_regions:
+            if not r.is_inf:
+                verts = np.array(r.vertices).reshape(-1,2)
+                COND1 = np.all(np.sqrt(np.sum(verts**2, axis=1)) < int(0.95*current_view.shape[0]))
+                COND2 = verts.shape[0] == symmetry
+                if COND1 and COND2:
+                    r.add_visible_vertex(verts)
+            r.visible_vertices = np.array(r.visible_vertices).reshape(-1,2)
+            if r.visible_vertices.size != 0:
+                r.is_visible = True
+        self.bzs = self.__voronoi_regions
+        self.bz_vertices = symmetry
+        # self.display_bragg_peaks(new_peaks)
+        
 
     @QtCore.pyqtSlot(dict)
     def update_metadata(self, metadata):
@@ -444,7 +566,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def close_raw_dataset(self):
-        """Close raw dataset."""
+        """ Close raw dataset. """
         self.raw_dataset = None
         self.raw_dataset_loaded_signal.emit(False)
         self.raw_data_signal.emit(None)
@@ -516,7 +638,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def close_dataset(self):
-        """Close current DiffractionDataset."""
+        """ Close current DiffractionDataset. """
         with suppress(AttributeError):  # in case self.dataset is None
             self.dataset.close()
         self.dataset = None
@@ -727,7 +849,57 @@ def compute_powder_baseline(fname, **kwargs):
 
 
 def process(**kwargs):
-    """Process a RawDataset into a DiffractionDataset"""
+    """ Process a RawDataset into a DiffractionDataset """
     with DiffractionDataset.from_raw(**kwargs) as dset:
         fname = dset.filename
     return fname
+
+
+class VoronoiRegion:
+    """
+    This class creates a region of points defined by the vertices of the Voronoi regions of a given pattern.
+    It is made to make calculations later easier to manage
+
+    Parameters
+    ----------
+
+    region_id: type(int)
+        Defines the ID number of this particular Voronoi region
+
+    
+    """
+    def __init__(self, region_id):
+        self.id = region_id
+        self.vertices = []
+        self.is_inf = False
+        self.point_inside = None
+        self.visible_vertices = []
+        self.is_visible = False
+
+    def __str__(self):
+        text = f'region id={self.id}'
+        if self.point_inside:
+            point_idx, point = self.point_inside
+            text = f'{text}[point:{point}(point_id:{point_idx})]'
+        text += ', vertices: '
+        if self.is_inf:
+            text += '(inf)'
+        for v in self.vertices:
+            text += f'{v}'
+        return text
+
+    def __repr__(self):
+        return str(self)
+
+    def add_vertex(self, vertex, vertices):
+        if vertex == -1:
+            self.is_inf = True
+        else:
+            point = vertices[vertex]
+            self.vertices.append(point)
+
+    def add_visible_vertex(self, vertex):
+        self.visible_vertices.append(vertex)
+
+    def set_center(self, center):
+        self.center = center
