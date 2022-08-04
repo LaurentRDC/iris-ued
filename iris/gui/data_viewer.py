@@ -2,6 +2,7 @@
 """
 Viewer widgets for DiffractionDatasets
 """
+from multiprocessing.sharedctypes import Value
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
@@ -53,6 +54,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         )
 
         self.__bragg_peak_items = list()
+        self.__bz_items = list()
 
         self.image_viewer.getView().addItem(self.timeseries_rect_region)
         self.timeseries_rect_region.hide()
@@ -81,7 +83,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(object)
     def update_cursor_info(self, event):
-        """Provide information about the cursor (position, value, etc)"""
+        """ Provide information about the cursor (position, value, etc) """
         mouse_point = self.image_viewer.getView().mapSceneToView(event[0])
         i, j = int(mouse_point.x()), int(mouse_point.y())
         try:
@@ -94,7 +96,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics(self, toggle):
-        """Toggle interactive peak dynamics region-of-interest"""
+        """ Toggle interactive peak dynamics region-of-interest"""
         if toggle:
             self.timeseries_rect_region.show()
         else:
@@ -106,7 +108,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(bool)
     def toggle_roi_bounds_text(self, enable):
-        """Toggle showing array indices around the peak dynamics region-of-interest"""
+        """ Toggle showing array indices around the peak dynamics region-of-interest """
         if enable:
             self.timeseries_rect_signal.connect(self._update_roi_bounds_text)
             self.update_timeseries_rect()
@@ -117,7 +119,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(tuple)
     def _update_roi_bounds_text(self, rect):
-        """Update the ROI bounds text based on the bounds in ``rect``"""
+        """ Update the ROI bounds text based on the bounds in ``rect`` """
         x1, x2, y1, y2 = rect
         self.roi_topleft_text.setPos(y1, x1)
         self.roi_topleft_text.setText(f"({y1},{x1})")
@@ -154,8 +156,8 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         """
         self.time_series_widget.plot(times, intensities)
 
-    @QtCore.pyqtSlot(list)
-    def display_bragg_peaks(self, peaks):
+    @QtCore.pyqtSlot(dict)
+    def display_bragg_peaks(self, params):
         """
         Highlight the location of Bragg peaks.
 
@@ -164,16 +166,70 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         peaks : list of 2-tuple
             List of tuples [row, col] where Bragg peaks are located.
         """
+        enabled_peaks = params["enable_peaks"]
+        peaks = params["peaks"]
+        enabled_bzs = params['enable_bz']
+        voronoi_regions = params['bz']
+        n_vertices = params['n_vertices']
         for item in self.__bragg_peak_items:
             self.image_viewer.removeItem(item)
         self.__bragg_peak_items.clear()
-
-        for r, c in peaks:
-            self.__bragg_peak_items.append(
-                pg.CircleROI(
-                    pos=(c, r), size=50, movable=False, resizable=False, removable=False
+        if enabled_peaks:
+            for idx, peak in enumerate(peaks):
+                r, c = peak
+                generator = generate_connections(4)
+                nodes = list()
+                for _ in range(4):
+                    nodes.append(next(generator))
+                nodes = np.array(nodes).reshape(-1,2)
+                self.__bragg_peak_items.append(
+                    # pg.RectROI(
+                    #     pos=(c-25, r-25), size=(50,50), movable=False, resizable=False, removable=False
+                    # )
+                    pg.GraphItem(
+                        pos = np.array(
+                            [
+                                [c-25, r-25],
+                                [c-25, r+25],
+                                [c+25, r+25],
+                                [c+25,r-25]
+                            ]
+                        ),
+                        adj = nodes,
+                        pen=pg.mkPen("r"),
+                        size=0
+                    )
                 )
-            )
+            for item in self.__bragg_peak_items:
+                self.image_viewer.addItem(item)
 
-        for item in self.__bragg_peak_items:
-            self.image_viewer.addItem(item)
+        for item in self.__bz_items:
+            self.image_viewer.removeItem(item)
+        self.__bz_items.clear()
+        if enabled_bzs:
+            for r in voronoi_regions:
+                if r.is_visible:
+                    generator = generate_connections(n_vertices)
+                    N = np.array(r.vertices).reshape(-1, 2).shape[0]
+                    nodes = list()
+                    for _ in range(N):
+                        nodes.append(next(generator))
+                    nodes = np.array(nodes).reshape(-1,2)
+                    self.__bz_items.append(
+                        pg.GraphItem(
+                            pos = np.array(r.vertices).reshape(-1, 2),
+                            adj = nodes
+                        )
+                    )
+            for item in self.__bz_items:
+                self.image_viewer.addItem(item)
+
+def generate_connections(sym):
+    """
+    Generator of the connections between points to graph closed polygons in pyqtgraph
+    """
+    num = 0
+    while True:
+        yield (num, (num+1)%(sym))
+        num += 1
+    
