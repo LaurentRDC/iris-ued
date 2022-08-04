@@ -171,6 +171,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         enabled_bzs = params['enable_bz']
         voronoi_regions = params['bz']
         n_vertices = params['n_vertices']
+        self.bbox_size = int(0.025*self.image_viewer.getImageItem().image.shape[0])
         for item in self.__bragg_peak_items:
             self.image_viewer.removeItem(item)
         self.__bragg_peak_items.clear()
@@ -189,10 +190,10 @@ class ProcessedDataViewer(QtWidgets.QWidget):
                     pg.GraphItem(
                         pos = np.array(
                             [
-                                [c-25, r-25],
-                                [c-25, r+25],
-                                [c+25, r+25],
-                                [c+25,r-25]
+                                [c-self.bbox_size//2, r-self.bbox_size//2],
+                                [c-self.bbox_size//2, r+self.bbox_size//2],
+                                [c+self.bbox_size//2, r+self.bbox_size//2],
+                                [c+self.bbox_size//2,r-self.bbox_size//2]
                             ]
                         ),
                         adj = nodes,
