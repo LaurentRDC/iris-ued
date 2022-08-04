@@ -651,6 +651,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         bragg_dialog = BraggPeakDialog(
             self.controller.dataset.diff_data(self.controller.dataset.time_points[0]),
             mask=self.controller.dataset.valid_mask,
+            pixel_width=self.controller.dataset.pixel_width,
             center=self.controller.dataset.center,
             parent=self,
         )
