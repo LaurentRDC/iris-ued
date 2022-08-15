@@ -38,6 +38,14 @@ e.g. 3,4, 5, 10, 32. """.replace(
     "\n", ""
 )
 
+ngon_help = """ Create polgyon with arbitrary number of vertices and vertex locations. Click in the middle
+of line segments to generate a new vertex handle (which can be deleted).""".replace("\n", "")
+
+description = """Set the processing parameters for the dataset, including mask generation. Arbitrary masks can
+ be uploaded by dragging and dropping the file into the image viewport. These masks must be Numpy arrays with invalid 
+pixels indicated by True.
+""".replace("\n","")
+
 DTYPE_NAMES = {
     "Auto": None,
     "64-bit floats": np.float64,
@@ -56,9 +64,10 @@ class MaskCreator(QtWidgets.QWidget):
         super().__init__(**kwargs)
 
         self.resolution = np.array(image.shape)
-
+        self.loaded_mask = np.zeros_like(image, dtype=bool)
         self.rect_masks = list()  # list of pg.ROI objects
         self.circ_masks = list()
+        self.arb_masks  = list()
 
         self.viewer = pg.ImageView(parent=self)
         self.viewer.setImage(image)
@@ -94,10 +103,30 @@ class MaskCreator(QtWidgets.QWidget):
         self.circ_masks.append(new_roi)
 
     @QtCore.pyqtSlot()
+    def add_arb_mask(self, pos=None, append=True):
+        if pos is None:
+            positions = [
+                    (0.6*self.resolution[0], 0.6*self.resolution[1]),
+                    (0.6*self.resolution[0], 0.4*self.resolution[1]),
+                    (0.4*self.resolution[0], 0.4*self.resolution[1]),
+                    (0.4*self.resolution[0], 0.6*self.resolution[1])
+                ]
+        else:
+            positions = pos
+        new_roi = pg.PolyLineROI(
+            positions = positions,
+            closed=True, pen=pg.mkPen("r", width=4)
+        )
+        
+        self.viewer.addItem(new_roi)
+        if append: self.arb_masks.append(new_roi)
+        else: return new_roi
+
+    @QtCore.pyqtSlot()
     def show_preview_mask(self):
         image = np.array(self.viewer.image)
         mask = self.composite_mask()
-        image[mask] = 0.0
+        image[mask] = False
 
         dialog = QtWidgets.QDialog(parent=self)
         dialog.setWindowTitle("Mask preview")
@@ -110,18 +139,19 @@ class MaskCreator(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def clear_masks(self):
-        for roi in self.rect_masks + self.circ_masks:
+        for roi in self.rect_masks + self.circ_masks + self.arb_masks:
             self.viewer.removeItem(roi)
         self.rect_masks.clear()
         self.circ_masks.clear()
+        self.arb_masks.clear()
+        self.loaded_mask = np.zeros_like(self.loaded_mask, dtype=bool)
 
     def composite_mask(self):
         """Returns composite mask where invalid pixels are marked as True"""
         # Initially, all pixels are valid
-        mask = np.zeros(self.resolution, dtype=bool)
-
-        if len(self.circ_masks + self.rect_masks) == 0:
-            return mask
+        mask = np.zeros_like(self.loaded_mask, dtype=bool)
+        if len(self.circ_masks + self.rect_masks + self.arb_masks) == 0:
+            return self.loaded_mask
 
         # No need to compute xx, yy, and rr if there are no
         # circular masks, hence the check for empty list
@@ -138,16 +168,62 @@ class MaskCreator(QtWidgets.QWidget):
                 corner_x, corner_y = circ_mask.pos().x(), circ_mask.pos().y()
                 xc, yc = (round(corner_x + radius), round(corner_y + radius))
                 rr = np.hypot(xx - xc, yy - yc)
-                mask[rr <= radius] = 1
+                mask[rr <= radius] = True
+        if self.rect_masks:
+            for rect_mask in self.rect_masks:
+                (x_slice, y_slice), _ = rect_mask.getArraySlice(
+                    data=mask, img=self.viewer.getImageItem()
+                )
+                mask[x_slice, y_slice] = True
+        
+        if self.arb_masks:
+            for arb_mask in self.arb_masks:
+                locs = np.array([(p[1].x(), p[1].y()) for p in arb_mask.getLocalHandlePositions()])
+                all_identical = True
+                for idp, point in enumerate(locs):
+                    new_pt = np.clip(point, a_min = 0, a_max = self.resolution)
+                    if not np.array_equal(point, new_pt):
+                        all_identical = False
+                        locs[idp,:] = new_pt
+                if not all_identical:
+                    trimmed_arb_mask = self.add_arb_mask(pos = locs, append = False)
+                    self.viewer.removeItem(trimmed_arb_mask)
+                else:
+                    trimmed_arb_mask = arb_mask
+                width, height = int(trimmed_arb_mask.parentBounds().width()), int(trimmed_arb_mask.parentBounds().height())
+                left, top = int(trimmed_arb_mask.parentBounds().left()), int(trimmed_arb_mask.parentBounds().top())
+                mask[top:top+height, left:left+width ] = trimmed_arb_mask.renderShapeMask(width,height).astype(bool).T
+        return np.logical_or(self.loaded_mask, mask)
+            
+    def toggleinversionLoadedMask(self):
+        try:
+            self.loaded_mask = ~self.loaded_mask
+            self.parent().parent.controller.logger.info("Inverted loaded mask.")
+        except:
+            self.parent().parent.controller.logger.error("Error inverting loaded mask.")
 
-        for rect_mask in self.rect_masks:
-            (x_slice, y_slice), _ = rect_mask.getArraySlice(
-                data=mask, img=self.viewer.getImageItem()
-            )
-            mask[x_slice, y_slice] = True
+    def dragEnterEvent(self, e):
+        if e.mimeData().hasUrls():
+            fname = e.mimeData().urls()[0].path()
+            if 'npy' in fname:
+                e.accept()
+            else:
+                self.parent().parent.controller.logger.error(f'Mask given by {fname} does not have type numpy.ndarray.')
+                e.ignore()
+        else:
+            self.parent().parent.controller.logger.error(f'Item dropped is not a file URL.')
+            e.ignore()
 
-        return mask
-
+    def dropEvent(self, e):
+        fname = e.mimeData().urls()[0].path()
+        try:
+            self.loaded_mask = np.logical_or(self.loaded_mask, np.load(fname))
+            if self.loaded_mask.shape == tuple(self.resolution):
+                self.parent().parent.controller.logger.info(f'Successfully loaded {fname} as processing mask.')
+            else:
+                self.parent().parent.controller.logger.error(f'Mask dimensions in {fname} do not agree with dataset dimensions. Did not load mask.')
+        except:
+            self.parent().parent.controller.logger.error(f'Error loading {fname} as the processing mask. ')
 
 class ProcessingDialog(QtWidgets.QDialog):
     """
@@ -164,6 +240,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         raw : AbstractRawDataset instance
         """
         super().__init__(**kwargs)
+        self.parent = kwargs['parent']
         self.setModal(True)
         self.setWindowTitle("Diffraction Dataset Processing")
 
@@ -171,10 +248,16 @@ class ProcessingDialog(QtWidgets.QDialog):
 
         image = raw.raw_data(timedelay=raw.time_points[0], scan=raw.scans[0], bgr=True)
         self.mask_widget = MaskCreator(image, parent=self)
+        self.mask_widget.setAcceptDrops(True)
 
         title = QtWidgets.QLabel("<h2>Data Reduction Options<\\h2>")
         title.setTextFormat(QtCore.Qt.RichText)
         title.setAlignment(QtCore.Qt.AlignCenter)
+
+        description_label = QtWidgets.QLabel(description, parent=self)
+        description_label.setWordWrap(True)
+        description_label.setAlignment(QtCore.Qt.AlignCenter)
+        description_label.adjustSize()
 
         self.processes_widget = QtWidgets.QSpinBox(parent=self)
         self.processes_widget.setRange(1, cpu_count() - 1)
@@ -243,6 +326,19 @@ class ProcessingDialog(QtWidgets.QDialog):
         )
         self.add_circ_mask_btn.clicked.connect(self.mask_widget.add_circ_mask)
 
+        self.add_arb_mask_btn = QtWidgets.QPushButton("Add n-gon mask", self)
+        self.add_arb_mask_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        self.add_arb_mask_btn.clicked.connect(self.mask_widget.add_arb_mask)
+        self.add_arb_mask_btn.setToolTip(ngon_help)
+
+        self.toggle_inversion_loaded_mask_btn = QtWidgets.QPushButton("Invert loaded mask", self)
+        self.toggle_inversion_loaded_mask_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        self.toggle_inversion_loaded_mask_btn.clicked.connect(self.mask_widget.toggleinversionLoadedMask)
+
         self.preview_mask_btn = QtWidgets.QPushButton("Preview mask", self)
         self.preview_mask_btn.setSizePolicy(
             QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
@@ -258,8 +354,10 @@ class ProcessingDialog(QtWidgets.QDialog):
         mask_btns = QtWidgets.QGridLayout()
         mask_btns.addWidget(self.add_circ_mask_btn, 0, 0)
         mask_btns.addWidget(self.add_rect_mask_btn, 0, 1)
+        mask_btns.addWidget(self.add_arb_mask_btn, 0, 2)
         mask_btns.addWidget(self.preview_mask_btn, 1, 0)
-        mask_btns.addWidget(self.clear_masks_btn, 1, 1)
+        mask_btns.addWidget(self.clear_masks_btn, 1, 2)
+        mask_btns.addWidget(self.toggle_inversion_loaded_mask_btn, 1, 1)
 
         self.mask_controls = QtWidgets.QGroupBox("Mask controls", parent=self)
         self.mask_controls.setLayout(mask_btns)
@@ -293,6 +391,7 @@ class ProcessingDialog(QtWidgets.QDialog):
 
         params_layout = QtWidgets.QVBoxLayout()
         params_layout.addWidget(title)
+        params_layout.addWidget(description_label)
         params_layout.addSpacing(10)
         params_layout.addLayout(processing_options)
         params_layout.addLayout(buttons)
