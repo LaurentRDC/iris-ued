@@ -169,6 +169,7 @@ def test_diff_apply(dataset):
 
 
 @pytest.mark.skipif(not SWMR_AVAILABLE, reason="Parallel execution is not available")
+@pytest.mark.flaky(reruns=5)
 def test_diff_apply_parallel(dataset):
     """Test that the diff_apply method works as expected in parallel mode"""
     before = np.array(dataset.diffraction_group["intensity"])
