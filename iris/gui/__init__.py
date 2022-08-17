@@ -57,9 +57,9 @@ def run(path=None, dset_type=None, **kwargs):
     """
 
     with gui_environment():
-        if hasattr(QtGui, 'QApplication'):
+        if hasattr(QtGui, "QApplication"):
             app = QtGui.QApplication(sys.argv)
-        elif hasattr(QtWidgets, 'QApplication'):
+        elif hasattr(QtWidgets, "QApplication"):
             app = QtWidgets.QApplication(sys.argv)
         else:
             warn("PyQT5 has no known location of `QApplication`. Exiting now.")

@@ -83,7 +83,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(object)
     def update_cursor_info(self, event):
-        """ Provide information about the cursor (position, value, etc) """
+        """Provide information about the cursor (position, value, etc)"""
         mouse_point = self.image_viewer.getView().mapSceneToView(event[0])
         i, j = int(mouse_point.x()), int(mouse_point.y())
         try:
@@ -96,7 +96,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics(self, toggle):
-        """ Toggle interactive peak dynamics region-of-interest"""
+        """Toggle interactive peak dynamics region-of-interest"""
         if toggle:
             self.timeseries_rect_region.show()
         else:
@@ -108,7 +108,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(bool)
     def toggle_roi_bounds_text(self, enable):
-        """ Toggle showing array indices around the peak dynamics region-of-interest """
+        """Toggle showing array indices around the peak dynamics region-of-interest"""
         if enable:
             self.timeseries_rect_signal.connect(self._update_roi_bounds_text)
             self.update_timeseries_rect()
@@ -119,7 +119,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(tuple)
     def _update_roi_bounds_text(self, rect):
-        """ Update the ROI bounds text based on the bounds in ``rect`` """
+        """Update the ROI bounds text based on the bounds in ``rect``"""
         x1, x2, y1, y2 = rect
         self.roi_topleft_text.setPos(y1, x1)
         self.roi_topleft_text.setText(f"({y1},{x1})")
@@ -168,10 +168,10 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         """
         enabled_peaks = params["enable_peaks"]
         peaks = params["peaks"]
-        enabled_bzs = params['enable_bz']
-        voronoi_regions = params['bz']
-        n_vertices = params['n_vertices']
-        self.bbox_size = int(0.025*self.image_viewer.getImageItem().image.shape[0])
+        enabled_bzs = params["enable_bz"]
+        voronoi_regions = params["bz"]
+        n_vertices = params["n_vertices"]
+        self.bbox_size = int(0.025 * self.image_viewer.getImageItem().image.shape[0])
         for item in self.__bragg_peak_items:
             self.image_viewer.removeItem(item)
         self.__bragg_peak_items.clear()
@@ -182,23 +182,23 @@ class ProcessedDataViewer(QtWidgets.QWidget):
                 nodes = list()
                 for _ in range(4):
                     nodes.append(next(generator))
-                nodes = np.array(nodes).reshape(-1,2)
+                nodes = np.array(nodes).reshape(-1, 2)
                 self.__bragg_peak_items.append(
                     # pg.RectROI(
                     #     pos=(c-25, r-25), size=(50,50), movable=False, resizable=False, removable=False
                     # )
                     pg.GraphItem(
-                        pos = np.array(
+                        pos=np.array(
                             [
-                                [c-self.bbox_size//2, r-self.bbox_size//2],
-                                [c-self.bbox_size//2, r+self.bbox_size//2],
-                                [c+self.bbox_size//2, r+self.bbox_size//2],
-                                [c+self.bbox_size//2,r-self.bbox_size//2]
+                                [c - self.bbox_size // 2, r - self.bbox_size // 2],
+                                [c - self.bbox_size // 2, r + self.bbox_size // 2],
+                                [c + self.bbox_size // 2, r + self.bbox_size // 2],
+                                [c + self.bbox_size // 2, r - self.bbox_size // 2],
                             ]
                         ),
-                        adj = nodes,
+                        adj=nodes,
                         pen=pg.mkPen("r"),
-                        size=0
+                        size=0,
                     )
                 )
             for item in self.__bragg_peak_items:
@@ -215,15 +215,13 @@ class ProcessedDataViewer(QtWidgets.QWidget):
                     nodes = list()
                     for _ in range(N):
                         nodes.append(next(generator))
-                    nodes = np.array(nodes).reshape(-1,2)
+                    nodes = np.array(nodes).reshape(-1, 2)
                     self.__bz_items.append(
-                        pg.GraphItem(
-                            pos = np.array(r.vertices).reshape(-1, 2),
-                            adj = nodes
-                        )
+                        pg.GraphItem(pos=np.array(r.vertices).reshape(-1, 2), adj=nodes)
                     )
             for item in self.__bz_items:
                 self.image_viewer.addItem(item)
+
 
 def generate_connections(sym):
     """
@@ -231,6 +229,5 @@ def generate_connections(sym):
     """
     num = 0
     while True:
-        yield (num, (num+1)%(sym))
+        yield (num, (num + 1) % (sym))
         num += 1
-    

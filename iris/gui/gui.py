@@ -315,7 +315,6 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self.calculate_bragg_peaks_action.setEnabled
         )
 
-
         self.update_metadata_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "save.png")),
             "& Update dataset metadata",
@@ -392,36 +391,25 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self.show_diff_relative_action.setEnabled
         )
 
-        self.show_bragg_peaks_action = QtWidgets.QAction(
-            "& Show Bragg peaks", self
-        )
+        self.show_bragg_peaks_action = QtWidgets.QAction("& Show Bragg peaks", self)
         self.show_bragg_peaks_action.setCheckable(True)
         self.controller.bragg_peak_enable_signal.connect(
             self.show_bragg_peaks_action.setChecked
         )
-        self.show_bragg_peaks_action.toggled.connect(
-            self.controller.enable_bragg
-        )
+        self.show_bragg_peaks_action.toggled.connect(self.controller.enable_bragg)
         self.controller.initially_run_bragg_signal.connect(
             self.show_bragg_peaks_action.setEnabled
         )
         self.show_bragg_peaks_action.setEnabled(False)
 
-        self.show_BZ_action = QtWidgets.QAction(
-            "& Show Brilluoin zones", self
-        )
+        self.show_BZ_action = QtWidgets.QAction("& Show Brilluoin zones", self)
         self.show_BZ_action.setCheckable(True)
-        self.controller.bz_enable_signal.connect(
-            self.show_BZ_action.setChecked
-        )
-        self.show_BZ_action.toggled.connect(
-            self.controller.enable_bz
-        )
+        self.controller.bz_enable_signal.connect(self.show_BZ_action.setChecked)
+        self.show_BZ_action.toggled.connect(self.controller.enable_bz)
         self.controller.initially_run_bragg_signal.connect(
             self.show_BZ_action.setEnabled
         )
         self.show_BZ_action.setEnabled(False)
-
 
         self.show_powder_relative_action = QtWidgets.QAction(
             "& Toggle relative dynamics", self
@@ -481,9 +469,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.diffraction_dataset_display_options_menu.addAction(
             self.show_bragg_peaks_action
         )
-        self.diffraction_dataset_display_options_menu.addAction(
-            self.show_BZ_action
-        )
+        self.diffraction_dataset_display_options_menu.addAction(self.show_BZ_action)
 
         self.powder_dataset_display_options_menu.addAction(
             self.show_powder_relative_action
@@ -656,13 +642,9 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             parent=self,
         )
         bragg_dialog.resize(0.75 * self.size())
-        bragg_dialog.bragg_peak_signal.connect(
-            self.controller.optimize_bragg_peaks
-        )
+        bragg_dialog.bragg_peak_signal.connect(self.controller.optimize_bragg_peaks)
         bragg_dialog.exec_()
-        bragg_dialog.bragg_peak_signal.disconnect(
-            self.controller.optimize_bragg_peaks
-        )
+        bragg_dialog.bragg_peak_signal.disconnect(self.controller.optimize_bragg_peaks)
 
     @QtCore.pyqtSlot()
     def launch_symmetrize_dialog(self):
@@ -737,7 +719,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(bool)
     def update_available(self, available):
-        """ Handle UI in case an update is available or not. """
+        """Handle UI in case an update is available or not."""
         if available:
             self.update_action.setEnabled(True)
             self.update_action.setText("An update is available!")
@@ -796,7 +778,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def install_plugin(self):
-        """ Load plug-in. """
+        """Load plug-in."""
         explanation = INSTALL_PLUGIN_HELP.format(dir=PLUGIN_DIR)
 
         QtWidgets.QMessageBox.information(self, "Loading a plug-in", explanation)
@@ -812,7 +794,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def show_about(self):
-        """ Show the About information """
+        """Show the About information"""
 
         return QtWidgets.QMessageBox.about(self, "About Iris", make_about_string())
 
