@@ -197,23 +197,6 @@ class MaskCreator(QtWidgets.QWidget):
                 )
                 mask[x_slice, y_slice] = True
         
-        if self.arb_masks:
-            for arb_mask in self.arb_masks:
-                locs = np.array([(p[1].x(), p[1].y()) for p in arb_mask.getLocalHandlePositions()])
-                all_identical = True
-                for idp, point in enumerate(locs):
-                    new_pt = np.clip(point, a_min = 0, a_max = self.resolution)
-                    if not np.array_equal(point, new_pt):
-                        all_identical = False
-                        locs[idp,:] = new_pt
-                if not all_identical:
-                    trimmed_arb_mask = self.add_arb_mask(pos = locs, append = False)
-                    self.viewer.removeItem(trimmed_arb_mask)
-                else:
-                    trimmed_arb_mask = arb_mask
-                width, height = int(trimmed_arb_mask.parentBounds().width()), int(trimmed_arb_mask.parentBounds().height())
-                left, top = int(trimmed_arb_mask.parentBounds().left()), int(trimmed_arb_mask.parentBounds().top())
-                mask[top:top+height, left:left+width ] = trimmed_arb_mask.renderShapeMask(width,height).astype(bool).T
         return np.logical_or(self.loaded_mask, mask)
 
     def toggleinversionLoadedMask(self):
