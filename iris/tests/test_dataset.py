@@ -169,6 +169,7 @@ def test_diff_apply(dataset):
 
 
 @pytest.mark.skipif(not SWMR_AVAILABLE, reason="Parallel execution is not available")
+@pytest.mark.flaky(max_runs=5)
 def test_diff_apply_parallel(dataset):
     """Test that the diff_apply method works as expected in parallel mode"""
     before = np.array(dataset.diffraction_group["intensity"])
@@ -217,6 +218,7 @@ def test_symmetrization(dataset):
 
 
 @pytest.mark.skipif(not SWMR_AVAILABLE, reason="Parallel execution is not available")
+@pytest.mark.flaky(max_runs=5)
 def test_symmetrization_parallel(dataset):
     """Test correctness of symmetrization operation in parallel mode"""
     before = np.array(dataset.diffraction_group["intensity"])

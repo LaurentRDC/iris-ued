@@ -749,7 +749,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
             # Division might introduce infs and nans
             out[:] = np.nan_to_num(out, copy=False)
-            np.minimum(out, 2 ** 16 - 1, out=out)
+            np.minimum(out, 2**16 - 1, out=out)
 
         return out
 
