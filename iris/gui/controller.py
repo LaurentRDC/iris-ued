@@ -608,7 +608,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             with cls(path, mode="r+"):
                 pass
 
-        self.dataset = cls(path, mode="r")
+        self.dataset = cls(path, mode="r+")
         self.dataset_metadata.emit(self.dataset.metadata)
 
         # Initialize containers
