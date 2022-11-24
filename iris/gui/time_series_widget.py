@@ -50,6 +50,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         # Internal memory on last time-series info
         self._last_times = None
         self._last_intensities_abs = None
+        self._last_norm_mask = None
         self._refresh_signal.connect(self.plot)
 
         self.connect_widget = QtWidgets.QCheckBox("Connect time-series", self)
@@ -121,6 +122,9 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         """
         self._last_times = np.asarray(time_points)
         self._last_intensities_abs = np.asarray(intensity)
+        self._last_norm_mask = self._last_times < 0
+        if self._last_norm_mask.sum() == 0:
+            self._last_norm_mask[0] = True
 
         # Normalize to intensity before time-zero
         # Note that the change in units is taken care of in the toggle_absolute_intensity method
@@ -129,7 +133,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
             self._last_intensities_abs
             if absolute
             else self._last_intensities_abs
-            / np.mean(self._last_intensities_abs[self._last_times < 0])
+            / np.mean(self._last_intensities_abs[self._last_norm_mask])
         )
 
         # Only compute the colors if number of time-points changes or first time
