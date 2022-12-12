@@ -167,7 +167,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
     @QtCore.pyqtSlot()
     def accept(self):
         self.file_dialog = QtWidgets.QFileDialog(parent=self)
-        filename = self.file_dialog.getSaveFileName(filter="*.hdf5")[0]
+        filename = self.file_dialog.getSaveFileName(filter="HDF5-files (*.h5 *.hdf5)")[0]
         if filename == "":
             return
 

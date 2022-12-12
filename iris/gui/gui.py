@@ -739,7 +739,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
     @QtCore.pyqtSlot()
     def load_dataset(self):
         path = self.file_dialog.getOpenFileName(
-            parent=self, caption="Load dataset", filter="*.hdf5"
+            parent=self, caption="Load dataset", filter="HDF5-files (*.h5 *.hdf5)"
         )[0]
         if not path:
             return
