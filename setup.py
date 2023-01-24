@@ -67,7 +67,7 @@ if __name__ == "__main__":
             "Tracker": "https://github.com/LaurentRDC/iris-ued/issues",
             "Home": "http://www.physics.mcgill.ca/siwicklab/software.html",
         },
-        python_requires=">= 3.7",
+        python_requires=">= 3.8",
         classifiers=[
             "Development Status :: 5 - Production/Stable",
             "Intended Audience :: Science/Research",
@@ -79,9 +79,10 @@ if __name__ == "__main__":
             "Natural Language :: English",
             "Operating System :: OS Independent",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: 3.9",
+            "Programming Language :: Python :: 3.10",
+            "Programming Language :: Python :: 3.11",
             "Programming Language :: Python :: Implementation :: CPython",
         ],
     )

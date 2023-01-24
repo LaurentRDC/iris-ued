@@ -38,7 +38,7 @@ To install the latest development version from
 
     python -m pip install git+git://github.com/LaurentRDC/iris-ued.git
 
-Each version is tested against Python 3.7+. If you are using a different
+Each version is tested against Python 3.8+. If you are using a different
 version, tests can be run using the `pytest` package.
 
 ### Windows Installers
