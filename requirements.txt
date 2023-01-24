@@ -1,6 +1,4 @@
-# Numpy 1.19.4 causes problems with Windows 10 build 2004
-# https://developercommunity.visualstudio.com/solutions/1241964/view.html
-numpy >= 1.17, != 1.19.4
+numpy >= 1.22,<2
 scipy >= 1.0.0
 h5py >= 2.10.0
 PyQt5 >=5.15, <6
