@@ -8,7 +8,7 @@ from collections import OrderedDict
 from contextlib import AbstractContextManager
 from functools import wraps, partial
 from pathlib import Path
-import multiprocessing as mp
+from multiprocessing import Pool
 
 import numpy as np
 

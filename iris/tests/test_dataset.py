@@ -1,19 +1,19 @@
-import sys
 import os
 from contextlib import suppress
 from itertools import repeat
+from pathlib import Path
 from tempfile import gettempdir
 
 import numpy as np
+import pytest
+from flaky import flaky
 from numpy.random import random
+from skued import (ArbitrarySelection, DiskSelection, RectSelection, RingSelection, nfold)
 
-from crystals import Crystal
 from iris import DiffractionDataset
 from iris.dataset import SWMR_AVAILABLE
-from skued import nfold, RectSelection, DiskSelection, RingSelection, ArbitrarySelection
-from pathlib import Path
+
 from . import TestRawDataset
-import pytest
 
 np.random.seed(23)
 
@@ -169,7 +169,7 @@ def test_diff_apply(dataset):
 
 
 @pytest.mark.skipif(not SWMR_AVAILABLE, reason="Parallel execution is not available")
-@pytest.mark.flaky(max_runs=5)
+@flaky(max_runs=5)
 def test_diff_apply_parallel(dataset):
     """Test that the diff_apply method works as expected in parallel mode"""
     before = np.array(dataset.diffraction_group["intensity"])
@@ -218,7 +218,7 @@ def test_symmetrization(dataset):
 
 
 @pytest.mark.skipif(not SWMR_AVAILABLE, reason="Parallel execution is not available")
-@pytest.mark.flaky(max_runs=5)
+@flaky(max_runs=5)
 def test_symmetrization_parallel(dataset):
     """Test correctness of symmetrization operation in parallel mode"""
     before = np.array(dataset.diffraction_group["intensity"])

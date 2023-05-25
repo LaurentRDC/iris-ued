@@ -2,11 +2,8 @@
 """
 Diffraction dataset types
 """
-from sys import platform
 from collections import OrderedDict
-from collections.abc import Callable
-from functools import lru_cache, partial, wraps
-from math import sqrt
+from functools import partial, wraps
 from warnings import warn
 
 import h5py
