@@ -3,9 +3,6 @@ name: Continuous integration
 on: 
   push:
   pull_request:
-  schedule:
-    # Every month
-    - cron: '0 0 1 * *'
 
 jobs:
   build:
