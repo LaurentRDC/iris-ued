@@ -866,11 +866,14 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         """
         intensity = self.diffraction_group["intensity"]
         image = ns.average(intensity[:, :, i] for i in range(intensity.shape[2]))
+
+        # In cases where there's no intensity data, we want to assign a reasonable
+        # diffraction center rather than fail the autocenter routine.
+        # See #26.
         if np.allclose(image * self.valid_mask, 0):
-            raise ValueError(
-                "There is not enough data to determine a center; all valid pixels have zero intensity."
-            )
-        r, c = autocenter(im=image, mask=self.valid_mask)
+            r, c = image.shape[0]//2, image.shape[1]//2
+        else:
+            r, c = autocenter(im=image, mask=self.valid_mask)
 
         # Note that for backwards-compatibility, the center
         # coordinates need to be stored as (col, row)

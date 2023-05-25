@@ -1,6 +1,11 @@
 Release 5.3.4
 -------------
 
+* Fixed an issue where migrating older datasets to add a diffraction center automatically could fail (#26).
+
+Release 5.3.4
+-------------
+
 * Added new Bragg peak functionality of processed datasets, as well as arbitrary mask loading and generation for pre-processing.
 
 Release 5.3.3
