@@ -1,4 +1,4 @@
-Release 5.3.4
+Release 5.3.5
 -------------
 
 * Fixed an issue where migrating older datasets to add a diffraction center automatically could fail (#26).
