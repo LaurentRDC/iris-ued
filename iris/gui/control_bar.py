@@ -254,7 +254,7 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         # Time-zero shift control
         # QDoubleSpinbox does not have a slot that sets the value without notifying everybody
         self.time_zero_shift_widget = QtWidgets.QDoubleSpinBox(parent=self)
-        self.time_zero_shift_widget.setRange(-1000, 1000)
+        self.time_zero_shift_widget.setRange(-2000, 2000)
         self.time_zero_shift_widget.setDecimals(3)
         self.time_zero_shift_widget.setSingleStep(0.5)
         self.time_zero_shift_widget.setSuffix(" ps")

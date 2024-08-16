@@ -66,6 +66,9 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         self.layout.addWidget(self.time_series_widget)
         self.setLayout(self.layout)
 
+        self.histogram = self.image_viewer.getHistogramWidget()
+
+
     @QtCore.pyqtSlot()
     def update_timeseries_rect(self):
         rect = self.timeseries_rect_region.parentBounds().toRect()
@@ -142,10 +145,18 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         if image is None:
             self.image_viewer.clear()
             return
-
         self.image_viewer.setImage(
-            image, autoLevels=autocontrast, autoRange=autocontrast
+            image, autoLevels=False, autoRange=False, autoHistogramRange=False
         )
+
+        if autocontrast:
+            low = np.quantile(image, 0.01)
+            high = np.quantile(image, 0.98)
+
+            self.image_viewer.setLevels(low, high)
+            self.histogram.setHistogramRange(low*.8, high*1.2)
+            self.histogram.setLevels(low, high)
+
         self.update_timeseries_rect()
 
     @QtCore.pyqtSlot(object, object)
