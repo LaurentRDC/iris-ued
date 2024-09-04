@@ -73,7 +73,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-py${{ matrix.python-version }}-artifact
         path: dist/*
