@@ -1,3 +1,8 @@
+Release 5.4.0
+-------------
+
+* Added explicit support for NumPy 2, in addition to NumPy 1
+
 Release 5.3.5
 -------------
 

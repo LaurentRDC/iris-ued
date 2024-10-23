@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 __author__ = "Laurent P. René de Cotret"
-__email__ = "laurent.renedecotret@mail.mcgill.ca"
+__email__ = "laurent.decotret@outlook.com"
 __license__ = "GPLv3"
-__version__ = "5.3.5"
+__version__ = "5.4.0"
 
 from . import plugins
 from .dataset import DiffractionDataset, MigrationError, MigrationWarning
