@@ -6,12 +6,11 @@ Raw dataset classes
 from abc import abstractmethod
 from collections import OrderedDict
 from contextlib import AbstractContextManager
-from functools import wraps, partial
-from pathlib import Path
+from functools import partial, wraps
 from multiprocessing import Pool
+from pathlib import Path
 
 import numpy as np
-
 from npstreams import average, itercopy, peek
 from skued import ialign
 
@@ -53,9 +52,7 @@ def open_raw(path):
         except:
             pass
 
-    raise RuntimeError(
-        f"No data format could be guessed for item located at: \n {path}"
-    )
+    raise RuntimeError(f"No data format could be guessed for item located at: \n {path}")
 
 
 class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
@@ -93,23 +90,15 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
     # These attributes can be accessed using the usual property access
     date = ExperimentalParameter("date", str, default="")
     energy = ExperimentalParameter("energy", float, default=90)  # keV
-    pump_wavelength = ExperimentalParameter(
-        "pump_wavelength", int, default=800
-    )  # nanometers
+    pump_wavelength = ExperimentalParameter("pump_wavelength", int, default=800)  # nanometers
     fluence = ExperimentalParameter("fluence", float, default=0)  # mj / cm**2
-    time_zero_shift = ExperimentalParameter(
-        "time_zero_shift", float, default=0
-    )  # picoseconds
+    time_zero_shift = ExperimentalParameter("time_zero_shift", float, default=0)  # picoseconds
     temperature = ExperimentalParameter("temperature", float, default=293)  # Kelvins
     exposure = ExperimentalParameter("exposure", float, default=1)  # seconds
     resolution = ExperimentalParameter("resolution", tuple, default=(2048, 2048))
-    time_points = ExperimentalParameter(
-        "time_points", tuple, default=tuple()
-    )  # picoseconds
+    time_points = ExperimentalParameter("time_points", tuple, default=tuple())  # picoseconds
     scans = ExperimentalParameter("scans", tuple, default=(1,))
-    camera_length = ExperimentalParameter(
-        "camera_length", float, default=0.23
-    )  # meters
+    camera_length = ExperimentalParameter("camera_length", float, default=0.23)  # meters
     pixel_width = ExperimentalParameter("pixel_width", float, default=14e-6)  # meters
     notes = ExperimentalParameter("notes", str, default="")
 
@@ -215,9 +204,7 @@ class AbstractRawDataset(AbstractContextManager, metaclass=MetaRawDataset):
             exclude_scans = set([])
 
         if timedelay not in set(self.time_points):
-            raise ValueError(
-                f"There is no time-delay {timedelay} in available time-delays"
-            )
+            raise ValueError(f"There is no time-delay {timedelay} in available time-delays")
 
         valid_scans = sorted(set(self.scans) - set(exclude_scans))
         for scan in valid_scans:
@@ -345,6 +332,7 @@ def check_raw_bounds(method):
     ``method`` is expected to be a reimplemented :meth:`AbstractRawDataset.raw_data` method.
     See :meth:`AbstractRawDataset.raw_data` for the expected call signature.
     """
+
     # Note that we use the expected call signature from AbstractRawDataset.raw_data
     @wraps(method)
     def checked_method(self, timedelay, scan, *args, **kwargs):
@@ -355,9 +343,7 @@ def check_raw_bounds(method):
         valid_timedelay = timedelay in self.time_points
 
         if (not valid_scan) or (not valid_timedelay):
-            raise ValueError(
-                f"Requested time-delay {timedelay} and scan {scan} are invalid or out-of-bounds"
-            )
+            raise ValueError(f"Requested time-delay {timedelay} and scan {scan} are invalid or out-of-bounds")
 
         return method(self, timedelay, scan, *args, **kwargs)
 

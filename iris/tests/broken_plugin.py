@@ -4,8 +4,8 @@ Broken plug-in
 ==============
 """
 
-from iris import AbstractRawDataset
 import _______ as this_is_an_error
+from iris import AbstractRawDataset
 
 
 class BrokenPlugin(AbstractRawDataset):

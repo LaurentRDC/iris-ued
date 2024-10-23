@@ -1,16 +1,15 @@
-import sys
 import os
+import sys
 from contextlib import suppress
 from itertools import repeat
+from pathlib import Path
 from tempfile import gettempdir
 
 import numpy as np
-from numpy.random import random
-
-from crystals import Crystal
-from iris import PowderDiffractionDataset, DiffractionDataset
-from pathlib import Path
 import pytest
+from crystals import Crystal
+from iris import DiffractionDataset, PowderDiffractionDataset
+from numpy.random import random
 
 np.random.seed(23)
 
@@ -44,9 +43,7 @@ def test_powder_baseline_attributes(powder_dataset):
     assert powder_dataset.level == 0
     assert powder_dataset.niter == 0
 
-    powder_dataset.compute_baseline(
-        first_stage="sym6", wavelet="qshift3", level=1, mode="periodic"
-    )
+    powder_dataset.compute_baseline(first_stage="sym6", wavelet="qshift3", level=1, mode="periodic")
 
     assert powder_dataset.first_stage == "sym6"
     assert powder_dataset.wavelet == "qshift3"
@@ -67,9 +64,7 @@ def test_powder_calq(powder_dataset):
 def test_powder_baseline_limits(powder_dataset):
     """Test that the baseline is never less than 0, and the baseline-subtracted data is never negative."""
 
-    powder_dataset.compute_baseline(
-        first_stage="sym6", wavelet="qshift3", level=1, mode="periodic"
-    )
+    powder_dataset.compute_baseline(first_stage="sym6", wavelet="qshift3", level=1, mode="periodic")
 
     # Test that the baseline is always positive
     baseline = powder_dataset.powder_baseline(None)
@@ -106,9 +101,7 @@ def test_powder_eq(powder_dataset):
     eq = powder_dataset.powder_eq()
     assert eq.shape == powder_dataset.px_radius.shape
 
-    powder_dataset.compute_baseline(
-        first_stage="sym6", wavelet="qshift3", mode="constant"
-    )
+    powder_dataset.compute_baseline(first_stage="sym6", wavelet="qshift3", mode="constant")
     eq = powder_dataset.powder_eq(bgr=True)
     assert eq.shape == powder_dataset.px_radius.shape
 

@@ -7,11 +7,9 @@ from functools import lru_cache
 
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
-from pyqtgraph import PlotWidget, mkBrush, mkPen, TextItem
-
-from skued import spectrum_colors, exponential
-
+from pyqtgraph import PlotWidget, TextItem, mkBrush, mkPen
 from scipy.optimize import curve_fit
+from skued import exponential, spectrum_colors
 
 
 @lru_cache(maxsize=1)
@@ -62,19 +60,13 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         self.symbol_size_widget.setPrefix("Symbol size: ")
         self.symbol_size_widget.valueChanged.connect(self.set_symbol_size)
 
-        self.absolute_intensity_widget = QtWidgets.QCheckBox(
-            "Show absolute intensity", self
-        )
+        self.absolute_intensity_widget = QtWidgets.QCheckBox("Show absolute intensity", self)
         self.absolute_intensity_widget.toggled.connect(self.toggle_absolute_intensity)
 
-        self.exponential_fit_widget = QtWidgets.QPushButton(
-            "Calculate exponential decay", self
-        )
+        self.exponential_fit_widget = QtWidgets.QPushButton("Calculate exponential decay", self)
         self.exponential_fit_widget.clicked.connect(self.fit_exponential_decay)
 
-        self.export_timeseries_widget = QtWidgets.QPushButton(
-            "Export time-series data", self
-        )
+        self.export_timeseries_widget = QtWidgets.QPushButton("Export time-series data", self)
         self.export_timeseries_widget.clicked.connect(self.export_timeseries)
 
         self.fit_constants_label = QtWidgets.QLabel(self)
@@ -132,8 +124,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
         intensity = (
             self._last_intensities_abs
             if absolute
-            else self._last_intensities_abs
-            / np.mean(self._last_intensities_abs[self._last_norm_mask])
+            else self._last_intensities_abs / np.mean(self._last_intensities_abs[self._last_norm_mask])
         )
 
         # Only compute the colors if number of time-points changes or first time
@@ -191,9 +182,7 @@ class TimeSeriesWidget(QtWidgets.QWidget):
             return QtWidgets.QMessageBox.warning("No time-series to export.")
 
         file_dialog = QtWidgets.QFileDialog()
-        path = file_dialog.getSaveFileName(
-            parent=self, caption="Export time-series data", filter="*.csv"
-        )[0]
+        path = file_dialog.getSaveFileName(parent=self, caption="Export time-series data", filter="*.csv")[0]
         if not path:
             return
 

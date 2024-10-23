@@ -2,17 +2,18 @@
 """
 Controller object to handle DiffractionDataset objects
 """
+import logging
 import traceback
 import warnings
 from contextlib import suppress
 from functools import wraps
 from shutil import copy2
 from types import FunctionType
-import logging
 
 import numpy as np
 from PyQt5 import QtCore
-from skued import bragg_peaks, DiskSelection
+from skued import DiskSelection, bragg_peaks
+
 from .. import AbstractRawDataset, DiffractionDataset, PowderDiffractionDataset
 from .qlogger import QLogger
 
@@ -205,9 +206,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         """
         timedelay = self.raw_dataset.time_points[timedelay_index]
         self.raw_data_signal.emit(self.raw_dataset.raw_data(timedelay, scan, bgr=True))
-        self.status_message_signal.emit(
-            f"Displaying data at {timedelay:.3f}ps, scan {scan:d}."
-        )
+        self.status_message_signal.emit(f"Displaying data at {timedelay:.3f}ps, scan {scan:d}.")
 
     @QtCore.pyqtSlot(int)
     @QtCore.pyqtSlot(int, bool)
@@ -259,9 +258,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         # is loaded
         self.powder_data_signal.emit(
             self.dataset.scattering_vector,
-            self.dataset.powder_data(
-                timedelay=None, relative=self._relative_powder, bgr=self._bgr_powder
-            ),
+            self.dataset.powder_data(timedelay=None, relative=self._relative_powder, bgr=self._bgr_powder),
         )
 
     @QtCore.pyqtSlot()
@@ -336,9 +333,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         qmin, qmax : float
             Lower- and upper-bounds of integration.
         """
-        time_series = self.dataset.powder_time_series(
-            rmin=qmin, rmax=qmax, bgr=self._bgr_powder, units="momentum"
-        )
+        time_series = self.dataset.powder_time_series(rmin=qmin, rmax=qmax, bgr=self._bgr_powder, units="momentum")
         self.powder_time_series_signal.emit(self.dataset.time_points, time_series)
 
     @QtCore.pyqtSlot(tuple)
@@ -356,12 +351,8 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
 
         # Note that the containers have been initialized when the dataset was loaded
         # Therefore, no error checking required.
-        integrated = self.dataset.time_series(
-            rect, out=self._average_time_series_container
-        )
-        self.time_series_signal.emit(
-            self.dataset.time_points, self._average_time_series_container
-        )
+        integrated = self.dataset.time_series(rect, out=self._average_time_series_container)
+        self.time_series_signal.emit(self.dataset.time_points, self._average_time_series_container)
 
     @QtCore.pyqtSlot(dict)
     def powder_calq(self, params):
@@ -409,9 +400,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             region = current_view[r1:r2, c1:c2]
             try:
                 true_peak_idx_local = np.where(region == region.max())
-                true_peak_idx_global = np.where(
-                    current_view == region[true_peak_idx_local]
-                )
+                true_peak_idx_global = np.where(current_view == region[true_peak_idx_local])
                 new_r, new_c = true_peak_idx_global[0][0], true_peak_idx_global[1][0]
             except:
                 if idx != 0:
@@ -438,10 +427,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         for r in self.__voronoi_regions:
             if not r.is_inf:
                 verts = np.array(r.vertices).reshape(-1, 2)
-                COND1 = np.all(
-                    np.sqrt(np.sum(verts**2, axis=1))
-                    < int(0.95 * current_view.shape[0])
-                )
+                COND1 = np.all(np.sqrt(np.sum(verts**2, axis=1)) < int(0.95 * current_view.shape[0]))
                 COND2 = verts.shape[0] == symmetry
                 if COND1 and COND2:
                     r.add_visible_vertex(verts)
@@ -543,9 +529,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             Class to use during the loading.
         """
         if cls not in AbstractRawDataset.implementations:
-            raise ValueError(
-                f"Expected a proper subclass of AbstractRawDataset, but received {cls}"
-            )
+            raise ValueError(f"Expected a proper subclass of AbstractRawDataset, but received {cls}")
 
         if not path:
             return
@@ -617,9 +601,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
             shape=self.dataset.resolution,
             dtype=self.dataset.diffraction_group["intensity"].dtype,
         )
-        self._average_time_series_container = np.empty(
-            shape=self.dataset.time_points.shape, dtype=float
-        )
+        self._average_time_series_container = np.empty(shape=self.dataset.time_points.shape, dtype=float)
 
         self.processed_dataset_loaded_signal.emit(True)
         self.powder_dataset_loaded_signal.emit(is_powder)
@@ -677,9 +659,7 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         self.worker.results_signal.connect(self.load_dataset)
         self.worker.in_progress_signal.connect(self.processing_data_signal)
         self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.done_signal.connect(
-            lambda: self.processing_progress_signal.emit(100)
-        )
+        self.worker.done_signal.connect(lambda: self.processing_progress_signal.emit(100))
         self.processing_progress_signal.emit(0)
         self.worker.start()
 
@@ -693,17 +673,13 @@ class IrisController(QtCore.QObject, metaclass=ErrorAware):
         info_dict : dict
             Data reduction parameters are passed to ``DiffractionDataset.from_raw``
         """
-        info_dict.update(
-            {"callback": self.processing_progress_signal.emit, "raw": self.raw_dataset}
-        )
+        info_dict.update({"callback": self.processing_progress_signal.emit, "raw": self.raw_dataset})
 
         self.worker = WorkThread(function=process, kwargs=info_dict)
         self.worker.results_signal.connect(self.load_dataset)
         self.worker.in_progress_signal.connect(self.processing_data_signal)
         self.worker.in_progress_signal.connect(self.operation_in_progress)
-        self.worker.done_signal.connect(
-            lambda: self.processing_progress_signal.emit(100)
-        )
+        self.worker.done_signal.connect(lambda: self.processing_progress_signal.emit(100))
         self.processing_progress_signal.emit(0)
         self.worker.start()
 

@@ -5,15 +5,15 @@ This script creates a fresh Python environment and create an installer.
 Inspired from the Spyder installer script:
 https://github.com/spyder-ide/spyder/tree/master/installers/Windows
 """
-from pathlib import Path
-import sys
-import subprocess
-from functools import wraps
-import logging
-import tempfile
-import importlib.util as iutil
-import shutil
 import argparse
+import importlib.util as iutil
+import logging
+import shutil
+import subprocess
+import sys
+import tempfile
+from functools import wraps
+from pathlib import Path
 
 logging.basicConfig(encoding="utf-8", level=logging.INFO)
 
@@ -45,9 +45,7 @@ installer_name={installer_name}
 directory=build/nsis/
 """
 
-parser = argparse.ArgumentParser(
-    prog="build.py", description="Iris Windows installer build script."
-)
+parser = argparse.ArgumentParser(prog="build.py", description="Iris Windows installer build script.")
 parser.add_argument(
     "exe_name",
     metavar="TARGET",
@@ -108,22 +106,14 @@ def generate_pynsist_config(python_exe, filename, exe_name):
     freeze = check_output(f"{python_exe} -m pip freeze --all").decode("latin1")
     # PyQt5/PyQt5-sip requirements are baked in the template string
     requirements = [
-        line
-        for line in freeze.splitlines()
-        if package_name(line) not in {"iris-ued", "PyQt5", "PyQt5-sip"}
+        line for line in freeze.splitlines() if package_name(line) not in {"iris-ued", "PyQt5", "PyQt5-sip"}
     ]
     packages = [package_name(p) for p in requirements]
 
-    python_version = (
-        check_output(f"{env_python} --version").decode("latin1").split(" ")[-1].strip()
-    )
+    python_version = check_output(f"{env_python} --version").decode("latin1").split(" ")[-1].strip()
 
-    iris_version = check_output(
-        f'{python_exe} -c "import iris; print(iris.__version__)"'
-    ).decode("latin1")
-    iris_authors = check_output(
-        f'{python_exe} -c "import iris; print(iris.__author__)"'
-    ).decode("latin1")
+    iris_version = check_output(f'{python_exe} -c "import iris; print(iris.__version__)"').decode("latin1")
+    iris_authors = check_output(f'{python_exe} -c "import iris; print(iris.__author__)"').decode("latin1")
 
     pynsist_cfg_payload = PYNSIST_CFG_TEMPLATE.format(
         version=iris_version,
@@ -153,14 +143,10 @@ if __name__ == "__main__":
         # Generating configuration file BEFORE installing pynsist ensures that
         # we bundle the requirements for iris
         cfg_path = work_dir / "pynsist.cfg"
-        generate_pynsist_config(
-            python_exe=env_python, filename=cfg_path, exe_name=exe_name
-        )
+        generate_pynsist_config(python_exe=env_python, filename=cfg_path, exe_name=exe_name)
         print(open(cfg_path, "rt").read())
 
-        run(
-            f"{env_python} -m pip install -r {INSTALLER_REQUIREMENTS_FILE} --no-warn-script-location"
-        )
+        run(f"{env_python} -m pip install -r {INSTALLER_REQUIREMENTS_FILE} --no-warn-script-location")
 
         run(f"{env_python} -m nsist {cfg_path}")
 

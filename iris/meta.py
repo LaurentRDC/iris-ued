@@ -9,9 +9,7 @@ from contextlib import suppress
 def subclasses(cls):
     """Return a set of subclasses of ``cls``, including sub-subclasses and so on."""
     direct_subclasses = set(cls.__subclasses__())
-    return direct_subclasses.union(
-        {s for c in direct_subclasses for s in subclasses(c)}
-    )
+    return direct_subclasses.union({s for c in direct_subclasses for s in subclasses(c)})
 
 
 class MetaRawDataset(ABCMeta):
@@ -36,9 +34,7 @@ class MetaRawDataset(ABCMeta):
         # Only metadata defined via the ExperimentalParameter descriptor will appear in
         # instance.metadata
         local_valid_metadata = {
-            name
-            for name, parameter in cls.__dict__.items()
-            if isinstance(parameter, ExperimentalParameter)
+            name for name, parameter in cls.__dict__.items() if isinstance(parameter, ExperimentalParameter)
         }
         cls.valid_metadata = cls.valid_metadata.union(local_valid_metadata)
 
@@ -74,9 +70,7 @@ class MetaHDF5Dataset(ABCMeta):
         # Only metadata defined via the ExperimentalParameter descriptor will appear in
         # instance.metadata
         local_valid_metadata = {
-            name
-            for name, parameter in cls.__dict__.items()
-            if isinstance(parameter, HDF5ExperimentalParameter)
+            name for name, parameter in cls.__dict__.items() if isinstance(parameter, HDF5ExperimentalParameter)
         }
         cls.valid_metadata = cls.valid_metadata.union(local_valid_metadata)
 
@@ -143,9 +137,7 @@ class HDF5ExperimentalParameter(ExperimentalParameter):
     """
 
     def __get__(self, instance, cls):
-        value = instance.experimental_parameters_group.attrs.get(
-            self.name, default=self.default
-        )
+        value = instance.experimental_parameters_group.attrs.get(self.name, default=self.default)
         return self.type(value) if value is not None else None
 
     def __set__(self, instance, value):

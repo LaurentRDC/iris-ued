@@ -3,8 +3,8 @@
 import argparse
 import sys
 import webbrowser
-from pathlib import Path
 from multiprocessing import freeze_support
+from pathlib import Path
 
 from iris import __version__
 from iris.gui import run
@@ -24,17 +24,13 @@ DOCS_HELP = """Open online documentation in your default web browser."""
 parser = argparse.ArgumentParser(prog="iris", description=DESCRIPTION, epilog=EPILOG)
 parser.add_argument("-v", "--version", action="version", version=__version__)
 
-subparsers = parser.add_subparsers(
-    title="Subcommands", help="Available sub-commands", dest="subcmd"
-)
+subparsers = parser.add_subparsers(title="Subcommands", help="Available sub-commands", dest="subcmd")
 
 # Parser to open a path
 # To facilitate format determination, we need flags specifying whether the
 # path points to a raw, compact, or reduced dataset
 open_parser = subparsers.add_parser("open", help=OPEN_HELP)
-open_parser.add_argument(
-    "path", help="Path to the dataset", type=Path, nargs="?", default=None
-)
+open_parser.add_argument("path", help="Path to the dataset", type=Path, nargs="?", default=None)
 dset_modes = open_parser.add_mutually_exclusive_group(required=True)
 dset_modes.add_argument(
     "--raw",

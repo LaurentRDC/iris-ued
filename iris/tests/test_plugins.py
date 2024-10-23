@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
+import io
+from contextlib import redirect_stdout
 from pathlib import Path
 from tempfile import gettempdir
-from contextlib import redirect_stdout
-import io
 
-from iris import load_plugin, AbstractRawDataset, DiffractionDataset
+from iris import AbstractRawDataset, DiffractionDataset, load_plugin
 
 TEST_PLUGIN_PATH = Path(__file__).parent / "plugin_fixture.py"
 BROKEN_PLUGIN_PATH = Path(__file__).parent / "broken_plugin.py"

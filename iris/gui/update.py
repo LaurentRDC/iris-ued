@@ -7,8 +7,8 @@ import json
 from urllib.error import URLError
 from urllib.request import urlopen
 
-from PyQt5 import QtCore
 from packaging.version import Version
+from PyQt5 import QtCore
 
 from .. import __version__
 

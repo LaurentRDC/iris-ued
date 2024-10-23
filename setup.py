@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*
-from glob import glob
 import os
 import re
+from glob import glob
 from pathlib import Path
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 # To upload to pypi.org:
 #   >>> python setup.py sdist
@@ -20,12 +21,8 @@ BASE_PACKAGE = "iris"
 base_path = Path(__file__).parent
 with open(base_path / BASE_PACKAGE / "__init__.py") as f:
     module_content = f.read()
-    VERSION = (
-        re.compile(r".*__version__ = \"(.*?)\"", re.S).match(module_content).group(1)
-    )
-    LICENSE = (
-        re.compile(r".*__license__ = \"(.*?)\"", re.S).match(module_content).group(1)
-    )
+    VERSION = re.compile(r".*__version__ = \"(.*?)\"", re.S).match(module_content).group(1)
+    LICENSE = re.compile(r".*__license__ = \"(.*?)\"", re.S).match(module_content).group(1)
 
 with open("README.md") as f:
     README = f.read()
@@ -34,10 +31,7 @@ with open("requirements.txt") as f:
     REQUIREMENTS = [line for line in f.read().split("\n") if len(line.strip())]
 
 exclude = {"exclude": ["docs", "*cache"]}
-PACKAGES = [
-    BASE_PACKAGE + "." + x
-    for x in find_packages(str(base_path / BASE_PACKAGE), **exclude)
-]
+PACKAGES = [BASE_PACKAGE + "." + x for x in find_packages(str(base_path / BASE_PACKAGE), **exclude)]
 if BASE_PACKAGE not in PACKAGES:
     PACKAGES.append(BASE_PACKAGE)
 

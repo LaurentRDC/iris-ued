@@ -6,10 +6,10 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets
 from skued import autocenter
+
 from .controller import WorkThread
 from .qbusyindicator import QBusyIndicator
 from .symmetrize_dialog import CircleROIWithCenter
-
 
 normalize_help = """ If checked, all powder patterns will be normalized to their overall intensity.
 This can get rid of systematic offsets between patterns at different time-delay. """
@@ -75,9 +75,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
 
         self.autocenter_btn = QtWidgets.QPushButton("Autocenter", self)
         self.autocenter_btn.clicked.connect(self.initiate_autocenter)
-        self.autocenter_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.autocenter_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.busy_indicator = QBusyIndicator(parent=self)
         autocenter_layout = QtWidgets.QHBoxLayout()
         autocenter_layout.addWidget(self.autocenter_btn)
@@ -89,9 +87,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.min_angular_bound_widget.setValue(0)
         self.min_angular_bound_widget.setSuffix(" deg")
         self.min_angular_bound_widget.setEnabled(False)
-        self.partial_circle_btn.toggled.connect(
-            self.min_angular_bound_widget.setEnabled
-        )
+        self.partial_circle_btn.toggled.connect(self.min_angular_bound_widget.setEnabled)
 
         self.max_angular_bound_widget = QtWidgets.QDoubleSpinBox(parent=self)
         self.max_angular_bound_widget.setRange(0, 360)
@@ -99,16 +95,10 @@ class AngularAverageDialog(QtWidgets.QDialog):
         self.max_angular_bound_widget.setValue(360)
         self.max_angular_bound_widget.setSuffix(" deg")
         self.max_angular_bound_widget.setEnabled(False)
-        self.partial_circle_btn.toggled.connect(
-            self.max_angular_bound_widget.setEnabled
-        )
+        self.partial_circle_btn.toggled.connect(self.max_angular_bound_widget.setEnabled)
 
-        self.min_angular_bound_widget.valueChanged.connect(
-            self.max_angular_bound_widget.setMinimum
-        )
-        self.max_angular_bound_widget.valueChanged.connect(
-            self.min_angular_bound_widget.setMaximum
-        )
+        self.min_angular_bound_widget.valueChanged.connect(self.max_angular_bound_widget.setMinimum)
+        self.max_angular_bound_widget.valueChanged.connect(self.min_angular_bound_widget.setMaximum)
 
         self.normalize_widget = QtWidgets.QCheckBox("Normalize (?)", self)
         self.normalize_widget.setChecked(False)
@@ -135,9 +125,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
         params_widget.setLayout(params_layout)
         params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
         params_widget.setFrameShape(QtWidgets.QFrame.Panel)
-        params_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         right_layout = QtWidgets.QVBoxLayout()
         right_layout.addWidget(params_widget)
@@ -175,9 +163,7 @@ class AngularAverageDialog(QtWidgets.QDialog):
     def initiate_autocenter(self):
         """Automatically determine the center of an image
         and move the center-finder accordingly"""
-        self._worker = AutocenteringThread(
-            function=autocenter, kwargs=dict(im=self._image, mask=self._mask)
-        )
+        self._worker = AutocenteringThread(function=autocenter, kwargs=dict(im=self._image, mask=self._mask))
         self._worker.results_signal.connect(self.set_center)
         self._worker.in_progress_signal.connect(self.busy_indicator.toggle_animation)
         self._worker.in_progress_signal.connect(self.autocenter_btn.setDisabled)

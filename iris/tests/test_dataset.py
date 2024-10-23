@@ -7,11 +7,10 @@ from tempfile import gettempdir
 import numpy as np
 import pytest
 from flaky import flaky
-from numpy.random import random
-from skued import (ArbitrarySelection, DiskSelection, RectSelection, RingSelection, nfold)
-
 from iris import DiffractionDataset
 from iris.dataset import SWMR_AVAILABLE
+from numpy.random import random
+from skued import ArbitrarySelection, DiskSelection, RectSelection, RingSelection, nfold
 
 from . import TestRawDataset
 
@@ -35,33 +34,23 @@ def test_creation_from_raw_default(fname):
     raw = TestRawDataset()
 
     with DiffractionDataset.from_raw(raw, filename=fname, mode="w") as dataset:
-        assert dataset.diffraction_group["intensity"].shape == raw.resolution + (
-            len(raw.time_points),
-        )
+        assert dataset.diffraction_group["intensity"].shape == raw.resolution + (len(raw.time_points),)
 
 
 def test_creation_from_raw_alignment(fname):
     """Test that DiffractionDataset.from_raw(..., align = True) does not throw any errors"""
     raw = TestRawDataset()
 
-    with DiffractionDataset.from_raw(
-        raw, filename=fname, align=True, mode="w"
-    ) as dataset:
-        assert dataset.diffraction_group["intensity"].shape == raw.resolution + (
-            len(raw.time_points),
-        )
+    with DiffractionDataset.from_raw(raw, filename=fname, align=True, mode="w") as dataset:
+        assert dataset.diffraction_group["intensity"].shape == raw.resolution + (len(raw.time_points),)
 
 
 def test_creation_from_raw_multiprocess(fname):
     """Test that DiffractionDataset.from_raw(..., processes = 2) does not throw any errors"""
     raw = TestRawDataset()
 
-    with DiffractionDataset.from_raw(
-        raw, filename=fname, align=False, processes=2, mode="w"
-    ) as dataset:
-        assert dataset.diffraction_group["intensity"].shape == raw.resolution + (
-            len(raw.time_points),
-        )
+    with DiffractionDataset.from_raw(raw, filename=fname, align=False, processes=2, mode="w") as dataset:
+        assert dataset.diffraction_group["intensity"].shape == raw.resolution + (len(raw.time_points),)
 
 
 def test_creation_from_collection(fname):
@@ -207,9 +196,7 @@ def test_symmetrization(dataset):
     before = np.array(dataset.diffraction_group["intensity"])
     symmetrized = np.array(before, copy=True)
     for index, _ in enumerate(dataset.time_points):
-        symmetrized[:, :, index] = nfold(
-            before[:, :, index], mod=3, center=(63, 65), mask=dataset.valid_mask
-        )
+        symmetrized[:, :, index] = nfold(before[:, :, index], mod=3, center=(63, 65), mask=dataset.valid_mask)
 
     dataset.symmetrize(mod=3, center=(63, 65))
     after = np.array(dataset.diffraction_group["intensity"])
@@ -224,9 +211,7 @@ def test_symmetrization_parallel(dataset):
     before = np.array(dataset.diffraction_group["intensity"])
     symmetrized = np.array(before, copy=True)
     for index, _ in enumerate(dataset.time_points):
-        symmetrized[:, :, index] = nfold(
-            before[:, :, index], mod=3, center=(63, 65), mask=dataset.valid_mask
-        )
+        symmetrized[:, :, index] = nfold(before[:, :, index], mod=3, center=(63, 65), mask=dataset.valid_mask)
 
     dataset.symmetrize(mod=3, center=(63, 65), processes=2)
     after = np.array(dataset.diffraction_group["intensity"])
@@ -334,9 +319,7 @@ def test_selection_disk_nonrelative(dataset):
 
 def test_selection_ring(dataset):
     """Test DiffractionDataset.time_series_selection with DiffractionDataset.selection_ring"""
-    selection = RingSelection(
-        dataset.resolution, center=(120, 200), inner_radius=10, outer_radius=20
-    )
+    selection = RingSelection(dataset.resolution, center=(120, 200), inner_radius=10, outer_radius=20)
 
     # We modify the dataset so that within the selection, only zeroes are found
     # Note that HDF5 does not support fancy boolean indexing, so we must change the
@@ -352,9 +335,7 @@ def test_selection_ring(dataset):
 
 def test_selection_ring_relative(dataset):
     """Test relative DiffractionDataset.time_series_selection with DiffractionDataset.selection_ring"""
-    selection = RingSelection(
-        dataset.resolution, center=(120, 200), inner_radius=10, outer_radius=20
-    )
+    selection = RingSelection(dataset.resolution, center=(120, 200), inner_radius=10, outer_radius=20)
 
     for index, _ in enumerate(dataset.time_points):
         arr = dataset.diffraction_group["intensity"][:, :, index]

@@ -7,10 +7,9 @@ from os.path import dirname, join
 from pathlib import Path
 
 import pyqtgraph as pg
+import qdarkstyle
 from PyQt5 import QtCore, QtGui, QtWidgets
 from skued import diffread
-
-import qdarkstyle
 
 # Get all proper subclasses of AbstractRawDataset
 # to build a loading menu
@@ -62,34 +61,22 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
         self.controls = ControlBar(parent=self)
         self.controls.raw_data_request.connect(self.controller.display_raw_data)
-        self.controls.averaged_data_request.connect(
-            self.controller.display_averaged_data
-        )
-        self.controls.baseline_computation_parameters.connect(
-            self.controller.compute_baseline
-        )
+        self.controls.averaged_data_request.connect(self.controller.display_averaged_data)
+        self.controls.baseline_computation_parameters.connect(self.controller.compute_baseline)
         self.controls.notes_updated.connect(self.controller.set_dataset_notes)
         self.controls.time_zero_shift.connect(self.controller.set_time_zero_shift)
-        self.controls.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.MinimumExpanding
-        )
+        self.controls.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.MinimumExpanding)
 
         self.controller.raw_dataset_loaded_signal.connect(
             lambda b: self.viewer_stack.setCurrentWidget(self.raw_data_viewer)
         )
-        self.controller.raw_dataset_loaded_signal.connect(
-            self.controls.raw_dataset_controls.setVisible
-        )
+        self.controller.raw_dataset_loaded_signal.connect(self.controls.raw_dataset_controls.setVisible)
 
         self.controller.processed_dataset_loaded_signal.connect(
             lambda b: self.viewer_stack.setCurrentWidget(self.processed_viewer)
         )
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.controls.diffraction_dataset_controls.setVisible
-        )
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.controls.metadata_and_notes_widget.setVisible
-        )
+        self.controller.processed_dataset_loaded_signal.connect(self.controls.diffraction_dataset_controls.setVisible)
+        self.controller.processed_dataset_loaded_signal.connect(self.controls.metadata_and_notes_widget.setVisible)
 
         self.controller.powder_dataset_loaded_signal.connect(
             lambda b: self.viewer_stack.setCurrentWidget(self.powder_viewer)
@@ -98,16 +85,12 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self.controls.powder_diffraction_dataset_controls.setVisible
         )
 
-        self.controller.raw_dataset_metadata.connect(
-            self.controls.update_raw_dataset_metadata
-        )
+        self.controller.raw_dataset_metadata.connect(self.controls.update_raw_dataset_metadata)
         self.controller.dataset_metadata.connect(self.controls.update_dataset_metadata)
 
         # Progress bar --------------------------------------------------------
         self.progress_bar = QtWidgets.QProgressBar(self)
-        self.progress_bar.setSizePolicy(
-            QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Maximum
-        )
+        self.progress_bar.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Maximum)
         self.progress_bar.setVisible(False)
         self.controller.processing_data_signal.connect(self.progress_bar.setVisible)
 
@@ -119,9 +102,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # Operation in progress widget
         # Including custom 'busy' indicator
         status_bar = QtWidgets.QStatusBar(parent=self)
-        self.controller.status_message_signal.connect(
-            lambda msg: status_bar.showMessage(msg, 20_000)
-        )
+        self.controller.status_message_signal.connect(lambda msg: status_bar.showMessage(msg, 20_000))
         self.setStatusBar(status_bar)
 
         # Progress bar added to status bar ------------------------------------
@@ -136,33 +117,21 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.raw_data_viewer = pg.ImageView(parent=self, name="Raw data")
         self.raw_data_viewer.resize(self.raw_data_viewer.maximumSize())
         self.controller.raw_data_signal.connect(
-            lambda obj: self.raw_data_viewer.clear()
-            if obj is None
-            else self.raw_data_viewer.setImage(obj, autoLevels=False)
+            lambda obj: (
+                self.raw_data_viewer.clear() if obj is None else self.raw_data_viewer.setImage(obj, autoLevels=False)
+            )
         )
 
         self.processed_viewer = ProcessedDataViewer(parent=self)
-        self.processed_viewer.timeseries_rect_signal.connect(
-            self.controller.time_series
-        )
+        self.processed_viewer.timeseries_rect_signal.connect(self.controller.time_series)
         self.controller.averaged_data_signal.connect(self.processed_viewer.display)
-        self.controller.time_series_signal.connect(
-            self.processed_viewer.display_peak_dynamics
-        )
-        self.controller.bragg_peaks_signal.connect(
-            self.processed_viewer.display_bragg_peaks
-        )
+        self.controller.time_series_signal.connect(self.processed_viewer.display_peak_dynamics)
+        self.controller.bragg_peaks_signal.connect(self.processed_viewer.display_bragg_peaks)
 
         self.powder_viewer = PowderViewer(parent=self)
-        self.powder_viewer.peak_dynamics_roi_signal.connect(
-            self.controller.powder_time_series
-        )
-        self.controller.powder_data_signal.connect(
-            self.powder_viewer.display_powder_data
-        )
-        self.controller.powder_time_series_signal.connect(
-            self.powder_viewer.display_peak_dynamics
-        )
+        self.powder_viewer.peak_dynamics_roi_signal.connect(self.controller.powder_time_series)
+        self.controller.powder_data_signal.connect(self.powder_viewer.display_powder_data)
+        self.controller.powder_time_series_signal.connect(self.powder_viewer.display_peak_dynamics)
         # UI components
         self.controller.error_message_signal.connect(self.show_error_message)
         self.error_message_signal.connect(self.show_error_message)
@@ -177,15 +146,11 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.viewer_stack.addTab(self.processed_viewer, "View processed dataset")
         self.viewer_stack.addTab(self.powder_viewer, "View azimuthal averages")
 
-        self.controller.raw_dataset_loaded_signal.connect(
-            lambda toggle: self.viewer_stack.setTabEnabled(0, toggle)
-        )
+        self.controller.raw_dataset_loaded_signal.connect(lambda toggle: self.viewer_stack.setTabEnabled(0, toggle))
         self.controller.processed_dataset_loaded_signal.connect(
             lambda toggle: self.viewer_stack.setTabEnabled(1, toggle)
         )
-        self.controller.powder_dataset_loaded_signal.connect(
-            lambda toggle: self.viewer_stack.setTabEnabled(2, toggle)
-        )
+        self.controller.powder_dataset_loaded_signal.connect(lambda toggle: self.viewer_stack.setTabEnabled(2, toggle))
 
         ###################
         # Actions
@@ -213,25 +178,17 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         self.close_raw_dataset_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")), "& Close raw dataset", self
         )
-        self.close_raw_dataset_action.triggered.connect(
-            self.controller.close_raw_dataset
-        )
+        self.close_raw_dataset_action.triggered.connect(self.controller.close_raw_dataset)
         self.close_raw_dataset_action.setEnabled(False)
-        self.controller.raw_dataset_loaded_signal.connect(
-            self.close_raw_dataset_action.setEnabled
-        )
+        self.controller.raw_dataset_loaded_signal.connect(self.close_raw_dataset_action.setEnabled)
 
         self.close_dataset_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "locator.png")), "& Close dataset", self
         )
         self.close_dataset_action.triggered.connect(self.controller.close_dataset)
         self.close_dataset_action.setEnabled(False)
-        self.controller.powder_dataset_loaded_signal.connect(
-            self.close_dataset_action.setEnabled
-        )
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.close_dataset_action.setEnabled
-        )
+        self.controller.powder_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
+        self.controller.processed_dataset_loaded_signal.connect(self.close_dataset_action.setEnabled)
 
         self.file_menu.addAction(self.load_dataset_action)
         self.file_menu.addAction(self.load_single_picture_action)
@@ -253,18 +210,14 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             QtGui.QIcon(join(IMAGE_FOLDER, "eye.png")), "& Open plug-in directory", self
         )
         self.open_plugin_directory_action.triggered.connect(
-            lambda: QtGui.QDesktopServices.openUrl(
-                QtCore.QUrl("file:///" + str(PLUGIN_DIR), QtCore.QUrl.TolerantMode)
-            )
+            lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("file:///" + str(PLUGIN_DIR), QtCore.QUrl.TolerantMode))
         )
 
         self.howto_write_plugin_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "revert.png")), "& Writing a plug-in", self
         )
         self.howto_write_plugin_action.triggered.connect(
-            lambda: QtGui.QDesktopServices.openUrl(
-                QtCore.QUrl("http://iris-ued.readthedocs.io/en/master/plugins.html")
-            )
+            lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://iris-ued.readthedocs.io/en/master/plugins.html"))
         )
 
         self.plugin_menu = self.menu_bar.addMenu("Plug-ins")
@@ -279,41 +232,29 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")), "& Process raw data", self
         )
         self.processing_action.triggered.connect(self.launch_processsing_dialog)
-        self.controller.raw_dataset_loaded_signal.connect(
-            self.processing_action.setEnabled
-        )
+        self.controller.raw_dataset_loaded_signal.connect(self.processing_action.setEnabled)
 
         self.symmetrize_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")), "& Symmetrize data", self
         )
         self.symmetrize_action.triggered.connect(self.launch_symmetrize_dialog)
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.symmetrize_action.setEnabled
-        )
+        self.controller.processed_dataset_loaded_signal.connect(self.symmetrize_action.setEnabled)
 
         self.calculate_azimuthal_averages_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")),
             "& Calculate azimuthal averages",
             self,
         )
-        self.calculate_azimuthal_averages_action.triggered.connect(
-            self.launch_calculate_azimuthal_averages_dialog
-        )
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.calculate_azimuthal_averages_action.setEnabled
-        )
+        self.calculate_azimuthal_averages_action.triggered.connect(self.launch_calculate_azimuthal_averages_dialog)
+        self.controller.processed_dataset_loaded_signal.connect(self.calculate_azimuthal_averages_action.setEnabled)
 
         self.calculate_bragg_peaks_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")),
             "& Calculate Bragg peaks",
             self,
         )
-        self.calculate_bragg_peaks_action.triggered.connect(
-            self.launch_calculate_bragg_peaks_dialog
-        )
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.calculate_bragg_peaks_action.setEnabled
-        )
+        self.calculate_bragg_peaks_action.triggered.connect(self.launch_calculate_bragg_peaks_dialog)
+        self.controller.processed_dataset_loaded_signal.connect(self.calculate_bragg_peaks_action.setEnabled)
 
         self.update_metadata_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "save.png")),
@@ -321,9 +262,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self,
         )
         self.update_metadata_action.triggered.connect(self.launch_metadata_edit_dialog)
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.update_metadata_action.setEnabled
-        )
+        self.controller.processed_dataset_loaded_signal.connect(self.update_metadata_action.setEnabled)
 
         self.calibrate_scattvector_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "analysis.png")),
@@ -331,152 +270,88 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self,
         )
         self.calibrate_scattvector_action.triggered.connect(self.launch_calq_dialog)
-        self.controller.powder_dataset_loaded_signal.connect(
-            self.calibrate_scattvector_action.setEnabled
-        )
+        self.controller.powder_dataset_loaded_signal.connect(self.calibrate_scattvector_action.setEnabled)
 
         self.diffraction_dataset_menu = self.menu_bar.addMenu("&Dataset")
         self.diffraction_dataset_menu.addAction(self.processing_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.update_metadata_action)
         self.diffraction_dataset_menu.addAction(self.symmetrize_action)
-        self.diffraction_dataset_menu.addAction(
-            self.calculate_azimuthal_averages_action
-        )
+        self.diffraction_dataset_menu.addAction(self.calculate_azimuthal_averages_action)
         self.diffraction_dataset_menu.addSeparator()
         self.diffraction_dataset_menu.addAction(self.calibrate_scattvector_action)
         self.diffraction_dataset_menu.addAction(self.calculate_bragg_peaks_action)
 
         ###################
         # Display options
-        self.toggle_controls_visibility_action = QtWidgets.QAction(
-            "& Show/hide controls", self
-        )
+        self.toggle_controls_visibility_action = QtWidgets.QAction("& Show/hide controls", self)
         self.toggle_controls_visibility_action.setCheckable(True)
         self.toggle_controls_visibility_action.setChecked(True)
         self.toggle_controls_visibility_action.toggled.connect(self.controls.setVisible)
-        self.show_diff_peak_dynamics_action = QtWidgets.QAction(
-            "& Show/hide peak dynamics", self
-        )
+        self.show_diff_peak_dynamics_action = QtWidgets.QAction("& Show/hide peak dynamics", self)
         self.show_diff_peak_dynamics_action.setCheckable(True)
-        self.show_diff_peak_dynamics_action.toggled.connect(
-            self.processed_viewer.toggle_peak_dynamics
-        )
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.show_diff_peak_dynamics_action.setEnabled
-        )
+        self.show_diff_peak_dynamics_action.toggled.connect(self.processed_viewer.toggle_peak_dynamics)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_peak_dynamics_action.setEnabled)
 
-        self.show_diff_peak_dynamics_bounds_action = QtWidgets.QAction(
-            "& Show/hide peak dynamics bounds", self
-        )
+        self.show_diff_peak_dynamics_bounds_action = QtWidgets.QAction("& Show/hide peak dynamics bounds", self)
         self.show_diff_peak_dynamics_bounds_action.setCheckable(True)
-        self.show_diff_peak_dynamics_bounds_action.toggled.connect(
-            self.processed_viewer.toggle_roi_bounds_text
-        )
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.show_diff_peak_dynamics_bounds_action.setEnabled
-        )
+        self.show_diff_peak_dynamics_bounds_action.toggled.connect(self.processed_viewer.toggle_roi_bounds_text)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_peak_dynamics_bounds_action.setEnabled)
 
-        self.show_diff_relative_action = QtWidgets.QAction(
-            "& Toggle relative dynamics", self
-        )
+        self.show_diff_relative_action = QtWidgets.QAction("& Toggle relative dynamics", self)
         self.show_diff_relative_action.setCheckable(True)
-        self.controller.relative_averaged_enable_signal.connect(
-            self.show_diff_relative_action.setChecked
-        )
-        self.show_diff_relative_action.toggled.connect(
-            self.controller.enable_averaged_relative
-        )
-        self.controller.processed_dataset_loaded_signal.connect(
-            self.show_diff_relative_action.setEnabled
-        )
+        self.controller.relative_averaged_enable_signal.connect(self.show_diff_relative_action.setChecked)
+        self.show_diff_relative_action.toggled.connect(self.controller.enable_averaged_relative)
+        self.controller.processed_dataset_loaded_signal.connect(self.show_diff_relative_action.setEnabled)
 
         self.show_bragg_peaks_action = QtWidgets.QAction("& Show Bragg peaks", self)
         self.show_bragg_peaks_action.setCheckable(True)
-        self.controller.bragg_peak_enable_signal.connect(
-            self.show_bragg_peaks_action.setChecked
-        )
+        self.controller.bragg_peak_enable_signal.connect(self.show_bragg_peaks_action.setChecked)
         self.show_bragg_peaks_action.toggled.connect(self.controller.enable_bragg)
-        self.controller.initially_run_bragg_signal.connect(
-            self.show_bragg_peaks_action.setEnabled
-        )
+        self.controller.initially_run_bragg_signal.connect(self.show_bragg_peaks_action.setEnabled)
         self.show_bragg_peaks_action.setEnabled(False)
 
         self.show_BZ_action = QtWidgets.QAction("& Show Brilluoin zones", self)
         self.show_BZ_action.setCheckable(True)
         self.controller.bz_enable_signal.connect(self.show_BZ_action.setChecked)
         self.show_BZ_action.toggled.connect(self.controller.enable_bz)
-        self.controller.initially_run_bragg_signal.connect(
-            self.show_BZ_action.setEnabled
-        )
+        self.controller.initially_run_bragg_signal.connect(self.show_BZ_action.setEnabled)
         self.show_BZ_action.setEnabled(False)
 
-        self.show_powder_relative_action = QtWidgets.QAction(
-            "& Toggle relative dynamics", self
-        )
+        self.show_powder_relative_action = QtWidgets.QAction("& Toggle relative dynamics", self)
         self.show_powder_relative_action.setCheckable(True)
-        self.controller.relative_powder_enable_signal.connect(
-            self.show_powder_relative_action.setChecked
-        )
-        self.show_powder_relative_action.toggled.connect(
-            self.controller.enable_powder_relative
-        )
-        self.controller.powder_dataset_loaded_signal.connect(
-            self.show_powder_relative_action.setEnabled
-        )
+        self.controller.relative_powder_enable_signal.connect(self.show_powder_relative_action.setChecked)
+        self.show_powder_relative_action.toggled.connect(self.controller.enable_powder_relative)
+        self.controller.powder_dataset_loaded_signal.connect(self.show_powder_relative_action.setEnabled)
 
-        self.toggle_powder_background_action = QtWidgets.QAction(
-            "& Remove baseline", self
-        )
+        self.toggle_powder_background_action = QtWidgets.QAction("& Remove baseline", self)
         self.toggle_powder_background_action.setCheckable(True)
-        self.controller.powder_bgr_enable_signal.connect(
-            self.toggle_powder_background_action.setChecked
-        )
-        self.toggle_powder_background_action.toggled.connect(
-            self.controller.powder_background_subtracted
-        )
-        self.controller.powder_dataset_loaded_signal.connect(
-            self.toggle_powder_background_action.setEnabled
-        )
+        self.controller.powder_bgr_enable_signal.connect(self.toggle_powder_background_action.setChecked)
+        self.toggle_powder_background_action.toggled.connect(self.controller.powder_background_subtracted)
+        self.controller.powder_dataset_loaded_signal.connect(self.toggle_powder_background_action.setEnabled)
 
         self.display_options_menu = self.menu_bar.addMenu("&Display")
         self.display_options_menu.addAction(self.toggle_controls_visibility_action)
         self.display_options_menu.addSeparator()
-        self.diffraction_dataset_display_options_menu = (
-            self.display_options_menu.addMenu("& Diffraction display options")
+        self.diffraction_dataset_display_options_menu = self.display_options_menu.addMenu(
+            "& Diffraction display options"
         )
         self.controller.processed_dataset_loaded_signal.connect(
             self.diffraction_dataset_display_options_menu.setEnabled
         )
 
-        self.powder_dataset_display_options_menu = self.display_options_menu.addMenu(
-            "& Powder display options"
-        )
-        self.controller.powder_dataset_loaded_signal.connect(
-            self.powder_dataset_display_options_menu.setEnabled
-        )
+        self.powder_dataset_display_options_menu = self.display_options_menu.addMenu("& Powder display options")
+        self.controller.powder_dataset_loaded_signal.connect(self.powder_dataset_display_options_menu.setEnabled)
 
         # Assemble submenus
-        self.diffraction_dataset_display_options_menu.addAction(
-            self.show_diff_peak_dynamics_action
-        )
-        self.diffraction_dataset_display_options_menu.addAction(
-            self.show_diff_peak_dynamics_bounds_action
-        )
-        self.diffraction_dataset_display_options_menu.addAction(
-            self.show_diff_relative_action
-        )
-        self.diffraction_dataset_display_options_menu.addAction(
-            self.show_bragg_peaks_action
-        )
+        self.diffraction_dataset_display_options_menu.addAction(self.show_diff_peak_dynamics_action)
+        self.diffraction_dataset_display_options_menu.addAction(self.show_diff_peak_dynamics_bounds_action)
+        self.diffraction_dataset_display_options_menu.addAction(self.show_diff_relative_action)
+        self.diffraction_dataset_display_options_menu.addAction(self.show_bragg_peaks_action)
         self.diffraction_dataset_display_options_menu.addAction(self.show_BZ_action)
 
-        self.powder_dataset_display_options_menu.addAction(
-            self.show_powder_relative_action
-        )
-        self.powder_dataset_display_options_menu.addAction(
-            self.toggle_powder_background_action
-        )
+        self.powder_dataset_display_options_menu.addAction(self.show_powder_relative_action)
+        self.powder_dataset_display_options_menu.addAction(self.toggle_powder_background_action)
 
         ###################
         # Helps and misc operations
@@ -489,9 +364,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self,
         )
         self.launch_documentation_action.triggered.connect(
-            lambda: QtGui.QDesktopServices.openUrl(
-                QtCore.QUrl("http://iris-ued.readthedocs.io/en/master/")
-            )
+            lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://iris-ued.readthedocs.io/en/master/"))
         )
 
         self.goto_repository_action = QtWidgets.QAction(
@@ -500,25 +373,19 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             self,
         )
         self.goto_repository_action.triggered.connect(
-            lambda: QtGui.QDesktopServices.openUrl(
-                QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/")
-            )
+            lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/"))
         )
 
         self.report_issue_action = QtWidgets.QAction(
             QtGui.QIcon(join(IMAGE_FOLDER, "revert.png")), "& Report issue", self
         )
         self.report_issue_action.triggered.connect(
-            lambda: QtGui.QDesktopServices.openUrl(
-                QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/issues/new")
-            )
+            lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/issues/new"))
         )
 
         self.open_log_directory_action = QtWidgets.QAction("& Open log directory", self)
         self.open_log_directory_action.triggered.connect(
-            lambda: QtGui.QDesktopServices.openUrl(
-                QtCore.QUrl("file:///" + str(LOG_DIRECTORY))
-            )
+            lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl("file:///" + str(LOG_DIRECTORY)))
         )
 
         # When iris starts, no knowledge if update is available
@@ -528,9 +395,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
                 QtCore.QUrl("https://github.com/LaurentRDC/iris-ued/releases/latest")
             )
         )
-        self.update_action.setEnabled(
-            False
-        )  # Signal to update this will be done in background
+        self.update_action.setEnabled(False)  # Signal to update this will be done in background
 
         self.help_menu = self.menu_bar.addMenu("&Help")
         self.help_menu.addAction(self.about_action)
@@ -579,9 +444,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         # Note: the update status signal is passed to the controller
         # so it can be logged as well.
         self.update_checker = UpdateChecker(parent=self)
-        self.update_checker.update_status_signal.connect(
-            self.controller.status_message_signal
-        )
+        self.update_checker.update_status_signal.connect(self.controller.status_message_signal)
         self.update_checker.update_available_signal.connect(self.update_available)
         self.update_checker.start()
 
@@ -597,9 +460,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             act.setEnabled(False)
             self.load_raw_submenu.addAction(act)
         else:
-            for rawdatacls in sorted(
-                AbstractRawDataset.implementations, key=lambda c: c.display_name
-            ):
+            for rawdatacls in sorted(AbstractRawDataset.implementations, key=lambda c: c.display_name):
                 self._create_load_raw(rawdatacls, self.load_raw_submenu)
 
     def _create_load_raw(self, cls, submenu):
@@ -620,17 +481,11 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot()
     def launch_processsing_dialog(self):
-        processing_dialog = ProcessingDialog(
-            parent=self, raw=self.controller.raw_dataset
-        )
+        processing_dialog = ProcessingDialog(parent=self, raw=self.controller.raw_dataset)
         processing_dialog.resize(0.75 * self.size())
-        processing_dialog.processing_parameters_signal.connect(
-            self.controller.process_raw_dataset
-        )
+        processing_dialog.processing_parameters_signal.connect(self.controller.process_raw_dataset)
         processing_dialog.exec_()
-        processing_dialog.processing_parameters_signal.disconnect(
-            self.controller.process_raw_dataset
-        )
+        processing_dialog.processing_parameters_signal.disconnect(self.controller.process_raw_dataset)
 
     @QtCore.pyqtSlot()
     def launch_calculate_bragg_peaks_dialog(self):
@@ -650,31 +505,21 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
     def launch_symmetrize_dialog(self):
         symmetrize_dialog = SymmetrizeDialog(
             parent=self,
-            image=self.controller.dataset.diff_data(
-                timedelay=self.controller.dataset.time_points[0]
-            ),
+            image=self.controller.dataset.diff_data(timedelay=self.controller.dataset.time_points[0]),
             mask=self.controller.dataset.valid_mask,
             center=self.controller.dataset.center,
         )
         symmetrize_dialog.resize(0.75 * self.size())
-        symmetrize_dialog.symmetrize_parameters_signal.connect(
-            self.controller.symmetrize
-        )
+        symmetrize_dialog.symmetrize_parameters_signal.connect(self.controller.symmetrize)
         symmetrize_dialog.exec_()
-        symmetrize_dialog.symmetrize_parameters_signal.disconnect(
-            self.controller.symmetrize
-        )
+        symmetrize_dialog.symmetrize_parameters_signal.disconnect(self.controller.symmetrize)
 
     @QtCore.pyqtSlot()
     def launch_metadata_edit_dialog(self):
-        metadata_dialog = MetadataEditDialog(
-            parent=self, config=self.controller.dataset.metadata
-        )
+        metadata_dialog = MetadataEditDialog(parent=self, config=self.controller.dataset.metadata)
         metadata_dialog.updated_metadata_signal.connect(self.controller.update_metadata)
         metadata_dialog.exec_()
-        metadata_dialog.updated_metadata_signal.disconnect(
-            self.controller.update_metadata
-        )
+        metadata_dialog.updated_metadata_signal.disconnect(self.controller.update_metadata)
 
     @QtCore.pyqtSlot()
     def launch_calculate_azimuthal_averages_dialog(self):
@@ -685,13 +530,9 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
             parent=self,
         )
         promote_dialog.resize(0.75 * self.size())
-        promote_dialog.angular_average_signal.connect(
-            self.controller.calculate_azimuthal_averages
-        )
+        promote_dialog.angular_average_signal.connect(self.controller.calculate_azimuthal_averages)
         promote_dialog.exec_()
-        promote_dialog.angular_average_signal.disconnect(
-            self.controller.calculate_azimuthal_averages
-        )
+        promote_dialog.angular_average_signal.disconnect(self.controller.calculate_azimuthal_averages)
 
     @QtCore.pyqtSlot()
     def launch_recompute_angular_average_dialog(self):
@@ -704,9 +545,7 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
         dialog.resize(0.75 * self.size())
         dialog.angular_average_signal.connect(self.controller.recompute_angular_average)
         dialog.exec_()
-        dialog.angular_average_signal.disconnect(
-            self.controller.recompute_angular_average
-        )
+        dialog.angular_average_signal.disconnect(self.controller.recompute_angular_average)
 
     @QtCore.pyqtSlot()
     def launch_calq_dialog(self):
@@ -729,18 +568,16 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
     @QtCore.pyqtSlot(object)
     def load_raw_dataset(self, cls):
-        path = self.file_dialog.getExistingDirectory(
-            parent=self, caption="Load raw dataset"
-        )
+        path = self.file_dialog.getExistingDirectory(parent=self, caption="Load raw dataset")
         if not path:
             return
         self.raw_dataset_path_signal.emit(path, cls)
 
     @QtCore.pyqtSlot()
     def load_dataset(self):
-        path = self.file_dialog.getOpenFileName(
-            parent=self, caption="Load dataset", filter="HDF5-files (*.h5 *.hdf5)"
-        )[0]
+        path = self.file_dialog.getOpenFileName(parent=self, caption="Load dataset", filter="HDF5-files (*.h5 *.hdf5)")[
+            0
+        ]
         if not path:
             return
         self.dataset_path_signal.emit(path)
@@ -800,11 +637,12 @@ class Iris(QtWidgets.QMainWindow, metaclass=ErrorAware):
 
 
 def make_about_string():
-    import h5py
     import sys
-    import skued
-    import pyqtgraph
+
+    import h5py
     import npstreams
+    import pyqtgraph
+    import skued
 
     python_version = "{}.{}.{}".format(*sys.version_info[:3])
 

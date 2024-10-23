@@ -4,8 +4,8 @@ Test plug-in
 ============
 """
 
-from iris import AbstractRawDataset, ExperimentalParameter
 import numpy as np
+from iris import AbstractRawDataset, ExperimentalParameter
 
 
 class TestRawDatasetPlugin(AbstractRawDataset):
@@ -23,9 +23,7 @@ class TestRawDatasetPlugin(AbstractRawDataset):
         # Metadata can be filled as a dictionary before
         # initialization. # Attributes which are not
         # ExperimentalParameters are ignored.
-        metadata.update(
-            {"temperature": 100, "exposure": 1, "this_will_be_ignored": True}
-        )
+        metadata.update({"temperature": 100, "exposure": 1, "this_will_be_ignored": True})
         super().__init__(source, metadata)
 
         self.time_points = tuple(range(0, 3))

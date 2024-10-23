@@ -16,6 +16,7 @@
 #
 import os
 import sys
+
 import matplotlib
 
 matplotlib.use("agg")  # required for Readthedocs
@@ -23,15 +24,16 @@ matplotlib.use("agg")  # required for Readthedocs
 currentpath = os.path.dirname(__file__)
 sys.path.append(os.path.join(currentpath, ".."))
 
-import iris
-
-# -- General configuration ------------------------------------------------
-
 # If your documentation needs a minimal Sphinx version, state it here.
 #
 # needs_sphinx = '1.5'
 from datetime import datetime
+
 import alabaster
+import iris
+
+# -- General configuration ------------------------------------------------
+
 
 year = datetime.now().year
 

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-
-from . import TestRawDataset
+import pytest
 from iris import AbstractRawDataset
 from iris.meta import ExperimentalParameter
-import pytest
+
+from . import TestRawDataset
 
 
 def test_raw_abstract_methods():
@@ -58,9 +58,7 @@ def test_raw_valid_metadata():
 def test_raw_init_metadata():
     """Test that metadata is recorded correctly inside __init__ and
     that invalid metadata is ignored."""
-    test_dataset = TestRawDataset(
-        metadata={"test": 5, "fluence": -2, "random_attr": None}
-    )
+    test_dataset = TestRawDataset(metadata={"test": 5, "fluence": -2, "random_attr": None})
     assert test_dataset.test == 5
     assert test_dataset.fluence == -2
 

@@ -117,9 +117,7 @@ class MaskCreator(QtWidgets.QWidget):
             ]
         else:
             positions = pos
-        new_roi = pg.PolyLineROI(
-            positions=positions, closed=True, pen=pg.mkPen("r", width=4)
-        )
+        new_roi = pg.PolyLineROI(positions=positions, closed=True, pen=pg.mkPen("r", width=4))
 
         self.viewer.addItem(new_roi)
         if append:
@@ -162,24 +160,26 @@ class MaskCreator(QtWidgets.QWidget):
                 locs = np.array([(p[1].x(), p[1].y()) for p in arb_mask.getLocalHandlePositions()])
                 all_identical = True
                 for idp, point in enumerate(locs):
-                    new_pt = np.clip(point, a_min = 0, a_max = self.resolution)
+                    new_pt = np.clip(point, a_min=0, a_max=self.resolution)
                     if not np.array_equal(point, new_pt):
                         all_identical = False
-                        locs[idp,:] = new_pt
+                        locs[idp, :] = new_pt
                 if not all_identical:
-                    trimmed_arb_mask = self.add_arb_mask(pos = locs, append = False)
+                    trimmed_arb_mask = self.add_arb_mask(pos=locs, append=False)
                     self.viewer.removeItem(trimmed_arb_mask)
                 else:
                     trimmed_arb_mask = arb_mask
-                width, height = int(trimmed_arb_mask.parentBounds().width()), int(trimmed_arb_mask.parentBounds().height())
+                width, height = int(trimmed_arb_mask.parentBounds().width()), int(
+                    trimmed_arb_mask.parentBounds().height()
+                )
                 left, top = int(trimmed_arb_mask.parentBounds().left()), int(trimmed_arb_mask.parentBounds().top())
-                mask[top:top+height, left:left+width ] = trimmed_arb_mask.renderShapeMask(width,height).astype(bool).T
+                mask[top : top + height, left : left + width] = (
+                    trimmed_arb_mask.renderShapeMask(width, height).astype(bool).T
+                )
         # No need to compute xx, yy, and rr if there are no
         # circular masks, hence the check for empty list
         if self.circ_masks:
-            xx, yy = np.meshgrid(
-                np.arange(0, mask.shape[0]), np.arange(0, mask.shape[1])
-            )
+            xx, yy = np.meshgrid(np.arange(0, mask.shape[0]), np.arange(0, mask.shape[1]))
             rr = np.empty_like(xx)
 
             # Calculating the center position assumes that PyQtGraph is configured
@@ -192,11 +192,9 @@ class MaskCreator(QtWidgets.QWidget):
                 mask[rr <= radius] = True
         if self.rect_masks:
             for rect_mask in self.rect_masks:
-                (x_slice, y_slice), _ = rect_mask.getArraySlice(
-                    data=mask, img=self.viewer.getImageItem()
-                )
+                (x_slice, y_slice), _ = rect_mask.getArraySlice(data=mask, img=self.viewer.getImageItem())
                 mask[x_slice, y_slice] = True
-        
+
         return np.logical_or(self.loaded_mask, mask)
 
     def toggleinversionLoadedMask(self):
@@ -212,14 +210,10 @@ class MaskCreator(QtWidgets.QWidget):
             if "npy" in fname:
                 e.accept()
             else:
-                self.parent().parent.controller.logger.error(
-                    f"Mask given by {fname} does not have type numpy.ndarray."
-                )
+                self.parent().parent.controller.logger.error(f"Mask given by {fname} does not have type numpy.ndarray.")
                 e.ignore()
         else:
-            self.parent().parent.controller.logger.error(
-                f"Item dropped is not a file URL."
-            )
+            self.parent().parent.controller.logger.error(f"Item dropped is not a file URL.")
             e.ignore()
 
     def dropEvent(self, e):
@@ -227,17 +221,13 @@ class MaskCreator(QtWidgets.QWidget):
         try:
             self.loaded_mask = np.logical_or(self.loaded_mask, np.load(fname))
             if self.loaded_mask.shape == tuple(self.resolution):
-                self.parent().parent.controller.logger.info(
-                    f"Successfully loaded {fname} as processing mask."
-                )
+                self.parent().parent.controller.logger.info(f"Successfully loaded {fname} as processing mask.")
             else:
                 self.parent().parent.controller.logger.error(
                     f"Mask dimensions in {fname} do not agree with dataset dimensions. Did not load mask."
                 )
         except:
-            self.parent().parent.controller.logger.error(
-                f"Error loading {fname} as the processing mask. "
-            )
+            self.parent().parent.controller.logger.error(f"Error loading {fname} as the processing mask. ")
 
 
 class ProcessingDialog(QtWidgets.QDialog):
@@ -286,9 +276,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.exclude_scans_widget = QtWidgets.QLineEdit(parent=self)
         self.exclude_scans_widget.setPlaceholderText("e.g. 1:5, 6, 7, 10:50, 100")
 
-        self.alignment_tf_widget = QtWidgets.QCheckBox(
-            "Perform alignment (?)", parent=self
-        )
+        self.alignment_tf_widget = QtWidgets.QCheckBox("Perform alignment (?)", parent=self)
         self.alignment_tf_widget.setToolTip(alignment_help)
         self.alignment_tf_widget.setChecked(False)
 
@@ -296,14 +284,10 @@ class ProcessingDialog(QtWidgets.QDialog):
         self.normalization_tf_widget.setToolTip(normalization_help)
         self.normalization_tf_widget.setChecked(True)
 
-        self.fletcher32_widget = QtWidgets.QCheckBox(
-            "Enable Fletcher32 filter (?)", parent=self
-        )
+        self.fletcher32_widget = QtWidgets.QCheckBox("Enable Fletcher32 filter (?)", parent=self)
         self.fletcher32_widget.setToolTip(fletcher32_help)
 
-        self.shuffle_filter_widget = QtWidgets.QCheckBox(
-            "Enable shuffle filter (?)", parent=self
-        )
+        self.shuffle_filter_widget = QtWidgets.QCheckBox("Enable shuffle filter (?)", parent=self)
         self.shuffle_filter_widget.setToolTip(shuffle_help)
 
         self.no_compression_btn = QtWidgets.QRadioButton("No compression", self)
@@ -330,44 +314,30 @@ class ProcessingDialog(QtWidgets.QDialog):
 
         # mask controls
         self.add_rect_mask_btn = QtWidgets.QPushButton("Add rectangular mask", self)
-        self.add_rect_mask_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.add_rect_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.add_rect_mask_btn.clicked.connect(self.mask_widget.add_rect_mask)
 
         self.add_circ_mask_btn = QtWidgets.QPushButton("Add circular mask", self)
-        self.add_circ_mask_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.add_circ_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.add_circ_mask_btn.clicked.connect(self.mask_widget.add_circ_mask)
 
         self.add_arb_mask_btn = QtWidgets.QPushButton("Add n-gon mask", self)
-        self.add_arb_mask_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.add_arb_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.add_arb_mask_btn.clicked.connect(self.mask_widget.add_arb_mask)
         self.add_arb_mask_btn.setToolTip(ngon_help)
 
-        self.toggle_inversion_loaded_mask_btn = QtWidgets.QPushButton(
-            "Invert loaded mask", self
-        )
+        self.toggle_inversion_loaded_mask_btn = QtWidgets.QPushButton("Invert loaded mask", self)
         self.toggle_inversion_loaded_mask_btn.setSizePolicy(
             QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
         )
-        self.toggle_inversion_loaded_mask_btn.clicked.connect(
-            self.mask_widget.toggleinversionLoadedMask
-        )
+        self.toggle_inversion_loaded_mask_btn.clicked.connect(self.mask_widget.toggleinversionLoadedMask)
 
         self.preview_mask_btn = QtWidgets.QPushButton("Preview mask", self)
-        self.preview_mask_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.preview_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.preview_mask_btn.clicked.connect(self.mask_widget.show_preview_mask)
 
         self.clear_masks_btn = QtWidgets.QPushButton("Clear all masks", self)
-        self.clear_masks_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.clear_masks_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.clear_masks_btn.clicked.connect(self.mask_widget.clear_masks)
 
         mask_btns = QtWidgets.QGridLayout()
@@ -419,9 +389,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         params_widget.setLayout(params_layout)
         params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
         params_widget.setFrameShape(QtWidgets.QFrame.Panel)
-        params_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         right_layout = QtWidgets.QVBoxLayout()
         right_layout.addWidget(params_widget)
@@ -464,9 +432,7 @@ class ProcessingDialog(QtWidgets.QDialog):
             check_mask_box.setText(
                 "Pixel masks are used through iris to enhance results. However, no mask was specified. \n\n Are you sure you want to continue?"
             )
-            check_mask_box.setStandardButtons(
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-            )
+            check_mask_box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
             check_mask_box.setDefaultButton(QtWidgets.QMessageBox.Cancel)
             res = check_mask_box.exec_()
             if res == QtWidgets.QMessageBox.No:
@@ -483,9 +449,7 @@ class ProcessingDialog(QtWidgets.QDialog):
         try:
             exclude_scans = parse_range(exclude_scans_text)
         except ValueError:
-            self.error_message_signal.emit(
-                f"Exclude scans unparseable:\n {exclude_scans_text}"
-            )
+            self.error_message_signal.emit(f"Exclude scans unparseable:\n {exclude_scans_text}")
             return
 
         # The arguments to the iris.processing.process function

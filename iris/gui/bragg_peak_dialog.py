@@ -6,13 +6,11 @@ Dialog for processing between AbstractRawDataset and DiffractionDataset
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
-import numpy as np
-import pyqtgraph as pg
-from PyQt5 import QtCore, QtWidgets
-from skued import bragg_peaks, autocenter
+from skued import autocenter, bragg_peaks
+
 from .controller import WorkThread
-from .qbusyindicator import QBusyIndicator
 from .processing_dialog import MaskCreator
+from .qbusyindicator import QBusyIndicator
 
 
 class RectROIWithCenter(pg.RectROI):
@@ -80,9 +78,7 @@ class BraggPeakDialog(QtWidgets.QDialog):
         self.viewer.setImage(image)
         if pixel_width is None:
             pixel_width = 1.4e-5  # default to Gatan pixel width
-        self.bbox_size = int(
-            7e-4 / pixel_width
-        )  # 7e-4 m^-1 is about what looks right to cover most bragg peaks
+        self.bbox_size = int(7e-4 / pixel_width)  # 7e-4 m^-1 is about what looks right to cover most bragg peaks
         self.center_finder = RectROIWithCenter(
             pos=np.array(image.shape) / 2 - 100,
             size=[self.bbox_size, self.bbox_size],  # , pen=pg.mkPen("r")
@@ -103,18 +99,14 @@ class BraggPeakDialog(QtWidgets.QDialog):
 
         self.autopeak_btn = QtWidgets.QPushButton("Auto-detection", self)
         self.autopeak_btn.clicked.connect(self.initiate_autopeaks)
-        self.autopeak_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.autopeak_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.busy_indicator = QBusyIndicator(parent=self)
         autopeak_layout = QtWidgets.QHBoxLayout()
         autopeak_layout.addWidget(self.autopeak_btn)
         autopeak_layout.addWidget(self.busy_indicator)
 
         self.add_circ_mask_btn = QtWidgets.QPushButton("Add new peak", self)
-        self.add_circ_mask_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.add_circ_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.add_circ_mask_btn.clicked.connect(self.add_bragg_peak)
         self.add_circ_mask_btn.setEnabled(False)
 
@@ -142,9 +134,7 @@ class BraggPeakDialog(QtWidgets.QDialog):
         params_widget.setLayout(params_layout)
         params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
         params_widget.setFrameShape(QtWidgets.QFrame.Panel)
-        params_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         right_layout = QtWidgets.QVBoxLayout()
         right_layout.addWidget(params_widget)

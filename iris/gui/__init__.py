@@ -12,10 +12,10 @@ from warnings import warn
 
 import pyqtgraph as pg
 from PyQt5 import QtGui, QtWidgets
+from qdarkstyle import load_stylesheet_pyqt5
 
 from ..raw import open_raw
-from .gui import Iris, IMAGE_FOLDER
-from qdarkstyle import load_stylesheet_pyqt5
+from .gui import IMAGE_FOLDER, Iris
 
 
 @contextmanager
@@ -29,9 +29,7 @@ def gui_environment():
     Note that interactions with the screen (e.g. mask creation) assumes that the image-axis order is
     row-major.
     """
-    old_qt_lib = os.environ.get(
-        "PYQTGRAPH_QT_LIB", "PyQt5"
-    )  # environment variable might not exist
+    old_qt_lib = os.environ.get("PYQTGRAPH_QT_LIB", "PyQt5")  # environment variable might not exist
     os.environ["PYQTGRAPH_QT_LIB"] = "PyQt5"
 
     old_image_axis_order = pg.getConfigOption("imageAxisOrder")

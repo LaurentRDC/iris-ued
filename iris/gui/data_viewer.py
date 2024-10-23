@@ -3,9 +3,10 @@
 Viewer widgets for DiffractionDatasets
 """
 from multiprocessing.sharedctypes import Value
+
+import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets
-import numpy as np
 
 from .time_series_widget import TimeSeriesWidget
 
@@ -21,18 +22,14 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         super().__init__(*args, **kwargs)
 
         self.image_viewer = pg.ImageView(parent=self)
-        self.image_viewer.setPredefinedGradient(
-            "inferno"
-        )  # to distinguish between raw and processed
+        self.image_viewer.setPredefinedGradient("inferno")  # to distinguish between raw and processed
 
         self.time_series_widget = TimeSeriesWidget(parent=self)
 
         self.cursor_info_widget = QtWidgets.QLabel(parent=self)
         self.cursor_info_widget.setAlignment(QtCore.Qt.AlignHCenter)
 
-        self.timeseries_rect_region = pg.ROI(
-            pos=[0, 0], size=[200, 200], pen=pg.mkPen("r")
-        )
+        self.timeseries_rect_region = pg.ROI(pos=[0, 0], size=[200, 200], pen=pg.mkPen("r"))
         self.timeseries_rect_region.addScaleHandle([1, 1], [0, 0])
         self.timeseries_rect_region.addScaleHandle([0, 0], [1, 1])
 
@@ -68,7 +65,6 @@ class ProcessedDataViewer(QtWidgets.QWidget):
 
         self.histogram = self.image_viewer.getHistogramWidget()
 
-
     @QtCore.pyqtSlot()
     def update_timeseries_rect(self):
         rect = self.timeseries_rect_region.parentBounds().toRect()
@@ -93,9 +89,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
             val = self.image_viewer.getImageItem().image[j, i]
         except IndexError:
             val = 0
-        self.cursor_info_widget.setText(
-            f"Position: ({i},{j}) | Pixel value: {val:.2f} cnts"
-        )
+        self.cursor_info_widget.setText(f"Position: ({i},{j}) | Pixel value: {val:.2f} cnts")
 
     @QtCore.pyqtSlot(bool)
     def toggle_peak_dynamics(self, toggle):
@@ -145,16 +139,14 @@ class ProcessedDataViewer(QtWidgets.QWidget):
         if image is None:
             self.image_viewer.clear()
             return
-        self.image_viewer.setImage(
-            image, autoLevels=False, autoRange=False, autoHistogramRange=False
-        )
+        self.image_viewer.setImage(image, autoLevels=False, autoRange=False, autoHistogramRange=False)
 
         if autocontrast:
             low = np.quantile(image, 0.01)
             high = np.quantile(image, 0.98)
 
             self.image_viewer.setLevels(low, high)
-            self.histogram.setHistogramRange(low*.8, high*1.2)
+            self.histogram.setHistogramRange(low * 0.8, high * 1.2)
             self.histogram.setLevels(low, high)
 
         self.update_timeseries_rect()
@@ -227,9 +219,7 @@ class ProcessedDataViewer(QtWidgets.QWidget):
                     for _ in range(N):
                         nodes.append(next(generator))
                     nodes = np.array(nodes).reshape(-1, 2)
-                    self.__bz_items.append(
-                        pg.GraphItem(pos=np.array(r.vertices).reshape(-1, 2), adj=nodes)
-                    )
+                    self.__bz_items.append(pg.GraphItem(pos=np.array(r.vertices).reshape(-1, 2), adj=nodes))
             for item in self.__bz_items:
                 self.image_viewer.addItem(item)
 

@@ -6,7 +6,6 @@ from collections.abc import Iterable
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pywt import Modes
-
 from skued import available_dt_filters, available_first_stage_filters
 
 
@@ -24,32 +23,20 @@ class ControlBar(QtWidgets.QWidget):
         super().__init__(**kwargs)
 
         self.raw_dataset_controls = RawDatasetControl(parent=self)
-        self.raw_dataset_controls.timedelay_widget.valueChanged.connect(
-            self.request_raw_data
-        )
-        self.raw_dataset_controls.scan_widget.valueChanged.connect(
-            self.request_raw_data
-        )
+        self.raw_dataset_controls.timedelay_widget.valueChanged.connect(self.request_raw_data)
+        self.raw_dataset_controls.scan_widget.valueChanged.connect(self.request_raw_data)
         #        self.raw_dataset_controls.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
         self.diffraction_dataset_controls = DiffractionDatasetControl(parent=self)
-        self.diffraction_dataset_controls.timedelay_widget.valueChanged.connect(
-            self.averaged_data_request
-        )
-        self.diffraction_dataset_controls.time_zero_shift_widget.editingFinished.connect(
-            self.shift_time_zero
-        )
+        self.diffraction_dataset_controls.timedelay_widget.valueChanged.connect(self.averaged_data_request)
+        self.diffraction_dataset_controls.time_zero_shift_widget.editingFinished.connect(self.shift_time_zero)
         self.diffraction_dataset_controls.clear_time_zero_shift_btn.clicked.connect(
             lambda _: self.time_zero_shift.emit(0)
         )
         #        self.diffraction_dataset_controls.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
-        self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(
-            parent=self
-        )
-        self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(
-            self.request_baseline_computation
-        )
+        self.powder_diffraction_dataset_controls = PowderDiffractionDatasetControl(parent=self)
+        self.powder_diffraction_dataset_controls.compute_baseline_btn.clicked.connect(self.request_baseline_computation)
         #        self.powder_diffraction_dataset_controls.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
         self.metadata_widget = MetadataWidget(parent=self)
@@ -89,9 +76,7 @@ class ControlBar(QtWidgets.QWidget):
     @QtCore.pyqtSlot(dict)
     def update_dataset_metadata(self, metadata):
         self.diffraction_dataset_controls.update_dataset_metadata(metadata)
-        self.notes_editor.editor.setPlainText(
-            metadata.pop("notes", "No notes available")
-        )
+        self.notes_editor.editor.setPlainText(metadata.pop("notes", "No notes available"))
         self.metadata_widget.set_metadata(metadata)
 
     @QtCore.pyqtSlot(int)
@@ -103,9 +88,7 @@ class ControlBar(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def request_baseline_computation(self):
-        self.baseline_computation_parameters.emit(
-            self.powder_diffraction_dataset_controls.baseline_parameters()
-        )
+        self.baseline_computation_parameters.emit(self.powder_diffraction_dataset_controls.baseline_parameters())
 
     @QtCore.pyqtSlot()
     def shift_time_zero(self):
@@ -127,9 +110,7 @@ class RawDatasetControl(QtWidgets.QFrame):
         self.timedelay_widget.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.timedelay_widget.setTickInterval(1)
         self.timedelay_widget.sliderMoved.connect(
-            lambda pos: self.td_label.setText(
-                f"Time-delay: {self.time_points[pos]:.3f}ps"
-            )
+            lambda pos: self.td_label.setText(f"Time-delay: {self.time_points[pos]:.3f}ps")
         )
 
         self.s_label = QtWidgets.QLabel("Scan: ")
@@ -139,32 +120,22 @@ class RawDatasetControl(QtWidgets.QFrame):
         self.scan_widget.setTracking(False)
         self.scan_widget.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.scan_widget.setTickInterval(1)
-        self.scan_widget.sliderMoved.connect(
-            lambda pos: self.s_label.setText(f"Scan: {self.scans[pos]:d}")
-        )
+        self.scan_widget.sliderMoved.connect(lambda pos: self.s_label.setText(f"Scan: {self.scans[pos]:d}"))
 
         prev_timedelay_btn = QtWidgets.QPushButton("<", self)
-        prev_timedelay_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        prev_timedelay_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         prev_timedelay_btn.clicked.connect(self.goto_prev_timedelay)
 
         next_timedelay_btn = QtWidgets.QPushButton(">", self)
-        next_timedelay_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        next_timedelay_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         next_timedelay_btn.clicked.connect(self.goto_next_timedelay)
 
         prev_scan_btn = QtWidgets.QPushButton("<", self)
-        prev_scan_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        prev_scan_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         prev_scan_btn.clicked.connect(self.goto_prev_scan)
 
         next_scan_btn = QtWidgets.QPushButton(">", self)
-        next_scan_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        next_scan_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         next_scan_btn.clicked.connect(self.goto_next_scan)
 
         time_layout = QtWidgets.QHBoxLayout()
@@ -246,9 +217,7 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         self.timedelay_widget.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.timedelay_widget.setTickInterval(1)
         self.timedelay_widget.sliderMoved.connect(
-            lambda pos: self.td_label.setText(
-                f"Time-delay: {self.time_points[pos]:.3f}ps"
-            )
+            lambda pos: self.td_label.setText(f"Time-delay: {self.time_points[pos]:.3f}ps")
         )
 
         # Time-zero shift control
@@ -260,23 +229,15 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         self.time_zero_shift_widget.setSuffix(" ps")
         self.time_zero_shift_widget.setValue(0.0)
 
-        self.clear_time_zero_shift_btn = QtWidgets.QPushButton(
-            "Clear time-zero shift", parent=self
-        )
-        self.clear_time_zero_shift_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.clear_time_zero_shift_btn = QtWidgets.QPushButton("Clear time-zero shift", parent=self)
+        self.clear_time_zero_shift_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         prev_btn = QtWidgets.QPushButton("<", self)
-        prev_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        prev_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         prev_btn.clicked.connect(self.goto_prev)
 
         next_btn = QtWidgets.QPushButton(">", self)
-        next_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        next_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         next_btn.clicked.connect(self.goto_next)
 
         sliders = QtWidgets.QHBoxLayout()
@@ -286,9 +247,7 @@ class DiffractionDatasetControl(QtWidgets.QFrame):
         sliders.addWidget(next_btn)
 
         time_zero_shift_layout = QtWidgets.QHBoxLayout()
-        time_zero_shift_layout.addWidget(
-            QtWidgets.QLabel("Time-zero shift: ", parent=self)
-        )
+        time_zero_shift_layout.addWidget(QtWidgets.QLabel("Time-zero shift: ", parent=self))
         time_zero_shift_layout.addWidget(self.time_zero_shift_widget)
         time_zero_shift_layout.addWidget(self.clear_time_zero_shift_btn)
 
@@ -352,12 +311,8 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
         self.max_iter_widget.setRange(0, 1000)
         self.max_iter_widget.setValue(100)
 
-        self.compute_baseline_btn = QtWidgets.QPushButton(
-            "Compute baseline", parent=self
-        )
-        self.compute_baseline_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.compute_baseline_btn = QtWidgets.QPushButton("Compute baseline", parent=self)
+        self.compute_baseline_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         baseline_controls = QtWidgets.QFormLayout()
         baseline_controls.addRow("First stage wavelet: ", self.first_stage_cb)
@@ -366,9 +321,7 @@ class PowderDiffractionDatasetControl(QtWidgets.QFrame):
         baseline_controls.addRow("Iterations: ", self.max_iter_widget)
         baseline_controls.addWidget(self.compute_baseline_btn)
 
-        baseline_computation = QtWidgets.QGroupBox(
-            title="Baseline parameters", parent=self
-        )
+        baseline_computation = QtWidgets.QGroupBox(title="Baseline parameters", parent=self)
         baseline_computation.setLayout(baseline_controls)
 
         # TODO: add callback and progressbar for computing the baseline?
@@ -419,9 +372,7 @@ class MetadataWidget(QtWidgets.QWidget):
     @QtCore.pyqtSlot(dict)
     def set_metadata(self, metadata):
         self.table.clear()
-        self.table.setRowCount(
-            len(metadata) - 1 if "notes" in metadata else len(metadata)
-        )
+        self.table.setRowCount(len(metadata) - 1 if "notes" in metadata else len(metadata))
         for row, (key, value) in enumerate(sorted(metadata.items())):
             if isinstance(value, Iterable) and (not isinstance(value, str)):
                 if len(value) > 4:
@@ -456,9 +407,7 @@ class NotesEditor(QtWidgets.QFrame):
         title.setAlignment(QtCore.Qt.AlignCenter)
 
         update_btn = QtWidgets.QPushButton("Update notes", self)
-        update_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        update_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         update_btn.clicked.connect(self.update_notes)
 
         self.editor = QtWidgets.QTextEdit(parent=self)

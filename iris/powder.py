@@ -2,22 +2,20 @@ from functools import lru_cache, partial, wraps
 from math import sqrt
 
 import numpy as np
-
 from npstreams import peek, pmap
 from skued import (
-    __version__,
-    azimuthal_average,
-    baseline_dt,
-    autocenter,
-    powder_calq,
     ArbitrarySelection,
     Selection,
+    __version__,
+    autocenter,
+    azimuthal_average,
+    baseline_dt,
+    powder_calq,
 )
 from skued.baseline import dt_max_level
 
-from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
-
 from .dataset import DiffractionDataset, write_access_needed
+from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
 
 class PowderDiffractionDataset(DiffractionDataset):
@@ -27,12 +25,8 @@ class PowderDiffractionDataset(DiffractionDataset):
 
     _powder_group_name = "/powder"
 
-    angular_bounds = HDF5ExperimentalParameter(
-        "angular_bounds", tuple, default=(0, 360)
-    )
-    first_stage = HDF5ExperimentalParameter(
-        "powder_baseline_first_stage", str, default=""
-    )
+    angular_bounds = HDF5ExperimentalParameter("angular_bounds", tuple, default=(0, 360))
+    first_stage = HDF5ExperimentalParameter("powder_baseline_first_stage", str, default="")
     wavelet = HDF5ExperimentalParameter("powder_baseline_wavelet", str, default="")
     level = HDF5ExperimentalParameter("powder_baseline_level", int, default=0)
     niter = HDF5ExperimentalParameter("powder_baseline_niter", int, default=0)
@@ -60,9 +54,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         shape = self.powder_group["intensity"].shape
         placeholder = np.arange(0, shape[-1])
         if "px_radius" not in self.powder_group:
-            self.powder_group.create_dataset(
-                "px_radius", data=placeholder, maxshape=(maxshape[-1],), dtype=float
-            )
+            self.powder_group.create_dataset("px_radius", data=placeholder, maxshape=(maxshape[-1],), dtype=float)
 
         # Radius from center in units of inverse angstroms
         if "scattering_vector" not in self.powder_group:
@@ -74,9 +66,7 @@ class PowderDiffractionDataset(DiffractionDataset):
             )
 
     @classmethod
-    def from_dataset(
-        cls, dataset, center=None, normalized=True, angular_bounds=None, callback=None
-    ):
+    def from_dataset(cls, dataset, center=None, normalized=True, angular_bounds=None, callback=None):
         """
         Transform a DiffractionDataset instance into a PowderDiffractionDataset. This requires
         computing the azimuthal averages as well.
@@ -104,9 +94,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         dataset.close()
 
         powder_dataset = cls(fname, mode="r+")
-        powder_dataset.compute_angular_averages(
-            center, normalized, angular_bounds, callback
-        )
+        powder_dataset.compute_angular_averages(center, normalized, angular_bounds, callback)
         return powder_dataset
 
     @property
@@ -284,9 +272,7 @@ class PowderDiffractionDataset(DiffractionDataset):
 
         return out
 
-    def powder_time_series(
-        self, rmin, rmax, bgr=False, relative=False, units="pixels", out=None
-    ):
+    def powder_time_series(self, rmin, rmax, bgr=False, relative=False, units="pixels", out=None):
         """
         Average intensity over time.
         Diffracted intensity is integrated in the closed interval [rmin, rmax]
@@ -315,9 +301,7 @@ class PowderDiffractionDataset(DiffractionDataset):
         """
         # In some cases, it is easier
         if units not in {"pixels", "momentum"}:
-            raise ValueError(
-                f"``units`` must be either 'pixels' or 'momentum', not {units}"
-            )
+            raise ValueError(f"``units`` must be either 'pixels' or 'momentum', not {units}")
         abscissa = self.px_radius if units == "pixels" else self.scattering_vector
 
         i_min, i_max = (
@@ -371,18 +355,14 @@ class PowderDiffractionDataset(DiffractionDataset):
         }
         baseline_kwargs.update(**kwargs)
 
-        baseline = np.ascontiguousarray(
-            baseline_dt(**baseline_kwargs)
-        )  # In rare cases this wasn't C-contiguous
+        baseline = np.ascontiguousarray(baseline_dt(**baseline_kwargs))  # In rare cases this wasn't C-contiguous
 
         # The baseline dataset is guaranteed to exist after compte_angular_averages was called.
         self.powder_group["baseline"].resize(baseline.shape)
         self.powder_group["baseline"].write_direct(baseline)
 
         if level == None:
-            level = dt_max_level(
-                data=self.px_radius, first_stage=first_stage, wavelet=wavelet
-            )
+            level = dt_max_level(data=self.px_radius, first_stage=first_stage, wavelet=wavelet)
 
         self.level = level
         self.first_stage = first_stage

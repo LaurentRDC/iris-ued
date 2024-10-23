@@ -3,16 +3,16 @@
 Dialog for symmetrization of DiffractionDataset
 """
 from os import cpu_count
-from skued import autocenter
+
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
+from skued import autocenter
+
 from .controller import WorkThread
 from .qbusyindicator import QBusyIndicator
 
-description = (
-    """Align the circle so that its center is aligned with the diffraction center. """
-)
+description = """Align the circle so that its center is aligned with the diffraction center. """
 
 
 class CircleROIWithCenter(pg.CircleROI):
@@ -72,9 +72,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         self.mod_widget = QtWidgets.QComboBox(parent=self)
         self.mod_widget.addItems(["2", "3", "4", "6"])
-        self.mod_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.mod_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         self.smoothing_kernel_widget = QtWidgets.QSpinBox(parent=self)
         self.smoothing_kernel_widget.setRange(0, 100)
@@ -84,9 +82,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         self.enable_smoothing_widget = QtWidgets.QCheckBox("Enable gaussian smoothing")
         self.enable_smoothing_widget.setChecked(False)
-        self.enable_smoothing_widget.toggled.connect(
-            self.smoothing_kernel_widget.setEnabled
-        )
+        self.enable_smoothing_widget.toggled.connect(self.smoothing_kernel_widget.setEnabled)
 
         self.processes_widget = QtWidgets.QSpinBox(parent=self)
         self.processes_widget.setRange(1, cpu_count() - 1)
@@ -94,9 +90,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         self.autocenter_btn = QtWidgets.QPushButton("Autocenter", self)
         self.autocenter_btn.clicked.connect(self.initiate_autocenter)
-        self.autocenter_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.autocenter_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.busy_indicator = QBusyIndicator(parent=self)
         autocenter_layout = QtWidgets.QHBoxLayout()
         autocenter_layout.addWidget(self.autocenter_btn)
@@ -104,16 +98,12 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         self.accept_btn = QtWidgets.QPushButton("Symmetrize", self)
         self.accept_btn.clicked.connect(self.accept)
-        self.accept_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.accept_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         self.cancel_btn = QtWidgets.QPushButton("Cancel", self)
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setDefault(True)
-        self.cancel_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.cancel_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         self.error_message_signal.connect(self.show_error_message)
 
@@ -128,9 +118,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
 
         smoothing_layout = QtWidgets.QFormLayout()
         smoothing_layout.addRow(self.enable_smoothing_widget)
-        smoothing_layout.addRow(
-            "Kernel standard deviation: ", self.smoothing_kernel_widget
-        )
+        smoothing_layout.addRow("Kernel standard deviation: ", self.smoothing_kernel_widget)
 
         params_layout = QtWidgets.QVBoxLayout()
         params_layout.addWidget(title)
@@ -144,9 +132,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
         params_widget.setLayout(params_layout)
         params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
         params_widget.setFrameShape(QtWidgets.QFrame.Panel)
-        params_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         right_layout = QtWidgets.QVBoxLayout()
         right_layout.addWidget(params_widget)
@@ -189,9 +175,7 @@ class SymmetrizeDialog(QtWidgets.QDialog):
     def initiate_autocenter(self):
         """Automatically determine the center of an image
         and move the center-finder accordingly"""
-        self._worker = AutocenteringThread(
-            function=autocenter, kwargs=dict(im=self._image, mask=self._mask)
-        )
+        self._worker = AutocenteringThread(function=autocenter, kwargs=dict(im=self._image, mask=self._mask))
         self._worker.results_signal.connect(self.set_center)
         self._worker.in_progress_signal.connect(self.busy_indicator.toggle_animation)
         self._worker.in_progress_signal.connect(self.autocenter_btn.setDisabled)

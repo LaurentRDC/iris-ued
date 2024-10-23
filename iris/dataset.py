@@ -7,17 +7,10 @@ from functools import partial, wraps
 from warnings import warn
 
 import h5py
+import npstreams as ns
 import numpy as np
 from scipy.ndimage import gaussian_filter
-
-import npstreams as ns
-from skued import (
-    __version__,
-    nfold,
-    autocenter,
-    ArbitrarySelection,
-    Selection,
-)
+from skued import ArbitrarySelection, Selection, __version__, autocenter, nfold
 
 from .meta import HDF5ExperimentalParameter, MetaHDF5Dataset
 
@@ -44,9 +37,7 @@ def write_access_needed(f):
     @wraps(f)
     def newf(self, *args, **kwargs):
         if self.mode != "r+":
-            raise PermissionError(
-                f"The dataset {self.filename} has not been opened with write access."
-            )
+            raise PermissionError(f"The dataset {self.filename} has not been opened with write access.")
         return f(self, *args, **kwargs)
 
     return newf
@@ -91,26 +82,14 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         "acquisition_date", str, default=""
     )  # Acquisition date, no specific format
     energy = HDF5ExperimentalParameter("energy", float, default=90)  # keV
-    pump_wavelength = HDF5ExperimentalParameter(
-        "pump_wavelength", int, default=800
-    )  # nanometers
-    fluence = HDF5ExperimentalParameter(
-        "fluence", float, default=0
-    )  # milliJoules / centimeters ^ 2
-    time_zero_shift = HDF5ExperimentalParameter(
-        "time_zero_shift", float, default=0
-    )  # picoseconds
-    temperature = HDF5ExperimentalParameter(
-        "temperature", float, default=293
-    )  # kelvins
+    pump_wavelength = HDF5ExperimentalParameter("pump_wavelength", int, default=800)  # nanometers
+    fluence = HDF5ExperimentalParameter("fluence", float, default=0)  # milliJoules / centimeters ^ 2
+    time_zero_shift = HDF5ExperimentalParameter("time_zero_shift", float, default=0)  # picoseconds
+    temperature = HDF5ExperimentalParameter("temperature", float, default=293)  # kelvins
     exposure = HDF5ExperimentalParameter("exposure", float, default=1)  # seconds
     scans = HDF5ExperimentalParameter("scans", tuple, default=(1,))
-    camera_length = HDF5ExperimentalParameter(
-        "camera_length", float, default=0.23
-    )  # meters
-    pixel_width = HDF5ExperimentalParameter(
-        "pixel_width", float, default=14e-6
-    )  # meters
+    camera_length = HDF5ExperimentalParameter("camera_length", float, default=0.23)  # meters
+    pixel_width = HDF5ExperimentalParameter("pixel_width", float, default=14e-6)  # meters
     aligned = HDF5ExperimentalParameter("aligned", bool, default=False)
     normalized = HDF5ExperimentalParameter("normalized", bool, default=False)
     notes = HDF5ExperimentalParameter("notes", str, default="")
@@ -234,9 +213,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
 
         if ckwargs is None:
             ckwargs = {"compression": "lzf", "shuffle": True, "fletcher32": True}
-        ckwargs[
-            "chunks"
-        ] = True  # For some reason, if no chunking, writing to disk is SLOW
+        ckwargs["chunks"] = True  # For some reason, if no chunking, writing to disk is SLOW
 
         first, patterns = ns.peek(patterns)
         if dtype is None:
@@ -498,16 +475,12 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         if r.dtype != bool:
             raise TypeError(f"Diffraction pattern masks must be boolean, not {r.dtype}")
         if r.shape != old_mask.shape:
-            raise ValueError(
-                f"Expected diffraction pattern mask with shape {old_mask.shape}, but got {r.shape}"
-            )
+            raise ValueError(f"Expected diffraction pattern mask with shape {old_mask.shape}, but got {r.shape}")
         self.experimental_parameters_group["valid_mask"][:] = func(self.valid_mask)
 
     @write_access_needed
     @update_equilibrium_pattern
-    def symmetrize(
-        self, mod, center=None, kernel_size=None, callback=None, processes=1
-    ):
+    def symmetrize(self, mod, center=None, kernel_size=None, callback=None, processes=1):
         """
         Symmetrize diffraction images based on n-fold rotational symmetry.
 
@@ -610,9 +583,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         """
         differential = shift - self.time_zero_shift
         self.time_zero_shift = shift
-        self.experimental_parameters_group["time_points"][:] = (
-            self.time_points + differential
-        )
+        self.experimental_parameters_group["time_points"][:] = self.time_points + differential
 
     def _get_time_index(self, timedelay):
         """
@@ -632,9 +603,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         time_index = np.argmin(np.abs(self.time_points - timedelay))
         actual_timedelay = self.time_points[time_index]
         if actual_timedelay != timedelay:
-            warn(
-                f"Time-delay {timedelay}ps not available. Using closest-timedelay {actual_timedelay}ps instead"
-            )
+            warn(f"Time-delay {timedelay}ps not available. Using closest-timedelay {actual_timedelay}ps instead")
         return time_index
 
     def diff_eq(self):
@@ -691,9 +660,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         else:
             diff_eq = ns.average((intensity[:, :, i] for i in range(t0_index)), axis=2)
 
-        eq_dset = self.diffraction_group.require_dataset(
-            name="equilibrium", shape=diff_eq.shape, dtype=float
-        )
+        eq_dset = self.diffraction_group.require_dataset(name="equilibrium", shape=diff_eq.shape, dtype=float)
         eq_dset[:] = diff_eq
 
     def diff_data(self, timedelay, relative=False, out=None):
@@ -866,7 +833,7 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         # diffraction center rather than fail the autocenter routine.
         # See #26.
         if np.allclose(image * self.valid_mask, 0):
-            r, c = image.shape[0]//2, image.shape[1]//2
+            r, c = image.shape[0] // 2, image.shape[1] // 2
         else:
             r, c = autocenter(im=image, mask=self.valid_mask)
 

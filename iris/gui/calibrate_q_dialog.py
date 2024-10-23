@@ -4,11 +4,9 @@ Dialog for Q-vector calibration of powder diffraction data
 """
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtCore, QtGui, QtWidgets
-
 from crystals import Crystal
+from PyQt5 import QtCore, QtGui, QtWidgets
 from skued import powder_calq
-
 
 EXPLANATION = """Calibrate the scattering vector range of polycrystalline data. Select two peaks of known Miller indices by dragging the vertical lines, 
 and use an appropriate structure. Some structures are built-in, but you can also use a CIF of your own. Make sure the structure 
@@ -29,25 +27,19 @@ class MillerIndexWidget(QtWidgets.QWidget):
         self.h_widget.setPrefix("h: ")
         self.h_widget.setRange(-999, 999)
         self.h_widget.setValue(0)
-        self.h_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.h_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         self.k_widget = QtWidgets.QSpinBox(parent=self)
         self.k_widget.setPrefix("k: ")
         self.k_widget.setRange(-999, 999)
         self.k_widget.setValue(0)
-        self.k_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.k_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         self.l_widget = QtWidgets.QSpinBox(parent=self)
         self.l_widget.setPrefix("l: ")
         self.l_widget.setRange(-999, 999)
         self.l_widget.setValue(0)
-        self.l_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.l_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         self.layout = QtWidgets.QHBoxLayout()
         self.layout.addWidget(self.h_widget)
@@ -111,9 +103,7 @@ class QCalibratorDialog(QtWidgets.QDialog):
 
         structure_file_btn = QtWidgets.QPushButton("Open explorer", self)
         structure_file_btn.clicked.connect(self.load_cif)
-        structure_file_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        structure_file_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         crystal_label = QtWidgets.QLabel(parent=self)
         crystal_label.setText("No structure selected.")
@@ -149,15 +139,11 @@ class QCalibratorDialog(QtWidgets.QDialog):
         peak_layout.setFormAlignment(QtCore.Qt.AlignCenter)
 
         self.accept_btn = QtWidgets.QPushButton("Calibrate", parent=self)
-        self.accept_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.accept_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.accept_btn.clicked.connect(self.accept)
 
         self.cancel_btn = QtWidgets.QPushButton("Cancel", parent=self)
-        self.cancel_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.cancel_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.cancel_btn.clicked.connect(self.reject)
         self.cancel_btn.setDefault(True)
 
@@ -177,9 +163,7 @@ class QCalibratorDialog(QtWidgets.QDialog):
         params_widget.setLayout(params_layout)
         params_widget.setFrameShadow(QtWidgets.QFrame.Sunken)
         params_widget.setFrameShape(QtWidgets.QFrame.Panel)
-        params_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        params_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
 
         right_layout = QtWidgets.QVBoxLayout()
         right_layout.addWidget(params_widget)
@@ -198,9 +182,7 @@ class QCalibratorDialog(QtWidgets.QDialog):
 
     @QtCore.pyqtSlot()
     def load_cif(self):
-        path, *_ = QtWidgets.QFileDialog.getOpenFileName(
-            parent=self, caption="Load structure from CIF", filter="*.cif"
-        )
+        path, *_ = QtWidgets.QFileDialog.getOpenFileName(parent=self, caption="Load structure from CIF", filter="*.cif")
         if not path:
             return
 

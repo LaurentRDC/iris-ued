@@ -96,9 +96,7 @@ class PowderViewer(QtWidgets.QWidget):
         self.powder_pattern_viewer.addItem(self.roi_left_text)
         self.powder_pattern_viewer.addItem(self.roi_right_text)
 
-        self.peak_dynamics_region.setBounds(
-            [scattering_vector.min(), scattering_vector.max()]
-        )
+        self.peak_dynamics_region.setBounds([scattering_vector.min(), scattering_vector.max()])
         self.update_peak_dynamics()  # Update peak dynamics plot if background has been changed, for example
 
     @QtCore.pyqtSlot(object, object)

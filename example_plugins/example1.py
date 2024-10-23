@@ -4,8 +4,8 @@ Example Plugin
 ==============
 """
 
-from iris import AbstractRawDataset, ExperimentalParameter
 import numpy as np
+from iris import AbstractRawDataset, ExperimentalParameter
 
 
 class MinimalRawDataset(AbstractRawDataset):
@@ -33,9 +33,7 @@ class MinimalRawDataset(AbstractRawDataset):
         # Metadata can be filled as a dictionary before
         # initialization. # Attributes which are not
         # ExperimentalParameters are ignored.
-        metadata.update(
-            {"temperature": 100, "exposure": 1, "this_will_be_ignored": True}
-        )
+        metadata.update({"temperature": 100, "exposure": 1, "this_will_be_ignored": True})
         super().__init__(source, metadata)
 
         # Metadata can also be changed attribute by attribute
