@@ -1,7 +1,8 @@
 Release 5.4.0
 -------------
 
-* Added explicit support for NumPy 2, in addition to NumPy 1
+* Added explicit support for NumPy 2, in addition to NumPy 1.
+* Made image autorange and histogram more robust (#28).
 
 Release 5.3.5
 -------------
