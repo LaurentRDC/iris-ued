@@ -628,14 +628,12 @@ class DiffractionDataset(h5py.File, metaclass=MetaHDF5Dataset):
         tp : index
             Index of the Time-point closest to `timedelay` [ps]
         """
-        # time_index cannot be cast to int() if np.argwhere returns an empty array
-        # catch the corresponding TypeError
-        try:
-            time_index = int(np.argwhere(self.time_points == float(timedelay)))
-        except TypeError:
-            time_index = np.argmin(np.abs(self.time_points - float(timedelay)))
+        timedelay = float(timedelay)
+        time_index = np.argmin(np.abs(self.time_points - timedelay))
+        actual_timedelay = self.time_points[time_index]
+        if actual_timedelay != timedelay:
             warn(
-                f"Time-delay {timedelay}ps not available. Using closest-timedelay {self.time_points[time_index]}ps instead"
+                f"Time-delay {timedelay}ps not available. Using closest-timedelay {actual_timedelay}ps instead"
             )
         return time_index
 
