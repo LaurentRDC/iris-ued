@@ -1,3 +1,75 @@
+[build-system]
+requires = ["build", "setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["iris"]
+
+[tool.setuptools.dynamic]
+version = {attr = "iris.__version__"}
+
+[project]
+name = "iris-ued"
+dynamic = ["version"]
+authors = [
+  { name="Laurent P. René de Cotret", email="laurent.decotret@outlook.com" },
+]
+maintainers = [
+  { name="Laurent P. René de Cotret", email="laurent.decotret@outlook.com" },
+]
+description = "Ultrafast electron diffraction data exploration"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.7, <4"
+dependencies = [
+    "numpy >= 1.22,< 3",
+    "scipy >= 1.0.0",
+    "h5py >= 2.10.0, < 4",
+    "PyQt5 >=5.15, <6",
+    "crystals >= 1.3.0, < 2",
+    "scikit-ued >= 2.1.4, < 3",
+    "qdarkstyle >= 2.8, < 3",
+    "pyqtgraph >= 0.11",
+    "npstreams >= 1.6.5, < 2",
+    "packaging >= 20",
+]
+keywords=["crystallography", "material science", "structural biology"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+
+[project.optional-dependencies]
+development = [
+    "Sphinx >= 3",
+    "sphinx_rtd_theme >= 0.4",
+    "pytest >= 6",
+    "flaky >= 3,<4",
+    "black",
+    "isort",
+]
+
+[project.urls]
+Documentation = "https://iris-ued.readthedocs.io/"
+Repository = "https://github.com/LaurentRDC/iris-ued"
+"Bug Tracker" = "https://github.com/LaurentRDC/iris-ued/issues"
+
+[project.scripts]
+iris-cli = "iris.__main__:main"
+
 [tool.black]
 line-length = 120
 include = '\.pyi?$'
@@ -5,3 +77,13 @@ include = '\.pyi?$'
 [tool.isort]
 profile = "black"
 src_paths = ["iris/**/*.py"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+log_cli_level = "INFO"
+# Very cool ability for pytest to also run doctests on package contents with `-doctest-modules`
+addopts = [
+    "--doctest-modules", 
+    "--ignore=iris/tests/broken_plugin.py",
+]
+testpaths = ["iris/tests"]
